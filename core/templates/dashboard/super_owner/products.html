@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إدارة المنتجات - المالك الرئيسي{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-box me-2"></i>
+                            إدارة المنتجات
+                        </h4>
+                        <a href="{% url 'super_owner_dashboard' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            العودة للوحة التحكم
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">إدارة المنتجات</h5>
+                        <a href="{% url 'super_owner_add_product' %}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>
+                            إضافة منتج جديد
+                        </a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>المنتج</th>
+                                    <th>المتجر</th>
+                                    <th>السعر</th>
+                                    <th>الفئة</th>
+                                    <th>الحالة</th>
+                                    <th>مميز</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>{{ product.id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if product.images.first %}
+                                                <img src="{{ product.images.first.get_image_url }}" alt="{{ product.name }}" class="rounded me-2" width="50" height="50" style="object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-gradient-secondary rounded d-flex align-items-center justify-content-center me-2" style="width: 50px; height: 50px;">
+                                                    <i class="fas fa-box text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ product.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ product.description|truncatechars:40 }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if product.store.logo %}
+                                                <img src="{{ product.store.logo.url }}" alt="{{ product.store.name }}" class="rounded-circle me-2" width="30" height="30">
+                                            {% else %}
+                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-store text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <span>{{ product.store.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ product.base_price }} د.ع</strong>
+                                        {% if product.variants.count > 1 %}
+                                            <br><small class="text-muted">+ {{ product.variants.count|add:"-1" }} متغيرات</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ product.get_category_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if product.is_active %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                نشط
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>
+                                                غير نشط
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if product.is_featured %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-star me-1"></i>
+                                                مميز
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="far fa-star me-1"></i>
+                                                عادي
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'super_owner_edit_product' product.id %}" class="btn btn-primary btn-table-action" title="تعديل">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            {% if product.is_featured %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                    <input type="hidden" name="action" value="unfeature">
+                                                    <button type="submit" class="btn btn-outline-warning btn-table-action" title="إلغاء التمييز">
+                                                        <i class="fas fa-star"></i>
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                    <input type="hidden" name="action" value="feature">
+                                                    <button type="submit" class="btn btn-warning btn-table-action" title="تمييز">
+                                                        <i class="fas fa-star"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            
+                                            {% if product.is_active %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                    <input type="hidden" name="action" value="deactivate">
+                                                    <button type="submit" class="btn btn-outline-danger btn-table-action" title="تعطيل">
+                                                        <i class="fas fa-pause"></i>
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                    <input type="hidden" name="action" value="activate">
+                                                    <button type="submit" class="btn btn-success btn-table-action" title="تفعيل">
+                                                        <i class="fas fa-play"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                <input type="hidden" name="action" value="delete">
+                                                <button type="submit" class="btn btn-danger btn-table-action" onclick="return confirm('هل أنت متأكد من حذف هذا المنتج نهائياً؟')" title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">لا يوجد منتجات حتى الآن</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.6em;
+}
+</style>
+{% endblock %}

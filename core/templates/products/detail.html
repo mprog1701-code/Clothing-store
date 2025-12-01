@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - متجر الملابس{% endblock %}
+
+{% block content %}
+<style>
+    .product-hero {
+        background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%);
+    }
+    .product-gallery-card img { height: 420px; object-fit: cover; }
+    .product-info-card { min-height: 420px; }
+    .price-old { text-decoration: line-through; color: #888; font-size: 1.25rem; }
+    .price-new { color: var(--gold); font-weight: 800; font-size: 2rem; }
+    .variant-card { border-color: rgba(0,0,0,0.08); }
+    .add-to-cart-form .btn { border-radius: 12px; }
+    .product-description p { line-height: 1.9; }
+    .product-category .badge { background: linear-gradient(45deg, #667eea, #764ba2); }
+    .store-info-section { border: 1px dashed rgba(0,0,0,0.1); }
+</style>
+<!-- Hero Section -->
+<section class="product-hero bg-gradient-primary py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <nav aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb breadcrumb-light">
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-light">الرئيسية</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'store_list' %}" class="text-light">المتاجر</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'store_detail' product.store.id %}" class="text-light">{{ product.store.name }}</a></li>
+                        <li class="breadcrumb-item active text-light-50">{{ product.name }}</li>
+                    </ol>
+                </nav>
+                <h1 class="display-4 fw-bold text-white mb-3 animate-fade-in">
+                    {{ product.name }}
+                </h1>
+                <p class="lead text-light mb-4 animate-fade-in-delay">
+                    من <a href="{% url 'store_detail' product.store.id %}" class="text-white fw-bold">{{ product.store.name }}</a>
+                </p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="product-hero-icon animate-bounce">
+                    <i class="bi bi-bag-heart display-1 text-white opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Product Details Section -->
+<section class="product-details-section mb-5">
+    <div class="container">
+        <div class="row g-5">
+            <!-- Product Images -->
+            <div class="col-lg-6">
+                <div class="product-gallery-card p-4 bg-white rounded-4 shadow-lg">
+                    <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+                        <div class="carousel-inner rounded-3 overflow-hidden">
+                            {% for image in images %}
+                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                {% if image.image and image.image.name %}
+                                <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;">
+                                {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 500px;">
+                                    <i class="bi bi-image display-1 text-muted opacity-25"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="carousel-item active">
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 500px;">
+                                    <i class="bi bi-image display-1 text-muted opacity-25"></i>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if images|length > 1 %}
+                        <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon bg-dark rounded-circle p-3"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon bg-dark rounded-circle p-3"></span>
+                        </button>
+                        
+                        <div class="carousel-indicators mt-3">
+                            {% for image in images %}
+                            <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter0 }}" 
+                                    class="{% if forloop.first %}active{% endif %}" aria-label="Slide {{ forloop.counter }}">
+                            </button>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Product Info -->
+            <div class="col-lg-6">
+                <div class="product-info-card p-5 bg-white rounded-4 shadow-lg">
+                    <!-- Price and Category -->
+                    <div class="product-header mb-4">
+                        <div class="product-category mb-3">
+                            <span class="badge bg-primary-gradient text-white px-4 py-2 fs-6">
+                                <i class="bi bi-tag me-2"></i>
+                                {{ product.get_category_display }}
+                            </span>
+                        </div>
+                        <div class="product-price mb-3">
+                            {% if product.discount_price %}
+                                <div class="d-flex align-items-baseline gap-3">
+                                    <span class="price-old">{{ product.base_price }} د.ع</span>
+                                    <span class="price-new">{{ product.discount_price }} د.ع</span>
+                                </div>
+                            {% else %}
+                                <span class="price-new">{{ product.base_price }} د.ع</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Description -->
+                    {% if product.description %}
+                    <div class="product-description mb-5">
+                        <h5 class="fw-bold mb-3 text-gradient">
+                            <i class="bi bi-info-circle me-2"></i>
+                            وصف المنتج
+                        </h5>
+                        <p class="lead text-muted">{{ product.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Variants -->
+                    {% if variants %}
+                    <div class="product-variants mb-5">
+                        <h5 class="fw-bold mb-4 text-gradient">
+                            <i class="bi bi-palette me-2"></i>
+                            اختر المواصفات
+                        </h5>
+                        
+                        <div class="variants-grid">
+                            {% for variant in variants %}
+                            <div class="variant-card p-4 border rounded-3 mb-3 {% if variant.stock_qty <= 0 %}opacity-50{% endif %}">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <div class="variant-info">
+                                            <div class="variant-specs mb-2">
+                                                <span class="badge bg-light text-dark me-2">
+                                                    <i class="bi bi-rulers me-1"></i>
+                                                    {{ variant.size }}
+                                                </span>
+                                                <span class="badge bg-light text-dark">
+                                                    <i class="bi bi-palette me-1"></i>
+                                                    {{ variant.color }}
+                                                </span>
+                                            </div>
+                                            <div class="variant-price">
+                                                <span class="h5 text-primary fw-bold">{{ variant.price }} د.ع</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="variant-stock text-end">
+                                            {% if variant.stock_qty > 0 %}
+                                            <div class="stock-info mb-2">
+                                                <span class="text-success fw-semibold">
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    متاح ({{ variant.stock_qty }} قطعة)
+                                                </span>
+                                            </div>
+                                            <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="variant_id" value="{{ variant.id }}">
+                                                <div class="input-group mb-2">
+                                                    <span class="input-group-text">الكمية</span>
+                                                    <input type="number" class="form-control" name="quantity" value="1" min="1" max="{{ variant.stock_qty }}" style="width: 80px;">
+                                                </div>
+                                                <button type="submit" class="btn btn-gradient w-100">
+                                                    <i class="bi bi-cart-plus me-2"></i>
+                                                    أضف للسلة
+                                                </button>
+                                            </form>
+                                            {% else %}
+                                            <div class="stock-info mb-2">
+                                                <span class="text-danger fw-semibold">
+                                                    <i class="bi bi-x-circle me-1"></i>
+                                                    غير متاح
+                                                </span>
+                                            </div>
+                                        <button class="btn btn-secondary w-100" disabled>
+                                                <i class="bi bi-cart-x me-2"></i>
+                                                غير متاح
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Simple Add to Cart for products without variants -->
+                    <div class="simple-add-to-cart mb-5">
+                        <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
+                            {% csrf_token %}
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-6">
+                                    <label for="quantity" class="form-label fw-semibold">
+                                        <i class="bi bi-hash me-2"></i>
+                                        الكمية
+                                    </label>
+                                    <input type="number" class="form-control form-control-lg" name="quantity" value="1" min="1" style="width: 120px;">
+                                </div>
+                                <div class="col-md-6">
+                                    <button type="submit" class="btn btn-gradient btn-lg w-100">
+                                        <i class="bi bi-cart-plus me-2"></i>
+                                        أضف للسلة
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Store Info -->
+                    <div class="store-info-section p-4 bg-light rounded-3">
+                        <h6 class="fw-bold mb-3 text-gradient">
+                            <i class="bi bi-shop me-2"></i>
+                            متجر: {{ product.store.name }}
+                        </h6>
+                        <p class="text-muted mb-2">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            {{ product.store.city }} - {{ product.store.address }}
+                        </p>
+                        <a href="{% url 'store_detail' product.store.id %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-shop-window me-2"></i>
+                            زيارة المتجر
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

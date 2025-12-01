@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تعديل المنتج - {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-edit me-2"></i>
+                            تعديل المنتج: {{ product.name }}
+                        </h4>
+                        <a href="{% url 'super_owner_products' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            العودة للمنتجات
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">اسم المنتج *</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="store" class="form-label">المتجر *</label>
+                                    <select class="form-select" id="store" name="store" required>
+                                        <option value="">اختر المتجر</option>
+                                        {% for store in stores %}
+                                            <option value="{{ store.id }}" {% if store.id == product.store.id %}selected{% endif %}>
+                                                {{ store.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">الفئة *</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">اختر الفئة</option>
+                                        <option value="men" {% if product.category == 'men' %}selected{% endif %}>رجالي</option>
+                                        <option value="women" {% if product.category == 'women' %}selected{% endif %}>نسائي</option>
+                                        <option value="kids" {% if product.category == 'kids' %}selected{% endif %}>أطفال</option>
+                                        <option value="sports" {% if product.category == 'sports' %}selected{% endif %}>رياضية</option>
+                                        <option value="casual" {% if product.category == 'casual' %}selected{% endif %}>كاجوال</option>
+                                        <option value="formal" {% if product.category == 'formal' %}selected{% endif %}>رسمية</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="base_price" class="form-label">السعر الأساسي *</label>
+                                    <input type="number" class="form-control" id="base_price" name="base_price" 
+                                           value="{{ product.base_price }}" step="0.01" min="0" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if product.is_active %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_active">
+                                            المنتج نشط
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="is_featured" name="is_featured" {% if product.is_featured %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_featured">
+                                            منتج مميز
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">الصور الحالية</label>
+                                    {% if product.images.all %}
+                                        <div class="row">
+                                            {% for image in product.images.all %}
+                                                <div class="col-md-4 mb-2">
+                                                    <img src="{{ image.get_image_url }}" alt="{{ product.name }}" 
+                                                         class="img-thumbnail" style="max-height: 100px;">
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted">لا توجد صور للمنتج</p>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="new_images" class="form-label">إضافة صور جديدة</label>
+                                    <input type="file" class="form-control" id="new_images" name="new_images" multiple accept="image/*">
+                                    <small class="text-muted">يمكنك اختيار عدة صور في المرة الواحدة</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">وصف المنتج *</label>
+                                    <textarea class="form-control" id="description" name="description" rows="4" required>{{ product.description }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="fas fa-save me-2"></i>
+                                        حفظ التغييرات
+                                    </button>
+                                    <a href="{% url 'super_owner_products' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>
+                                        إلغاء
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #17a2b8;
+    box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.25);
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    border: none;
+    padding: 10px 30px;
+    color: white;
+}
+
+.btn-info:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
+    color: white;
+}
+</style>
+{% endblock %}

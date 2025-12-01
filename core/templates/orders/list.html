@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load math_filters %}
+
+{% block title %}طلباتي - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">طلباتي</h1>
+    </div>
+</div>
+
+{% if orders %}
+<div class="row">
+    <div class="col-12">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>المتجر</th>
+                        <th>الحالة</th>
+                        <th>المبلغ الإجمالي</th>
+                        <th>تاريخ الطلب</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.store.name }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'accepted' %}bg-info
+                                {% elif order.status == 'preparing' %}bg-primary
+                                {% elif order.status == 'on_the_way' %}bg-secondary
+                                {% elif order.status == 'delivered' %}bg-success
+                                {% elif order.status == 'canceled' %}bg-danger
+                                {% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ order.total_amount }} د.ع</td>
+                        <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
+                                التفاصيل
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Order Details Modal -->
+                    <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">تفاصيل الطلب #{{ order.id }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <strong>المتجر:</strong> {{ order.store.name }}<br>
+                                            <strong>الحالة:</strong> {{ order.get_status_display }}<br>
+                                            <strong>طريقة الدفع:</strong> {{ order.get_payment_method_display }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>عنوان التوصيل:</strong><br>
+                                            {{ order.address.city }} - {{ order.address.area }}<br>
+                                            {{ order.address.street }}<br>
+                                            {% if order.address.details %}
+                                            {{ order.address.details }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <h6>منتجات الطلب:</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>المنتج</th>
+                                                    <th>المتغير</th>
+                                                    <th>الكمية</th>
+                                                    <th>السعر</th>
+                                                    <th>الإجمالي</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in order.items.all %}
+                                                <tr>
+                                                    <td>{{ item.product.name }}</td>
+                                                    <td>
+                                                        {% if item.variant %}
+                                                            {{ item.variant.size }} - {{ item.variant.color }}
+                                                        {% else %}
+                                                            -
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ item.quantity }}</td>
+                                                    <td>{{ item.price }} د.ع</td>
+                                                    <td>{{ item.quantity|multiply:item.price }} د.ع</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <strong>المجموع:</strong> {{ order.total_amount|subtract:order.delivery_fee }} د.ع<br>
+                                        <strong>رسوم التوصيل:</strong> {{ order.delivery_fee }} د.ع<br>
+                                        <strong>الإجمالي:</strong> {{ order.total_amount }} د.ع
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-12 text-center">
+        <div class="alert alert-info">
+            <i class="bi bi-bag-x" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">لا توجد طلبات</h4>
+            <p>لم تقم بأي طلبات حتى الآن.</p>
+            <a href="{% url 'store_list' %}" class="btn btn-primary">تصفح المتاجر</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Custom template filters
+window.multiply = function(a, b) {
+    return a * b;
+};
+
+window.subtract = function(a, b) {
+    return a - b;
+};
+</script>
+{% endblock %}

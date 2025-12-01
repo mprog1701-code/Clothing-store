@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}إتمام الطلب - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">إتمام الطلب</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>اختر عنوان التوصيل</h5>
+            </div>
+            <div class="card-body">
+                {% if addresses %}
+                <form method="post">
+                    {% csrf_token %}
+                    {% for address in addresses %}
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="address_id" id="address{{ address.id }}" value="{{ address.id }}" {% if forloop.first %}checked{% endif %}>
+                        <label class="form-check-label" for="address{{ address.id }}">
+                            <strong>{{ address.city }} - {{ address.area }}</strong><br>
+                            {{ address.street }}<br>
+                            {% if address.details %}
+                            <small class="text-muted">{{ address.details }}</small>
+                            {% endif %}
+                        </label>
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">إتمام الطلب</button>
+                </form>
+                {% else %}
+                <div class="alert alert-info">
+                    <p>يمكنك متابعة تجربة الشراء كضيف بإدخال عنوان التوصيل.</p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">الاسم</label>
+                            <input type="text" name="guest_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="tel" name="guest_phone" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">المدينة</label>
+                            <input type="text" name="city" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">المنطقة</label>
+                            <input type="text" name="area" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">الشارع</label>
+                            <input type="text" name="street" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">تفاصيل إضافية</label>
+                            <textarea name="details" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">إتمام الطلب كضيف</button>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>ملخص الطلب</h5>
+            </div>
+            <div class="card-body">
+                <div id="cart-summary">
+                    <!-- Cart summary will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Load cart summary
+function loadCartSummary() {
+    const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+    let total = 0;
+    let html = '<div class="mb-3">';
+    
+    cart.forEach(item => {
+        // This is a simplified version - in real app you'd fetch product details
+        html += `
+            <div class="d-flex justify-content-between mb-2">
+                <span>منتج #${item.product_id}</span>
+                <span>${item.quantity} ×</span>
+            </div>
+        `;
+        // Calculate total (simplified)
+        total += item.quantity * 100; // Assuming 100 SAR per item for demo
+    });
+    
+    html += '</div>';
+    html += `
+        <div class="border-top pt-2">
+            <div class="d-flex justify-content-between">
+                <span>المجموع:</span>
+                <span>${total} د.ع</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>التوصيل:</span>
+                <span>50 د.ع</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold">
+                <span>الإجمالي:</span>
+                <span>${total + 50} د.ع</span>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('cart-summary').innerHTML = html;
+}
+
+loadCartSummary();
+</script>
+{% endblock %}

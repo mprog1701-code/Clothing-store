@@ -1,0 +1,988 @@
+{% extends 'base.html' %}
+
+{% block title %}متجر الملابس والمطاعم - تسوق وتناول الطعام{% endblock %}
+
+{% block content %}
+<!-- Location Header -->
+<div class="location-header bg-gradient-primary text-white py-3">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <i class="bi bi-geo-alt-fill fs-4"></i>
+            </div>
+            <div class="col">
+                <small class="d-block opacity-75">التوصيل إلى</small>
+                <div class="d-flex align-items-center">
+                    <span class="fw-bold">الزعفرانية</span>
+                    <i class="bi bi-chevron-down ms-2"></i>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="search-container">
+                    <input type="text" class="form-control form-control-sm rounded-pill" placeholder="ابحث عن منتج أو مطعم...">
+                    <i class="bi bi-search search-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Countdown Banner -->
+<div class="countdown-banner bg-dark text-white py-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="countdown-container text-center">
+                    <h3 class="mb-3 text-warning">الجمعة السوداء - أكبر التخفيضات</h3>
+                    <div class="countdown-timer d-flex justify-content-center gap-3">
+                        <div class="countdown-box">
+                            <div class="countdown-number" id="days">04</div>
+                            <div class="countdown-label">أيام</div>
+                        </div>
+                        <div class="countdown-box">
+                            <div class="countdown-number" id="hours">12</div>
+                            <div class="countdown-label">ساعات</div>
+                        </div>
+                        <div class="countdown-box">
+                            <div class="countdown-number" id="minutes">35</div>
+                            <div class="countdown-label">دقائق</div>
+                        </div>
+                        <div class="countdown-box">
+                            <div class="countdown-number" id="seconds">45</div>
+                            <div class="countdown-label">ثواني</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="promo-tag">
+                    <span class="promo-text">استعد للتخفيضات الكبرى</span>
+                    <span class="promo-subtext">في العراق</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation Chips -->
+<div class="navigation-chips py-3 bg-light">
+    <div class="container">
+        <div class="scrollable-chips d-flex gap-2 overflow-auto">
+            <button class="chip chip-active">الرئيسية</button>
+            <button class="chip">الملابس</button>
+            <button class="chip">المطاعم</button>
+            <button class="chip">الإلكترونيات</button>
+            <button class="chip">المنزل</button>
+            <button class="chip">الجمال</button>
+            <button class="chip">الخصومات</button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Promotional Banner -->
+<div class="main-banner py-5">
+    <div class="container">
+        <div class="banner-card bg-gradient-danger text-white rounded-4 p-4 text-center">
+            <div class="banner-content">
+                <div class="banner-text mb-3">
+                    <span class="banner-word bg-white text-dark px-3 py-1 rounded me-2">العروض</span>
+                    <span class="banner-word bg-warning text-dark px-3 py-1 rounded me-2">الكبيرة</span>
+                </div>
+                <div class="banner-deal mt-4">
+                    <span class="deal-price">خصم حتى 70%</span>
+                    <span class="deal-badge bg-success text-white px-3 py-1 rounded-pill ms-3">+ توصيل مجاني</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Categories Section -->
+<section class="categories-section py-5">
+    <div class="container">
+        <h2 class="section-title text-center mb-4">الأقسام</h2>
+        <div class="categories-grid">
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-watch"></i>
+                </div>
+                <div class="category-name">
+                    <div>الساعات</div>
+                    <small>والإكسسوارات</small>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-heart"></i>
+                </div>
+                <div class="category-name">
+                    <div>الجمال</div>
+                    <small>والعناية</small>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-house"></i>
+                </div>
+                <div class="category-name">
+                    <div>المنزل</div>
+                    <small>والمطبخ</small>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div class="category-name">
+                    <div>الخصومات</div>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-laptop"></i>
+                </div>
+                <div class="category-name">
+                    <div>الإلكترونيات</div>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-bag"></i>
+                </div>
+                <div class="category-name">
+                    <div>الملابس</div>
+                    <small>والأزياء</small>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-emoji-smile"></i>
+                </div>
+                <div class="category-name">
+                    <div>الأطفال</div>
+                </div>
+            </div>
+            
+            <div class="category-card">
+                <div class="category-icon">
+                    <i class="bi bi-star"></i>
+                </div>
+                <div class="category-name">
+                    <div>وصل حديثًا</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Popular Restaurants Section -->
+<section class="restaurants-section py-5 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title mb-0">المطاعم القريبة</h2>
+            <a href="#" class="text-primary">عرض الكل</a>
+        </div>
+        
+        <div class="restaurant-cards">
+            <div class="restaurant-card">
+                <div class="restaurant-image">
+                    <div class="discount-tag">خصم 20%</div>
+                    <div class="favorite-btn">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                </div>
+                <div class="restaurant-info">
+                    <h5 class="restaurant-name">هلو جكن</h5>
+                    <div class="restaurant-meta">
+                        <span class="delivery-time">• 25 دقيقة</span>
+                        <span class="delivery-fee">
+                            <i class="bi bi-motorcycle"></i> 1000 د.ع
+                        </span>
+                    </div>
+                    <div class="restaurant-deal">
+                        <span class="current-price text-success">6000 د.ع</span>
+                        <span class="old-price text-muted text-decoration-line-through">7500 د.ع</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="restaurant-card">
+                <div class="restaurant-image bg-dark">
+                    <div class="discount-tag bg-warning text-dark">خصم 30%</div>
+                    <div class="favorite-btn">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                </div>
+                <div class="restaurant-info">
+                    <h5 class="restaurant-name">ZAYTOONA</h5>
+                    <p class="restaurant-cuisine">LAHM BI AJEEN</p>
+                    <div class="restaurant-meta">
+                        <span class="delivery-time">• 35 دقيقة</span>
+                        <span class="delivery-fee">
+                            <i class="bi bi-motorcycle"></i> 1500 د.ع
+                        </span>
+                    </div>
+                    <div class="restaurant-deal">
+                        <span class="current-price text-success">8000 د.ع</span>
+                        <span class="old-price text-muted text-decoration-line-through">11500 د.ع</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="restaurant-card">
+                <div class="restaurant-image bg-primary">
+                    <div class="discount-tag">خصم 15%</div>
+                    <div class="favorite-btn">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                </div>
+                <div class="restaurant-info">
+                    <h5 class="restaurant-name">مشطبة</h5>
+                    <p class="restaurant-cuisine">Laban w Kremat</p>
+                    <div class="restaurant-meta">
+                        <span class="delivery-time">• 30 دقيقة</span>
+                        <span class="delivery-fee">
+                            <i class="bi bi-motorcycle"></i> 1200 د.ع
+                        </span>
+                    </div>
+                    <div class="restaurant-deal">
+                        <span class="current-price text-success">7000 د.ع</span>
+                        <span class="old-price text-muted text-decoration-line-through">8500 د.ع</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products Section -->
+<section class="products-section py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title mb-0">منتجات مميزة</h2>
+            <a href="#" class="text-primary">عرض الكل</a>
+        </div>
+        
+        <div class="product-grid">
+            <div class="product-card">
+                <div class="product-image">
+                    <div class="discount-badge">-25%</div>
+                    <div class="wishlist-btn">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h6 class="product-name">ساعة ذكية رياضية</h6>
+                    <div class="product-price">
+                        <span class="current-price">25000 د.ع</span>
+                        <span class="old-price">33000 د.ع</span>
+                    </div>
+                    <div class="product-rating">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <span>4.5</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="product-card">
+                <div class="product-image bg-secondary">
+                    <div class="discount-badge">-40%</div>
+                    <div class="wishlist-btn">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h6 class="product-name">حقيبة جلدية أنيقة</h6>
+                    <div class="product-price">
+                        <span class="current-price">45000 د.ع</span>
+                        <span class="old-price">75000 د.ع</span>
+                    </div>
+                    <div class="product-rating">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <span>4.8</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="product-card">
+                <div class="product-image bg-success">
+                    <div class="discount-badge">-50%</div>
+                    <div class="wishlist-btn">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                </div>
+                <div class="product-info">
+                    <h6 class="product-name">عطر فرنسي فاخر</h6>
+                    <div class="product-price">
+                        <span class="current-price">60000 د.ع</span>
+                        <span class="old-price">120000 د.ع</span>
+                    </div>
+                    <div class="product-rating">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <span>4.9</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+    <div class="nav-item active">
+        <i class="bi bi-house-fill"></i>
+        <span>الرئيسية</span>
+    </div>
+    <div class="nav-item">
+        <i class="bi bi-grid-3x3-gap-fill"></i>
+        <span>الأقسام</span>
+    </div>
+    <div class="nav-item">
+        <i class="bi bi-cart3"></i>
+        <span>السلة</span>
+        <div class="cart-badge">3</div>
+    </div>
+    <div class="nav-item">
+        <i class="bi bi-clock"></i>
+        <span>الطلبات</span>
+    </div>
+    <div class="nav-item">
+        <i class="bi bi-person"></i>
+        <span>الحساب</span>
+    </div>
+</nav>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Location Header */
+.location-header {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+
+.search-container {
+    position: relative;
+}
+
+.search-container input {
+    padding-right: 2.5rem;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    width: 200px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+/* Countdown Banner */
+.countdown-banner {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+.countdown-timer {
+    gap: 1rem;
+}
+
+.countdown-box {
+    background: rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    min-width: 80px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.countdown-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+    display: block;
+}
+
+.countdown-label {
+    font-size: 0.8rem;
+    color: #bdc3c7;
+    margin-top: 0.25rem;
+}
+
+.promo-tag {
+    text-align: center;
+    padding: 1rem;
+}
+
+.promo-text {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e74c3c;
+    margin-bottom: 0.5rem;
+}
+
+.promo-subtext {
+    display: block;
+    font-size: 1rem;
+    color: #f39c12;
+}
+
+/* Navigation Chips */
+.navigation-chips {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.scrollable-chips {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 0.5rem 0;
+}
+
+.chip {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 25px;
+    padding: 0.5rem 1rem;
+    margin: 0;
+    font-size: 0.9rem;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.chip-active, .chip:hover {
+    background: #e74c3c;
+    color: white;
+    border-color: #e74c3c;
+}
+
+/* Main Banner */
+.main-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.banner-card {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.banner-content {
+    position: relative;
+    z-index: 2;
+}
+
+.banner-word {
+    font-weight: bold;
+    font-size: 1.2rem;
+    display: inline-block;
+    margin: 0.25rem;
+}
+
+.deal-price {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+    display: inline-block;
+    margin: 0.5rem;
+}
+
+.deal-badge {
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+/* Categories */
+.section-title {
+    font-weight: bold;
+    color: #2c3e50;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 3px;
+    background: #e74c3c;
+    border-radius: 2px;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.category-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.category-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.category-name {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.category-name small {
+    display: block;
+    color: #6c757d;
+    font-weight: normal;
+    margin-top: 0.25rem;
+}
+
+/* Restaurant Cards */
+.restaurant-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.restaurant-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.restaurant-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.restaurant-image {
+    height: 180px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.discount-tag {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: #e74c3c;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.favorite-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.favorite-btn:hover {
+    background: white;
+    transform: scale(1.1);
+}
+
+.restaurant-info {
+    padding: 1.5rem;
+}
+
+.restaurant-name {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.restaurant-cuisine {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.restaurant-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.delivery-time {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.delivery-fee {
+    color: #6c757d;
+}
+
+.restaurant-deal {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.current-price {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.old-price {
+    font-size: 0.9rem;
+}
+
+/* Product Grid */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.product-card {
+    background: white;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.product-image {
+    height: 200px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 3rem;
+}
+
+.discount-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: #e74c3c;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.wishlist-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.product-info {
+    padding: 1.5rem;
+}
+
+.product-name {
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.product-price {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.current-price {
+    font-weight: bold;
+    color: #e74c3c;
+    font-size: 1.1rem;
+}
+
+.old-price {
+    color: #6c757d;
+    text-decoration: line-through;
+    font-size: 0.9rem;
+}
+
+.product-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.25rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-width: 60px;
+}
+
+.nav-item i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.nav-item span {
+    font-size: 0.7rem;
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.nav-item.active i,
+.nav-item.active span {
+    color: #e74c3c;
+}
+
+.nav-item:hover i,
+.nav-item:hover span {
+    color: #e74c3c;
+}
+
+.cart-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .categories-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.75rem;
+    }
+    
+    .category-card {
+        padding: 1rem 0.5rem;
+    }
+    
+    .category-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
+    }
+    
+    .restaurant-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .countdown-timer {
+        gap: 0.5rem;
+    }
+    
+    .countdown-box {
+        min-width: 60px;
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .countdown-number {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .product-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .categories-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .search-container input {
+        width: 150px;
+    }
+}
+
+/* Animation for countdown */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.countdown-box {
+    animation: pulse 2s infinite;
+}
+
+/* Smooth scrolling for chips */
+.scrollable-chips {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.scrollable-chips::-webkit-scrollbar {
+    display: none;
+}
+
+/* Body padding for bottom nav */
+body {
+    padding-bottom: 80px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Countdown Timer
+document.addEventListener('DOMContentLoaded', function() {
+    function updateCountdown() {
+        const targetDate = new Date('2025-11-28T00:00:00').getTime();
+        const now = new Date().getTime();
+        const difference = targetDate - now;
+        
+        if (difference > 0) {
+            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+            
+            document.getElementById('days').textContent = days.toString().padStart(2, '0');
+            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+        } else {
+            document.querySelector('.countdown-banner').innerHTML = '<div class="text-center py-4"><h3 class="text-warning">العرض انتهى!</h3></div>';
+        }
+    }
+    
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+    
+    // Navigation chips
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('chip-active'));
+            this.classList.add('chip-active');
+        });
+    });
+    
+    // Bottom navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    // Favorite buttons
+    document.querySelectorAll('.favorite-btn, .wishlist-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const icon = this.querySelector('i');
+            if (icon.classList.contains('bi-heart')) {
+                icon.classList.remove('bi-heart');
+                icon.classList.add('bi-heart-fill', 'text-danger');
+            } else {
+                icon.classList.remove('bi-heart-fill', 'text-danger');
+                icon.classList.add('bi-heart');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

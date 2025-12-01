@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}المتاجر - متجر الملابس{% endblock %}
+
+{% block extra_css %}
+<style>
+.store-image-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.store-banner {
+    transition: transform 0.3s ease;
+}
+
+.store-card-modern:hover .store-banner {
+    transform: scale(1.05);
+}
+
+.store-overlay {
+    background: linear-gradient(45deg, rgba(0, 123, 255, 0.8), rgba(102, 16, 242, 0.8));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.store-card-modern:hover .store-overlay {
+    opacity: 1;
+}
+
+.store-card-modern {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.store-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-item {
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(0, 123, 255, 0.1);
+    transition: background 0.3s ease;
+}
+
+.store-card-modern:hover .stat-item {
+    background: rgba(0, 123, 255, 0.2);
+}
+
+.store-owner {
+    transition: transform 0.3s ease;
+}
+
+.store-card-modern:hover .store-owner {
+    transform: translateX(5px);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-gradient mb-3 animate-fade-in">
+                    المتاجر
+                </h1>
+                <p class="lead text-muted mb-4 animate-fade-in-delay">
+                    اكتشف أفضل متاجر الملابس والموضة في منطقتك
+                </p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="hero-icon animate-bounce">
+                    <i class="bi bi-shop display-1 text-primary-gradient"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filter Section -->
+<section class="filter-section mb-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="filter-card p-4 rounded-4 shadow-sm">
+                    <form method="get" class="d-flex gap-3">
+                        <div class="flex-grow-1">
+                            <select name="city" class="form-select form-select-lg border-0 shadow-sm">
+                                <option value="">جميع المدن</option>
+                                {% for city in cities %}
+                                <option value="{{ city }}" {% if city == selected_city %}selected{% endif %}>{{ city }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-gradient btn-lg px-4">
+                            <i class="bi bi-funnel me-2"></i>
+                            تصفية
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stores Grid -->
+<section class="stores-section mb-5">
+    <div class="container">
+        <div class="row g-4">
+            {% for store in stores %}
+            <div class="col-lg-4 col-md-6">
+                <div class="store-card-modern h-100 animate-fade-in-up">
+                    <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
+                        <!-- Store Image -->
+                        <div class="store-image-container position-relative">
+                            <img src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Modern+fashion+store+interior%2C+elegant+design%2C+clothing+racks%2C+bright+lighting%2C+luxury+atmosphere%2C+{{ store.name|urlencode }}&image_size=landscape_16_9" 
+                                 alt="{{ store.name }}" class="card-img-top store-banner" style="height: 200px; object-fit: cover;">
+                            <div class="store-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                                <div class="text-center text-white">
+                                    <i class="bi bi-shop-window display-4 mb-2"></i>
+                                    <h5 class="fw-bold">{{ store.name }}</h5>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-header bg-gradient-primary text-white p-4">
+                            <div class="d-flex align-items-center">
+                                <div class="store-icon me-3">
+                                    <i class="bi bi-shop display-6"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title mb-1 fw-bold">{{ store.name }}</h5>
+                                    <small class="opacity-75">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        {{ store.city }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body p-4">
+                            {% if store.description %}
+                            <p class="card-text text-muted mb-4">
+                                {{ store.description|truncatewords:25 }}
+                            </p>
+                            {% endif %}
+                            
+                            <div class="store-stats mb-4">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="stat-item">
+                                            <div class="stat-number text-primary fw-bold">{{ store.product_count|default:"0" }}</div>
+                                            <div class="stat-label text-muted small">منتج</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="stat-item">
+                                            <div class="stat-number text-success fw-bold">{{ store.order_count|default:"0" }}</div>
+                                            <div class="stat-label text-muted small">طلب</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="store-owner mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="owner-avatar me-2">
+                                        <i class="bi bi-person-circle fs-4 text-secondary"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">مالك المتجر</small>
+                                        <div class="fw-semibold">{{ store.owner.get_full_name|default:store.owner.username }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-light border-0 p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'store_detail' store.id %}" class="btn btn-gradient btn-sm px-4">
+                                    <i class="bi bi-arrow-left me-2"></i>
+                                    زيارة المتجر
+                                </a>
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    {{ store.created_at|date:"Y/m/d" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="empty-state text-center py-5">
+                    <div class="empty-icon mb-4">
+                        <i class="bi bi-shop display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted mb-3">لا توجد متاجر متاحة حالياً</h4>
+                    <p class="text-muted">سيتم إضافة متاجر جديدة قريباً</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section py-5 bg-light rounded-4">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card p-4 rounded-4 bg-white shadow-sm">
+                    <div class="stat-icon mb-3">
+                        <i class="bi bi-shop display-4 text-primary-gradient"></i>
+                    </div>
+                    <h3 class="fw-bold text-gradient">{{ stores.count }}</h3>
+                    <p class="text-muted mb-0">متجر</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card p-4 rounded-4 bg-white shadow-sm">
+                    <div class="stat-icon mb-3">
+                        <i class="bi bi-building display-4 text-success-gradient"></i>
+                    </div>
+                    <h3 class="fw-bold text-gradient">{{ cities|length }}</h3>
+                    <p class="text-muted mb-0">مدينة</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card p-4 rounded-4 bg-white shadow-sm">
+                    <div class="stat-icon mb-3">
+                        <i class="bi bi-people display-4 text-warning-gradient"></i>
+                    </div>
+                    <h3 class="fw-bold text-gradient">{{ store_owners|default:"0" }}</h3>
+                    <p class="text-muted mb-0">صاحب متجر</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="stat-card p-4 rounded-4 bg-white shadow-sm">
+                    <div class="stat-icon mb-3">
+                        <i class="bi bi-star display-4 text-danger-gradient"></i>
+                    </div>
+                    <h3 class="fw-bold text-gradient">مميز</h3>
+                    <p class="text-muted mb-0">خدمة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

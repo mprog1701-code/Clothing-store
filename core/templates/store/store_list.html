@@ -1,0 +1,439 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --copper: #B87333;
+        --copper-light: #D4A574;
+        --copper-dark: #8B4513;
+        --black: #000000;
+        --black-light: #1a1a1a;
+        --gold: #FFD700;
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%);
+        color: #ffffff;
+    }
+
+    .fashion-header {
+        background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%);
+        padding: 30px 0;
+        margin-bottom: 40px;
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 900;
+        color: var(--gold);
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        margin-bottom: 10px;
+    }
+
+    .page-subtitle {
+        color: #ffffff;
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+
+    .category-filters {
+        background: rgba(255,255,255,0.1);
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--copper-light);
+    }
+
+    .filter-label {
+        color: var(--gold);
+        font-weight: 700;
+        margin-bottom: 8px;
+        display: inline-block;
+    }
+
+    .filter-select {
+        width: 100%;
+        background: transparent;
+        color: var(--copper-light);
+        border: 2px solid var(--copper);
+        border-radius: 25px;
+        padding: 10px 16px;
+        font-weight: bold;
+        appearance: none;
+    }
+
+    .filter-select:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .filter-btn {
+        background: transparent;
+        border: 2px solid var(--copper);
+        color: var(--copper-light);
+        padding: 10px 20px;
+        border-radius: 25px;
+        margin: 5px;
+        transition: all 0.3s ease;
+        font-weight: bold;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+        background: var(--copper);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(184, 115, 51, 0.4);
+    }
+
+    .store-card {
+        background: linear-gradient(135deg, var(--black-light) 0%, var(--black) 100%);
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 30px;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        height: 100%;
+    }
+
+    .store-card:hover {
+        border-color: var(--copper);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(184, 115, 51, 0.3);
+    }
+
+    .store-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        border: 3px solid var(--copper);
+    }
+
+    .store-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--gold);
+        margin-bottom: 10px;
+    }
+
+    .store-category {
+        background: var(--copper);
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        display: inline-block;
+        margin-bottom: 15px;
+    }
+
+    .store-description {
+        color: #cccccc;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .store-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .store-location {
+        color: var(--copper-light);
+        font-size: 0.9rem;
+    }
+
+    .store-rating {
+        color: var(--gold);
+        font-weight: bold;
+    }
+
+    .visit-store-btn {
+        background: linear-gradient(45deg, var(--copper), var(--copper-dark));
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+
+    .visit-store-btn:hover {
+        background: linear-gradient(45deg, var(--copper-dark), var(--copper));
+        transform: scale(1.05);
+        box-shadow: 0 5px 20px rgba(184, 115, 51, 0.4);
+    }
+
+    .coming-soon-card {
+        opacity: 0.6;
+        position: relative;
+    }
+
+    .coming-soon-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+    }
+
+    .coming-soon-text {
+        color: var(--gold);
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-align: center;
+        border: 2px solid var(--gold);
+        padding: 20px;
+        border-radius: 15px;
+        background: rgba(0,0,0,0.9);
+    }
+
+    .no-stores {
+        text-align: center;
+        padding: 60px 20px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 20px;
+        margin: 30px 0;
+    }
+
+    .no-stores-icon {
+        font-size: 4rem;
+        color: var(--copper);
+        margin-bottom: 20px;
+    }
+
+    .no-stores-title {
+        color: var(--gold);
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+    }
+
+    .no-stores-text {
+        color: #cccccc;
+        font-size: 1.1rem;
+    }
+
+    @media (max-width: 768px) {
+        .page-title {
+            font-size: 2rem;
+        }
+        
+        .category-filters {
+            text-align: center;
+        }
+        
+        .filter-btn {
+            margin: 3px;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Fashion Header -->
+<div class="fashion-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h1 class="page-title">متاجر الأزياء</h1>
+                <p class="page-subtitle">أحدث صيحات الموضة من أفضل المتاجر • الخدمة متاحة في بغداد فقط الآن</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Category Filters -->
+    <div class="category-filters">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="filter-label"><i class="bi bi-grid me-2"></i>الفئة</label>
+                <select id="categorySelect" class="filter-select" onchange="applyFilters()">
+                    <option value="" {% if not selected_category %}selected{% endif %}>الكل</option>
+                    <option value="women" {% if selected_category == 'women' %}selected{% endif %}>ملابس نسائية</option>
+                    <option value="men" disabled>ملابس رجالية (قريبًا)</option>
+                    <option value="kids" {% if selected_category == 'kids' %}selected{% endif %}>ملابس أطفال</option>
+                    <option value="perfumes" disabled>عطور (قريبًا)</option>
+                    <option value="cosmetics" {% if selected_category == 'cosmetics' %}selected{% endif %}>كوزمتك</option>
+                    <option value="watches" disabled>ساعات (قريبًا)</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="filter-label"><i class="bi bi-geo-alt me-2"></i>المحافظة</label>
+                <select id="citySelect" class="filter-select" onchange="applyFilters()">
+                    <option value="" {% if not selected_city %}selected{% endif %}>الكل</option>
+                    {% for c in cities %}
+                    <option value="{{ c }}" {% if c == selected_city %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stores Grid -->
+    <div class="row">
+        {% for store in stores %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="store-card">
+                {% if store.category in 'women,kids,cosmetics' and store.city == 'بغداد' %}
+                    {% if store.main_image and store.main_image.image %}
+                    <img src="{{ store.main_image.image.url }}" alt="{{ store.name }}" class="store-image">
+                    {% else %}
+                    <div class="store-image d-flex align-items-center justify-content-center" 
+                         style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                        <i class="bi bi-shop" style="font-size: 4rem;"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <h3 class="store-name">{{ store.name }}</h3>
+                    <span class="store-category">{{ store.get_category_display }}</span>
+                    <p class="store-description">{{ store.description|default:"متجر متخصص في أحدث صيحات الموضة"|truncatewords:15 }}</p>
+                    
+                    <div class="store-info">
+                        <div class="store-location">
+                            <i class="bi bi-geo-alt"></i> {{ store.city }}
+                        </div>
+                        <div class="store-rating">
+                            <i class="bi bi-star-fill"></i> {{ store.rating|default:"4.5" }}
+                        </div>
+                    </div>
+                    
+                    <button class="visit-store-btn" onclick="window.location.href='{% url 'store_detail' store.id %}'">
+                        <i class="bi bi-bag-heart"></i> تسوق الآن
+                    </button>
+                {% else %}
+                    <!-- Coming Soon Card -->
+                    <div class="coming-soon-card">
+                        <div class="coming-soon-overlay">
+                            <div class="coming-soon-text">
+                                <i class="bi bi-clock" style="font-size: 3rem; display: block; margin-bottom: 15px;"></i>
+                                سيتم افتتاحه قريبًا
+                            </div>
+                        </div>
+                        
+                        <div style="opacity: 0.3;">
+                            <div class="store-image d-flex align-items-center justify-content-center" 
+                                 style="background: #333; color: #666;">
+                                <i class="bi bi-shop" style="font-size: 4rem;"></i>
+                            </div>
+                            <h3 class="store-name" style="color: #666;">{{ store.get_category_display }}</h3>
+                            <p class="store-description" style="color: #666;">سيتم افتتاح هذا القسم قريبًا</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="no-stores">
+                <i class="bi bi-bag-x no-stores-icon"></i>
+                <h3 class="no-stores-title">لا توجد متاجر في هذا القسم حاليًا</h3>
+                <p class="no-stores-text">سيتم إضافة متاجر جديدة قريبًا</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function applyFilters() {
+        const categoryEl = document.getElementById('categorySelect');
+        const cityEl = document.getElementById('citySelect');
+        const category = categoryEl ? categoryEl.value : '';
+        const city = cityEl ? cityEl.value : '';
+        const params = new URLSearchParams();
+        if (category) params.set('category', category);
+        if (city) params.set('city', city);
+        const url = '{% url 'store_list' %}' + (params.toString() ? ('?' + params.toString()) : '');
+        window.location.href = url;
+    }
+    // Add to Cart Function
+    function addToCart(productId) {
+        const tokenMatch = document.cookie.match(/csrftoken=([^;]+)/);
+        const csrfToken = tokenMatch ? tokenMatch[1] : '';
+        fetch(`/cart/add/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ quantity: 1 })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update cart badge
+                const badge = document.querySelector('.cart-badge');
+                if (badge) {
+                    badge.textContent = data.cart_items_count;
+                } else {
+                    const cartNav = document.querySelector('.nav-item[onclick*="cart"]');
+                    const span = document.createElement('span');
+                    span.className = 'cart-badge';
+                    span.textContent = data.cart_items_count;
+                    cartNav.appendChild(span);
+                }
+                
+                // Show success message
+                showToast('تمت الإضافة إلى السلة بنجاح!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('حدث خطأ أثناء الإضافة إلى السلة');
+        });
+    }
+    
+    // Toast Notification
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--copper);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 10000;
+            font-weight: bold;
+            box-shadow: 0 4px 20px rgba(184, 115, 51, 0.4);
+            animation: slideIn 0.3s ease;
+        `;
+        toast.textContent = message;
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+</script>
+{% endblock %}

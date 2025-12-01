@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load math_filters %}
+
+{% block title %}طلبات المتجر - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>طلبات المتجر: {{ store.name }}</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>رقم الطلب</th>
+                        <th>العميل</th>
+                        <th>الحالة</th>
+                        <th>المبلغ الإجمالي</th>
+                        <th>تاريخ الطلب</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ order.user.get_full_name|default:order.user.username }}</td>
+                        <td>
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="order_id" value="{{ order.id }}">
+                                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>قيد الانتظار</option>
+                                    <option value="accepted" {% if order.status == 'accepted' %}selected{% endif %}>تم القبول</option>
+                                    <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>قيد التجهيز</option>
+                                    <option value="on_the_way" {% if order.status == 'on_the_way' %}selected{% endif %}>في الطريق</option>
+                                    <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>تم التسليم</option>
+                                    <option value="canceled" {% if order.status == 'canceled' %}selected{% endif %}>ملغي</option>
+                                </select>
+                            </form>
+                        </td>
+                        <td>{{ order.total_amount }} د.ع</td>
+                        <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
+                                التفاصيل
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Order Details Modal -->
+                    <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">تفاصيل الطلب #{{ order.id }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <strong>العميل:</strong> {{ order.user.get_full_name|default:order.user.username }}<br>
+                                            <strong>الهاتف:</strong> {{ order.user.phone }}<br>
+                                            <strong>الحالة:</strong> {{ order.get_status_display }}<br>
+                                            <strong>طريقة الدفع:</strong> {{ order.get_payment_method_display }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>عنوان التوصيل:</strong><br>
+                                            {{ order.address.city }} - {{ order.address.area }}<br>
+                                            {{ order.address.street }}<br>
+                                            {% if order.address.details %}
+                                            {{ order.address.details }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <h6>منتجات الطلب:</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>المنتج</th>
+                                                    <th>المتغير</th>
+                                                    <th>الكمية</th>
+                                                    <th>السعر</th>
+                                                    <th>الإجمالي</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for item in order.items.all %}
+                                                <tr>
+                                                    <td>{{ item.product.name }}</td>
+                                                    <td>
+                                                        {% if item.variant %}
+                                                            {{ item.variant.size }} - {{ item.variant.color }}
+                                                        {% else %}
+                                                            -
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ item.quantity }}</td>
+                                                    <td>{{ item.price }} د.ع</td>
+                                                    <td>{{ item.quantity|multiply:item.price }} د.ع</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <strong>المجموع:</strong> {{ order.total_amount|subtract:order.delivery_fee }} د.ع<br>
+                                        <strong>رسوم التوصيل:</strong> {{ order.delivery_fee }} د.ع<br>
+                                        <strong>الإجمالي:</strong> {{ order.total_amount }} د.ع
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            لا توجد طلبات جديدة.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

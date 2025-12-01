@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إدارة المستخدمين - المالك الرئيسي{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            إدارة المستخدمين
+                        </h4>
+                        <a href="{% url 'super_owner_dashboard' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            العودة للوحة التحكم
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-users fa-2x mb-2"></i>
+                                    <h4>{{ users.count }}</h4>
+                                    <p class="mb-0">إجمالي المستخدمين</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-check fa-2x mb-2"></i>
+                                    <h4>{{ active_users }}</h4>
+                                    <p class="mb-0">مستخدمين نشطين</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-store fa-2x mb-2"></i>
+                                    <h4>{{ store_owners_count }}</h4>
+                                    <p class="mb-0">أصحاب المتاجر</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-shield fa-2x mb-2"></i>
+                                    <h4>{{ admins_count }}</h4>
+                                    <p class="mb-0">المدراء</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>المستخدم</th>
+                                    <th>البريد الإلكتروني</th>
+                                    <th>رقم الهاتف</th>
+                                    <th>الدور</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ الانضمام</th>
+                                    <th>آخر دخول</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if user.profile.avatar %}
+                                                <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="rounded-circle me-2" width="40" height="40">
+                                            {% else %}
+                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">@{{ user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ user.phone|default:"-" }}</td>
+                                    <td>
+                                        {% if user.role == 'super_owner' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-crown me-1"></i>
+                                                المالك الرئيسي
+                                            </span>
+                                        {% elif user.role == 'admin' %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-user-shield me-1"></i>
+                                                مدير
+                                            </span>
+                                        {% elif user.role == 'store_owner' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-store me-1"></i>
+                                                صاحب متجر
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-user me-1"></i>
+                                                عميل
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                نشط
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>
+                                                غير نشط
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.date_joined|date:"Y/m/d" }}</td>
+                                    <td>
+                                        {% if user.last_login %}
+                                            {{ user.last_login|timesince }} مضت
+                                        {% else %}
+                                            <span class="text-muted">لم يسبق</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            {% if user.is_active %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                    <input type="hidden" name="action" value="deactivate">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="تعطيل" 
+                                                            {% if user.username == 'super_owner' %}disabled{% endif %}>
+                                                        <i class="fas fa-user-slash"></i>
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                    <input type="hidden" name="action" value="activate">
+                                                    <button type="submit" class="btn btn-success btn-sm" title="تفعيل">
+                                                        <i class="fas fa-user-check"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            
+                                            <div class="dropdown">
+                                                <button type="button" class="btn btn-outline-primary btn-sm dropdown-toggle" 
+                                                        data-bs-toggle="dropdown" title="تغيير الدور"
+                                                        {% if user.username == 'super_owner' %}disabled{% endif %}>
+                                                    <i class="fas fa-user-edit"></i>
+                                                </button>
+                                                <form method="post" class="dropdown-menu">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                    
+                                                    {% if user.role != 'admin' %}
+                                                        <button type="submit" name="action" value="make_admin" class="dropdown-item">
+                                                            <i class="fas fa-user-shield me-1"></i> ترقية إلى مدير
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if user.role != 'store_owner' %}
+                                                        <button type="submit" name="action" value="make_store_owner" class="dropdown-item">
+                                                            <i class="fas fa-store me-1"></i> ترقية إلى صاحب متجر
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if user.role != 'customer' %}
+                                                        <button type="submit" name="action" value="make_customer" class="dropdown-item">
+                                                            <i class="fas fa-user me-1"></i> تغيير إلى عميل
+                                                        </button>
+                                                    {% endif %}
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">لا يوجد مستخدمين حتى الآن</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+
+.dropdown-menu {
+    min-width: 200px;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: right;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.card-stats {
+    border: none;
+    border-radius: 15px;
+}
+</style>
+{% endblock %}

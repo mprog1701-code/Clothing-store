@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إدارة الطلبات - المالك الرئيسي{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            إدارة الطلبات
+                        </h4>
+                        <a href="{% url 'super_owner_dashboard' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            العودة للوحة التحكم
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم الطلب</th>
+                                    <th>العميل</th>
+                                    <th>المتجر</th>
+                                    <th>المبلغ الإجمالي</th>
+                                    <th>حالة الطلب</th>
+                                    <th>طريقة الدفع</th>
+                                    <th>تاريخ الطلب</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong>#{{ order.id }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if order.user.profile.avatar %}
+                                                <img src="{{ order.user.profile.avatar.url }}" alt="{{ order.user.username }}" class="rounded-circle me-2" width="30" height="30">
+                                            {% else %}
+                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ order.user.get_full_name|default:order.user.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ order.user.phone }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if order.store.logo %}
+                                                <img src="{{ order.store.logo.url }}" alt="{{ order.store.name }}" class="rounded-circle me-2" width="30" height="30">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-store text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <span>{{ order.store.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ order.total_amount }} د.ع</strong>
+                                        <br>
+                                        <small class="text-muted">شحن: {{ order.delivery_fee }} د.ع</small>
+                                    </td>
+                                    <td>
+                                        {% if order.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock me-1"></i>
+                                                قيد الانتظار
+                                            </span>
+                                        {% elif order.status == 'confirmed' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-check me-1"></i>
+                                                تم التأكيد
+                                            </span>
+                                        {% elif order.status == 'preparing' %}
+                                            <span class="badge bg-primary">
+                                                <i class="fas fa-box me-1"></i>
+                                                جاري التحضير
+                                            </span>
+                                        {% elif order.status == 'ready' %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-truck me-1"></i>
+                                                جاهز للتوصيل
+                                            </span>
+                                        {% elif order.status == 'out_for_delivery' %}
+                                            <span class="badge bg-dark">
+                                                <i class="fas fa-shipping-fast me-1"></i>
+                                                بالطريق
+                                            </span>
+                                        {% elif order.status == 'delivered' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                تم التوصيل
+                                            </span>
+                                        {% elif order.status == 'cancelled' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>
+                                                ملغي
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order.payment_method == 'cod' %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-money-bill-wave me-1"></i>
+                                                الدفع عند الاستلام
+                                            </span>
+                                        {% elif order.payment_method == 'card' %}
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-credit-card me-1"></i>
+                                                بطاقة ائتمان
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ order.created_at|date:"Y/m/d H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-primary btn-sm" title="عرض التفاصيل">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            
+                                            <div class="dropdown">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="تغيير الحالة">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <form method="post" class="dropdown-menu">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="order_id" value="{{ order.id }}">
+                                                    
+                                                    {% if order.status != 'pending' %}
+                                                        <button type="submit" name="status" value="pending" class="dropdown-item">
+                                                            <i class="fas fa-clock me-1"></i> قيد الانتظار
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if order.status != 'confirmed' %}
+                                                        <button type="submit" name="status" value="confirmed" class="dropdown-item">
+                                                            <i class="fas fa-check me-1"></i> تم التأكيد
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if order.status != 'preparing' %}
+                                                        <button type="submit" name="status" value="preparing" class="dropdown-item">
+                                                            <i class="fas fa-box me-1"></i> جاري التحضير
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if order.status != 'ready' %}
+                                                        <button type="submit" name="status" value="ready" class="dropdown-item">
+                                                            <i class="fas fa-truck me-1"></i> جاهز للتوصيل
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if order.status != 'out_for_delivery' %}
+                                                        <button type="submit" name="status" value="out_for_delivery" class="dropdown-item">
+                                                            <i class="fas fa-shipping-fast me-1"></i> بالطريق
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if order.status != 'delivered' %}
+                                                        <button type="submit" name="status" value="delivered" class="dropdown-item">
+                                                            <i class="fas fa-check-circle me-1"></i> تم التوصيل
+                                                        </button>
+                                                    {% endif %}
+                                                    
+                                                    {% if order.status != 'cancelled' %}
+                                                        <button type="submit" name="status" value="cancelled" class="dropdown-item text-danger">
+                                                            <i class="fas fa-times-circle me-1"></i> إلغاء الطلب
+                                                        </button>
+                                                    {% endif %}
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4">
+                                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">لا يوجد طلبات حتى الآن</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.8rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.6em;
+}
+
+.dropdown-menu {
+    min-width: 200px;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: right;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

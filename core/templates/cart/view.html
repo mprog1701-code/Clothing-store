@@ -1,0 +1,483 @@
+{% extends 'base.html' %}
+
+{% block title %}السلة - متجر الملابس{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Cart Mobile Enhancements */
+@media (max-width: 768px) {
+    .cart-item {
+        padding: 20px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .cart-item .row {
+        gap: 15px 0;
+    }
+    
+    .product-image {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    
+    .product-image img {
+        height: 120px !important;
+        width: 120px !important;
+        object-fit: cover;
+    }
+    
+    .quantity-control .input-group {
+        max-width: 140px !important;
+        margin: 0 auto;
+    }
+    
+    .quantity-control .input-group .btn {
+        padding: 10px 15px !important;
+        font-size: 1.1rem !important;
+    }
+    
+    .quantity-control .form-control {
+        padding: 10px !important;
+        font-size: 1.1rem !important;
+    }
+    
+    .product-price, .item-total {
+        margin: 10px 0;
+    }
+    
+    .btn-sm-enhanced {
+        padding: 12px 20px !important;
+        font-size: 1rem !important;
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    .cart-actions .btn {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 15px 30px !important;
+        font-size: 1.1rem !important;
+    }
+    
+    .order-summary-card {
+        margin-top: 30px;
+        position: relative !important;
+        top: 0 !important;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch !important;
+    }
+    
+    .section-header h4 {
+        text-align: center;
+        margin-bottom: 10px !important;
+    }
+}
+
+/* Copper theme for cart */
+.cart-item {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--copper);
+    border-radius: 16px;
+}
+.order-summary-card {
+    background: linear-gradient(135deg, var(--black-light) 0%, #111 100%);
+    border: 2px solid var(--copper);
+    color: #fff;
+}
+.item-total, .product-price {
+    color: var(--gold);
+    font-weight: 700;
+}
+.btn-outline-primary {
+    border-color: var(--copper);
+    color: var(--copper);
+}
+.btn-outline-primary:hover {
+    background: var(--copper);
+    color: #fff;
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .cart-item {
+        touch-action: manipulation;
+    }
+    
+    .quantity-control .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .btn-sm-enhanced {
+        min-height: 50px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .animate-fade-in, .animate-fade-in-delay, .animate-fade-in-up, .animate-bounce {
+        animation: none !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Enhanced cart functionality
+function clearCartServer() {
+    const overlay = document.getElementById('clear-confirm-overlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+function updateQuantity(productId, variantId, newQuantity) {
+    if (newQuantity <= 0) {
+        removeFromCart(productId, variantId);
+        return;
+    }
+    
+    let cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+    const item = cart.find(item => 
+        item.product_id === productId && item.variant_id === variantId
+    );
+    
+    if (item) {
+        item.quantity = newQuantity;
+        sessionStorage.setItem('cart', JSON.stringify(cart));
+        updateCartCount();
+        
+        // Update price display
+        const priceElement = document.querySelector(`[data-price="${productId}-${variantId}"]`);
+        if (priceElement) {
+            const unitPrice = parseFloat(priceElement.dataset.unitPrice);
+            priceElement.textContent = `${(unitPrice * newQuantity).toFixed(2)} د.ع`;
+        }
+        
+        // Add success animation
+        const cartItem = document.querySelector(`[data-cart-item="${productId}-${variantId}"]`);
+        if (cartItem) {
+            cartItem.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                cartItem.style.backgroundColor = '';
+            }, 500);
+        }
+    }
+}
+
+function removeCartServer(index) {
+    window.__pendingDeleteIndex = index;
+    const overlay = document.getElementById('delete-confirm-overlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
+// Add enhanced quantity controls
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const productId = this.dataset.productId;
+            const variantId = this.dataset.variantId;
+            const newQuantity = parseInt(this.value);
+            updateQuantity(productId, variantId, newQuantity);
+        });
+    });
+    
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            // Ctrl+Enter to proceed to checkout
+            const checkoutBtn = document.querySelector('.btn-primary[href*="checkout"]');
+            if (checkoutBtn) {
+                checkoutBtn.click();
+            }
+        }
+    });
+    const confirmBtn = document.getElementById('delete-confirm-btn');
+    const cancelBtn = document.getElementById('delete-cancel-btn');
+    const overlay = document.getElementById('delete-confirm-overlay');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function(){
+            const tokenMatch = document.cookie.match(/csrftoken=([^;]+)/);
+            const csrfToken = tokenMatch ? tokenMatch[1] : '';
+            const index = window.__pendingDeleteIndex;
+            const url = '{% url "remove_from_cart" 0 %}'.replace('0', index);
+            fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
+                .then(()=>{ if (overlay) overlay.style.display = 'none'; location.reload(); });
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function(){ if (overlay) overlay.style.display = 'none'; });
+    }
+
+    const clearConfirmBtn = document.getElementById('clear-confirm-btn');
+    const clearCancelBtn = document.getElementById('clear-cancel-btn');
+    const clearOverlay = document.getElementById('clear-confirm-overlay');
+    if (clearConfirmBtn) {
+        clearConfirmBtn.addEventListener('click', function(){
+            const tokenMatch = document.cookie.match(/csrftoken=([^;]+)/);
+            const csrfToken = tokenMatch ? tokenMatch[1] : '';
+            fetch('{% url "clear_cart" %}', { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
+                .then(()=>{ if (clearOverlay) clearOverlay.style.display = 'none'; location.reload(); });
+        });
+    }
+    if (clearCancelBtn) {
+        clearCancelBtn.addEventListener('click', function(){ if (clearOverlay) clearOverlay.style.display = 'none'; });
+    }
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="cart-hero py-5 mb-5" style="background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%); border-top: 4px solid var(--copper);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-white mb-3 animate-fade-in">
+                    سلة التسوق
+                </h1>
+                <p class="lead text-light mb-4 animate-fade-in-delay">
+                    راجع منتجاتك المختارة قبل إتمام الطلب
+                </p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="cart-hero-icon animate-bounce">
+                    <i class="bi bi-cart4 display-1" style="color: var(--gold); opacity: 0.85;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<div id="delete-confirm-overlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:1050;">
+    <div class="bg-white rounded-4 shadow p-4" style="min-width:280px;">
+        <div class="mb-3">
+            هل تريد حذف هذا المنتج من السلة؟
+        </div>
+        <div class="د-flex gap-2 justify-content-end">
+            <button id="delete-cancel-btn" class="btn btn-secondary">إلغاء</button>
+            <button id="delete-confirm-btn" class="btn btn-danger">حذف</button>
+        </div>
+    </div>
+</div>
+<div id="clear-confirm-overlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:1050;">
+    <div class="bg-white rounded-4 shadow p-4" style="min-width:280px;">
+        <div class="mb-3">
+            هل تريد مسح جميع المنتجات من السلة؟
+        </div>
+        <div class="d-flex gap-2 justify-content-end">
+            <button id="clear-cancel-btn" class="btn btn-secondary">إلغاء</button>
+            <button id="clear-confirm-btn" class="btn btn-danger">مسح السلة</button>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Content -->
+<section class="cart-section mb-5">
+    <div class="container">
+        {% if cart_items %}
+        <div class="row g-4">
+            <!-- Cart Items -->
+            <div class="col-lg-8">
+                <div class="cart-items-card p-4 bg-white rounded-4 shadow-lg">
+                    <div class="section-header mb-4">
+                        <h4 class="fw-bold text-gradient">
+                            <i class="bi bi-bag me-2"></i>
+                            منتجاتك ({{ cart_items|length }} عنصر)
+                        </h4>
+                        <button type="button" class="btn btn-outline-danger btn-sm-enhanced" onclick="clearCartServer()">
+                                <i class="bi bi-trash me-2"></i>
+                                مسح السلة
+                        </button>
+                    </div>
+                    
+                    <div class="cart-items">
+                        <div class="row fw-bold text-center mb-2" style="color: var(--gold);">
+                            <div class="col-md-2">الصورة</div>
+                            <div class="col-md-4">المنتج</div>
+                            <div class="col-md-2">السعر</div>
+                            <div class="col-md-2">الكمية</div>
+                            <div class="col-md-2">الإجمالي</div>
+                        </div>
+                        {% for item in cart_items %}
+                        <div class="cart-item p-4 border rounded-3 mb-3 animate-fade-in-up" data-cart-item="{{ item.product.id }}-{{ item.variant.id|default:'none' }}">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <div class="product-image">
+                                        {% if item.product.main_image and item.product.main_image.image %}
+                                        <img src="{{ item.product.main_image.image.url }}" alt="{{ item.product.name }}" 
+                                             class="img-fluid rounded-3" style="height: 80px; object-fit: cover;">
+                                        {% else %}
+                                        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" 
+                                             style="height: 80px;">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="product-info">
+                                        <h6 class="fw-bold mb-1">{{ item.product.name }}</h6>
+                                        <p class="text-muted mb-1">
+                                            <i class="bi bi-shop me-1"></i>
+                                            {{ item.product.store.name }}
+                                        </p>
+                                        {% if item.variant %}
+                                        <div class="variant-info">
+                                            <span class="badge bg-light text-dark me-1">
+                                                <i class="bi bi-rulers me-1"></i>
+                                                {{ item.variant.size }}
+                                            </span>
+                                            <span class="badge bg-light text-dark">
+                                                <i class="bi bi-palette me-1"></i>
+                                                {{ item.variant.color }}
+                                            </span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <div class="product-price text-center">
+                                        <div class="price fw-bold text-primary-gradient" data-unit-price="{{ item.price }}">
+                                            {{ item.price }} د.ع
+                                        </div>
+                                        <small class="text-muted">لكل قطعة</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <div class="quantity-control text-center">
+                                        <div class="input-group input-group-sm">
+                                            <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                                    onclick="updateQuantity('{{ item.product.id }}', '{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'-1' }})">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <input type="number" class="form-control text-center quantity-input" 
+                                                   value="{{ item.quantity }}" min="1" max="99"
+                                                   data-product-id="{{ item.product.id }}"
+                                                   data-variant-id="{{ item.variant.id|default:'none' }}"
+                                                   style="max-width: 60px;">
+                                            <button class="btn btn-outline-secondary btn-sm" type="button"
+                                                    onclick="updateQuantity('{{ item.product.id }}', '{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'1' }})">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">الكمية</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-2">
+                                    <div class="item-total text-center">
+                                        <div class="total fw-bold text-success fs-5" data-price="{{ item.product.id }}-{{ item.variant.id|default:'none' }}">
+                                            {{ item.subtotal }} د.ع
+                                        </div>
+                                        <small class="text-muted">الإجمالي</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-12 text-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm-enhanced" onclick="removeCartServer({{ forloop.counter0 }})">
+                                            <i class="bi bi-trash me-1"></i>
+                                            حذف
+                                        </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="cart-actions mt-4">
+                        <a href="{% url 'store_list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left me-2"></i>
+                            مواصلة التسوق
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="order-summary-card p-4 bg-white rounded-4 shadow-lg sticky-top" style="top: 100px;">
+                    <div class="section-header mb-4">
+                        <h5 class="fw-bold text-gradient">
+                            <i class="bi bi-receipt me-2"></i>
+                            ملخص الطلب
+                        </h5>
+                    </div>
+                    
+                    <div class="summary-details mb-4">
+                        <div class="summary-item d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3">
+                            <span class="text-muted">
+                                <i class="bi bi-bag me-2"></i>
+                                المنتجات ({{ cart_items|length }})
+                            </span>
+                            <span class="fw-semibold">{{ total }} د.ع</span>
+                        </div>
+                        
+                        <div class="summary-item d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3">
+                            <span class="text-muted">
+                                <i class="bi bi-truck me-2"></i>
+                                رسوم التوصيل
+                            </span>
+                            <span class="fw-semibold">{{ delivery_fee }} د.ع</span>
+                        </div>
+                        
+                        <hr class="my-3">
+                        
+                        <div class="summary-total d-flex justify-content-between align-items-center p-3 bg-gradient-primary text-white rounded-3">
+                            <span class="h6 mb-0">
+                                <i class="bi bi-calculator me-2"></i>
+                                الإجمالي
+                            </span>
+                            <span class="h5 fw-bold mb-0">{{ grand_total }} د.ع</span>
+                        </div>
+                    </div>
+                    
+                    <div class="checkout-action">
+                        <a href="{% url 'checkout' %}" class="btn btn-gradient btn-lg w-100">
+                            <i class="bi bi-credit-card me-2"></i>
+                            إتمام الطلب
+                        </a>
+                    </div>
+                    
+                    <div class="payment-methods mt-3 text-center">
+                        <small class="text-muted">
+                            <i class="bi bi-shield-check me-1"></i>
+                            دفع آمن وموثوق
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty Cart -->
+        <div class="row">
+            <div class="col-12">
+                <div class="empty-cart-state text-center py-5">
+                    <div class="empty-icon mb-4">
+                        <i class="bi bi-cart-x display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h3 class="text-muted mb-3">سلة التسوق فارغة</h3>
+                    <p class="text-muted mb-4 fs-5">
+                        ابدأ التسوق واضف منتجاتك المفضلة إلى السلة
+                    </p>
+                    <div class="empty-cart-actions">
+                        <a href="{% url 'store_list' %}" class="btn btn-gradient btn-lg">
+                            <i class="bi bi-shop me-2"></i>
+                            تصفح المتاجر
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

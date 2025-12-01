@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}إدارة المتاجر - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>إدارة المتاجر</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if stores %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>اسم المتجر</th>
+                        <th>المالك</th>
+                        <th>المدينة</th>
+                        <th>تاريخ الإنشاء</th>
+                        <th>الحالة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                    <tr>
+                        <td>{{ store.name }}</td>
+                        <td>{{ store.owner.get_full_name|default:store.owner.username }}</td>
+                        <td>{{ store.city }}</td>
+                        <td>{{ store.created_at|date:"Y-m-d" }}</td>
+                        <td>
+                            {% if store.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                            {% else %}
+                                <span class="badge bg-warning">غير نشط</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="store_id" value="{{ store.id }}">
+                                {% if store.is_active %}
+                                <button type="submit" name="action" value="deactivate" class="btn btn-sm btn-warning">تعطيل</button>
+                                {% else %}
+                                <button type="submit" name="action" value="activate" class="btn btn-sm btn-success">تفعيل</button>
+                                {% endif %}
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            لا توجد متاجر مسجلة.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

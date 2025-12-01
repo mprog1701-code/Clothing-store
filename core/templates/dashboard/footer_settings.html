@@ -1,0 +1,353 @@
+{% extends 'base.html' %}
+
+{% block title %}إعدادات التذييل - متجر الملابس{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="dashboard-hero py-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-white mb-3">
+                    <i class="bi bi-layout-text-window-reverse me-3"></i>إعدادات التذييل
+                </h1>
+                <p class="lead text-light mb-0">تخصيص محتوى تذييل الموقع</p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="dashboard-stats-card bg-white bg-opacity-25 rounded-3 p-4 border border-white border-opacity-50">
+                    <h3 class="text-white mb-2 fw-bold fs-2 text-shadow">✨</h3>
+                    <p class="text-white mb-0 fw-bold fs-6 text-shadow opacity-90">تخصيص التذييل</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer Settings Form -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-transparent py-4">
+                        <h4 class="mb-0">
+                            <i class="bi bi-gear me-2"></i>تخصيص محتوى التذييل
+                        </h4>
+                    </div>
+                    <div class="card-body p-5">
+                        <form method="post" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            
+                            <!-- Store Info Section -->
+                            <div class="row mb-5">
+                                <div class="col-12">
+                                    <h5 class="text-primary mb-4">
+                                        <i class="bi bi-shop me-2"></i>معلومات المتجر
+                                    </h5>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="footer_store_name" class="form-label fw-bold">اسم المتجر في التذييل</label>
+                                    <input type="text" class="form-control form-control-lg" id="footer_store_name" name="footer_store_name" value="{{ settings.footer_store_name }}" required>
+                                    <div class="invalid-feedback">يرجى إدخال اسم المتجر</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="footer_tagline" class="form-label fw-bold">الشعار</label>
+                                    <input type="text" class="form-control form-control-lg" id="footer_tagline" name="footer_tagline" value="{{ settings.footer_tagline }}" required>
+                                    <div class="invalid-feedback">يرجى إدخال الشعار</div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label for="footer_description" class="form-label fw-bold">الوصف</label>
+                                    <textarea class="form-control form-control-lg" id="footer_description" name="footer_description" rows="3" required>{{ settings.footer_description }}</textarea>
+                                    <div class="invalid-feedback">يرجى إدخال الوصف</div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label for="footer_copyright" class="form-label fw-bold">نص حقوق النشر</label>
+                                    <input type="text" class="form-control form-control-lg" id="footer_copyright" name="footer_copyright" value="{{ settings.footer_copyright }}" required>
+                                    <div class="invalid-feedback">يرجى إدخال نص حقوق النشر</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Contact Info Section -->
+                            <div class="row mb-5">
+                                <div class="col-12">
+                                    <h5 class="text-success mb-4">
+                                        <i class="bi bi-telephone me-2"></i>معلومات التواصل
+                                    </h5>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="contact_phone" class="form-label fw-bold">رقم الهاتف</label>
+                                    <input type="tel" class="form-control form-control-lg" id="contact_phone" name="contact_phone" value="{{ settings.contact_phone }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="contact_email" class="form-label fw-bold">البريد الإلكتروني</label>
+                                    <input type="email" class="form-control form-control-lg" id="contact_email" name="contact_email" value="{{ settings.contact_email }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="contact_address" class="form-label fw-bold">العنوان</label>
+                                    <input type="text" class="form-control form-control-lg" id="contact_address" name="contact_address" value="{{ settings.contact_address }}">
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Links Section -->
+                            <div class="row mb-5">
+                                <div class="col-12">
+                                    <h5 class="text-info mb-4">
+                                        <i class="bi bi-link-45deg me-2"></i>الروابط السريعة
+                                    </h5>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="card border">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">الرابط الأول</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="footer_link_1" class="form-label">نص الرابط</label>
+                                                <input type="text" class="form-control" id="footer_link_1" name="footer_link_1" value="{{ settings.footer_link_1 }}">
+                                            </div>
+                                            <div class="mb-0">
+                                                <label for="footer_link_1_url" class="form-label">رابط الصفحة</label>
+                                                <input type="text" class="form-control" id="footer_link_1_url" name="footer_link_1_url" value="{{ settings.footer_link_1_url }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="card border">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">الرابط الثاني</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="footer_link_2" class="form-label">نص الرابط</label>
+                                                <input type="text" class="form-control" id="footer_link_2" name="footer_link_2" value="{{ settings.footer_link_2 }}">
+                                            </div>
+                                            <div class="mb-0">
+                                                <label for="footer_link_2_url" class="form-label">رابط الصفحة</label>
+                                                <input type="text" class="form-control" id="footer_link_2_url" name="footer_link_2_url" value="{{ settings.footer_link_2_url }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="card border">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0">الرابط الثالث</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="footer_link_3" class="form-label">نص الرابط</label>
+                                                <input type="text" class="form-control" id="footer_link_3" name="footer_link_3" value="{{ settings.footer_link_3 }}">
+                                            </div>
+                                            <div class="mb-0">
+                                                <label for="footer_link_3_url" class="form-label">رابط الصفحة</label>
+                                                <input type="text" class="form-control" id="footer_link_3_url" name="footer_link_3_url" value="{{ settings.footer_link_3_url }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Social Media Section -->
+                            <div class="row mb-5">
+                                <div class="col-12">
+                                    <h5 class="text-warning mb-4">
+                                        <i class="bi bi-share me-2"></i>وسائل التواصل الاجتماعي
+                                    </h5>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="facebook_url" class="form-label fw-bold">
+                                        <i class="bi bi-facebook text-primary me-2"></i>فيسبوك
+                                    </label>
+                                    <input type="url" class="form-control form-control-lg" id="facebook_url" name="facebook_url" value="{{ settings.facebook_url }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="instagram_url" class="form-label fw-bold">
+                                        <i class="bi bi-instagram text-danger me-2"></i>إنستغرام
+                                    </label>
+                                    <input type="url" class="form-control form-control-lg" id="instagram_url" name="instagram_url" value="{{ settings.instagram_url }}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="twitter_url" class="form-label fw-bold">
+                                        <i class="bi bi-twitter text-info me-2"></i>تويتر
+                                    </label>
+                                    <input type="url" class="form-control form-control-lg" id="twitter_url" name="twitter_url" value="{{ settings.twitter_url }}">
+                                </div>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="row">
+                                <div class="col-12 text-center">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5 py-3">
+                                        <i class="bi bi-check-circle me-2"></i>حفظ التغييرات
+                                    </button>
+                                    <a href="{% url 'main_dashboard' %}" class="btn btn-outline-secondary btn-lg px-5 py-3 me-3">
+                                        <i class="bi bi-arrow-return-left me-2"></i>العودة للوحة التحكم
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Preview Section -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-lg border-0">
+                    <div class="card-header bg-dark text-white py-4">
+                        <h4 class="mb-0">
+                            <i class="bi bi-eye me-2"></i>معاينة التذييل
+                        </h4>
+                    </div>
+                    <div class="card-body p-0">
+                        <footer class="bg-dark text-white py-5">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="col-md-4 mb-4">
+                                        <h5 class="mb-3">
+                                            <i class="bi bi-shop me-2"></i>{{ settings.footer_store_name }}
+                                        </h5>
+                                        <p class="mb-3">{{ settings.footer_tagline }}</p>
+                                        <p class="small">{{ settings.footer_description }}</p>
+                                        <div class="social-links">
+                                            {% if settings.instagram_url %}<a href="{{ settings.instagram_url }}" class="text-white me-3"><i class="bi bi-instagram fs-5"></i></a>{% endif %}
+                                            {% if settings.twitter_url %}<a href="{{ settings.twitter_url }}" class="text-white me-3"><i class="bi bi-twitter fs-5"></i></a>{% endif %}
+                                            {% if settings.facebook_url %}<a href="{{ settings.facebook_url }}" class="text-white me-3"><i class="bi bi-facebook fs-5"></i></a>{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-4">
+                                        <h5 class="mb-3">
+                                            <i class="bi bi-link-45deg me-2"></i>روابط سريعة
+                                        </h5>
+                                        <ul class="list-unstyled">
+                                            <li class="mb-2"><a href="{{ settings.footer_link_1_url }}" class="text-white-50 text-decoration-none">{{ settings.footer_link_1 }}</a></li>
+                                            <li class="mb-2"><a href="{{ settings.footer_link_2_url }}" class="text-white-50 text-decoration-none">{{ settings.footer_link_2 }}</a></li>
+                                            <li class="mb-2"><a href="{{ settings.footer_link_3_url }}" class="text-white-50 text-decoration-none">{{ settings.footer_link_3 }}</a></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-4 mb-4">
+                                        <h5 class="mb-3">
+                                            <i class="bi bi-telephone me-2"></i>تواصل معنا
+                                        </h5>
+                                        <ul class="list-unstyled">
+                                            {% if settings.contact_email %}<li class="mb-2"><i class="bi bi-envelope me-2"></i>{{ settings.contact_email }}</li>{% endif %}
+                                            {% if settings.contact_phone %}<li class="mb-2"><i class="bi bi-telephone me-2"></i>{{ settings.contact_phone }}</li>{% endif %}
+                                            {% if settings.contact_address %}<li class="mb-2"><i class="bi bi-geo-alt me-2"></i>{{ settings.contact_address }}</li>{% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                <hr class="my-4">
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <p class="mb-0">&copy; 2024 {{ settings.footer_store_name }}. {{ settings.footer_copyright }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </footer>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.dashboard-hero {
+    position: relative;
+    overflow: hidden;
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.dashboard-stats-card {
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255,255,255,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.dashboard-stats-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.form-control-lg {
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-lg {
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-weight: 600;
+}
+
+.social-links a {
+    transition: all 0.3s ease;
+}
+
+.social-links a:hover {
+    transform: translateY(-2px);
+    color: #667eea !important;
+}
+
+.preview-footer {
+    border-radius: 0 0 15px 15px;
+}
+
+.card {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+    border: none;
+}
+</style>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+
+{% endblock %}

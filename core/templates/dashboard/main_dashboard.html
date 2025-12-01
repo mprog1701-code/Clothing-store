@@ -1,0 +1,540 @@
+{% extends 'base.html' %}
+
+{% block title %}لوحة التحكم - متجر الملابس{% endblock %}
+
+{% block content %}
+
+{% if user.role == 'customer' %}
+<!-- Customer Dashboard -->
+<section class="dashboard-hero py-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-white mb-3">
+                    <i class="bi bi-person-circle me-3"></i>مرحباً {{ user.get_full_name|default:user.username }}
+                </h1>
+                <p class="lead text-light mb-0">إدارة حسابك وطلباتك في مكان واحد</p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="dashboard-stats-card bg-white bg-opacity-25 rounded-3 p-4 border border-white border-opacity-50">
+                    <h3 class="text-white mb-2 fw-bold fs-2 text-shadow">{{ total_orders|default:"0" }}</h3>
+                    <p class="text-white mb-0 fw-bold fs-6 text-shadow opacity-90">طلباتك</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Stats -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card text-center p-4 rounded-3 shadow-sm">
+                    <div class="stats-icon mb-3">
+                        <i class="bi bi-bag-check display-6 text-primary"></i>
+                    </div>
+                    <h4 class="stats-number">{{ total_orders|default:"0" }}</h4>
+                    <p class="stats-label text-muted">إجمالي طلباتك</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card text-center p-4 rounded-3 shadow-sm">
+                    <div class="stats-icon mb-3">
+                        <i class="bi bi-geo-alt display-6 text-success"></i>
+                    </div>
+                    <h4 class="stats-number">{{ total_addresses|default:"0" }}</h4>
+                    <p class="stats-label text-muted">عناوين التوصيل</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stats-card text-center p-4 rounded-3 shadow-sm">
+                    <div class="stats-icon mb-3">
+                        <i class="bi bi-cart display-6 text-warning"></i>
+                    </div>
+                    <h4 class="stats-number">{{ cart_items_count|default:"0" }}</h4>
+                    <p class="stats-label text-muted">سلة التسوق</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Actions -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon mb-3">
+                            <i class="bi bi-bag-check display-4 text-primary"></i>
+                        </div>
+                        <h5 class="card-title">طلباتي</h5>
+                        <p class="card-text text-muted">متابعة طلباتك الحالية</p>
+                        <a href="{% url 'order_list' %}" class="btn btn-primary">
+                            <i class="bi bi-list me-1"></i>عرض الطلبات
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon mb-3">
+                            <i class="bi bi-geo-alt display-4 text-success"></i>
+                        </div>
+                        <h5 class="card-title">عناويني</h5>
+                        <p class="card-text text-muted">إدارة عناوين التوصيل</p>
+                        <a href="{% url 'address_list' %}" class="btn btn-success">
+                            <i class="bi bi-geo-alt me-1"></i>إدارة العناوين
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon mb-3">
+                            <i class="bi bi-cart display-4 text-warning"></i>
+                        </div>
+                        <h5 class="card-title">سلة التسوق</h5>
+                        <p class="card-text text-muted">عرض المنتجات المختارة</p>
+                        <a href="{% url 'cart_view' %}" class="btn btn-warning">
+                            <i class="bi bi-cart me-1"></i>عرض السلة
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon mb-3">
+                            <i class="bi bi-shield-lock display-4 text-warning"></i>
+                        </div>
+                        <h5 class="card-title">أمان المالك</h5>
+                        <p class="card-text text-muted">تغيير كلمة مرور المالك</p>
+                        <a href="{% url 'owner_password_reset' %}" class="btn btn-warning">
+                            <i class="bi bi-key me-1"></i>تغيير كلمة المرور
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Recent Orders -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-transparent py-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="bi bi-clock-history me-2"></i>أحدث طلباتك
+                            </h4>
+                            <a href="{% url 'order_list' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-eye me-1"></i>عرض الكل
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if recent_orders %}
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>رقم الطلب</th>
+                                            <th>التاريخ</th>
+                                            <th>المجموع</th>
+                                            <th>الحالة</th>
+                                            <th>إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in recent_orders %}
+                                        <tr>
+                                            <td><strong>#{{ order.id }}</strong></td>
+                                            <td>{{ order.created_at|date:"d/m/Y" }}</td>
+                        <td>{{ order.total_amount }} د.ع</td>
+                                            <td>
+                                                <span class="badge bg-{{ order.get_status_color }}">
+                                                    {{ order.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'order_list' %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-inbox display-1 text-muted"></i>
+                                <h5 class="text-muted mt-3">لا توجد طلبات حديثة</h5>
+                                <p class="text-muted">سيتم عرض طلباتك الجديدة هنا</p>
+                                <a href="{% url 'store_list' %}" class="btn btn-primary">
+                                    <i class="bi bi-shop me-1"></i>ابدأ التسوق
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Quick Links -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-transparent py-4">
+                        <h4 class="mb-0">
+                            <i class="bi bi-link-45deg me-2"></i>روابط سريعة
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <a href="{% url 'order_list' %}" class="quick-link d-flex align-items-center p-3 rounded-3">
+                                    <i class="bi bi-bag-check fs-4 text-primary me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">طلباتي</h6>
+                                        <small class="text-muted">متابعة طلباتك</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{% url 'address_list' %}" class="quick-link d-flex align-items-center p-3 rounded-3">
+                                    <i class="bi bi-geo-alt fs-4 text-success me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">عناويني</h6>
+                                        <small class="text-muted">إدارة عناوين التوصيل</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{% url 'cart_view' %}" class="quick-link d-flex align-items-center p-3 rounded-3">
+                                    <i class="bi bi-cart fs-4 text-warning me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">سلة التسوق</h6>
+                                        <small class="text-muted">عرض المنتجات المختارة</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{% url 'store_list' %}" class="quick-link d-flex align-items-center p-3 rounded-3">
+                                    <i class="bi bi-shop fs-4 text-info me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">المتاجر</h6>
+                                        <small class="text-muted">تصفح المتاجر</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{% url 'featured_products' %}" class="quick-link d-flex align-items-center p-3 rounded-3">
+                                    <i class="bi bi-star fs-4 text-secondary me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">المنتجات المميزة</h6>
+                                        <small class="text-muted">أفضل المنتجات لدينا</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="{% url 'most_sold_products' %}" class="quick-link d-flex align-items-center p-3 rounded-3">
+                                    <i class="bi bi-fire fs-4 text-danger me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">الأكثر مبيعاً</h6>
+                                        <small class="text-muted">المنتجات الأكثر طلباً</small>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% elif user.role == 'admin' %}
+<!-- Admin Dashboard -->
+<section class="dashboard-hero py-5 mb-5" style="background: linear-gradient(135deg, #dc3545 0%, #6610f2 50%, #dc3545 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-white mb-3">
+                    <i class="bi bi-shield-lock me-3"></i>لوحة تحكم المدير
+                </h1>
+                <p class="lead text-light mb-0">إدارة المتجر الكاملة</p>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="dashboard-stats-card bg-white bg-opacity-25 rounded-3 p-4 border border-white border-opacity-50">
+                    <h3 class="text-white mb-2 fw-bold fs-2 text-shadow">{{ total_stores|default:"0" }}</h3>
+                    <p class="text-white mb-0 fw-bold fs-6 text-shadow opacity-90">متجر</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Admin Stats -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card text-center p-4 rounded-3 shadow-sm">
+                    <div class="stats-icon mb-3">
+                        <i class="bi bi-shop display-6 text-primary"></i>
+                    </div>
+                    <h4 class="stats-number">{{ total_stores|default:"0" }}</h4>
+                    <p class="stats-label text-muted">عدد المتاجر</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card text-center p-4 rounded-3 shadow-sm">
+                    <div class="stats-icon mb-3">
+                        <i class="bi bi-people display-6 text-success"></i>
+                    </div>
+                    <h4 class="stats-number">{{ total_users|default:"0" }}</h4>
+                    <p class="stats-label text-muted">عدد المستخدمين</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card text-center p-4 rounded-3 shadow-sm">
+                    <div class="stats-icon mb-3">
+                        <i class="bi bi-bag-check display-6 text-info"></i>
+                    </div>
+                    <h4 class="stats-number">{{ total_orders|default:"0" }}</h4>
+                    <p class="stats-label text-muted">عدد الطلبات</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card text-center p-4 rounded-3 shadow-sm">
+                    <div class="stats-icon mb-3">
+                        <i class="bi bi-currency-rial display-6 text-warning"></i>
+                    </div>
+                    <h4 class="stats-number">{{ total_revenue|default:"0" }} د.ع</h4>
+                    <p class="stats-label text-muted">إجمالي الإيرادات</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Admin Quick Actions -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon mb-3">
+                            <i class="bi bi-shop display-4 text-primary"></i>
+                        </div>
+                        <h5 class="card-title">المتاجر</h5>
+                        <p class="card-text text-muted">إدارة المتاجر</p>
+                        <a href="{% url 'admin_stores' %}" class="btn btn-primary">
+                            <i class="bi bi-gear me-1"></i>إدارة المتاجر
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon mb-3">
+                            <i class="bi bi-people display-4 text-success"></i>
+                        </div>
+                        <h5 class="card-title">المستخدمين</h5>
+                        <p class="card-text text-muted">إدارة المستخدمين</p>
+                        <a href="{% url 'super_owner_users' %}" class="btn btn-success">
+                            <i class="bi bi-gear me-1"></i>إدارة المستخدمين
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="action-card card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="action-icon mb-3">
+                            <i class="bi bi-gear display-4 text-info"></i>
+                        </div>
+                        <h5 class="card-title">إعدادات الموقع</h5>
+                        <p class="card-text text-muted">إعدادات عامة</p>
+                        <a href="{% url 'footer_settings' %}" class="btn btn-info">
+                            <i class="bi bi-gear me-1"></i>الإعدادات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endif %}
+
+<style>
+.dashboard-hero {
+    position: relative;
+    overflow: hidden;
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.dashboard-stats-card {
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255,255,255,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.dashboard-stats-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: none;
+    transition: all 0.3s ease;
+    border-radius: 15px;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
+}
+
+.stats-icon {
+    margin-bottom: 1rem;
+}
+
+.stats-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.action-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    transition: all 0.3s ease;
+    border-radius: 15px;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+}
+
+.action-icon {
+    transition: all 0.3s ease;
+}
+
+.action-card:hover .action-icon {
+    transform: scale(1.1);
+}
+
+.quick-link {
+    text-decoration: none;
+    color: inherit;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 10px;
+}
+
+.quick-link:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    color: inherit;
+}
+
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.card {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+    border: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .dashboard-hero {
+        min-height: 250px;
+        padding: 2rem 0;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .dashboard-stats-card {
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-hero .btn-lg {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+
+{% endblock %}

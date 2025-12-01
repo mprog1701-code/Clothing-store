@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}تسجيل - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">إنشاء حساب جديد</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="text-center mb-4">
+                        <h5 class="text-primary">🛍️ مرحباً بك في متجرنا</h5>
+                        <p class="text-muted">سجل حسابك باستخدام رقم الجوال</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">الاسم الكامل</label>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required 
+                               placeholder="أدخل اسمك الكامل">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">رقم الجوال</label>
+                        <div class="input-group">
+                            <span class="input-group-text">+966</span>
+                            <input type="tel" class="form-control" id="phone" name="phone" required 
+                                   placeholder="5xxxxxxxx" pattern="05[0-9]{8}" title="أدخل رقم جوال صحيح يبدأ بـ 05">
+                        </div>
+                        <div class="form-text">سنستخدم هذا الرقم للتواصل معك</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="city" class="form-label">المدينة</label>
+                        <select class="form-select" id="city" name="city" required>
+                            <option value="">اختر مدينتك</option>
+                            <option value="الرياض">الرياض</option>
+                            <option value="جدة">جدة</option>
+                            <option value="مكة">مكة</option>
+                            <option value="المدينة">المدينة المنورة</option>
+                            <option value="الدمام">الدمام</option>
+                            <option value="الخبر">الخبر</option>
+                            <option value="أبها">أبها</option>
+                            <option value="تبوك">تبوك</option>
+                            <option value="حائل">حائل</option>
+                            <option value="بريدة">بريدة</option>
+                            <option value="خميس مشيط">خميس مشيط</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label">كلمة المرور</label>
+                                <input type="password" class="form-control" id="password" name="password" required
+                                       placeholder="أدخل كلمة المرور">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password_confirm" class="form-label">تأكيد كلمة المرور</label>
+                                <input type="password" class="form-control" id="password_confirm" name="password_confirm" required
+                                       placeholder="أعد إدخال كلمة المرور">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                        <label class="form-check-label" for="terms">
+                            أوافق على <a href="#" class="text-primary">الشروط والأحكام</a>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="bi bi-person-plus me-2"></i>إنشاء الحساب
+                    </button>
+                </form>
+                <hr>
+                <div class="text-center">
+                    <p class="mb-0">هل لديك حساب بالفعل؟ <a href="{% url 'login' %}" class="text-primary">سجل الدخول</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

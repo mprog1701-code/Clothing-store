@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}دخول المالك - DEBUG - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header text-center bg-gradient-primary text-white rounded-top-4 py-4">
+                    <div class="mb-3">
+                        <i class="bi bi-shield-lock display-4"></i>
+                    </div>
+                    <h3 class="mb-0 fw-bold">دخول المالك - DEBUG MODE</h3>
+                    <p class="mb-0 opacity-75">نظام الدخول الخاص بالإدارة - للتشخيص</p>
+                </div>
+                <div class="card-body p-5">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="alert alert-info">
+                            <h6>بيانات الدخول للتجربة:</h6>
+                            <ul class="mb-0">
+                                <li><strong>الجوال:</strong> 0500000000</li>
+                                <li><strong>المفتاح:</strong> OWNER2025</li>
+                                <li><strong>كلمة المرور:</strong> admin123456</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="phone" class="form-label fw-semibold">
+                                <i class="bi bi-telephone me-2"></i>رقم الجوال
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">+966</span>
+                                <input type="tel" 
+                                       class="form-control form-control-lg" 
+                                       id="phone" 
+                                       name="phone" 
+                                       required 
+                                       placeholder="0500000000 للمالك أو رقمك كمدير"
+                                       pattern="05[0-9]{8}"
+                                       title="أدخل رقم جوال صحيح يبدأ بـ 05"
+                                       value="0500000000">
+                                <div class="invalid-feedback">
+                                    يرجى إدخال رقم جوال صحيح يبدأ بـ 05
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="owner_key" class="form-label fw-semibold">
+                                <i class="bi bi-key me-2"></i>مفتاح المالك (للمالك فقط)
+                            </label>
+                            <input type="password" 
+                                   class="form-control form-control-lg" 
+                                   id="owner_key" 
+                                   name="owner_key" 
+                                   placeholder="OWNER2025 للمالك أو اتركه فارغاً للمدير"
+                                   value="OWNER2025">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-semibold">
+                                <i class="bi bi-lock me-2"></i>كلمة المرور
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       class="form-control form-control-lg" 
+                                       id="password" 
+                                       name="password" 
+                                       required
+                                       placeholder="أدخل كلمة المرور"
+                                       value="admin123456">
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <div class="invalid-feedback">
+                                    يرجى إدخال كلمة المرور
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold py-3">
+                                <i class="bi bi-box-arrow-in-left me-2"></i>دخول النظام - DEBUG
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>العودة لتسجيل الدخول العادي
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+}
+
+.form-control-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1rem;
+}
+
+.btn-lg {
+    font-size: 1.1rem;
+    padding: 0.75rem 1.5rem;
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-right: 0;
+    color: #6c757d;
+}
+
+.form-control {
+    border-left: 0;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a3f9a 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 2rem !important;
+    }
+    
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .form-control-lg {
+        font-size: 1rem;
+    }
+}
+</style>
+
+<script>
+// Toggle password visibility
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordInput = document.getElementById('password');
+    const toggleIcon = this.querySelector('i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('bi-eye');
+        toggleIcon.classList.add('bi-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('bi-eye-slash');
+        toggleIcon.classList.add('bi-eye');
+    }
+});
+
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+{% endblock %}

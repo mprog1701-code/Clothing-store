@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}تعديل{% else %}إضافة{% endif %} عنوان - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white py-4">
+                    <h3 class="mb-0">
+                        <i class="bi bi-geo-alt-fill me-2"></i>
+                        {% if form.instance.pk %}
+                            تعديل العنوان
+                        {% else %}
+                            إضافة عنوان جديد
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">اسم العنوان</label>
+                                {{ form.title }}
+                                <div class="invalid-feedback">
+                                    {{ form.title.errors }}
+                                </div>
+                                <small class="form-text text-muted">مثال: المنزل، العمل</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.recipient_name.id_for_label }}" class="form-label">اسم المستلم</label>
+                                {{ form.recipient_name }}
+                                <div class="invalid-feedback">
+                                    {{ form.recipient_name.errors }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.phone.id_for_label }}" class="form-label">رقم الجوال</label>
+                                {{ form.phone }}
+                                <div class="invalid-feedback">
+                                    {{ form.phone.errors }}
+                                </div>
+                                <small class="form-text text-muted">05xxxxxxxx</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.postal_code.id_for_label }}" class="form-label">الرمز البريدي</label>
+                                {{ form.postal_code }}
+                                <div class="invalid-feedback">
+                                    {{ form.postal_code.errors }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.city.id_for_label }}" class="form-label">المدينة</label>
+                                {{ form.city }}
+                                <div class="invalid-feedback">
+                                    {{ form.city.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.district.id_for_label }}" class="form-label">الحي</label>
+                                {{ form.district }}
+                                <div class="invalid-feedback">
+                                    {{ form.district.errors }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.street.id_for_label }}" class="form-label">الشارع</label>
+                            {{ form.street }}
+                            <div class="invalid-feedback">
+                                {{ form.street.errors }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.building_number.id_for_label }}" class="form-label">رقم المبنى</label>
+                            {{ form.building_number }}
+                            <div class="invalid-feedback">
+                                {{ form.building_number.errors }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.additional_info.id_for_label }}" class="form-label">معلومات إضافية</label>
+                            {{ form.additional_info }}
+                            <div class="invalid-feedback">
+                                {{ form.additional_info.errors }}
+                            </div>
+                            <small class="form-text text-muted">تفاصيل إضافية لتسهيل الوصول (اختياري)</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_default }}
+                                <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                                    تعيين كعنوان افتراضي
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'address_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-return-right me-2"></i>العودة
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>
+                                {% if form.instance.pk %}
+                                    حفظ التغييرات
+                                {% else %}
+                                    إضافة العنوان
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.form-control {
+    border-radius: 10px;
+    padding: 12px 15px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-control::placeholder {
+    color: #6c757d;
+    opacity: 0.7;
+}
+</style>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Phone number formatting
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.querySelector('input[name="phone"]');
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value.length > 0 && !value.startsWith('05')) {
+                value = '05' + value.substring(2);
+            }
+            if (value.length > 10) {
+                value = value.substring(0, 10);
+            }
+            e.target.value = value;
+        });
+    }
+});
+</script>
+{% endblock %}

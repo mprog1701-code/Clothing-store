@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}عناويني - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-gradient-primary text-white py-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">
+                            <i class="bi bi-geo-alt-fill me-2"></i>عناويني
+                        </h3>
+                        <a href="{% url 'address_create' %}" class="btn btn-light">
+                            <i class="bi bi-plus-circle me-1"></i>إضافة عنوان جديد
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    {% if addresses %}
+                        <div class="row">
+                            {% for address in addresses %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card border h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <h5 class="card-title mb-0">
+                                                {% if address.is_default %}
+                                                    <span class="badge bg-success me-2">افتراضي</span>
+                                                {% endif %}
+                                                {{ address.title }}
+                                            </h5>
+                                            <div class="btn-group">
+                                                <a href="{% url 'address_edit' address.id %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <a href="{% url 'address_delete' address.id %}" class="btn btn-sm btn-outline-danger" 
+                                                   onclick="return confirm('هل أنت متأكد من حذف هذا العنوان؟')">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <p class="card-text">
+                                            <i class="bi bi-geo-alt me-2"></i>
+                                            {{ address.city }}، {{ address.area }}<br>
+                                            <i class="bi bi-signpost-split me-2"></i>{{ address.street }}<br>
+                                            {% if address.details %}
+                                                <i class="bi bi-info-circle me-2"></i>{{ address.details }}<br>
+                                            {% endif %}
+                                        </p>
+                                        
+                                        <div class="mt-3">
+                                            <a href="{% url 'address_edit' address.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil me-1"></i>تعديل
+                                            </a>
+                                            <a href="{% url 'address_delete' address.id %}" class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('هل أنت متأكد من حذف هذا العنوان؟')">
+                                                <i class="bi bi-trash me-1"></i>حذف
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-geo-alt display-1 text-muted mb-4"></i>
+                            <h4 class="text-muted">لا توجد عناوين محفوظة</h4>
+                            <p class="text-muted mb-4">أضف عنوانك الأول لتتمكن من إتمام طلباتك بسهولة</p>
+                            <a href="{% url 'address_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-2"></i>إضافة عنوان جديد
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-return-right me-2"></i>العودة إلى الملف الشخصي
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+</style>
+{% endblock %}

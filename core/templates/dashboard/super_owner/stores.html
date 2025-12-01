@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إدارة المتاجر - المالك الرئيسي{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-store me-2"></i>
+                            إدارة المتاجر
+                        </h4>
+                        <a href="{% url 'super_owner_dashboard' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            العودة للوحة التحكم
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0">إدارة المتاجر</h5>
+                        <a href="{% url 'super_owner_add_store' %}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>
+                            إضافة متجر جديد
+                        </a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>اسم المتجر</th>
+                                    <th>المالك</th>
+                                    <th>المدينة</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ الإنشاء</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for store in stores %}
+                                <tr>
+                                    <td>{{ store.id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if store.logo %}
+                                                <img src="{{ store.logo.url }}" alt="{{ store.name }}" class="rounded-circle me-2" width="40" height="40">
+                                            {% else %}
+                                                <div class="bg-gradient-secondary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-store text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ store.name }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ store.description|truncatechars:50 }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if store.owner.profile.avatar %}
+                                                <img src="{{ store.owner.profile.avatar.url }}" alt="{{ store.owner.username }}" class="rounded-circle me-2" width="30" height="30">
+                                            {% else %}
+                                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            {% endif %}
+                                            <span>{{ store.owner.get_full_name|default:store.owner.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ store.city }}</td>
+                                    <td>
+                                        {% if store.is_active %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle me-1"></i>
+                                                نشط
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times-circle me-1"></i>
+                                                غير نشط
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ store.created_at|date:"Y/m/d" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'super_owner_edit_store' store.id %}" class="btn btn-primary btn-sm" title="تعديل">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            {% if store.is_active %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="store_id" value="{{ store.id }}">
+                                                    <input type="hidden" name="action" value="deactivate">
+                                                    <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('هل أنت متأكد من تعطيل هذا المتجر؟')" title="تعطيل">
+                                                        <i class="fas fa-pause"></i>
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="store_id" value="{{ store.id }}">
+                                                    <input type="hidden" name="action" value="activate">
+                                                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('هل أنت متأكد من تفعيل هذا المتجر؟')" title="تفعيل">
+                                                        <i class="fas fa-play"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="store_id" value="{{ store.id }}">
+                                                <input type="hidden" name="action" value="delete">
+                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد من حذف هذا المتجر نهائياً؟')" title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-store-slash fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">لا يوجد متاجر حتى الآن</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+}
+</style>
+{% endblock %}

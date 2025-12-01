@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار إمكانية الوصول - متجر الملابس</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        body {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .test-button {
+            margin: 10px;
+        }
+        
+        .accessibility-check {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 5px solid #28a745;
+        }
+        
+        .check-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .check-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .size-demo {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .size-demo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .touch-target-demo {
+            display: inline-block;
+            margin: 10px;
+            padding: 20px 40px;
+            background: #28a745;
+            color: white;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            min-width: 150px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .touch-target-demo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-5">اختبار إمكانية الوصول والتفاعلية</h1>
+        
+        <!-- Button Size Test -->
+        <div class="test-section">
+            <h2><i class="bi bi-hand-index"></i> اختبار حجم الأزرار</h2>
+            <p>جميع الأزرار أصبحت أكبر لتسهيل الضغط عليها:</p>
+            
+            <div class="accessibility-check check-pass">
+                <i class="bi bi-check-circle"></i> 
+                <strong>زر أساسي محسن:</strong> حجم كبير (15px × 35px) + تأثيرات بصرية
+            </div>
+            <a href="#" class="size-demo">زر محسن للضغط</a>
+            
+            <div class="accessibility-check check-pass">
+                <i class="bi bi-check-circle"></i> 
+                <strong>زر كبير للأجهزة المحمولة:</strong> حجم مناسب للأصابع (18px × 40px)
+            </div>
+            <a href="#" class="touch-target-demo">زر كبير للموبايل</a>
+        </div>
+        
+        <!-- Touch Target Test -->
+        <div class="test-section">
+            <h2><i class="bi bi-finger-print"></i> اختبار أهداف اللمس</h2>
+            <p>جميع العناصر التفاعلية أصبحت أكبر وأكثر سهولة في الاستخدام:</p>
+            
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center p-4">
+                        <i class="bi bi-cart3 display-4 text-primary mb-3"></i>
+                        <h5>أيقونة السلة</h5>
+                        <p class="small text-muted">أصبحت أكبر مع تأثيرات بصرية</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center p-4">
+                        <i class="bi bi-person-circle display-4 text-success mb-3"></i>
+                        <h5>أيقونة المستخدم</h5>
+                        <p class="small text-muted">حجم مناسب للضغط عليه</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center p-4">
+                        <i class="bi bi-gear display-4 text-warning mb-3"></i>
+                        <h5>أيقونة الإعدادات</h5>
+                        <p class="small text-muted">تفاعلية مع تأثيرات Hover</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interactive Elements Test -->
+        <div class="test-section">
+            <h2><i class="bi bi-magic"></i> اختبار التفاعلية</h2>
+            <p>تأثيرات بصرية محسنة لتوفيد ردود فعل فورية:</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>أزرار مع تأثيرات Hover:</h5>
+                    <button class="btn btn-primary btn-lg w-100 mb-3">زر بتأثير Hover</button>
+                    <button class="btn btn-outline-success btn-lg w-100 mb-3">زر محيط بتأثير Hover</button>
+                    <button class="btn btn-warning btn-lg w-100">زر تنبيه بتأثير Hover</button>
+                </div>
+                <div class="col-md-6">
+                    <h5>عناصر مع تأثيرات Ripple:</h5>
+                    <div class="test-button">
+                        <button class="btn btn-info" onclick="showRipple(event, this)">اضغط لرؤية تأثير Ripple</button>
+                    </div>
+                    <div class="test-button">
+                        <button class="btn btn-danger" onclick="showRipple(event, this)">تأثير Ripple عند الضغط</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Responsiveness Test -->
+        <div class="test-section">
+            <h2><i class="bi bi-phone"></i> اختبار الاستجابة للموبايل</h2>
+            <p>تحسين تجربة الاستخدام على الأجهزة المحمولة:</p>
+            
+            <div class="accessibility-check check-pass">
+                <i class="bi bi-check-circle"></i> 
+                <strong>أزرار كبيرة للموبايل:</strong> حجم مناسب للأصابع (44px × 44px على الأقل)
+            </div>
+            
+            <div class="accessibility-check check-pass">
+                <i class="bi bi-check-circle"></i> 
+                <strong>مسافات مناسبة:</strong> مسافة كافية بين العناصر التفاعلية
+            </div>
+            
+            <div class="accessibility-check check-pass">
+                <i class="bi bi-check-circle"></i> 
+                <strong>نصوص واضحة:</strong> حجم خط مناسب للقراءة (16px على الأقل)
+            </div>
+        </div>
+        
+        <!-- Keyboard Navigation Test -->
+        <div class="test-section">
+            <h2><i class="bi bi-keyboard"></i> اختبار التنقل بالكيبورد</h2>
+            <p>اضغط على Tab للتنقل بين العناصر:</p>
+            
+            <div class="d-flex flex-wrap gap-3 mb-4">
+                <button class="btn btn-primary">زر 1 (Tab للتنقل)</button>
+                <button class="btn btn-secondary">زر 2 (Tab للتنقل)</button>
+                <button class="btn btn-success">زر 3 (Tab للتنقل)</button>
+                <a href="#" class="btn btn-info">رابط 1 (Tab للتنقل)</a>
+                <a href="#" class="btn btn-warning">رابط 2 (Tab للتنقل)</a>
+            </div>
+            
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                <strong>تلميح:</strong> استخدم مفتاح Tab للتنقل بين العناصر، واضغط Enter للتفعيل
+            </div>
+        </div>
+        
+        <!-- Accessibility Features Summary -->
+        <div class="test-section">
+            <h2><i class="bi bi-universal-access"></i> ملخص مميزات إمكانية الوصول</h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>✅ تم التحسين:</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-check text-success"></i> أزرار كبيرة وسهلة الضغط</li>
+                        <li><i class="bi bi-check text-success"></i> تأثيرات بصرية عند Hover</li>
+                        <li><i class="bi bi-check text-success"></i> تأثيرات Ripple عند الضغط</li>
+                        <li><i class="bi bi-check text-success"></i> دعم التنقل بالكيبورد</li>
+                        <li><i class="bi bi-check text-success"></i> حجم مناسب للموبايل</li>
+                        <li><i class="bi bi-check text-success"></i> نصوص واضحة وكبيرة</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h5>🔧 المميزات الجديدة:</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-star text-warning"></i> حدود واضحة عند التركيز</li>
+                        <li><i class="bi bi-star text-warning"></i> تأثيرات بصرية فورية</li>
+                        <li><i class="bi bi-star text-warning"></i> دعم أجهزة اللمس</li>
+                        <li><i class="bi bi-star text-warning"></i> تقليل الحركة للمستخدمين الحساسين</li>
+                        <li><i class="bi bi-star text-warning"></i> أزرار تحميل مع مؤشرات</li>
+                        <li><i class="bi bi-star text-warning"></i> مسافات مناسبة بين العناصر</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Instructions -->
+        <div class="test-section">
+            <h2><i class="bi bi-clipboard-check"></i> تعليمات الاختبار</h2>
+            
+            <div class="alert alert-primary">
+                <h5>كيفية اختبار التحسينات:</h5>
+                <ol>
+                    <li><strong>على الكمبيوتر:</strong> حاول الضغط على الأزرار باستخدام الماوس، ولاحظ التأثيرات البصرية</li>
+                    <li><strong>التنقل بالكيبورد:</strong> استخدم Tab للتنقل بين العناصر، وEnter للتفعيل</li>
+                    <li><strong>على الموبايل:</strong> جرب الضغط على الأزرار بأصابعك، ولاحظ حجمها المناسب</li>
+                    <li><strong>اختبار التأثيرات:</strong> اضغط على الأزرار بشكل متكرر لرؤية تأثيرات Ripple</li>
+                    <li><strong>السرعة:</strong> تأكد من أن جميع التأثيرات سريعة وغير مزعجة</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="text-center mt-5">
+            <a href="/" class="btn btn-primary btn-lg">
+                <i class="bi bi-house"></i> العودة للمتجر
+            </a>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Ripple effect function
+        function showRipple(event, button) {
+            const ripple = document.createElement('span');
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.classList.add('ripple');
+            
+            button.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        }
+        
+        // Add ripple effect to all buttons
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                showRipple(e, this);
+            });
+        });
+        
+        // Enhanced button interactions
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>

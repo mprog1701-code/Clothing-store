@@ -1,0 +1,422 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - متجر الملابس{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero-section py-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold text-white mb-3">
+                    <i class="bi bi-star-fill me-3"></i>{{ page_title }}
+                </h1>
+                <p class="lead text-light mb-0">{{ page_description }}</p>
+                <div class="mt-4">
+                    <a href="{% url 'store_list' %}" class="btn btn-light btn-lg me-3">
+                        <i class="bi bi-shop me-2"></i>تصفح المتاجر
+                    </a>
+                    <a href="{% url 'home' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-house me-2"></i>الصفحة الرئيسية
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="hero-stats-card bg-white bg-opacity-20 rounded-3 p-4 border border-white border-opacity-50">
+                    <h3 class="text-white mb-2 fw-bold fs-2 text-shadow">{{ products|length }}</h3>
+                    <p class="text-white mb-0 fw-bold fs-6 text-shadow opacity-90">منتج مميز</p>
+                    <div class="progress mt-3 bg-white bg-opacity-25" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="mb-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h3 mb-0">
+                        <i class="bi bi-star text-warning me-2"></i>منتجاتنا المميزة
+                    </h2>
+                    <a href="{% url 'store_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left me-1"></i>عرض جميع المتاجر
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        {% if products %}
+            <div class="row g-4">
+                {% for product in products %}
+                    <div class="col-lg-3 col-md-6">
+                        <div class="product-card card h-100 shadow-sm border-0">
+                            <div class="product-image position-relative overflow-hidden">
+                                {% if product.main_image and product.main_image.image and product.main_image.image.name %}
+                                    <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}">
+                                        <img src="{{ product.main_image.image.url }}" 
+                                             alt="{{ product.name }}" 
+                                             class="card-img-top product-img">
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
+                                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
+                                            <i class="bi bi-image display-1 text-muted"></i>
+                                        </div>
+                                    </a>
+                                {% endif %}
+                                <div class="featured-badge position-absolute top-0 start-0 m-2">
+                                    <span class="badge bg-warning text-dark fs-6">
+                                        <i class="bi bi-star-fill me-1"></i>مميز
+                                    </span>
+                                </div>
+                                <div class="product-overlay position-absolute w-100 h-100 d-flex align-items-center justify-content-center">
+                                    <a href="{% url 'product_detail' product.id %}" class="btn btn-primary btn-lg" onclick="event.stopPropagation()">
+                                        <i class="bi bi-eye me-1"></i>عرض التفاصيل
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-shop me-1"></i>{{ product.store.name }}
+                                    </small>
+                                </div>
+                                <h5 class="card-title mb-2">
+                                    <a href="{% url 'product_detail' product.id %}" class="text-decoration-none" style="color: inherit;">{{ product.name }}</a>
+                                </h5>
+                                <p class="card-text text-muted small mb-3">{{ product.description|truncatechars:100 }}</p>
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="h5 mb-0 text-primary">{{ product.base_price }} د.ع</span>
+                                        <div class="product-actions">
+                                            <button onclick="event.stopPropagation(); addToCart({{ product.id }})" 
+                                                    class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-cart-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                        </div>
+                        <h4 class="text-muted mb-3">لا توجد منتجات مميزة حالياً</h4>
+                        <p class="text-muted mb-4">سيتم إضافة منتجات مميزة قريباً</p>
+                        <a href="{% url 'store_list' %}" class="btn btn-primary">
+                            <i class="bi bi-shop me-1"></i>تصفح المتاجر
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.hero-section {
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.hero-stats-card {
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255,255,255,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.hero-stats-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.product-card {
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15) !important;
+    border-color: rgba(102, 126, 234, 0.3);
+}
+
+.product-img {
+    height: 250px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover .product-img {
+    transform: scale(1.1);
+}
+
+.product-overlay {
+    background: rgba(0,0,0,0.7);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.product-card:hover .product-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.featured-badge {
+    z-index: 3;
+}
+
+.featured-badge .badge {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.product-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.product-card:hover .product-actions {
+    opacity: 1;
+}
+
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .hero-section {
+        min-height: 250px;
+        padding: 2rem 0;
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+    
+    .product-img {
+        height: 200px;
+    }
+    
+    .product-card {
+        margin-bottom: 1rem;
+    }
+    
+    .hero-stats-card {
+        margin-top: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .hero-section .btn-lg {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .product-img {
+        height: 180px;
+    }
+}
+
+/* Loading Animation */
+.product-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product-card:nth-child(1) { animation-delay: 0.1s; }
+.product-card:nth-child(2) { animation-delay: 0.2s; }
+.product-card:nth-child(3) { animation-delay: 0.3s; }
+.product-card:nth-child(4) { animation-delay: 0.4s; }
+</style>
+
+<script>
+// Cart functionality (server session)
+function addToCart(productId) {
+    const tokenMatch = document.cookie.match(/csrftoken=([^;]+)/);
+    const csrfToken = tokenMatch ? tokenMatch[1] : '';
+    fetch(`/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ quantity: 1 })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data && data.success) {
+            showToast('✅ تم إضافة المنتج إلى السلة بنجاح!', 'success');
+            const cartCountElement = document.getElementById('cart-count');
+            if (cartCountElement) {
+                cartCountElement.textContent = data.cart_items_count;
+                cartCountElement.style.display = data.cart_items_count > 0 ? 'block' : 'none';
+            }
+            animateCartButton();
+        }
+    })
+    .catch(() => {
+        showToast('❌ حدث خطأ أثناء الإضافة إلى السلة', 'danger');
+    });
+}
+
+function animateCartButton() {
+    const cartButton = document.querySelector('.btn-outline-primary[href*="cart"]');
+    if (cartButton) {
+        cartButton.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            cartButton.style.transform = 'scale(1)';
+        }, 200);
+    }
+}
+
+function updateCartCount() {
+    const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const cartCountElement = document.getElementById('cart-count');
+    if (cartCountElement) {
+        cartCountElement.textContent = count;
+        cartCountElement.style.display = count > 0 ? 'block' : 'none';
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'primary'} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    // Add toast to container
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    toastContainer.appendChild(toast);
+    
+    // Show toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove toast after it's hidden
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
+
+// Initialize cart count on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartCount();
+    addFloatingCartButton();
+});
+
+// Add floating cart button
+function addFloatingCartButton() {
+    const floatingCart = document.createElement('div');
+    floatingCart.innerHTML = `
+        <a href="{% url 'cart_view' %}" class="btn btn-primary btn-lg rounded-circle shadow-lg" 
+           style="position: fixed; bottom: 30px; left: 30px; width: 60px; height: 60px; z-index: 1050;">
+            <i class="bi bi-cart3 fs-5"></i>
+            <span id="floating-cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                0
+            </span>
+        </a>
+    `;
+    document.body.appendChild(floatingCart);
+    
+    // Update floating cart count
+    const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const floatingCount = document.getElementById('floating-cart-count');
+    if (floatingCount) {
+        floatingCount.textContent = count;
+        floatingCount.style.display = count > 0 ? 'block' : 'none';
+    }
+}
+
+// Override updateCartCount to also update floating cart
+const originalUpdateCartCount = updateCartCount;
+updateCartCount = function() {
+    originalUpdateCartCount();
+    
+    // Update floating cart count
+    const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const floatingCount = document.getElementById('floating-cart-count');
+    if (floatingCount) {
+        floatingCount.textContent = count;
+        floatingCount.style.display = count > 0 ? 'block' : 'none';
+    }
+};
+</script>
+
+{% endblock %}

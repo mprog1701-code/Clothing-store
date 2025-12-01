@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}منتجات المتجر - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>منتجات المتجر: {{ store.name }}</h1>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <a href="#" class="btn btn-primary">إضافة منتج جديد</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>الصورة</th>
+                        <th>الاسم</th>
+                        <th>الفئة</th>
+                        <th>السعر</th>
+                        <th>الحالة</th>
+                        <th>تاريخ الإضافة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>
+                            {% if product.main_image and product.main_image.image %}
+                            <img src="{{ product.main_image.image.url }}" alt="{{ product.name }}" style="width: 50px; height: 50px; object-fit: cover;">
+                            {% else %}
+                            <div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="bi bi-image" style="color: #ccc;"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.get_category_display }}</td>
+                        <td>{{ product.base_price }} د.ع</td>
+                        <td>
+                            {% if product.is_active %}
+                                <span class="badge bg-success">نشط</span>
+                            {% else %}
+                                <span class="badge bg-danger">غير نشط</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.created_at|date:"Y-m-d" }}</td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-outline-primary">تعديل</a>
+                            <a href="#" class="btn btn-sm btn-outline-danger">حذف</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            لا توجد منتجات مضافة إلى المتجر.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

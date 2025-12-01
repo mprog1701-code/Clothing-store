@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ store.name }} - متجر الملابس{% endblock %}
+
+{% block extra_css %}
+<style>
+.store-hero {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+}
+
+.store-hero-bg {
+    z-index: -1;
+}
+
+.store-logo-container {
+    animation: bounce 2s infinite;
+}
+
+.product-card-modern {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.product-card-modern:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.product-image-container {
+    position: relative;
+    overflow: hidden;
+    height: 250px;
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.product-card-modern:hover .product-image {
+    transform: scale(1.1);
+}
+
+.product-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+}
+
+.category-filter .btn {
+    border-radius: 25px;
+    padding: 8px 20px;
+    margin: 5px;
+    transition: all 0.3s ease;
+}
+
+.category-filter .btn.active {
+    transform: scale(1.05);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.store-stats-card {
+    background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: 20px;
+}
+
+.store-stats-card .stat-item {
+    text-align: center;
+    padding: 20px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s ease;
+}
+
+.store-stats-card .stat-item:hover {
+    transform: scale(1.05);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Store Hero Section -->
+<section class="store-hero py-5 mb-5 position-relative overflow-hidden">
+    <!-- Store Background Image -->
+    <div class="store-hero-bg position-absolute top-0 start-0 w-100 h-100">
+        <img src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Modern+fashion+store+interior%2C+elegant+design%2C+clothing+racks%2C+bright+lighting%2C+luxury+atmosphere%2C+{{ store.name|urlencode }}&image_size=landscape_16_9" 
+             alt="{{ store.name }}" class="w-100 h-100" style="object-fit: cover; filter: brightness(0.7);">
+    </div>
+    <div class="container position-relative z-index-1">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <nav aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb breadcrumb-light">
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-light">الرئيسية</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'store_list' %}" class="text-light">المتاجر</a></li>
+                        <li class="breadcrumb-item active text-light-50">{{ store.name }}</li>
+                    </ol>
+                </nav>
+                <h1 class="display-4 fw-bold text-white mb-3 animate-fade-in">
+                    {{ store.name }}
+                </h1>
+                <p class="lead text-light mb-4 animate-fade-in-delay">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    {{ store.city }} - {{ store.address }}
+                </p>
+                {% if store.description %}
+                <p class="text-light-75 mb-4">{{ store.description }}</p>
+                {% endif %}
+            </div>
+            <div class="col-lg-4 text-center">
+                <div class="store-hero-icon animate-bounce">
+                    <div class="store-logo-container bg-white rounded-circle p-4 shadow-lg d-inline-block">
+                        <i class="bi bi-shop display-1 text-primary-gradient"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Store Info Section -->
+<section class="store-info-section mb-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="store-details-card p-5 bg-white rounded-4 shadow-lg">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="info-item mb-4">
+                                <div class="info-icon mb-2">
+                                    <i class="bi bi-person-circle text-primary-gradient fs-4"></i>
+                                </div>
+                                <h6 class="text-muted mb-1">مالك المتجر</h6>
+                                <p class="fw-semibold mb-0">{{ store.owner.get_full_name|default:store.owner.username }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item mb-4">
+                                <div class="info-icon mb-2">
+                                    <i class="bi bi-calendar3 text-success-gradient fs-4"></i>
+                                </div>
+                                <h6 class="text-muted mb-1">تاريخ الإنشاء</h6>
+                                <p class="fw-semibold mb-0">{{ store.created_at|date:"Y/m/d" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item mb-4">
+                                <div class="info-icon mb-2">
+                                    <i class="bi bi-geo-alt text-warning-gradient fs-4"></i>
+                                </div>
+                                <h6 class="text-muted mb-1">الموقع</h6>
+                                <p class="fw-semibold mb-0">{{ store.city }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item mb-4">
+                                <div class="info-icon mb-2">
+                                    {% if store.is_active %}
+                                    <i class="bi bi-check-circle text-success-gradient fs-4"></i>
+                                    {% else %}
+                                    <i class="bi bi-x-circle text-danger-gradient fs-4"></i>
+                                    {% endif %}
+                                </div>
+                                <h6 class="text-muted mb-1">الحالة</h6>
+                                <p class="fw-semibold mb-0">
+                                    {% if store.is_active %}
+                                    <span class="text-success">نشط</span>
+                                    {% else %}
+                                    <span class="text-danger">غير نشط</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="store-stats-card p-4 bg-gradient-primary text-white rounded-4 shadow-lg">
+                    <h5 class="mb-4 text-center">
+                        <i class="bi bi-graph-up me-2"></i>
+                        إحصائيات المتجر
+                    </h5>
+                    
+                    <div class="stat-item mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="stat-label">عدد المنتجات</span>
+                            <span class="stat-number fw-bold fs-5">{{ products.count }}</span>
+                        </div>
+                        <div class="progress bg-white-20 mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-white" style="width: {{ products.count|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="stat-label">عدد الطلبات</span>
+                            <span class="stat-number fw-bold fs-5">{{ store.order_count|default:"0" }}</span>
+                        </div>
+                        <div class="progress bg-white-20 mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-white" style="width: {{ store.order_count|default:0 }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <small class="opacity-75">
+                            <i class="bi bi-clock me-1"></i>
+                            آخر تحديث: {{ store.updated_at|date:"Y/m/d" }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Products Section -->
+<section class="products-section mb-5">
+    <div class="container">
+        <div class="section-header mb-5">
+            <h2 class="display-5 fw-bold text-gradient text-center mb-3">
+                منتجات المتجر
+            </h2>
+            <p class="lead text-muted text-center">
+                اكتشف أحدث تشكيلات الموضة في {{ store.name }}
+            </p>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-lg-4 col-md-6 mx-auto">
+                <form method="get" class="filter-form">
+                    <div class="form-group">
+                        <label class="form-label fw-semibold mb-2">
+                            <i class="bi bi-tags me-2 text-primary-gradient"></i>
+                            تصفية حسب الفئة
+                        </label>
+                        <select name="category" class="form-select form-select-lg border-0 shadow-sm" onchange="this.form.submit()">
+                            <option value="">جميع الفئات</option>
+                            {% for category_value, category_name in categories %}
+                            <option value="{{ category_value }}" {% if category_value == selected_category %}selected{% endif %}>
+                                {{ category_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="row g-4">
+            {% for product in products %}
+            <div class="col-lg-3 col-md-6">
+                <div class="product-card-modern h-100 animate-fade-in-up">
+                    <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
+                        {% if product.main_image and product.main_image.image %}
+                        <div class="product-image-container">
+                            <img src="{{ product.main_image.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 250px; object-fit: cover;">
+                            <div class="product-overlay">
+                                <div class="overlay-content">
+                                    <a href="{% url 'product_detail' product.id %}" class="btn btn-light btn-lg">
+                                        <i class="bi bi-eye me-2"></i>
+                                        عرض التفاصيل
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="product-image-container bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
+                            <i class="bi bi-image display-1 text-muted opacity-25"></i>
+                            <div class="product-overlay">
+                                <div class="overlay-content">
+                                    <a href="{% url 'product_detail' product.id %}" class="btn btn-light btn-lg">
+                                        <i class="bi bi-eye me-2"></i>
+                                        عرض التفاصيل
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body p-4">
+                            <div class="product-category mb-2">
+                                <span class="badge bg-primary-gradient text-white px-3 py-2">
+                                    {{ product.get_category_display }}
+                                </span>
+                            </div>
+                            
+                            <h5 class="card-title fw-bold mb-3">
+                                <a href="{% url 'product_detail' product.id %}" class="text-decoration-none" style="color: inherit;">{{ product.name }}</a>
+                            </h5>
+                            
+                            <div class="product-price mb-3">
+                                <span class="price text-primary-gradient fw-bold fs-4">
+                                    {{ product.base_price }} د.ع
+                                </span>
+                            </div>
+                            
+                            {% if product.variants.count > 0 %}
+                            <div class="product-variants mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-palette me-1"></i>
+                                    متوفر بعدة ألوان وأحجام
+                                </small>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="product-actions">
+                                <a href="{% url 'product_detail' product.id %}" class="btn btn-gradient w-100">
+                                    <i class="bi bi-bag me-2"></i>
+                                    اطلب الآن
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="empty-state text-center py-5">
+                    <div class="empty-icon mb-4">
+                        <i class="bi bi-bag-x display-1 text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted mb-3">لا توجد منتجات في هذا المتجر حالياً</h4>
+                    <p class="text-muted">يتم إضافة منتجات جديدة قريباً</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

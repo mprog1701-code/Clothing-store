@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}لوحة الأدمن - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">لوحة التحكم - الأدمن</h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">إجمالي المستخدمين</h5>
+                <h2 class="text-primary">{{ total_users }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">إجمالي المتاجر</h5>
+                <h2 class="text-success">{{ total_stores }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">المتاجر النشطة</h5>
+                <h2 class="text-info">{{ active_stores }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">إجمالي الطلبات</h5>
+                <h2 class="text-warning">{{ total_orders }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>أحدث الطلبات</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>المتجر</th>
+                                <th>الحالة</th>
+                                <th>المبلغ</th>
+                                <th>التاريخ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>#{{ order.id }}</td>
+                                <td>{{ order.store.name }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if order.status == 'pending' %}bg-warning
+                                        {% elif order.status == 'accepted' %}bg-info
+                                        {% elif order.status == 'preparing' %}bg-primary
+                                        {% elif order.status == 'on_the_way' %}bg-secondary
+                                        {% elif order.status == 'delivered' %}bg-success
+                                        {% elif order.status == 'canceled' %}bg-danger
+                                        {% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ order.total_amount }} د.ع</td>
+                                <td>{{ order.created_at|date:"Y-m-d" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    لا توجد طلبات جديدة.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>المتظرين التفعيل</h5>
+            </div>
+            <div class="card-body">
+                {% if pending_stores %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>المتجر</th>
+                                <th>المالك</th>
+                                <th>المدينة</th>
+                                <th>التاريخ</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for store in pending_stores %}
+                            <tr>
+                                <td>{{ store.name }}</td>
+                                <td>{{ store.owner.get_full_name|default:store.owner.username }}</td>
+                                <td>{{ store.city }}</td>
+                                <td>{{ store.created_at|date:"Y-m-d" }}</td>
+                                <td>
+                                    <a href="{% url 'admin_stores' %}" class="btn btn-sm btn-primary">عرض</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{% url 'admin_stores' %}" class="btn btn-outline-primary btn-sm">عرض جميع المتاجر</a>
+                {% else %}
+                <div class="alert alert-info">
+                    لا توجد متاجر تنتظر التفعيل.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}تسجيل الدخول - متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">تسجيل الدخول</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">رقم الجوال</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" required 
+                               placeholder="05xxxxxxxx" pattern="05[0-9]{8}" title="أدخل رقم جوال صحيح يبدأ بـ 05">
+                        <div class="form-text">أدخل رقم الجوال بدون كود الدولة</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">كلمة المرور</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">تسجيل الدخول</button>
+                </form>
+                <hr>
+                <div class="text-center">
+                    <p>ليس لديك حساب؟ <a href="{% url 'register' %}">سجل الآن</a></p>
+                    <p class="mt-2"><a href="{% url 'owner_login' %}" class="btn btn-sm btn-outline-primary">دخول المالك والمدير</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

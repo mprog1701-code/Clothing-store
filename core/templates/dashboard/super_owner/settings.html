@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}إعدادات الموقع - المالك الرئيسي{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-dark text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            إعدادات الموقع
+                        </h4>
+                        <a href="{% url 'super_owner_dashboard' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            العودة للوحة التحكم
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    معلومات الموقع الأساسية
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="site_name" class="form-label">اسم الموقع *</label>
+                                    <input type="text" class="form-control" id="site_name" name="site_name" 
+                                           value="{{ settings.site_name }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="homepage_title" class="form-label">عنوان الصفحة الرئيسية *</label>
+                                    <input type="text" class="form-control" id="homepage_title" name="homepage_title" 
+                                           value="{{ settings.homepage_title }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="site_description" class="form-label">وصف الموقع</label>
+                                    <textarea class="form-control" id="site_description" name="site_description" 
+                                              rows="3">{{ settings.site_description }}</textarea>
+                                </div>
+                                
+                                <h5 class="mb-3 mt-4">
+                                    <i class="fas fa-truck me-2"></i>
+                                    إعدادات التوصيل
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="delivery_fee" class="form-label">رسوم التوصيل (ريال) *</label>
+                                    <input type="number" class="form-control" id="delivery_fee" name="delivery_fee" 
+                                           value="{{ settings.delivery_fee }}" min="0" step="0.01" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="free_delivery_threshold" class="form-label">الحد الأدنى للتوصيل المجاني (ريال) *</label>
+                                    <input type="number" class="form-control" id="free_delivery_threshold" name="free_delivery_threshold" 
+                                           value="{{ settings.free_delivery_threshold }}" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-paint-brush me-2"></i>
+                                    إعدادات المظهر
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="primary_color" class="form-label">اللون الأساسي *</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" id="primary_color" 
+                                               name="primary_color" value="{{ settings.primary_color }}" required>
+                                        <input type="text" class="form-control" value="{{ settings.primary_color }}" readonly>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="secondary_color" class="form-label">اللون الثانوي *</label>
+                                    <div class="input-group">
+                                        <input type="color" class="form-control form-control-color" id="secondary_color" 
+                                               name="secondary_color" value="{{ settings.secondary_color }}" required>
+                                        <input type="text" class="form-control" value="{{ settings.secondary_color }}" readonly>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="mb-3 mt-4">
+                                    <i class="fas fa-home me-2"></i>
+                                    إعدادات الصفحة الرئيسية
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="featured_stores_count" class="form-label">عدد المتاجر المميزة *</label>
+                                    <input type="number" class="form-control" id="featured_stores_count" name="featured_stores_count" 
+                                           value="{{ settings.featured_stores_count }}" min="1" max="20" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="featured_products_count" class="form-label">عدد المنتجات المميزة *</label>
+                                    <input type="number" class="form-control" id="featured_products_count" name="featured_products_count" 
+                                           value="{{ settings.featured_products_count }}" min="1" max="50" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-address-book me-2"></i>
+                                    معلومات التواصل
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="contact_phone" class="form-label">هاتف التواصل</label>
+                                    <input type="tel" class="form-control" id="contact_phone" name="contact_phone" 
+                                           value="{{ settings.contact_phone }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="contact_email" class="form-label">بريد التواصل</label>
+                                    <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                                           value="{{ settings.contact_email }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="contact_address" class="form-label">عنوان التواصل</label>
+                                    <textarea class="form-control" id="contact_address" name="contact_address" 
+                                              rows="3">{{ settings.contact_address }}</textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-share-alt me-2"></i>
+                                    روابط التواصل الاجتماعي
+                                </h5>
+                                
+                                <div class="mb-3">
+                                    <label for="facebook_url" class="form-label">رابط فيسبوك</label>
+                                    <input type="url" class="form-control" id="facebook_url" name="facebook_url" 
+                                           value="{{ settings.facebook_url }}" placeholder="https://facebook.com/yourpage">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="instagram_url" class="form-label">رابط إنستغرام</label>
+                                    <input type="url" class="form-control" id="instagram_url" name="instagram_url" 
+                                           value="{{ settings.instagram_url }}" placeholder="https://instagram.com/yourpage">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="twitter_url" class="form-label">رابط تويتر</label>
+                                    <input type="url" class="form-control" id="twitter_url" name="twitter_url" 
+                                           value="{{ settings.twitter_url }}" placeholder="https://twitter.com/yourpage">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save me-2"></i>
+                                        حفظ الإعدادات
+                                    </button>
+                                    <a href="{% url 'super_owner_dashboard' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>
+                                        إلغاء
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-dark {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+}
+
+.form-control-color {
+    width: 60px;
+    height: 38px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.input-group .form-control:not(:first-child) {
+    border-top-left-radius: 0.25rem;
+    border-bottom-left-radius: 0.25rem;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    padding: 10px 30px;
+}
+
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+}
+</style>
+{% endblock %}
