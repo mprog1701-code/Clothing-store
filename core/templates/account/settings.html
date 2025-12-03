@@ -31,20 +31,23 @@
     </div>
 
     <div class="list-group">
-        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+        <a href="#" id="langItem" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-translate fs-5"></i>
                 <div>
                     <div class="fw-bold">اللغة</div>
-                    <small class="text-muted">العربية</small>
+                    <small class="text-muted" id="currentLanguage">العربية</small>
                 </div>
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
-        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+        <a href="#" id="themeItem" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-gift fs-5"></i>
-                <div class="fw-bold">بطاقات الهدايا</div>
+                <i class="bi bi-brightness-high fs-5"></i>
+                <div>
+                    <div class="fw-bold">مظهر التطبيق</div>
+                    <small class="text-muted" id="currentTheme">داكن</small>
+                </div>
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
@@ -55,49 +58,87 @@
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
-        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+        <a href="{% url 'services' %}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-chat-dots fs-5"></i>
-                <div class="fw-bold">المساعدة</div>
+                <div class="fw-bold">خدماتنا</div>
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
-        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-file-text fs-5"></i>
-                <div class="fw-bold">خدمات مسواك</div>
-            </div>
-            <i class="bi bi-chevron-left"></i>
-        </a>
-        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-shield-lock fs-5"></i>
-                <div class="fw-bold">سياسة الخصوصية</div>
-            </div>
-            <i class="bi bi-chevron-left"></i>
-        </a>
-        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+        <a href="{% url 'about' %}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-info-circle fs-5"></i>
-                <div class="fw-bold">عن شركة مسواك</div>
+                <div class="fw-bold">عن شركتنا</div>
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
-        <a href="{% url 'owner_login' %}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+        <a href="#" class="list-group-item d-flex align-items-center justify-content-between disabled" style="pointer-events:none; opacity:0.6;">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-shop fs-5"></i>
                 <div class="fw-bold">صير تاجر ويانة</div>
                 <span class="badge bg-danger">جديد</span>
             </div>
-            <i class="bi bi-chevron-left"></i>
+            <i class="bi bi-lock"></i>
         </a>
-        <a href="#" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+        <a href="#" class="list-group-item d-flex align-items-center justify-content-between disabled" style="pointer-events:none; opacity:0.6;">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-app fs-5"></i>
                 <div class="fw-bold">ايقونة التطبيق</div>
             </div>
-            <i class="bi bi-chevron-left"></i>
+            <i class="bi bi-lock"></i>
         </a>
     </div>
 </div>
+
+<div class="modal fade" id="languageModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="list-group">
+          <a href="#" class="list-group-item list-group-item-action" data-lang="ar">العربية</a>
+          <a href="#" class="list-group-item list-group-item-action" data-lang="en">English</a>
+          <a href="#" class="list-group-item list-group-item-action" data-lang="ku">کوردی</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const langItem=document.getElementById('langItem');
+const currentLanguage=document.getElementById('currentLanguage');
+const themeItem=document.getElementById('themeItem');
+const currentTheme=document.getElementById('currentTheme');
+function applyLanguageLabel(){
+  const lang=localStorage.getItem('siteLanguage')||'ar';
+  currentLanguage.textContent=lang==='ar'? 'العربية' : (lang==='en'? 'English' : 'کوردی');
+}
+function applyTheme(){
+  const theme=localStorage.getItem('siteTheme')||'dark';
+  currentTheme.textContent=theme==='dark'? 'داكن' : 'فاتح';
+  document.body.classList.toggle('theme-light', theme==='light');
+}
+applyLanguageLabel();
+applyTheme();
+langItem.addEventListener('click',function(){
+  const modal=new bootstrap.Modal(document.getElementById('languageModal'));
+  modal.show();
+});
+document.querySelectorAll('#languageModal .list-group-item').forEach(el=>{
+  el.addEventListener('click',function(e){
+    e.preventDefault();
+    const lang=this.getAttribute('data-lang');
+    localStorage.setItem('siteLanguage',lang);
+    applyLanguageLabel();
+    bootstrap.Modal.getInstance(document.getElementById('languageModal')).hide();
+  });
+});
+themeItem.addEventListener('click',function(e){
+  e.preventDefault();
+  const theme=localStorage.getItem('siteTheme')||'dark';
+  const newTheme=theme==='dark'?'light':'dark';
+  localStorage.setItem('siteTheme',newTheme);
+  applyTheme();
+});
+</script>
 {% endblock %}
