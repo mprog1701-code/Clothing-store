@@ -668,6 +668,65 @@ def main_dashboard(request):
     return render(request, 'dashboard/main_dashboard.html', context)
 
 
+def account_settings(request):
+    items = [
+        {
+            'icon': 'bi-person',
+            'title': 'الدخول أو انشاء حساب جديد',
+            'url': 'login',
+            'badge': ''
+        },
+        {
+            'icon': 'bi-translate',
+            'title': 'اللغة',
+            'value': 'العربية',
+            'url': ''
+        },
+        {
+            'icon': 'bi-gift',
+            'title': 'بطاقات الهدايا',
+            'url': ''
+        },
+        {
+            'icon': 'bi-bell',
+            'title': 'الاشعارات',
+            'url': ''
+        },
+        {
+            'icon': 'bi-chat-dots',
+            'title': 'المساعدة',
+            'url': ''
+        },
+        {
+            'icon': 'bi-file-text',
+            'title': 'خدمات مسواك',
+            'url': ''
+        },
+        {
+            'icon': 'bi-shield-lock',
+            'title': 'سياسة الخصوصية',
+            'url': ''
+        },
+        {
+            'icon': 'bi-info-circle',
+            'title': 'عن شركة مسواك',
+            'url': ''
+        },
+        {
+            'icon': 'bi-shop',
+            'title': 'صير تاجر ويانة',
+            'url': 'owner_login',
+            'badge': 'جديد'
+        },
+        {
+            'icon': 'bi-app',
+            'title': 'ايقونة التطبيق',
+            'url': ''
+        },
+    ]
+    return render(request, 'account/settings.html', {'items': items})
+
+
 # Store owner dashboard functions removed - simplified system
 
 

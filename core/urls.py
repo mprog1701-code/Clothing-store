@@ -32,6 +32,8 @@ urlpatterns = [
     path('my/addresses/create/', views.address_create, name='address_create'),
     path('my/addresses/edit/<int:address_id>/', views.address_edit, name='address_edit'),
     path('my/addresses/delete/<int:address_id>/', views.address_delete, name='address_delete'),
+    path('profile/', views.account_settings, name='profile'),
+    path('my/account/', views.account_settings, name='account_settings'),
     
     # Store owner URLs removed - simplified system
     

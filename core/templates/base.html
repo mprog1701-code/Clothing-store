@@ -1087,7 +1087,7 @@
                         </div>
                     </div>
                     <div class="col-3">
-                        <div class="nav-item {% if request.path|slice:":10" == '/dashboard' %}active{% endif %}" onclick="window.location.href='{% url 'main_dashboard' %}'">
+                        <div class="nav-item {% if request.path|slice:":12" == '/my/account/' %}active{% endif %}" onclick="window.location.href='{% url 'account_settings' %}'">
                             <i class="bi bi-person nav-icon"></i>
                             <span class="nav-text">حسابي</span>
                         </div>
