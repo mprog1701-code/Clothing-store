@@ -1043,6 +1043,8 @@
         <script>
             function openAnnouncements(){
                 try { localStorage.removeItem('appAnnouncementDismissedUntil'); } catch(e) {}
+                const m=document.getElementById('notificationsModal');
+                if(m){ new bootstrap.Modal(m).show(); }
                 window.dispatchEvent(new CustomEvent('showAnnouncement'));
             }
         </script>
@@ -1087,19 +1089,19 @@
                     <div class="col-3">
                         <div class="nav-item {% if request.path == '/' %}active{% endif %}" onclick="window.location.href='/'">
                             <i class="bi bi-house nav-icon"></i>
-                            <span class="nav-text">الرئيسية</span>
+                            <span class="nav-text" data-i18n="nav_home">الرئيسية</span>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="nav-item {% if request.path|slice:":8" == '/stores/' %}active{% endif %}" onclick="window.location.href='{% url 'store_list' %}'">
                             <i class="bi bi-shop nav-icon"></i>
-                            <span class="nav-text">المتاجر</span>
+                            <span class="nav-text" data-i18n="nav_stores">المتاجر</span>
                         </div>
                     </div>
                     <div class="col-3">
                         <div class="nav-item" onclick="window.location.href='{% url 'cart_view' %}'">
                             <i class="bi bi-cart nav-icon"></i>
-                            <span class="nav-text">السلة</span>
+                            <span class="nav-text" data-i18n="nav_cart">السلة</span>
                             {% if request.session.cart and request.session.cart|length > 0 %}
                             <span class="cart-badge">{{ request.session.cart|length }}</span>
                             {% endif %}
@@ -1108,7 +1110,7 @@
                     <div class="col-3">
                         <div class="nav-item {% if request.path|slice:":12" == '/my/account/' %}active{% endif %}" onclick="window.location.href='{% url 'account_settings' %}'">
                             <i class="bi bi-person nav-icon"></i>
-                            <span class="nav-text">حسابي</span>
+                            <span class="nav-text" data-i18n="nav_account">حسابي</span>
                         </div>
                     </div>
                 </div>
@@ -1203,16 +1205,87 @@
         (function(){
             try{ if(localStorage.getItem('siteTheme')==='light'){ document.body.classList.add('theme-light'); }}catch(e){}
         })();
-        // Cart functionality
-        function updateCartCount() {
-            const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
-            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const cartCountElement = document.getElementById('cart-count');
-            if (cartCountElement) {
-                cartCountElement.textContent = count;
-                cartCountElement.style.display = count > 0 ? 'block' : 'none';
+        const i18n = {
+            ar: {
+                nav_home: 'الرئيسية',
+                nav_stores: 'المتاجر',
+                nav_cart: 'السلة',
+                nav_account: 'حسابي',
+                account_language: 'اللغة',
+                account_theme: 'مظهر التطبيق',
+                account_notifications: 'الاشعارات',
+                account_services: 'خدماتنا',
+                account_about: 'عن شركتنا',
+                account_merchant: 'صير تاجر ويانة',
+                account_appicon: 'ايقونة التطبيق',
+                account_login: 'تسجيل الدخول',
+                account_register: 'تسجيل',
+                account_logout: 'تسجيل الخروج',
+                account_not_signed: 'غير مسجل'
+            },
+            en: {
+                nav_home: 'Home',
+                nav_stores: 'Stores',
+                nav_cart: 'Cart',
+                nav_account: 'Account',
+                account_language: 'Language',
+                account_theme: 'App Theme',
+                account_notifications: 'Notifications',
+                account_services: 'Our Services',
+                account_about: 'About Us',
+                account_merchant: 'Become a Merchant',
+                account_appicon: 'App Icon',
+                account_login: 'Login',
+                account_register: 'Register',
+                account_logout: 'Logout',
+                account_not_signed: 'Not signed in'
+            },
+            ku: {
+                nav_home: 'سەرەتا',
+                nav_stores: 'فرۆشیگا',
+                nav_cart: 'سەبەتە',
+                nav_account: 'هەژمار',
+                account_language: 'زمان',
+                account_theme: 'مۆهرەی ئەپلیکەیشن',
+                account_notifications: 'ئاگەدارییەکان',
+                account_services: 'خزمەتگوزارییەکانمان',
+                account_about: 'دەربارەی ئێمە',
+                account_merchant: 'بە فرۆشیگار بێ',
+                account_appicon: 'نیشانی ئەپلیکەیشن',
+                account_login: 'چوونەژورەوە',
+                account_register: 'تۆماربوون',
+                account_logout: 'دەرچوون',
+                account_not_signed: 'تۆمار نەکراوە'
             }
+        };
+        function applyTranslations(lang){
+            const dict=i18n[lang]||i18n.ar;
+            document.querySelectorAll('[data-i18n]').forEach(el=>{
+                const k=el.getAttribute('data-i18n');
+                if(dict[k]) el.textContent=dict[k];
+            });
         }
+        function applyLanguageFromStorage(){
+            let lang='ar';
+            try{ lang=localStorage.getItem('siteLanguage')||'ar'; }catch(e){}
+            applyTranslations(lang);
+        }
+        applyLanguageFromStorage();
+        window.addEventListener('languageChange',function(e){
+            const lang=e.detail&&e.detail.lang? e.detail.lang : (localStorage.getItem('siteLanguage')||'ar');
+            applyTranslations(lang);
+        });
+        
+        // Cart functionality
+            function updateCartCount() {
+                const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+                const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const cartCountElement = document.getElementById('cart-count');
+                if (cartCountElement) {
+                    cartCountElement.textContent = count;
+                    cartCountElement.style.display = count > 0 ? 'block' : 'none';
+                }
+            }
         
         // Loading functionality
         function showLoading() {
@@ -1363,7 +1436,20 @@
             })
             .catch(() => { hideLoading(); });
         }
-    </script>
+        </script>
+        <div class="modal fade" id="notificationsModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">إشعارات</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>لا توجد إشعارات جديدة حالياً.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     
     {% block extra_js %}{% endblock %}
 </body>
