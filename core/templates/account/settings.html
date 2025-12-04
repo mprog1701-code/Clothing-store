@@ -105,46 +105,59 @@
 </div>
 
 <script>
-const langItem=document.getElementById('langItem');
-const currentLanguage=document.getElementById('currentLanguage');
-const themeItem=document.getElementById('themeItem');
-const currentTheme=document.getElementById('currentTheme');
-function applyLanguageLabel(){
-  const lang=localStorage.getItem('siteLanguage')||'ar';
-  const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
-  currentLanguage.textContent = dict.language_en;
-  if(lang==='ar') currentLanguage.textContent = dict.language_ar;
-  if(lang==='ku') currentLanguage.textContent = dict.language_ku;
-}
-function applyTheme(){
-  const theme=localStorage.getItem('siteTheme')||'dark';
-  const lang=localStorage.getItem('siteLanguage')||'ar';
-  const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
-  currentTheme.textContent = theme==='dark'? dict.theme_dark : dict.theme_light;
-  document.body.classList.toggle('theme-light', theme==='light');
-}
-applyLanguageLabel();
-applyTheme();
-langItem.addEventListener('click',function(){
-  const modal=new bootstrap.Modal(document.getElementById('languageModal'));
-  modal.show();
-});
-document.querySelectorAll('#languageModal .list-group-item').forEach(el=>{
-  el.addEventListener('click',function(e){
-    e.preventDefault();
-    const lang=this.getAttribute('data-lang');
-    localStorage.setItem('siteLanguage',lang);
-    applyLanguageLabel();
-    window.dispatchEvent(new CustomEvent('languageChange',{detail:{lang}}));
-    bootstrap.Modal.getInstance(document.getElementById('languageModal')).hide();
-  });
-});
-themeItem.addEventListener('click',function(e){
-  e.preventDefault();
-  const theme=localStorage.getItem('siteTheme')||'dark';
-  const newTheme=theme==='dark'?'light':'dark';
-  localStorage.setItem('siteTheme',newTheme);
+document.addEventListener('DOMContentLoaded', function(){
+  const langItem=document.getElementById('langItem');
+  const currentLanguage=document.getElementById('currentLanguage');
+  const themeItem=document.getElementById('themeItem');
+  const currentTheme=document.getElementById('currentTheme');
+  function applyLanguageLabel(){
+    let lang='ar';
+    try{
+      const stored=localStorage.getItem('siteLanguage');
+      lang = (stored && window.i18n && window.i18n[stored]) ? stored : 'ar';
+      if(!stored){ localStorage.setItem('siteLanguage','ar'); }
+    }catch(e){ lang='ar'; }
+    const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
+    if(currentLanguage) currentLanguage.textContent = dict['language_'+lang] || dict.language_ar;
+  }
+  function applyTheme(){
+    const theme=localStorage.getItem('siteTheme')||'dark';
+    const lang=localStorage.getItem('siteLanguage')||'ar';
+    const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
+    if(currentTheme) currentTheme.textContent = theme==='dark'? dict.theme_dark : dict.theme_light;
+    document.body.classList.toggle('theme-light', theme==='light');
+  }
+  applyLanguageLabel();
   applyTheme();
+  if(langItem){
+    langItem.addEventListener('click',function(e){
+      e.preventDefault();
+      try{
+        const modalEl=document.getElementById('languageModal');
+        if(window.bootstrap && modalEl){ new bootstrap.Modal(modalEl).show(); }
+      }catch(err){ console.warn('Language modal error', err); }
+    });
+  }
+  document.querySelectorAll('#languageModal .list-group-item').forEach(el=>{
+    el.addEventListener('click',function(e){
+      e.preventDefault();
+      const lang=this.getAttribute('data-lang');
+      try{ localStorage.setItem('siteLanguage',lang); }catch(err){}
+      applyLanguageLabel();
+      window.dispatchEvent(new CustomEvent('languageChange',{detail:{lang}}));
+      const modalEl=document.getElementById('languageModal');
+      if(window.bootstrap && modalEl){ bootstrap.Modal.getInstance(modalEl).hide(); }
+    });
+  });
+  if(themeItem){
+    themeItem.addEventListener('click',function(e){
+      e.preventDefault();
+      const theme=localStorage.getItem('siteTheme')||'dark';
+      const newTheme=theme==='dark'?'light':'dark';
+      try{ localStorage.setItem('siteTheme',newTheme); }catch(err){}
+      applyTheme();
+    });
+  }
 });
 </script>
 {% endblock %}
