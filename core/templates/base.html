@@ -1022,17 +1022,17 @@
                         {% else %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'login' %}">
-                                    <i class="bi bi-person"></i> حسابي
+                                    <i class="bi bi-person"></i> <span data-i18n="nav_account">حسابي</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-warning" href="{% url 'owner_login' %}">
-                                    <i class="bi bi-shield-lock"></i> دخول المالك
+                                    <i class="bi bi-shield-lock"></i> <span data-i18n="account_owner_login">دخول المالك</span>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="btn btn-outline-light ms-2" href="{% url 'register' %}">
-                                    <i class="bi bi-person-plus"></i> تسجيل
+                                    <i class="bi bi-person-plus"></i> <span data-i18n="account_register">تسجيل</span>
                                 </a>
                             </li>
                         {% endif %}
@@ -1221,7 +1221,13 @@
                 account_login: 'تسجيل الدخول',
                 account_register: 'تسجيل',
                 account_logout: 'تسجيل الخروج',
-                account_not_signed: 'غير مسجل'
+                account_not_signed: 'غير مسجل',
+                account_owner_login: 'دخول المالك',
+                language_ar: 'العربية',
+                language_en: 'English',
+                language_ku: 'کوردی',
+                theme_dark: 'داكن',
+                theme_light: 'فاتح'
             },
             en: {
                 nav_home: 'Home',
@@ -1238,7 +1244,13 @@
                 account_login: 'Login',
                 account_register: 'Register',
                 account_logout: 'Logout',
-                account_not_signed: 'Not signed in'
+                account_not_signed: 'Not signed in',
+                account_owner_login: 'Owner Login',
+                language_ar: 'Arabic',
+                language_en: 'English',
+                language_ku: 'Kurdî',
+                theme_dark: 'Dark',
+                theme_light: 'Light'
             },
             ku: {
                 nav_home: 'سەرەتا',
@@ -1246,7 +1258,7 @@
                 nav_cart: 'سەبەتە',
                 nav_account: 'هەژمار',
                 account_language: 'زمان',
-                account_theme: 'مۆهرەی ئەپلیکەیشن',
+                account_theme: 'ڕووخەی ئەپ',
                 account_notifications: 'ئاگەدارییەکان',
                 account_services: 'خزمەتگوزارییەکانمان',
                 account_about: 'دەربارەی ئێمە',
@@ -1255,7 +1267,13 @@
                 account_login: 'چوونەژورەوە',
                 account_register: 'تۆماربوون',
                 account_logout: 'دەرچوون',
-                account_not_signed: 'تۆمار نەکراوە'
+                account_not_signed: 'تۆمار نەکراوە',
+                account_owner_login: 'چوونەژوورەوەی خاوند',
+                language_ar: 'عەرەبی',
+                language_en: 'ئینگلیزی',
+                language_ku: 'کوردی',
+                theme_dark: 'تاریک',
+                theme_light: 'کاڵ'
             }
         };
         function applyTranslations(lang){

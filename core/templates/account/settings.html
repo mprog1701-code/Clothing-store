@@ -111,11 +111,16 @@ const themeItem=document.getElementById('themeItem');
 const currentTheme=document.getElementById('currentTheme');
 function applyLanguageLabel(){
   const lang=localStorage.getItem('siteLanguage')||'ar';
-  currentLanguage.textContent=lang==='ar'? 'العربية' : (lang==='en'? 'English' : 'کوردی');
+  const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
+  currentLanguage.textContent = dict.language_en;
+  if(lang==='ar') currentLanguage.textContent = dict.language_ar;
+  if(lang==='ku') currentLanguage.textContent = dict.language_ku;
 }
 function applyTheme(){
   const theme=localStorage.getItem('siteTheme')||'dark';
-  currentTheme.textContent=theme==='dark'? 'داكن' : 'فاتح';
+  const lang=localStorage.getItem('siteLanguage')||'ar';
+  const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
+  currentTheme.textContent = theme==='dark'? dict.theme_dark : dict.theme_light;
   document.body.classList.toggle('theme-light', theme==='light');
 }
 applyLanguageLabel();
