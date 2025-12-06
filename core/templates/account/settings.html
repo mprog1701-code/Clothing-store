@@ -105,12 +105,19 @@
 </div>
 
 <style>
+.account-settings { padding-bottom: 12px; }
 .account-settings .settings-card-body { padding: 18px; }
+.account-settings .card { margin: 0 8px 12px; border-radius: 14px; }
 .account-settings .settings-list { margin: 0 8px; }
-.account-settings .settings-row { min-height: 56px; }
+.account-settings .settings-row { min-height: 56px; padding: 10px 12px; }
+.account-settings .d-flex.gap-2 a.btn { min-width: 40%; }
 @media (max-width: 600px){
   .account-settings .settings-card-body { padding: 20px; }
   .account-settings .settings-list { margin: 0 10px; }
+}
+@media (max-width: 480px){
+  .account-settings .card { margin: 8px; border-radius: 12px; }
+  .account-settings .settings-row { padding: 10px 12px; }
 }
 @media (max-width: 400px){
   .account-settings .settings-row { min-height: 54px; }
