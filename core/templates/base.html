@@ -128,6 +128,7 @@
             background: var(--black-light);
             border-top: 2px solid var(--copper);
             padding: 12px 0;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
             position: fixed;
             bottom: 0;
             left: 0;
@@ -135,6 +136,7 @@
             z-index: 1000;
             backdrop-filter: blur(10px);
         }
+        .global-bottom-nav .nav-item { display: block; }
         body.theme-light .global-bottom-nav { background: #f7f7f7; }
         .global-bottom-nav .nav-item {
             text-align: center;
@@ -156,7 +158,7 @@
             font-weight: 700;
         }
         .content-spacer {
-            height: 90px;
+            height: calc(90px + env(safe-area-inset-bottom));
         }
         
         
@@ -1043,8 +1045,6 @@
         <script>
             function openAnnouncements(){
                 try { localStorage.removeItem('appAnnouncementDismissedUntil'); } catch(e) {}
-                const m=document.getElementById('notificationsModal');
-                if(m){ new bootstrap.Modal(m).show(); }
                 window.dispatchEvent(new CustomEvent('showAnnouncement'));
             }
         </script>
@@ -1087,31 +1087,31 @@
             <div class="container">
                 <div class="row">
                     <div class="col-3">
-                        <div class="nav-item {% if request.path == '/' %}active{% endif %}" onclick="window.location.href='/'">
+                        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
                             <i class="bi bi-house nav-icon"></i>
                             <span class="nav-text" data-i18n="nav_home">الرئيسية</span>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-3">
-                        <div class="nav-item {% if request.path|slice:":8" == '/stores/' %}active{% endif %}" onclick="window.location.href='{% url 'store_list' %}'">
+                        <a href="{% url 'store_list' %}" class="nav-item {% if request.path|slice:":8" == '/stores/' %}active{% endif %}">
                             <i class="bi bi-shop nav-icon"></i>
                             <span class="nav-text" data-i18n="nav_stores">المتاجر</span>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-3">
-                        <div class="nav-item" onclick="window.location.href='{% url 'cart_view' %}'">
+                        <a href="{% url 'cart_view' %}" class="nav-item">
                             <i class="bi bi-cart nav-icon"></i>
                             <span class="nav-text" data-i18n="nav_cart">السلة</span>
                             {% if request.session.cart and request.session.cart|length > 0 %}
                             <span class="cart-badge">{{ request.session.cart|length }}</span>
                             {% endif %}
-                        </div>
+                        </a>
                     </div>
                     <div class="col-3">
-                        <div class="nav-item {% if request.path|slice:":12" == '/my/account/' %}active{% endif %}" onclick="window.location.href='{% url 'account_settings' %}'">
+                        <a href="{% url 'account_settings' %}" class="nav-item {% if request.path|slice:":12" == '/my/account/' %}active{% endif %}">
                             <i class="bi bi-person nav-icon"></i>
                             <span class="nav-text" data-i18n="nav_account">حسابي</span>
-                        </div>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -1463,19 +1463,6 @@
             .catch(() => { hideLoading(); });
         }
         </script>
-        <div class="modal fade" id="notificationsModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">إشعارات</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>لا توجد إشعارات جديدة حالياً.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     
     {% block extra_js %}{% endblock %}
 </body>
