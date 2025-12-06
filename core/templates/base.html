@@ -133,10 +133,11 @@
             bottom: 0;
             left: 0;
             right: 0;
-            z-index: 1000;
+            z-index: 2000;
             backdrop-filter: blur(10px);
+            pointer-events: auto;
         }
-        .global-bottom-nav .nav-item { display: block; }
+        .global-bottom-nav .nav-item { display: block; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         body.theme-light .global-bottom-nav { background: #f7f7f7; }
         .global-bottom-nav .nav-item {
             text-align: center;
@@ -1044,8 +1045,15 @@
         </nav>
         <script>
             function openAnnouncements(){
-                try { localStorage.removeItem('appAnnouncementDismissedUntil'); } catch(e) {}
-                window.dispatchEvent(new CustomEvent('showAnnouncement'));
+                try {
+                    localStorage.removeItem('appAnnouncementDismissed');
+                    sessionStorage.setItem('showAnnouncements','1');
+                } catch(e) {}
+                if (window.location.pathname !== '/') {
+                    window.location.assign('/');
+                } else {
+                    window.dispatchEvent(new CustomEvent('showAnnouncement'));
+                }
             }
         </script>
         
@@ -1419,6 +1427,23 @@
             
             document.addEventListener('mousedown', function() {
                 document.body.classList.remove('keyboard-navigation');
+            });
+            try{
+                const shouldShow = sessionStorage.getItem('showAnnouncements') === '1';
+                if(shouldShow){
+                    sessionStorage.removeItem('showAnnouncements');
+                    window.dispatchEvent(new CustomEvent('showAnnouncement'));
+                }
+            }catch(e){}
+            const navLinks = document.querySelectorAll('.global-bottom-nav a.nav-item');
+            navLinks.forEach(a => {
+                a.addEventListener('click', function(e){
+                    const href = this.getAttribute('href');
+                    if(href){
+                        e.preventDefault();
+                        window.location.assign(href);
+                    }
+                });
             });
         });
         

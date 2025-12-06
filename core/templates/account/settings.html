@@ -105,7 +105,7 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function(){
+function initAccountSettings(){
   const langItem=document.getElementById('langItem');
   const currentLanguage=document.getElementById('currentLanguage');
   const themeItem=document.getElementById('themeItem');
@@ -132,10 +132,18 @@ document.addEventListener('DOMContentLoaded', function(){
   if(langItem){
     langItem.addEventListener('click',function(e){
       e.preventDefault();
-      try{
-        const modalEl=document.getElementById('languageModal');
-        if(window.bootstrap && modalEl){ new bootstrap.Modal(modalEl).show(); }
-      }catch(err){ console.warn('Language modal error', err); }
+      const modalEl=document.getElementById('languageModal');
+      if(window.bootstrap && modalEl){
+        try{ new bootstrap.Modal(modalEl).show(); }catch(err){}
+      } else {
+        const order=['ar','en','ku'];
+        let current = 'ar';
+        try{ const stored=localStorage.getItem('siteLanguage'); if(stored) current=stored; }catch(err){}
+        const next = order[(order.indexOf(current)+1)%order.length];
+        try{ localStorage.setItem('siteLanguage', next); }catch(err){}
+        applyLanguageLabel();
+        window.dispatchEvent(new CustomEvent('languageChange',{detail:{lang:next}}));
+      }
     });
   }
   document.querySelectorAll('#languageModal .list-group-item').forEach(el=>{
@@ -146,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function(){
       applyLanguageLabel();
       window.dispatchEvent(new CustomEvent('languageChange',{detail:{lang}}));
       const modalEl=document.getElementById('languageModal');
-      if(window.bootstrap && modalEl){ bootstrap.Modal.getInstance(modalEl).hide(); }
+      if(window.bootstrap && modalEl){ try{ bootstrap.Modal.getInstance(modalEl).hide(); }catch(err){} }
     });
   });
   if(themeItem){
@@ -158,6 +166,11 @@ document.addEventListener('DOMContentLoaded', function(){
       applyTheme();
     });
   }
-});
+}
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', initAccountSettings);
+} else {
+  initAccountSettings();
+}
 </script>
 {% endblock %}
