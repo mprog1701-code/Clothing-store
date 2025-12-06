@@ -27,6 +27,7 @@
             --success-color: #00b894;
             --warning-color: #fdcb6e;
             --danger-color: #e17055;
+            --bottom-nav-height: 64px;
         }
         
         * {
@@ -71,12 +72,7 @@
             color: #000 !important;
         }
         
-        .navbar-brand {
-            font-weight: 800;
-            font-size: 1.8rem;
-            color: var(--gold) !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
-        }
+        .navbar-brand { font-weight: 800; font-size: 1.8rem; color: var(--gold) !important; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
         
         .navbar-nav .nav-link {
             color: rgba(255,255,255,0.9) !important;
@@ -124,19 +120,7 @@
             padding: 10px;
         }
 
-        .global-bottom-nav {
-            background: var(--black-light);
-            border-top: 2px solid var(--copper);
-            padding: 12px 0;
-            padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 2000;
-            backdrop-filter: blur(10px);
-            pointer-events: auto;
-        }
+        .global-bottom-nav { background: var(--black-light); border-top: 2px solid var(--copper); padding: 6px 0; padding-bottom: calc(env(safe-area-inset-bottom) + 6px); position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000; backdrop-filter: blur(10px); pointer-events: auto; min-height: var(--bottom-nav-height); }
         .global-bottom-nav .nav-item { display: block; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         body.theme-light .global-bottom-nav { background: #f7f7f7; }
         .global-bottom-nav .nav-item {
@@ -158,9 +142,8 @@
             font-size: 0.8rem;
             font-weight: 700;
         }
-        .content-spacer {
-            height: calc(90px + env(safe-area-inset-bottom));
-        }
+        .content-spacer { height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom)); }
+        main { padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
         
         
         .dropdown-item {
@@ -932,6 +915,7 @@
         .global-bottom-nav .nav-icon { font-size: 1.5rem; }
         .global-bottom-nav .nav-text { font-size: .8rem; font-weight: 700; }
         @media (max-width: 600px) {
+            :root { --bottom-nav-height: 60px; }
             .navbar-brand { font-size: 1.4rem; }
             .navbar-nav .nav-link { padding: 8px 12px !important; font-size: 1rem; }
             .navbar { padding-top: 6px !important; padding-bottom: 6px !important; }
@@ -942,6 +926,13 @@
             .list-group-item .fs-5 { font-size: 1.25rem !important; }
             .list-group-item i { margin-inline-end: 6px; }
             .navbar-toggler { padding: 10px; border-radius: 10px; }
+        }
+        @media (max-width: 400px) {
+            :root { --bottom-nav-height: 56px; }
+            .navbar-brand { font-size: 1.2rem; }
+            .navbar-nav .nav-link { padding: 6px 10px !important; font-size: .95rem; }
+            .btn { padding: 10px 14px; font-size: .95rem; }
+            .list-group-item { padding: 12px 14px; }
         }
         
         /* Reduced Motion Support */
@@ -1159,13 +1150,13 @@
                         <p class="small mb-3">{{ settings.footer_description|default:"نوفر لك أفضل المنتجات بأعلى جودة وأفضل الأسعار" }}</p>
                         <div class="social-links">
                             {% if settings.facebook_url %}
-                                <a href="{{ settings.facebook_url }}" class="text-white me-3" target="_blank"><i class="bi bi-facebook fs-5"></i></a>
+                                <a href="{{ settings.facebook_url }}" class="text-white me-3"><i class="bi bi-facebook fs-5"></i></a>
                             {% endif %}
                             {% if settings.twitter_url %}
-                                <a href="{{ settings.twitter_url }}" class="text-white me-3" target="_blank"><i class="bi bi-twitter fs-5"></i></a>
+                                <a href="{{ settings.twitter_url }}" class="text-white me-3"><i class="bi bi-twitter fs-5"></i></a>
                             {% endif %}
                             {% if settings.instagram_url %}
-                                <a href="{{ settings.instagram_url }}" class="text-white me-3" target="_blank"><i class="bi bi-instagram fs-5"></i></a>
+                                <a href="{{ settings.instagram_url }}" class="text-white me-3"><i class="bi bi-instagram fs-5"></i></a>
                             {% endif %}
                         </div>
                     </div>
@@ -1467,6 +1458,18 @@
                     }
                 });
             });
+            try{
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if(isMobile){
+                    document.querySelectorAll('a[target=_blank]').forEach(a=>{ a.removeAttribute('target'); a.rel='noopener'; });
+                    const special = document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me"], a[href^="whatsapp:"]');
+                    special.forEach(a=>{
+                        a.addEventListener('click', function(ev){ ev.preventDefault(); const href=this.getAttribute('href'); if(href){ try{ window.location.assign(href); }catch(err){ window.location.href=href; } } });
+                    });
+                    const originalOpen = window.open;
+                    window.open = function(url){ try{ window.location.assign(url); } catch(e){ window.location.href = url; } return null; };
+                }
+            }catch(e){}
         });
         
         // CSRF helper
