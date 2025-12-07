@@ -44,7 +44,7 @@
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
-        <a href="#" id="themeItem" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between settings-row">
+        <a href="#" id="themeItem" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between settings-row" data-bs-toggle="modal" data-bs-target="#themeModal">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-brightness-high fs-5"></i>
                 <div>
@@ -54,7 +54,7 @@
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
-        <a href="#" onclick="openAnnouncements();return false;" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between settings-row">
+        <a href="{% url 'notifications' %}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between settings-row">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-bell fs-5"></i>
                 <div class="fw-bold" data-i18n="account_notifications">الاشعارات</div>
@@ -102,6 +102,20 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="themeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="list-group">
+          <a href="#" class="list-group-item list-group-item-action" data-theme="light">فاتح</a>
+          <a href="#" class="list-group-item list-group-item-action" data-theme="dark">داكن</a>
+          <a href="#" class="list-group-item list-group-item-action" data-theme="system">حسب النظام</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
 
 <style>
 .account-page { 
@@ -171,11 +185,14 @@ function initAccountSettings(){
     if(currentLanguage) currentLanguage.textContent = dict['language_'+lang] || dict.language_ar;
   }
   function applyTheme(){
-    const theme=localStorage.getItem('siteTheme')||'dark';
+    let theme='system';
+    try{ theme = localStorage.getItem('siteTheme')||'system'; }catch(e){ theme='system'; }
     const lang=localStorage.getItem('siteLanguage')||'ar';
     const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
-    if(currentTheme) currentTheme.textContent = theme==='dark'? dict.theme_dark : dict.theme_light;
-    document.body.classList.toggle('theme-light', theme==='light');
+    if(currentTheme){
+      currentTheme.textContent = theme==='dark' ? (dict.theme_dark||'داكن') : (theme==='light' ? (dict.theme_light||'فاتح') : (dict.theme_system||'حسب النظام'));
+    }
+    if(window.applyThemeFromPreference) window.applyThemeFromPreference();
   }
   applyLanguageLabel();
   applyTheme();
@@ -210,12 +227,29 @@ function initAccountSettings(){
   if(themeItem){
     themeItem.addEventListener('click',function(e){
       e.preventDefault();
-      const theme=localStorage.getItem('siteTheme')||'dark';
-      const newTheme=theme==='dark'?'light':'dark';
-      try{ localStorage.setItem('siteTheme',newTheme); }catch(err){}
-      applyTheme();
+      const modalEl=document.getElementById('themeModal');
+      if(window.bootstrap && modalEl){
+        try{ new bootstrap.Modal(modalEl).show(); }catch(err){}
+      } else {
+        const order=['system','light','dark'];
+        let current='system';
+        try{ const stored=localStorage.getItem('siteTheme'); if(stored) current=stored; }catch(err){}
+        const next = order[(order.indexOf(current)+1)%order.length];
+        try{ localStorage.setItem('siteTheme', next); }catch(err){}
+        applyTheme();
+      }
     });
   }
+  document.querySelectorAll('#themeModal .list-group-item').forEach(el=>{
+    el.addEventListener('click',function(e){
+      e.preventDefault();
+      const t=this.getAttribute('data-theme');
+      try{ localStorage.setItem('siteTheme', t); }catch(err){}
+      applyTheme();
+      const modalEl=document.getElementById('themeModal');
+      if(window.bootstrap && modalEl){ try{ bootstrap.Modal.getInstance(modalEl).hide(); }catch(err){} }
+    });
+  });
 }
 if(document.readyState === 'loading'){
   document.addEventListener('DOMContentLoaded', initAccountSettings);

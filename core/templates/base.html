@@ -43,6 +43,7 @@
             padding-bottom: env(safe-area-inset-bottom);
             padding-top: env(safe-area-inset-top);
         }
+        html, body { height: auto; min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         body.theme-light {
             --black: #ffffff;
             --black-light: #f7f7f7;
@@ -58,6 +59,9 @@
             min-height: 100vh;
             box-shadow: 0 0 50px rgba(184,115,51,0.15);
         }
+        main { padding-bottom: calc(var(--bottom-nav-height) + 20px); }
+        .content-constrain { width: 100%; max-width: 480px; margin-left: auto; margin-right: auto; padding-left: 8px; padding-right: 8px; }
+        .content-spacer { height: calc(var(--bottom-nav-height) + 20px); }
         body.theme-light .main-container {
             background: #ffffff;
             color: #000;
@@ -506,6 +510,10 @@
             padding: 50px 0 30px;
             margin-top: 100px;
         }
+        body.theme-light footer { background: #f7f7f7; color: #000; }
+        body:not(.theme-light) footer { background: linear-gradient(135deg, var(--dark-color) 0%, #2c3e50 100%); color: #fff; }
+        body:not(.theme-light) .card:not(.bg-white) { background: #1a1a1a; color: #fff; }
+        body.theme-light .card { background: #fff; color: #000; }
         
         .price-tag {
             background: linear-gradient(135deg, var(--success-color) 0%, #00cec9 100%);
@@ -923,7 +931,9 @@
             .navbar-brand { font-size: 1.4rem; }
             .navbar-nav .nav-link { padding: 8px 12px !important; font-size: 1rem; }
             .navbar { padding-top: 6px !important; padding-bottom: 6px !important; }
-            main .container { padding-left: 8px; padding-right: 8px; }
+            main .container { padding-left: 12px; padding-right: 12px; }
+            .content-constrain { padding-left: 12px; padding-right: 12px; }
+            section + section { margin-top: 16px; }
             .section-title { font-size: 1.25rem; }
             .card { margin-bottom: 14px; }
             .footer .container, footer .container { padding-left: 12px; padding-right: 12px; }
@@ -1049,7 +1059,9 @@
 
             
 
-            {% block content %}{% endblock %}
+            <div class="content-constrain">
+                {% block content %}{% endblock %}
+            </div>
             <div class="content-spacer"></div>
         </main>
 
@@ -1089,81 +1101,13 @@
 
         <!-- Footer -->
         <footer class="mt-5 bg-dark text-white">
-            <div class="container py-5">
-                <div class="row">
-                    <div class="col-md-4 mb-4">
-                        <h5 class="mb-3">
-                            <i class="bi bi-shop me-2"></i>{{ settings.footer_store_name|default:"متجر الملابس" }}
-                        </h5>
-                        <p class="mb-3">{{ settings.footer_tagline|default:"تسوق بثقة وأمان من أفضل المتاجر" }}</p>
-                        <p class="small mb-3">{{ settings.footer_description|default:"نوفر لك أفضل المنتجات بأعلى جودة وأفضل الأسعار" }}</p>
-                        <div class="social-links">
-                            {% if settings.facebook_url %}
-                                <a href="{{ settings.facebook_url }}" class="text-white me-3"><i class="bi bi-facebook fs-5"></i></a>
-                            {% endif %}
-                            {% if settings.twitter_url %}
-                                <a href="{{ settings.twitter_url }}" class="text-white me-3"><i class="bi bi-twitter fs-5"></i></a>
-                            {% endif %}
-                            {% if settings.instagram_url %}
-                                <a href="{{ settings.instagram_url }}" class="text-white me-3"><i class="bi bi-instagram fs-5"></i></a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-4 mb-4">
-                        <h6 class="mb-3">
-                            <i class="bi bi-link-45deg me-2"></i>روابط سريعة
-                        </h6>
-                        <ul class="list-unstyled">
-                            <li class="mb-2">
-                                <a href="{{ settings.footer_link_1_url|default:"/stores/" }}" class="text-white-50 text-decoration-none">
-                                    {{ settings.footer_link_1|default:"المتاجر" }}
-                                </a>
-                            </li>
-                            <li class="mb-2">
-                                <a href="{{ settings.footer_link_2_url|default:"#" }}" class="text-white-50 text-decoration-none">
-                                    {{ settings.footer_link_2|default:"الأكثر مبيعاً" }}
-                                </a>
-                            </li>
-                            <li class="mb-2">
-                                <a href="{{ settings.footer_link_3_url|default:"#" }}" class="text-white-50 text-decoration-none">
-                                    {{ settings.footer_link_3|default:"العروض الخاصة" }}
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="col-md-4 mb-4">
-                        <h6 class="mb-3">
-                            <i class="bi bi-telephone me-2"></i>تواصل معنا
-                        </h6>
-                        <ul class="list-unstyled">
-                            {% if settings.contact_email %}
-                                <li class="mb-2">
-                                    <i class="bi bi-envelope me-2"></i>
-                                    <a href="mailto:{{ settings.contact_email }}" class="text-white-50 text-decoration-none">{{ settings.contact_email }}</a>
-                                </li>
-                            {% endif %}
-                            {% if settings.contact_phone %}
-                                <li class="mb-2">
-                                    <i class="bi bi-telephone me-2"></i>
-                                    <a href="tel:{{ settings.contact_phone }}" class="text-white-50 text-decoration-none">{{ settings.contact_phone }}</a>
-                                </li>
-                            {% endif %}
-                            {% if settings.contact_address %}
-                                <li class="mb-2">
-                                    <i class="bi bi-geo-alt me-2"></i>
-                                    <span class="text-white-50">{{ settings.contact_address }}</span>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </div>
+            <div class="container py-4">
+                <div class="d-flex flex-wrap justify-content-center gap-3 mb-3">
+                    <a href="/privacy/" class="text-white-50 text-decoration-none">سياسة الخصوصية</a>
+                    <a href="/terms/" class="text-white-50 text-decoration-none">شروط الاستخدام</a>
+                    <a href="/contact/" class="text-white-50 text-decoration-none">تواصل معنا</a>
                 </div>
-                <hr class="my-4">
-                <div class="text-center">
-                    <p class="mb-0">
-                        &copy; 2024 {{ settings.footer_store_name|default:"متجر الملابس" }}. 
-                        {{ settings.footer_copyright|default:"جميع الحقوق محفوظة" }}
-                    </p>
-                </div>
+                <p class="text-center mb-0">&copy; {% now "Y" %} متجر الملابس. جميع الحقوق محفوظة.</p>
             </div>
         </footer>
     </div>
@@ -1173,7 +1117,27 @@
     
     <script>
         (function(){
-            try{ if(localStorage.getItem('siteTheme')==='light'){ document.body.classList.add('theme-light'); }}catch(e){}
+            function applyThemeFromPreference(){
+                var pref = 'system';
+                try{ pref = localStorage.getItem('siteTheme') || 'system'; }catch(e){}
+                var isDark = pref === 'dark' ? true : (pref === 'light' ? false : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+                document.body.classList.toggle('theme-light', !isDark);
+            }
+            function bindSystemListener(){
+                try{
+                    var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+                    if(mq){
+                        mq.onchange = function(){
+                            var pref = 'system';
+                            try{ pref = localStorage.getItem('siteTheme') || 'system'; }catch(e){}
+                            if(pref === 'system') applyThemeFromPreference();
+                        };
+                    }
+                }catch(e){}
+            }
+            window.applyThemeFromPreference = applyThemeFromPreference;
+            applyThemeFromPreference();
+            bindSystemListener();
         })();
         window.i18n = {
             ar: {
@@ -1197,7 +1161,8 @@
                 language_en: 'English',
                 language_ku: 'کوردی',
                 theme_dark: 'داكن',
-                theme_light: 'فاتح'
+                theme_light: 'فاتح',
+                theme_system: 'حسب النظام'
             },
             en: {
                 nav_home: 'Home',
@@ -1220,7 +1185,8 @@
                 language_en: 'English',
                 language_ku: 'Kurdî',
                 theme_dark: 'Dark',
-                theme_light: 'Light'
+                theme_light: 'Light',
+                theme_system: 'System'
             },
             ku: {
                 nav_home: 'سەرەتا',
@@ -1243,7 +1209,8 @@
                 language_en: 'ئینگلیزی',
                 language_ku: 'کوردی',
                 theme_dark: 'تاریک',
-                theme_light: 'کاڵ'
+                theme_light: 'کاڵ',
+                theme_system: 'بە سیستەم'
             }
         };
         function applyTranslations(lang){
