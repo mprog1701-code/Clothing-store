@@ -73,50 +73,6 @@
         transform: scale(1.1);
     }
 
-    .countdown-section {
-        background: linear-gradient(45deg, var(--copper-dark), var(--copper));
-        border-radius: 15px;
-        padding: 30px;
-        margin: 20px 0;
-        text-align: center;
-        box-shadow: 0 8px 32px rgba(184, 115, 51, 0.4);
-    }
-
-    .countdown-title {
-        color: var(--gold);
-        font-size: 1.8rem;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
-
-    .countdown-timer {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        margin: 20px 0;
-    }
-
-    .countdown-item {
-        background: rgba(0,0,0,0.7);
-        border-radius: 10px;
-        padding: 15px;
-        min-width: 80px;
-        border: 2px solid var(--copper);
-    }
-
-    .countdown-number {
-        font-size: 2rem;
-        font-weight: bold;
-        color: var(--gold);
-        display: block;
-    }
-
-    .countdown-label {
-        font-size: 0.9rem;
-        color: #ffffff;
-        opacity: 0.8;
-    }
-
     .section-title {
         color: var(--copper-light);
         font-size: 1.8rem;
@@ -410,18 +366,6 @@
             gap: 15px;
         }
         
-        .countdown-timer {
-            gap: 10px;
-        }
-        
-        .countdown-item {
-            min-width: 60px;
-            padding: 10px;
-        }
-        
-        .countdown-number {
-            font-size: 1.5rem;
-        }
     }
     @media (max-width: 600px) {
         .brand-title { font-size: 1.6rem; }
@@ -532,31 +476,6 @@
     </div>
 </div>
 
-<!-- Countdown Section -->
-<div class="container">
-    <div class="countdown-section">
-        <h2 class="countdown-title">عروض الجمعة البيضاء</h2>
-        <p style="color: #ffffff; font-size: 1.1rem;">خصومات تصل إلى 70% على أحدث صيحات الموضة</p>
-        <div class="countdown-timer" id="countdown">
-            <div class="countdown-item">
-                <span class="countdown-number" id="days">03</span>
-                <span class="countdown-label">أيام</span>
-            </div>
-            <div class="countdown-item">
-                <span class="countdown-number" id="hours">12</span>
-                <span class="countdown-label">ساعات</span>
-            </div>
-            <div class="countdown-item">
-                <span class="countdown-number" id="minutes">45</span>
-                <span class="countdown-label">دقائق</span>
-            </div>
-            <div class="countdown-item">
-                <span class="countdown-number" id="seconds">30</span>
-                <span class="countdown-label">ثواني</span>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Categories Section -->
 <div class="container">
@@ -601,8 +520,8 @@
 </div>
 
 <!-- Campaign Banner (Dynamic) -->
+{% if campaign %}
 <div class="container">
-    {% if campaign %}
     <div class="discount-banner">
         <h2 class="discount-title">{{ campaign.title }}</h2>
         {% if campaign.description %}<p class="discount-subtitle">{{ campaign.description }}</p>{% endif %}
@@ -613,14 +532,8 @@
         {% endif %}
         <a href="{{ campaign.action_url|default:'/stores/' }}" class="discount-btn">تسوق الآن</a>
     </div>
-    {% else %}
-    <div class="discount-banner">
-        <h2 class="discount-title">خصم 50%</h2>
-        <p class="discount-subtitle">على تشكيلة الشتاء من أشهر الماركات العالمية</p>
-        <a href="{% url 'store_list' %}" class="discount-btn">تسوق الآن</a>
-    </div>
-    {% endif %}
 </div>
+{% endif %}
 
 <!-- New Arrivals -->
 <div class="container">
@@ -674,32 +587,7 @@
 
 {% block extra_js %}
 <script>
-    // Countdown Timer
-    function updateCountdown() {
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 3);
-        endDate.setHours(23, 59, 59);
-        
-        const now = new Date().getTime();
-        const timeLeft = endDate.getTime() - now;
-        
-        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-        
-        document.getElementById('days').textContent = String(days).padStart(2, '0');
-        document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-        document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-        document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-        
-        if (timeLeft < 0) {
-            document.getElementById('countdown').innerHTML = '<h3 style="color: var(--gold);">انتهت العروض!</h3>';
-        }
-    }
     
-    setInterval(updateCountdown, 1000);
-    updateCountdown();
     
     // Add to Cart Function
     function addToCart(productId) {

@@ -28,42 +28,6 @@
     </div>
 </div>
 
-<!-- Countdown Banner -->
-<div class="countdown-banner bg-dark text-white py-4">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <div class="countdown-container text-center">
-                    <h3 class="mb-3 text-warning">الجمعة السوداء - أكبر التخفيضات</h3>
-                    <div class="countdown-timer d-flex justify-content-center gap-3">
-                        <div class="countdown-box">
-                            <div class="countdown-number" id="days">04</div>
-                            <div class="countdown-label">أيام</div>
-                        </div>
-                        <div class="countdown-box">
-                            <div class="countdown-number" id="hours">12</div>
-                            <div class="countdown-label">ساعات</div>
-                        </div>
-                        <div class="countdown-box">
-                            <div class="countdown-number" id="minutes">35</div>
-                            <div class="countdown-label">دقائق</div>
-                        </div>
-                        <div class="countdown-box">
-                            <div class="countdown-number" id="seconds">45</div>
-                            <div class="countdown-label">ثواني</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="promo-tag">
-                    <span class="promo-text">استعد للتخفيضات الكبرى</span>
-                    <span class="promo-subtext">في العراق</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Navigation Chips -->
 <div class="navigation-chips py-3 bg-light">
@@ -80,23 +44,6 @@
     </div>
 </div>
 
-<!-- Main Promotional Banner -->
-<div class="main-banner py-5">
-    <div class="container">
-        <div class="banner-card bg-gradient-danger text-white rounded-4 p-4 text-center">
-            <div class="banner-content">
-                <div class="banner-text mb-3">
-                    <span class="banner-word bg-white text-dark px-3 py-1 rounded me-2">العروض</span>
-                    <span class="banner-word bg-warning text-dark px-3 py-1 rounded me-2">الكبيرة</span>
-                </div>
-                <div class="banner-deal mt-4">
-                    <span class="deal-price">خصم حتى 70%</span>
-                    <span class="deal-badge bg-success text-white px-3 py-1 rounded-pill ms-3">+ توصيل مجاني</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Categories Section -->
 <section class="categories-section py-5">
@@ -916,31 +863,7 @@ body {
 
 {% block extra_js %}
 <script>
-// Countdown Timer
 document.addEventListener('DOMContentLoaded', function() {
-    function updateCountdown() {
-        const targetDate = new Date('2025-11-28T00:00:00').getTime();
-        const now = new Date().getTime();
-        const difference = targetDate - now;
-        
-        if (difference > 0) {
-            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-            
-            document.getElementById('days').textContent = days.toString().padStart(2, '0');
-            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
-            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-        } else {
-            document.querySelector('.countdown-banner').innerHTML = '<div class="text-center py-4"><h3 class="text-warning">العرض انتهى!</h3></div>';
-        }
-    }
-    
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-    
     // Navigation chips
     document.querySelectorAll('.chip').forEach(chip => {
         chip.addEventListener('click', function() {
