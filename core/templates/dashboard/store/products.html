@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}منتجات المتجر - متجر الملابس{% endblock %}
 
@@ -45,7 +46,7 @@
                         </td>
                         <td>{{ product.name }}</td>
                         <td>{{ product.get_category_display }}</td>
-                        <td>{{ product.base_price }} د.ع</td>
+                        <td>{{ product.base_price|iqd }}</td>
                         <td>
                             {% if product.is_active %}
                                 <span class="badge bg-success">نشط</span>

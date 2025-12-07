@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}لوحة التحكم - متجر الملابس{% endblock %}
 
@@ -109,20 +110,7 @@
                 </div>
             </div>
             
-            <div class="col-lg-4 col-md-6">
-                <div class="action-card card border-0 shadow-sm h-100">
-                    <div class="card-body text-center p-4">
-                        <div class="action-icon mb-3">
-                            <i class="bi bi-shield-lock display-4 text-warning"></i>
-                        </div>
-                        <h5 class="card-title">أمان المالك</h5>
-                        <p class="card-text text-muted">تغيير كلمة مرور المالك</p>
-                        <a href="{% url 'owner_password_reset' %}" class="btn btn-warning">
-                            <i class="bi bi-key me-1"></i>تغيير كلمة المرور
-                        </a>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     </div>
 </section>
@@ -161,7 +149,7 @@
                                         <tr>
                                             <td><strong>#{{ order.id }}</strong></td>
                                             <td>{{ order.created_at|date:"d/m/Y" }}</td>
-                        <td>{{ order.total_amount }} د.ع</td>
+                        <td>{{ order.total_amount|iqd }}</td>
                                             <td>
                                                 <span class="badge bg-{{ order.get_status_color }}">
                                                     {{ order.get_status_display }}
@@ -326,7 +314,7 @@
                     <div class="stats-icon mb-3">
                         <i class="bi bi-currency-rial display-6 text-warning"></i>
                     </div>
-                    <h4 class="stats-number">{{ total_revenue|default:"0" }} د.ع</h4>
+                    <h4 class="stats-number">{{ total_revenue|iqd }}</h4>
                     <p class="stats-label text-muted">إجمالي الإيرادات</p>
                 </div>
             </div>

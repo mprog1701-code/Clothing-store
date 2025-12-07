@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}{{ page_title }} - متجر الملابس{% endblock %}
 
@@ -93,7 +94,7 @@
                                 <p class="card-text text-muted small mb-3">{{ product.description|truncatechars:100 }}</p>
                                 <div class="mt-auto">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <span class="h5 mb-0 text-primary">{{ product.base_price }} د.ع</span>
+                                        <span class="h5 mb-0 text-primary">{{ product.base_price|iqd }}</span>
                                         <div class="product-actions">
                                             <button onclick="event.stopPropagation(); addToCart({{ product.id }})" 
                                                     class="btn btn-outline-primary btn-sm">

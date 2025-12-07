@@ -44,7 +44,7 @@
                                 </select>
                             </form>
                         </td>
-                        <td>{{ order.total_amount }} د.ع</td>
+                        <td>{{ order.total_amount|iqd }}</td>
                         <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
@@ -103,8 +103,8 @@
                                                         {% endif %}
                                                     </td>
                                                     <td>{{ item.quantity }}</td>
-                                                    <td>{{ item.price }} د.ع</td>
-                                                    <td>{{ item.quantity|multiply:item.price }} د.ع</td>
+                                                    <td>{{ item.price|iqd }}</td>
+                                                    <td>{{ item.quantity|multiply:item.price|iqd }}</td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>
@@ -112,9 +112,9 @@
                                     </div>
                                     
                                     <div class="text-end">
-                                        <strong>المجموع:</strong> {{ order.total_amount|subtract:order.delivery_fee }} د.ع<br>
-                                        <strong>رسوم التوصيل:</strong> {{ order.delivery_fee }} د.ع<br>
-                                        <strong>الإجمالي:</strong> {{ order.total_amount }} د.ع
+                                        <strong>المجموع:</strong> {{ order.total_amount|subtract:order.delivery_fee|iqd }}<br>
+                                        <strong>رسوم التوصيل:</strong> {{ order.delivery_fee|iqd }}<br>
+                                        <strong>الإجمالي:</strong> {{ order.total_amount|iqd }}
                                     </div>
                                 </div>
                             </div>

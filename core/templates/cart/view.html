@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}السلة - متجر الملابس{% endblock %}
 
@@ -128,6 +129,8 @@
 
 {% block extra_js %}
 <script>
+function toArabicIndicDigits(s){return s.replace(/[0-9]/g,function(c){return '٠١٢٣٤٥٦٧٨٩'[c];});}
+function formatIQD(value, useArabicIndic){if(useArabicIndic===undefined){useArabicIndic=true;}var num=Math.round(Number(value)||0);var formatted=num.toLocaleString('en-US');if(useArabicIndic){formatted=toArabicIndicDigits(formatted);}return formatted+' د.ع';}
 // Enhanced cart functionality
 function clearCartServer() {
     const overlay = document.getElementById('clear-confirm-overlay');
@@ -154,7 +157,7 @@ function updateQuantity(productId, variantId, newQuantity) {
         const priceElement = document.querySelector(`[data-price="${productId}-${variantId}"]`);
         if (priceElement) {
             const unitPrice = parseFloat(priceElement.dataset.unitPrice);
-            priceElement.textContent = `${(unitPrice * newQuantity).toFixed(2)} د.ع`;
+            priceElement.textContent = formatIQD(unitPrice * newQuantity);
         }
         
         // Add success animation
@@ -344,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="col-md-2">
                                     <div class="product-price text-center">
                                         <div class="price fw-bold text-primary-gradient" data-unit-price="{{ item.price }}">
-                                            {{ item.price }} د.ع
+                                            {{ item.price|iqd }}
                                         </div>
                                         <small class="text-muted">لكل قطعة</small>
                                     </div>
@@ -374,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="col-md-2">
                                     <div class="item-total text-center">
                                         <div class="total fw-bold text-success fs-5" data-price="{{ item.product.id }}-{{ item.variant.id|default:'none' }}">
-                                            {{ item.subtotal }} د.ع
+                                            {{ item.subtotal|iqd }}
                                         </div>
                                         <small class="text-muted">الإجمالي</small>
                                     </div>
@@ -418,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-bag me-2"></i>
                                 المنتجات ({{ cart_items|length }})
                             </span>
-                            <span class="fw-semibold">{{ total }} د.ع</span>
+                            <span class="fw-semibold">{{ total|iqd }}</span>
                         </div>
                         
                         <div class="summary-item d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3">
@@ -426,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-truck me-2"></i>
                                 رسوم التوصيل
                             </span>
-                            <span class="fw-semibold">{{ delivery_fee }} د.ع</span>
+                            <span class="fw-semibold">{{ delivery_fee|iqd }}</span>
                         </div>
                         
                         <hr class="my-3">
@@ -436,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <i class="bi bi-calculator me-2"></i>
                                 الإجمالي
                             </span>
-                            <span class="h5 fw-bold mb-0">{{ grand_total }} د.ع</span>
+                            <span class="h5 fw-bold mb-0">{{ grand_total|iqd }}</span>
                         </div>
                     </div>
                     

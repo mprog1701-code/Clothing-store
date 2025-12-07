@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}{{ store.name }} - متجر الملابس{% endblock %}
 
@@ -318,7 +319,7 @@
                             
                             <div class="product-price mb-3">
                                 <span class="price text-primary-gradient fw-bold fs-4">
-                                    {{ product.base_price }} د.ع
+                                    {{ product.base_price|iqd }}
                                 </span>
                             </div>
                             

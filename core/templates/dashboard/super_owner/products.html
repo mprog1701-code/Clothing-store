@@ -85,7 +85,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <strong>{{ product.base_price }} د.ع</strong>
+                                        <strong>{{ product.base_price|iqd }}</strong>
                                         {% if product.variants.count > 1 %}
                                             <br><small class="text-muted">+ {{ product.variants.count|add:"-1" }} متغيرات</small>
                                         {% endif %}

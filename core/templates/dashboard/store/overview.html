@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}لوحة التحكم - متجر الملابس{% endblock %}
 
@@ -161,7 +162,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="order-amount">
-                                        <span class="fw-bold text-primary">{{ order.total_amount }} د.ع</span>
+                                        <span class="fw-bold text-primary">{{ order.total_amount|iqd }}</span>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -246,7 +247,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="product-price">
-                                        <span class="fw-bold text-primary">{{ product.base_price }} د.ع</span>
+                                        <span class="fw-bold text-primary">{{ product.base_price|iqd }}</span>
                                     </div>
                                 </div>
                             </div>

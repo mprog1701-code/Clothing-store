@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}{{ product.name }} - متجر الملابس{% endblock %}
 
@@ -107,11 +108,11 @@
                         <div class="product-price mb-3">
                             {% if product.discount_price %}
                                 <div class="d-flex align-items-baseline gap-3">
-                                    <span class="price-old">{{ product.base_price }} د.ع</span>
-                                    <span class="price-new">{{ product.discount_price }} د.ع</span>
+                                    <span class="price-old">{{ product.base_price|iqd }}</span>
+                                    <span class="price-new">{{ product.discount_price|iqd }}</span>
                                 </div>
                             {% else %}
-                                <span class="price-new">{{ product.base_price }} د.ع</span>
+                                <span class="price-new">{{ product.base_price|iqd }}</span>
                             {% endif %}
                         </div>
                     </div>
@@ -152,7 +153,7 @@
                                                 </span>
                                             </div>
                                             <div class="variant-price">
-                                                <span class="h5 text-primary fw-bold">{{ variant.price }} د.ع</span>
+                                                <span class="h5 text-primary fw-bold">{{ variant.price|iqd }}</span>
                                             </div>
                                         </div>
                                     </div>

@@ -80,7 +80,7 @@
                                         {{ order.get_status_display }}
                                     </span>
                                 </td>
-                                <td>{{ order.total_amount }} د.ع</td>
+                                <td>{{ order.total_amount|iqd }}</td>
                                 <td>{{ order.created_at|date:"Y-m-d" }}</td>
                             </tr>
                             {% endfor %}

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load math_filters %}
 
 {% block extra_css %}
 <style>
@@ -599,13 +600,26 @@
     </div>
 </div>
 
-<!-- Discount Banner -->
+<!-- Campaign Banner (Dynamic) -->
 <div class="container">
+    {% if campaign %}
+    <div class="discount-banner">
+        <h2 class="discount-title">{{ campaign.title }}</h2>
+        {% if campaign.description %}<p class="discount-subtitle">{{ campaign.description }}</p>{% endif %}
+        {% if campaign.banner_image %}
+        <div class="mb-3">
+            <img src="{{ campaign.banner_image.url }}" alt="{{ campaign.title }}" class="img-fluid rounded-3" style="max-height:300px; object-fit:cover;">
+        </div>
+        {% endif %}
+        <a href="{{ campaign.action_url|default:'/stores/' }}" class="discount-btn">تسوق الآن</a>
+    </div>
+    {% else %}
     <div class="discount-banner">
         <h2 class="discount-title">خصم 50%</h2>
         <p class="discount-subtitle">على تشكيلة الشتاء من أشهر الماركات العالمية</p>
         <a href="{% url 'store_list' %}" class="discount-btn">تسوق الآن</a>
     </div>
+    {% endif %}
 </div>
 
 <!-- New Arrivals -->
@@ -631,10 +645,10 @@
                 </h4>
                 <div class="product-price">
                     {% if product.discount_price %}
-                    <span class="product-discount">{{ product.base_price }} د.ع</span>
-                    {{ product.discount_price }} د.ع
+                    <span class="product-discount">{{ product.base_price|iqd }}</span>
+                    {{ product.discount_price|iqd }}
                     {% else %}
-                    {{ product.base_price }} د.ع
+                    {{ product.base_price|iqd }}
                     {% endif %}
                 </div>
                 <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart({{ product.id }})">
@@ -797,7 +811,16 @@
         if (s.kind === 'image' && s.mediaUrl){
             media.innerHTML = `<img src="${s.mediaUrl}" alt="announcement">`;
         } else if (s.kind === 'video' && s.mediaUrl){
-            media.innerHTML = `<video src="${s.mediaUrl}" controls></video>`;
+            media.innerHTML = `<video src="${s.mediaUrl}" muted playsinline preload="metadata" controls></video>`;
+            const v = media.querySelector('video');
+            if (v) {
+                // Attempt autoplay on mobile WebView
+                try { v.play().catch(()=>{}); } catch(e){}
+                // Pause auto-rotation while video plays
+                v.addEventListener('play', ()=>{ if (annTimer) { clearInterval(annTimer); annTimer = null; } });
+                v.addEventListener('pause', ()=>{ restartAuto(); });
+                v.addEventListener('ended', ()=>{ restartAuto(); nextSlide(); });
+            }
         } else {
             media.innerHTML = `<div style="height:280px; display:flex; align-items:center; justify-content:center; color: var(--gold);">`
                 + `<i class="bi bi-megaphone" style="font-size:3rem;"></i>` + `</div>`;

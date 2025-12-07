@@ -42,6 +42,10 @@ class SiteSettings(models.Model):
     # Appearance
     primary_color = models.CharField(max_length=7, default='#667eea')
     secondary_color = models.CharField(max_length=7, default='#764ba2')
+    # Legal pages
+    privacy_enabled = models.BooleanField(default=True)
+    terms_enabled = models.BooleanField(default=True)
+    contact_enabled = models.BooleanField(default=True)
     
     class Meta:
         verbose_name = 'إعدادات الموقع'
@@ -236,3 +240,27 @@ class OrderItem(models.Model):
         if not self.price:
             self.price = self.variant.price if self.variant else self.product.base_price
         super().save(*args, **kwargs)
+
+
+class Campaign(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    banner_image = models.ImageField(upload_to='campaigns/', blank=True, null=True)
+    discount_percent = models.PositiveIntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=0)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=False)
+    action_url = models.CharField(max_length=255, blank=True, default='/stores/')
+
+    class Meta:
+        verbose_name = 'حملة'
+        verbose_name_plural = 'حملات'
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_running(self):
+        from django.utils import timezone
+        now = timezone.now()
+        return self.is_active and self.start_date <= now <= self.end_date

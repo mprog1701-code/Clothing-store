@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 import json
-from .models import User, Store, Product, ProductVariant, Address, Order, SiteSettings
+from .models import User, Store, Product, ProductVariant, Address, Order, SiteSettings, Campaign
 from .serializers import UserRegistrationSerializer
 from .forms import AddressForm
 # Fashion marketplace view
@@ -26,9 +26,15 @@ def hybrid_home(request):
     cart = request.session.get('cart', [])
     cart_items_count = len(cart)
     
+    # Active campaign
+    campaign = Campaign.objects.filter(is_active=True).order_by('-start_date').first()
+    if campaign and not campaign.is_running:
+        campaign = None
+
     context = {
         'new_arrivals': new_arrivals,
         'cart_items_count': cart_items_count,
+        'campaign': campaign,
     }
     
     return render(request, 'fashion_home.html', context)
@@ -670,6 +676,9 @@ def main_dashboard(request):
 
 def account_settings(request):
     return render(request, 'account/settings.html')
+
+def notifications_page(request):
+    return render(request, 'notifications.html')
 
 
 def about_page(request):

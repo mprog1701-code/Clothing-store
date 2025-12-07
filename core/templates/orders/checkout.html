@@ -91,6 +91,8 @@
 
 {% block extra_js %}
 <script>
+function toArabicIndicDigits(s){return s.replace(/[0-9]/g,function(c){return '٠١٢٣٤٥٦٧٨٩'[c];});}
+function formatIQD(value, useArabicIndic){if(useArabicIndic===undefined){useArabicIndic=true;}var num=Math.round(Number(value)||0);var formatted=num.toLocaleString('en-US');if(useArabicIndic){formatted=toArabicIndicDigits(formatted);}return formatted+' د.ع';}
 // Load cart summary
 function loadCartSummary() {
     const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
@@ -114,15 +116,15 @@ function loadCartSummary() {
         <div class="border-top pt-2">
             <div class="d-flex justify-content-between">
                 <span>المجموع:</span>
-                <span>${total} د.ع</span>
+                <span>${formatIQD(total)}</span>
             </div>
             <div class="d-flex justify-content-between">
                 <span>التوصيل:</span>
-                <span>50 د.ع</span>
+                <span>${formatIQD(50)}</span>
             </div>
             <div class="d-flex justify-content-between fw-bold">
                 <span>الإجمالي:</span>
-                <span>${total + 50} د.ع</span>
+                <span>${formatIQD(total+50)}</span>
             </div>
         </div>
     `;

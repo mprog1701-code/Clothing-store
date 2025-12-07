@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}لوحة تحكم المالك الرئيسي - متجر الملابس{% endblock %}
 
@@ -251,7 +252,7 @@
                             <div class="col-md-6">
                                 <div class="text-center p-3 bg-gradient-success text-white rounded">
                                     <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
-                                    <h3>{{ total_revenue|floatformat:2|default:"0.00" }} د.ع</h3>
+                                    <h3>{{ total_revenue|iqd }}</h3>
                                     <p class="mb-0">إجمالي الإيرادات</p>
                                 </div>
                             </div>
@@ -400,7 +401,7 @@
                                     <strong>طلب جديد</strong>
                                     <p class="mb-0 text-muted small">
                                         من {{ order.user.get_full_name|default:order.user.username }}
-                                        - {{ order.total_amount }} د.ع
+                                        - {{ order.total_amount|iqd }}
                                     </p>
                                     <small class="text-muted">{{ order.created_at|timesince }} مضت</small>
                                 </div>

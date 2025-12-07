@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}متجر الملابس والمطاعم - تسوق وتناول الطعام{% endblock %}
 
@@ -202,12 +203,12 @@
                     <div class="restaurant-meta">
                         <span class="delivery-time">• 25 دقيقة</span>
                         <span class="delivery-fee">
-                            <i class="bi bi-motorcycle"></i> 1000 د.ع
+                            <i class="bi bi-motorcycle"></i> {{ 1000|iqd }}
                         </span>
                     </div>
                     <div class="restaurant-deal">
-                        <span class="current-price text-success">6000 د.ع</span>
-                        <span class="old-price text-muted text-decoration-line-through">7500 د.ع</span>
+                        <span class="current-price text-success">{{ 6000|iqd }}</span>
+                        <span class="old-price text-muted text-decoration-line-through">{{ 7500|iqd }}</span>
                     </div>
                 </div>
             </div>
@@ -225,12 +226,12 @@
                     <div class="restaurant-meta">
                         <span class="delivery-time">• 35 دقيقة</span>
                         <span class="delivery-fee">
-                            <i class="bi bi-motorcycle"></i> 1500 د.ع
+                            <i class="bi bi-motorcycle"></i> {{ 1500|iqd }}
                         </span>
                     </div>
                     <div class="restaurant-deal">
-                        <span class="current-price text-success">8000 د.ع</span>
-                        <span class="old-price text-muted text-decoration-line-through">11500 د.ع</span>
+                        <span class="current-price text-success">{{ 8000|iqd }}</span>
+                        <span class="old-price text-muted text-decoration-line-through">{{ 11500|iqd }}</span>
                     </div>
                 </div>
             </div>
@@ -248,12 +249,12 @@
                     <div class="restaurant-meta">
                         <span class="delivery-time">• 30 دقيقة</span>
                         <span class="delivery-fee">
-                            <i class="bi bi-motorcycle"></i> 1200 د.ع
+                            <i class="bi bi-motorcycle"></i> {{ 1200|iqd }}
                         </span>
                     </div>
                     <div class="restaurant-deal">
-                        <span class="current-price text-success">7000 د.ع</span>
-                        <span class="old-price text-muted text-decoration-line-through">8500 د.ع</span>
+                        <span class="current-price text-success">{{ 7000|iqd }}</span>
+                        <span class="old-price text-muted text-decoration-line-through">{{ 8500|iqd }}</span>
                     </div>
                 </div>
             </div>
@@ -280,8 +281,8 @@
                 <div class="product-info">
                     <h6 class="product-name">ساعة ذكية رياضية</h6>
                     <div class="product-price">
-                        <span class="current-price">25000 د.ع</span>
-                        <span class="old-price">33000 د.ع</span>
+                        <span class="current-price">{{ 25000|iqd }}</span>
+                        <span class="old-price">{{ 33000|iqd }}</span>
                     </div>
                     <div class="product-rating">
                         <i class="bi bi-star-fill text-warning"></i>
@@ -300,8 +301,8 @@
                 <div class="product-info">
                     <h6 class="product-name">حقيبة جلدية أنيقة</h6>
                     <div class="product-price">
-                        <span class="current-price">45000 د.ع</span>
-                        <span class="old-price">75000 د.ع</span>
+                        <span class="current-price">{{ 45000|iqd }}</span>
+                        <span class="old-price">{{ 75000|iqd }}</span>
                     </div>
                     <div class="product-rating">
                         <i class="bi bi-star-fill text-warning"></i>
@@ -320,8 +321,8 @@
                 <div class="product-info">
                     <h6 class="product-name">عطر فرنسي فاخر</h6>
                     <div class="product-price">
-                        <span class="current-price">60000 د.ع</span>
-                        <span class="old-price">120000 د.ع</span>
+                        <span class="current-price">{{ 60000|iqd }}</span>
+                        <span class="old-price">{{ 120000|iqd }}</span>
                     </div>
                     <div class="product-rating">
                         <i class="bi bi-star-fill text-warning"></i>
@@ -333,30 +334,6 @@
     </div>
 </section>
 
-<!-- Bottom Navigation -->
-<nav class="bottom-nav">
-    <div class="nav-item active">
-        <i class="bi bi-house-fill"></i>
-        <span>الرئيسية</span>
-    </div>
-    <div class="nav-item">
-        <i class="bi bi-grid-3x3-gap-fill"></i>
-        <span>الأقسام</span>
-    </div>
-    <div class="nav-item">
-        <i class="bi bi-cart3"></i>
-        <span>السلة</span>
-        <div class="cart-badge">3</div>
-    </div>
-    <div class="nav-item">
-        <i class="bi bi-clock"></i>
-        <span>الطلبات</span>
-    </div>
-    <div class="nav-item">
-        <i class="bi bi-person"></i>
-        <span>الحساب</span>
-    </div>
-</nav>
 {% endblock %}
 
 {% block extra_css %}

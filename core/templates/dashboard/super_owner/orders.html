@@ -81,9 +81,9 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <strong>{{ order.total_amount }} د.ع</strong>
+                                        <strong>{{ order.total_amount|iqd }}</strong>
                                         <br>
-                                        <small class="text-muted">شحن: {{ order.delivery_fee }} د.ع</small>
+                                        <small class="text-muted">شحن: {{ order.delivery_fee|iqd }}</small>
                                     </td>
                                     <td>
                                         {% if order.status == 'pending' %}

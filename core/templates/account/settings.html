@@ -4,6 +4,7 @@
 
 {% block content %}
 <div class="container py-4 account-settings">
+  <div class="settings-container">
     <div class="card bg-white text-dark shadow-sm mb-3">
         <div class="card-body settings-card-body">
             <div class="d-flex align-items-center justify-content-between">
@@ -29,7 +30,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="list-group settings-list">
         <a href="#" id="langItem" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between settings-row">
             <div class="d-flex align-items-center gap-3">
@@ -72,14 +73,7 @@
             </div>
             <i class="bi bi-chevron-left"></i>
         </a>
-        <a href="#" class="list-group-item d-flex align-items-center justify-content-between disabled settings-row" style="pointer-events:none; opacity:0.6;">
-            <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-shop fs-5"></i>
-                <div class="fw-bold" data-i18n="account_merchant">صير تاجر ويانة</div>
-                <span class="badge bg-danger">جديد</span>
-            </div>
-            <i class="bi bi-lock"></i>
-        </a>
+        
         <a href="#" class="list-group-item d-flex align-items-center justify-content-between disabled settings-row" style="pointer-events:none; opacity:0.6;">
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-app fs-5"></i>
@@ -88,6 +82,7 @@
             <i class="bi bi-lock"></i>
         </a>
     </div>
+  </div>
 </div>
 
 <div class="modal fade" id="languageModal" tabindex="-1" aria-hidden="true">
@@ -106,17 +101,18 @@
 
 <style>
 .account-settings { padding-bottom: 12px; }
+.account-settings .settings-container { width: 100%; max-width: 420px; margin: 0 auto; padding: 0 8px; }
 .account-settings .settings-card-body { padding: 18px; }
-.account-settings .card { margin: 0 8px 12px; border-radius: 14px; }
-.account-settings .settings-list { margin: 0 8px; }
+.account-settings .card { margin: 0 auto 12px; border-radius: 14px; }
+.account-settings .settings-list { margin: 0; }
 .account-settings .settings-row { min-height: 56px; padding: 10px 12px; }
-.account-settings .d-flex.gap-2 a.btn { min-width: 40%; }
+.account-settings .d-flex.gap-2 a.btn { flex: 1 1 0; min-width: 0; }
 @media (max-width: 600px){
   .account-settings .settings-card-body { padding: 20px; }
-  .account-settings .settings-list { margin: 0 10px; }
 }
 @media (max-width: 480px){
-  .account-settings .card { margin: 8px; border-radius: 12px; }
+  .account-settings .settings-container { padding: 0 8px; }
+  .account-settings .card { border-radius: 12px; }
   .account-settings .settings-row { padding: 10px 12px; }
 }
 @media (max-width: 400px){
