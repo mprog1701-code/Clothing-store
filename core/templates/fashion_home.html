@@ -436,7 +436,7 @@
         .add-to-cart-btn { min-height: 44px; font-size: 1rem; border-radius: 12px; }
     }
     .home-ad-wrapper { width: 100%; margin: 0; padding: 0 12px; position: relative; display: none; }
-    .home-ad-card { width: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 35px rgba(0,0,0,0.35); border: 2px solid var(--copper); background: #000; }
+    .home-ad-card { width: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 35px rgba(0,0,0,0.35); border: 2px solid var(--copper); background: #000; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
     .home-ad-media img, .home-ad-media video { width: 100%; height: 280px; object-fit: cover; display: block; }
     .home-ad-overlay { position: absolute; right: 24px; top: 18px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
     .home-ad-overlay h3 { color: var(--gold); font-weight: 900; }
@@ -794,10 +794,10 @@
             }
         ],
         ttlHours: 24,
-        autoRotateMs: 7000
+        autoRotateMs: 12000
     };
 
-    let annIndex = 0; let annTimer = null;
+    let annIndex = 0; let annTimer = null; let isVideoPlaying = false;
 
     function renderSlide(i){
         const s = announcementConfig.slides[i];
@@ -817,9 +817,12 @@
                 // Attempt autoplay on mobile WebView
                 try { v.play().catch(()=>{}); } catch(e){}
                 // Pause auto-rotation while video plays
-                v.addEventListener('play', ()=>{ if (annTimer) { clearInterval(annTimer); annTimer = null; } });
-                v.addEventListener('pause', ()=>{ restartAuto(); });
-                v.addEventListener('ended', ()=>{ restartAuto(); nextSlide(); });
+                v.addEventListener('play', ()=>{ isVideoPlaying = true; if (annTimer) { clearInterval(annTimer); annTimer = null; } });
+                v.addEventListener('pause', ()=>{ isVideoPlaying = false; restartAuto(); });
+                v.addEventListener('ended', ()=>{ isVideoPlaying = false; restartAuto(); nextSlide(); });
+                v.addEventListener('error', ()=>{ isVideoPlaying = false; restartAuto(); });
+                v.addEventListener('abort', ()=>{ isVideoPlaying = false; restartAuto(); });
+                v.addEventListener('emptied', ()=>{ isVideoPlaying = false; restartAuto(); });
             }
         } else {
             media.innerHTML = `<div style="height:280px; display:flex; align-items:center; justify-content:center; color: var(--gold);">`
@@ -828,14 +831,14 @@
         const dots = document.getElementById('ann-dots'); dots.innerHTML='';
         announcementConfig.slides.forEach((_, idx)=>{
             const d = document.createElement('div'); d.className = 'ann-dot'+(idx===i?' active':'');
-            d.addEventListener('click', ()=>{ annIndex = idx; renderSlide(annIndex); restartAuto(); });
+            d.addEventListener('click', ()=>{ if (isVideoPlaying) return; annIndex = idx; renderSlide(annIndex); restartAuto(); });
             dots.appendChild(d);
         });
     }
 
-    function nextSlide(){ annIndex = (annIndex+1) % announcementConfig.slides.length; renderSlide(annIndex); }
-    function prevSlide(){ annIndex = (annIndex-1+announcementConfig.slides.length) % announcementConfig.slides.length; renderSlide(annIndex); }
-    function restartAuto(){ if (annTimer) clearInterval(annTimer); annTimer = setInterval(nextSlide, announcementConfig.autoRotateMs); }
+    function nextSlide(){ if (isVideoPlaying) return; annIndex = (annIndex+1) % announcementConfig.slides.length; renderSlide(annIndex); }
+    function prevSlide(){ if (isVideoPlaying) return; annIndex = (annIndex-1+announcementConfig.slides.length) % announcementConfig.slides.length; renderSlide(annIndex); }
+    function restartAuto(){ if (annTimer) clearInterval(annTimer); if (!isVideoPlaying) { annTimer = setInterval(nextSlide, announcementConfig.autoRotateMs); } }
 
     function showAnnouncement() {
         if (!announcementConfig.enabled) return;
@@ -852,15 +855,15 @@
         });
 
         // Swipe/drag support
-        let startX = 0; let currentX = 0; let dragging = false;
+        let startX = 0; let startY = 0; let currentX = 0; let currentY = 0; let dragging = false; let isHorizontal = false;
         const threshold = 40;
         const el = document.getElementById('ann-card');
-        el.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; dragging = true; });
-        el.addEventListener('touchmove', (e)=>{ if(!dragging) return; currentX = e.touches[0].clientX; });
-        el.addEventListener('touchend', ()=>{ if(!dragging) return; const dx = currentX - startX; dragging=false; if (Math.abs(dx) > threshold){ if (dx < 0) { nextSlide(); } else { prevSlide(); } restartAuto(); } });
+        el.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; startY = e.touches[0].clientY; dragging = true; isHorizontal = false; }, {passive:true});
+        el.addEventListener('touchmove', (e)=>{ if(!dragging) return; currentX = e.touches[0].clientX; currentY = e.touches[0].clientY; const dx = Math.abs(currentX - startX); const dy = Math.abs(currentY - startY); if (!isHorizontal && dx > dy + 5) { isHorizontal = true; e.preventDefault(); } }, {passive:false});
+        el.addEventListener('touchend', ()=>{ if(!dragging) return; const dx = currentX - startX; const dy = currentY - startY; dragging=false; if (!isHorizontal || isVideoPlaying) { return; } if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy)){ if (dx < 0) { nextSlide(); } else { prevSlide(); } restartAuto(); } });
         el.addEventListener('mousedown', (e)=>{ startX = e.clientX; dragging = true; });
         el.addEventListener('mousemove', (e)=>{ if(!dragging) return; currentX = e.clientX; });
-        el.addEventListener('mouseup', ()=>{ if(!dragging) return; const dx = currentX - startX; dragging=false; if (Math.abs(dx) > threshold){ if (dx < 0) { nextSlide(); } else { prevSlide(); } restartAuto(); } });
+        el.addEventListener('mouseup', ()=>{ if(!dragging) return; const dx = currentX - startX; dragging=false; if (isVideoPlaying) return; if (Math.abs(dx) > threshold){ if (dx < 0) { nextSlide(); } else { prevSlide(); } restartAuto(); } });
     }
     document.addEventListener('DOMContentLoaded', showAnnouncement);
     window.addEventListener('showAnnouncement', ()=>{ try{ localStorage.removeItem('appAnnouncementDismissed'); sessionStorage.removeItem('appAnnouncementShown'); }catch(e){} showAnnouncement(); });
