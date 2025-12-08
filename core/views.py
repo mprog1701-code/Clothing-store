@@ -155,71 +155,47 @@ def user_login(request):
         phone = request.POST.get('phone')
         password = request.POST.get('password')
         
-        # Try to find user by phone number
         try:
             user = User.objects.get(phone=phone)
-            # Authenticate using the username (since phone is unique, we can use it to get username)
-            user = authenticate(request, username=user.username, password=password)
         except User.DoesNotExist:
             user = None
         
-        if user is not None:
-            login(request, user)
-            messages.success(request, 'تم تسجيل الدخول بنجاح!')
-            return redirect('home')
-        else:
-            messages.error(request, 'بيانات الدخول غير صحيحة')
+        if user:
+            user_auth = authenticate(request, username=user.username, password=password)
+            if user_auth is not None:
+                login(request, user_auth)
+                if phone == '0500000000':
+                    messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
+                    return redirect('super_owner_dashboard')
+                messages.success(request, 'تم تسجيل الدخول بنجاح!')
+                return redirect('home')
+        messages.error(request, 'بيانات الدخول غير صحيحة')
     
     return render(request, 'registration/login.html')
 
 
 def owner_login(request):
-    """Special login for the owner/admin with enhanced security"""
     if request.method == 'POST':
         phone = request.POST.get('phone')
         password = request.POST.get('password')
-        owner_key = request.POST.get('owner_key', '')
         
         try:
             # Try to find the user by phone
             user = User.objects.get(phone=phone)
             
-            # Check if this is the special owner account (phone: 0500000000)
-            if phone == '0500000000':
-                # Check owner key
-                if user.owner_key == owner_key and owner_key == 'OWNER2025':
-                    # Authenticate and login
-                    user_auth = authenticate(request, username=user.username, password=password)
-                    if user_auth is not None:
-                        login(request, user_auth)
-                        messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
-                        return redirect('main_dashboard')
-                    else:
-                        # If authentication fails, try setting the password again
-                        user.set_password(password)
-                        user.save()
-                        user_auth = authenticate(request, username=user.username, password=password)
-                        if user_auth is not None:
-                            login(request, user_auth)
-                            messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
-                            return redirect('main_dashboard')
-                        else:
-                            messages.error(request, 'كلمة المرور غير صحيحة')
-                else:
-                    messages.error(request, 'مفتاح المالك غير صحيح')
-            else:
-                # Regular admin login
+            user_auth = authenticate(request, username=user.username, password=password)
+            if user_auth is not None:
+                login(request, user_auth)
+                if phone == '0500000000':
+                    messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
+                    return redirect('super_owner_dashboard')
                 if user.role == 'admin':
-                    user_auth = authenticate(request, username=user.username, password=password)
-                    if user_auth is not None:
-                        login(request, user_auth)
-                        messages.success(request, 'تم تسجيل دخول المدير بنجاح!')
-                        return redirect('main_dashboard')
-                    else:
-                        messages.error(request, 'بيانات الدخول غير صحيحة')
-                else:
-                    messages.error(request, 'ليس لديك صلاحية المدير')
-                    
+                    messages.success(request, 'تم تسجيل دخول المدير بنجاح!')
+                    return redirect('main_dashboard')
+                messages.error(request, 'ليس لديك صلاحية المدير')
+            else:
+                messages.error(request, 'بيانات الدخول غير صحيحة')
+        
         except User.DoesNotExist:
             messages.error(request, 'رقم الجوال غير مسجل')
     
