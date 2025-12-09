@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load math_filters %}
 
 {% block title %}إدارة الطلبات - المالك الرئيسي{% endblock %}
 
@@ -91,32 +92,27 @@
                                                 <i class="fas fa-clock me-1"></i>
                                                 قيد الانتظار
                                             </span>
-                                        {% elif order.status == 'confirmed' %}
+                                        {% elif order.status == 'accepted' %}
                                             <span class="badge bg-info">
                                                 <i class="fas fa-check me-1"></i>
-                                                تم التأكيد
+                                                تم القبول
                                             </span>
                                         {% elif order.status == 'preparing' %}
                                             <span class="badge bg-primary">
                                                 <i class="fas fa-box me-1"></i>
-                                                جاري التحضير
+                                                قيد التجهيز
                                             </span>
-                                        {% elif order.status == 'ready' %}
+                                        {% elif order.status == 'on_the_way' %}
                                             <span class="badge bg-secondary">
                                                 <i class="fas fa-truck me-1"></i>
-                                                جاهز للتوصيل
-                                            </span>
-                                        {% elif order.status == 'out_for_delivery' %}
-                                            <span class="badge bg-dark">
-                                                <i class="fas fa-shipping-fast me-1"></i>
-                                                بالطريق
+                                                في الطريق
                                             </span>
                                         {% elif order.status == 'delivered' %}
                                             <span class="badge bg-success">
                                                 <i class="fas fa-check-circle me-1"></i>
-                                                تم التوصيل
+                                                تم التسليم
                                             </span>
-                                        {% elif order.status == 'cancelled' %}
+                                        {% elif order.status == 'canceled' %}
                                             <span class="badge bg-danger">
                                                 <i class="fas fa-times-circle me-1"></i>
                                                 ملغي
@@ -150,45 +146,40 @@
                                                 <form method="post" class="dropdown-menu">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="order_id" value="{{ order.id }}">
-                                                    
+                                                    <input type="hidden" name="action" value="update_status">
+                                                     
                                                     {% if order.status != 'pending' %}
                                                         <button type="submit" name="status" value="pending" class="dropdown-item">
                                                             <i class="fas fa-clock me-1"></i> قيد الانتظار
                                                         </button>
                                                     {% endif %}
-                                                    
-                                                    {% if order.status != 'confirmed' %}
-                                                        <button type="submit" name="status" value="confirmed" class="dropdown-item">
-                                                            <i class="fas fa-check me-1"></i> تم التأكيد
+                                                     
+                                                    {% if order.status != 'accepted' %}
+                                                        <button type="submit" name="status" value="accepted" class="dropdown-item">
+                                                            <i class="fas fa-check me-1"></i> تم القبول
                                                         </button>
                                                     {% endif %}
-                                                    
+                                                     
                                                     {% if order.status != 'preparing' %}
                                                         <button type="submit" name="status" value="preparing" class="dropdown-item">
-                                                            <i class="fas fa-box me-1"></i> جاري التحضير
+                                                            <i class="fas fa-box me-1"></i> قيد التجهيز
                                                         </button>
                                                     {% endif %}
-                                                    
-                                                    {% if order.status != 'ready' %}
-                                                        <button type="submit" name="status" value="ready" class="dropdown-item">
-                                                            <i class="fas fa-truck me-1"></i> جاهز للتوصيل
+                                                     
+                                                    {% if order.status != 'on_the_way' %}
+                                                        <button type="submit" name="status" value="on_the_way" class="dropdown-item">
+                                                            <i class="fas fa-truck me-1"></i> في الطريق
                                                         </button>
                                                     {% endif %}
-                                                    
-                                                    {% if order.status != 'out_for_delivery' %}
-                                                        <button type="submit" name="status" value="out_for_delivery" class="dropdown-item">
-                                                            <i class="fas fa-shipping-fast me-1"></i> بالطريق
-                                                        </button>
-                                                    {% endif %}
-                                                    
+                                                     
                                                     {% if order.status != 'delivered' %}
                                                         <button type="submit" name="status" value="delivered" class="dropdown-item">
-                                                            <i class="fas fa-check-circle me-1"></i> تم التوصيل
+                                                            <i class="fas fa-check-circle me-1"></i> تم التسليم
                                                         </button>
                                                     {% endif %}
-                                                    
-                                                    {% if order.status != 'cancelled' %}
-                                                        <button type="submit" name="status" value="cancelled" class="dropdown-item text-danger">
+                                                     
+                                                    {% if order.status != 'canceled' %}
+                                                        <button type="submit" name="status" value="canceled" class="dropdown-item text-danger">
                                                             <i class="fas fa-times-circle me-1"></i> إلغاء الطلب
                                                         </button>
                                                     {% endif %}

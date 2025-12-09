@@ -6,7 +6,7 @@
 {% block extra_css %}
 <style>
 .super-owner-dashboard {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     min-height: 100vh;
 }
 
@@ -27,7 +27,7 @@
     text-align: center;
     padding: 30px 20px;
     border-radius: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
     transition: transform 0.3s ease;
 }
@@ -59,7 +59,7 @@
     padding: 25px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    border-left: 5px solid #667eea;
+    border-left: 5px solid var(--primary-color);
 }
 
 .management-card:hover {
@@ -69,12 +69,12 @@
 
 .management-icon {
     font-size: 2.5rem;
-    color: #667eea;
+    color: var(--primary-color);
     margin-bottom: 15px;
 }
 
 .btn-management {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     border: none;
     border-radius: 25px;
     padding: 15px 35px;
@@ -91,9 +91,9 @@
 
 .btn-management:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 15px 30px rgba(184, 115, 51, 0.3);
     color: white;
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
 }
 
 .btn-management:active {
@@ -112,7 +112,7 @@
     border-radius: 10px;
     margin-bottom: 10px;
     background: #f8f9fa;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--primary-color);
 }
 
 .quick-actions {
@@ -123,7 +123,7 @@
 }
 
 .quick-action-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     border: none;
     border-radius: 15px;
     padding: 18px 25px;
@@ -141,9 +141,9 @@
 
 .quick-action-btn:hover {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 15px 30px rgba(184, 115, 51, 0.3);
     color: white;
-    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
 }
 
 .quick-action-btn:active {

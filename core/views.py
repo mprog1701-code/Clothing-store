@@ -884,24 +884,59 @@ def super_owner_add_store(request):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
-    # Get all users for potential store ownership (admin will manage stores directly)
-    
     if request.method == 'POST':
         name = request.POST.get('name')
         city = request.POST.get('city')
         address = request.POST.get('address')
         description = request.POST.get('description')
         owner_id = request.POST.get('owner')
+        create_new_owner = request.POST.get('create_new_owner') == 'on'
         is_active = request.POST.get('is_active') == 'on'
         logo = request.FILES.get('logo')
         
-        # Admin will manage store directly - no separate owner role needed
-        owner = request.user  # Admin owns the store directly
+        owner = None
         
         # Validate required fields
         if not all([name, city, address]):
             messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
             return redirect('super_owner_add_store')
+        
+        if create_new_owner:
+            new_owner_username = request.POST.get('new_owner_username')
+            new_owner_email = request.POST.get('new_owner_email')
+            new_owner_first_name = request.POST.get('new_owner_first_name')
+            new_owner_last_name = request.POST.get('new_owner_last_name')
+            new_owner_phone = request.POST.get('new_owner_phone')
+            new_owner_password = request.POST.get('new_owner_password')
+            if not all([new_owner_username, new_owner_first_name, new_owner_last_name, new_owner_phone, new_owner_password]):
+                messages.error(request, 'يرجى ملء حقول مالك المتجر الجديدة بالكامل!')
+                return redirect('super_owner_add_store')
+            try:
+                owner = User.objects.create(
+                    username=new_owner_username,
+                    first_name=new_owner_first_name,
+                    last_name=new_owner_last_name,
+                    role='admin',
+                    phone=new_owner_phone,
+                    city=city,
+                    email=new_owner_email or ''
+                )
+                owner.is_staff = True
+                owner.set_password(new_owner_password)
+                owner.save()
+                messages.success(request, 'تم إنشاء مالك متجر جديد وربطه بالمتجر')
+            except Exception as e:
+                messages.error(request, f'خطأ في إنشاء مالك المتجر: {str(e)}')
+                return redirect('super_owner_add_store')
+        else:
+            if owner_id:
+                try:
+                    owner = User.objects.get(id=owner_id)
+                except User.DoesNotExist:
+                    messages.error(request, 'المالك المحدد غير موجود')
+                    return redirect('super_owner_add_store')
+            else:
+                owner = request.user
         
         try:
             store = Store.objects.create(
@@ -924,8 +959,9 @@ def super_owner_add_store(request):
             messages.error(request, f'خطأ في إنشاء المتجر: {str(e)}')
             return redirect('super_owner_add_store')
     
+    store_owners = User.objects.filter(role='admin').order_by('username')
     context = {
-        # Admin manages stores directly - no owner selection needed
+        'store_owners': store_owners,
     }
     return render(request, 'dashboard/super_owner/add_store.html', context)
 
