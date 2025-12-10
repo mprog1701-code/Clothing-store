@@ -996,6 +996,20 @@
                                     <i class="bi bi-person-circle"></i> {{ user.username }}
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
+                                    {% if user.role == 'admin' %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'main_dashboard' %}">
+                                            <i class="bi bi-speedometer2"></i> لوحة التحكم
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% if user.is_superuser %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'super_owner_dashboard' %}">
+                                            <i class="bi bi-crown"></i> لوحة تحكم المالك
+                                        </a>
+                                    </li>
+                                    {% endif %}
                                     <li><a class="dropdown-item" href="{% url 'logout' %}">
                                         <i class="bi bi-box-arrow-left"></i> تسجيل الخروج
                                     </a></li>
