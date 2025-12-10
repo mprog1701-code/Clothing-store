@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 import json
-from .models import User, Store, Product, ProductVariant, Address, Order, SiteSettings, Campaign
+import uuid
+from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign
 from django.db.utils import OperationalError, ProgrammingError
 from .serializers import UserRegistrationSerializer
 from .forms import AddressForm
@@ -41,7 +42,16 @@ def hybrid_home(request):
         'campaign': campaign,
     }
     
-    return render(request, 'fashion_home.html', context)
+    response = render(request, 'fashion_home.html', context)
+    try:
+        settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
+        if not request.COOKIES.get('visitor_id'):
+            settings_obj.visitor_count = (settings_obj.visitor_count or 0) + 1
+            settings_obj.save()
+            response.set_cookie('visitor_id', str(uuid.uuid4()), max_age=31536000)
+    except Exception:
+        pass
+    return response
 
 
 @ensure_csrf_cookie
@@ -56,15 +66,19 @@ def home(request):
         'products': products,
         'site_settings': site_settings,
     }
-    return render(request, 'home.html', context)
+    response = render(request, 'home.html', context)
+    try:
+        if not request.COOKIES.get('visitor_id'):
+            site_settings.visitor_count = (site_settings.visitor_count or 0) + 1
+            site_settings.save()
+            response.set_cookie('visitor_id', str(uuid.uuid4()), max_age=31536000)
+    except Exception:
+        pass
+    return response
 
 
 def store_list(request):
-    # Get only fashion-related stores
-    stores = Store.objects.filter(
-        is_active=True,
-        category__in=['women', 'men', 'kids', 'perfumes', 'cosmetics', 'watches', 'clothing']
-    )
+    stores = Store.objects.filter(is_active=True)
     
     category = request.GET.get('category')
     if category:
@@ -704,6 +718,7 @@ def main_dashboard(request):
         total_orders = Order.objects.count()
         total_revenue = Order.objects.filter(status='delivered').aggregate(total=Sum('total_amount'))['total'] or 0
         pending_stores = Store.objects.filter(is_active=False).count()
+        site_settings, _ = SiteSettings.objects.get_or_create(id=1)
         
         context.update({
             'total_stores': total_stores,
@@ -711,6 +726,7 @@ def main_dashboard(request):
             'total_orders': total_orders,
             'total_revenue': total_revenue,
             'pending_stores': pending_stores,
+            'visitor_count': site_settings.visitor_count,
         })
     else:
         context.update({
@@ -748,7 +764,7 @@ def services_page(request):
 
 @login_required
 def admin_overview(request):
-    if request.user.role != 'admin':
+    if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -773,33 +789,10 @@ def admin_overview(request):
 
 @login_required
 def admin_stores(request):
-    if request.user.role != 'admin':
+    if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
-    
-    stores = Store.objects.all().order_by('-created_at')
-    
-    if request.method == 'POST':
-        store_id = request.POST.get('store_id')
-        action = request.POST.get('action')
-        
-        store = get_object_or_404(Store, id=store_id)
-        
-        if action == 'activate':
-            store.is_active = True
-            store.save()
-            messages.success(request, f'تم تفعيل المتجر {store.name}!')
-        elif action == 'deactivate':
-            store.is_active = False
-            store.save()
-            messages.success(request, f'تم تعطيل المتجر {store.name}!')
-        
-        return redirect('admin_stores')
-    
-    context = {
-        'stores': stores,
-    }
-    return render(request, 'dashboard/admin/stores.html', context)
+    return redirect('super_owner_stores')
 
 
 @login_required
@@ -826,6 +819,7 @@ def super_owner_dashboard(request):
     # Calculate revenue (assuming delivered orders are paid)
     total_revenue = sum(order.total_amount for order in Order.objects.filter(status='delivered'))
     
+    settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
     context = {
         'total_stores': total_stores,
         'total_products': total_products,
@@ -839,6 +833,7 @@ def super_owner_dashboard(request):
         'recent_orders': recent_orders,
         'recent_stores': recent_stores,
         'recent_users': recent_users,
+        'visitor_count': settings_obj.visitor_count,
     }
     return render(request, 'dashboard/super_owner/dashboard.html', context)
 
@@ -1277,8 +1272,7 @@ def most_sold_products(request):
 
 @login_required
 def footer_settings(request):
-    """Footer settings management"""
-    if request.user.role != 'admin':
+    if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية للوصول إلى هذه الصفحة.')
         return redirect('home')
     
@@ -1316,53 +1310,6 @@ def footer_settings(request):
     return render(request, 'dashboard/footer_settings.html', context)
 
 
-@login_required
-def super_owner_users(request):
-    if request.user.username != 'super_owner':
-        messages.error(request, 'ليس لديك صلاحية الوصول!')
-        return redirect('home')
-    
-    users = User.objects.all().order_by('-date_joined')
-    
-    # Calculate statistics - simplified system: only customer and admin roles
-    total_users = users.count()
-    active_users = users.filter(is_active=True).count()
-    customers = users.filter(role='customer').count()
-    admins = users.filter(role='admin').count()
-    
-    if request.method == 'POST':
-        user_id = request.POST.get('user_id')
-        action = request.POST.get('action')
-        
-        user = get_object_or_404(User, id=user_id)
-        
-        if action == 'activate':
-            user.is_active = True
-            user.save()
-            messages.success(request, f'تم تفعيل المستخدم {user.username}!')
-        elif action == 'deactivate':
-            user.is_active = False
-            user.save()
-            messages.success(request, f'تم تعطيل المستخدم {user.username}!')
-        elif action == 'make_admin':
-            user.role = 'admin'
-            user.save()
-            messages.success(request, f'تم ترقية {user.username} إلى مدير!')
-        elif action == 'make_customer':
-            user.role = 'customer'
-            user.save()
-            messages.success(request, f'تم تغيير دور {user.username} إلى عميل!')
-        
-        return redirect('super_owner_users')
-    
-    context = {
-        'users': users,
-        'total_users': total_users,
-        'active_users': active_users,
-        'customers_count': customers,
-        'admins_count': admins,
-    }
-    return render(request, 'dashboard/super_owner/users.html', context)
 
 
 def debug_owner_login(request):
@@ -1452,3 +1399,48 @@ def debug_owner_login(request):
     
     # For GET requests, show debug form
     return render(request, 'debug/owner_login_debug.html')
+@login_required
+def store_products(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+    store = Store.objects.filter(owner=request.user).first()
+    if not store:
+        messages.error(request, 'لا يوجد متجر مرتبط بحسابك.')
+        return redirect('home')
+    products = Product.objects.filter(store=store).order_by('-created_at')
+    context = {
+        'store': store,
+        'products': products,
+    }
+    return render(request, 'dashboard/store/products.html', context)
+
+
+@login_required
+def store_orders(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+    store = Store.objects.filter(owner=request.user).first()
+    if not store:
+        messages.error(request, 'لا يوجد متجر مرتبط بحسابك.')
+        return redirect('home')
+    orders = Order.objects.filter(store=store).order_by('-created_at')
+    if request.method == 'POST':
+        order_id = request.POST.get('order_id')
+        status = request.POST.get('status')
+        order = get_object_or_404(Order, id=order_id, store=store)
+        valid_statuses = [choice[0] for choice in Order.STATUS_CHOICES]
+        if status in valid_statuses:
+            order.status = status
+            order.save()
+            messages.success(request, f'تم تحديث حالة الطلب #{order.id}!')
+        else:
+            messages.error(request, 'حالة غير صحيحة!')
+        return redirect('store_orders')
+    context = {
+        'store': store,
+        'orders': orders,
+    }
+    return render(request, 'dashboard/store/orders.html', context)
+

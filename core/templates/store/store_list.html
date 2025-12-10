@@ -288,52 +288,31 @@
         {% for store in stores %}
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="store-card">
-                {% if store.category in 'women,kids,cosmetics' and store.city == 'بغداد' %}
-                    {% if store.main_image and store.main_image.image %}
-                    <img src="{{ store.main_image.image.url }}" alt="{{ store.name }}" class="store-image">
-                    {% else %}
-                    <div class="store-image d-flex align-items-center justify-content-center" 
-                         style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
-                        <i class="bi bi-shop" style="font-size: 4rem;"></i>
-                    </div>
-                    {% endif %}
-                    
-                    <h3 class="store-name">{{ store.name }}</h3>
-                    <span class="store-category">{{ store.get_category_display }}</span>
-                    <p class="store-description">{{ store.description|default:"متجر متخصص في أحدث صيحات الموضة"|truncatewords:15 }}</p>
-                    
-                    <div class="store-info">
-                        <div class="store-location">
-                            <i class="bi bi-geo-alt"></i> {{ store.city }}
-                        </div>
-                        <div class="store-rating">
-                            <i class="bi bi-star-fill"></i> {{ store.rating|default:"4.5" }}
-                        </div>
-                    </div>
-                    
-                    <button class="visit-store-btn" onclick="window.location.href='{% url 'store_detail' store.id %}'">
-                        <i class="bi bi-bag-heart"></i> تسوق الآن
-                    </button>
+                {% if store.main_image and store.main_image.image %}
+                <img src="{{ store.main_image.image.url }}" alt="{{ store.name }}" class="store-image">
                 {% else %}
-                    <!-- Coming Soon Card -->
-                    <div class="coming-soon-card">
-                        <div class="coming-soon-overlay">
-                            <div class="coming-soon-text">
-                                <i class="bi bi-clock" style="font-size: 3rem; display: block; margin-bottom: 15px;"></i>
-                                سيتم افتتاحه قريبًا
-                            </div>
-                        </div>
-                        
-                        <div style="opacity: 0.3;">
-                            <div class="store-image d-flex align-items-center justify-content-center" 
-                                 style="background: #333; color: #666;">
-                                <i class="bi bi-shop" style="font-size: 4rem;"></i>
-                            </div>
-                            <h3 class="store-name" style="color: #666;">{{ store.get_category_display }}</h3>
-                            <p class="store-description" style="color: #666;">سيتم افتتاح هذا القسم قريبًا</p>
-                        </div>
-                    </div>
+                <div class="store-image d-flex align-items-center justify-content-center" 
+                     style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                    <i class="bi bi-shop" style="font-size: 4rem;"></i>
+                </div>
                 {% endif %}
+                
+                <h3 class="store-name">{{ store.name }}</h3>
+                <span class="store-category">{{ store.get_category_display }}</span>
+                <p class="store-description">{{ store.description|default:"متجر متخصص في أحدث صيحات الموضة"|truncatewords:15 }}</p>
+                
+                <div class="store-info">
+                    <div class="store-location">
+                        <i class="bi bi-geo-alt"></i> {{ store.city }}
+                    </div>
+                    <div class="store-rating">
+                        <i class="bi bi-star-fill"></i> {{ store.rating|default:"4.5" }}
+                    </div>
+                </div>
+                
+                <button class="visit-store-btn" onclick="window.location.href='{% url 'store_detail' store.id %}'">
+                    <i class="bi bi-bag-heart"></i> تسوق الآن
+                </button>
             </div>
         </div>
         {% empty %}

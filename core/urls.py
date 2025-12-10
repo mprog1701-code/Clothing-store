@@ -17,6 +17,8 @@ urlpatterns = [
     
     # Main Dashboard
     path('dashboard/', views.main_dashboard, name='main_dashboard'),
+    path('dashboard/store/products/', views.store_products, name='store_products'),
+    path('dashboard/store/orders/', views.store_orders, name='store_orders'),
     
     path('cart/', views.cart_view, name='cart_view'),
     path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
@@ -52,7 +54,6 @@ urlpatterns = [
     path('dashboard/super-owner/products/add/', views.super_owner_add_product, name='super_owner_add_product'),
     path('dashboard/super-owner/products/edit/<int:product_id>/', views.super_owner_edit_product, name='super_owner_edit_product'),
     path('dashboard/super-owner/orders/', views.super_owner_orders, name='super_owner_orders'),
-    path('dashboard/super-owner/users/', views.super_owner_users, name='super_owner_users'),
     path('dashboard/super-owner/settings/', views.super_owner_settings, name='super_owner_settings'),
     path('dashboard/footer-settings/', views.footer_settings, name='footer_settings'),
     

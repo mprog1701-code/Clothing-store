@@ -192,7 +192,7 @@
                         <i class="bi bi-people"></i>
                     </div>
                     <div class="dashboard-number">{{ total_users|default:"0" }}</div>
-                    <div class="dashboard-label">مستخدم</div>
+                    <div class="dashboard-label">مسجلين بالتطبيق</div>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 mb-4">
@@ -202,6 +202,15 @@
                     </div>
                     <div class="dashboard-number">{{ total_orders|default:"0" }}</div>
                     <div class="dashboard-label">طلب</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="dashboard-stat">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                    <div class="dashboard-number">{{ visitor_count|default:"0" }}</div>
+                    <div class="dashboard-label">زائرين عبر المتصفح</div>
                 </div>
             </div>
         </div>
@@ -318,20 +327,6 @@
                         </div>
                     </div>
 
-                    <!-- Users Management -->
-                    <div class="col-md-6 mb-4">
-                        <div class="management-card text-center">
-                            <div class="management-icon">
-                                <i class="bi bi-people-fill"></i>
-                            </div>
-                            <h5 class="fw-bold mb-3">إدارة المستخدمين</h5>
-                            <p class="text-muted mb-4">إدارة جميع المستخدمين وأدوارهم</p>
-                            <a href="{% url 'super_owner_users' %}" class="btn btn-management">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                إدارة المستخدمين
-                            </a>
-                        </div>
-                    </div>
 
                     <!-- Site Settings -->
                     <div class="col-md-6 mb-4">
@@ -373,16 +368,11 @@
                         <i class="bi bi-graph-up me-2"></i>
                         متابعة الطلبات
                     </a>
-                    
-                    <a href="{% url 'super_owner_users' %}" class="btn btn-secondary w-100 quick-action-btn mb-2">
-                                <i class="bi bi-people me-2"></i>
-                                إدارة المستخدمين
-                            </a>
-                            
-                            <a href="{% url 'super_owner_settings' %}" class="btn btn-dark w-100 quick-action-btn">
-                                <i class="bi bi-gear me-2"></i>
-                                إعدادات الموقع
-                            </a>
+
+                    <a href="{% url 'super_owner_settings' %}" class="btn btn-dark w-100 quick-action-btn">
+                        <i class="bi bi-gear me-2"></i>
+                        إعدادات الموقع
+                    </a>
                 </div>
 
                 <!-- Recent Activity -->

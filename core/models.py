@@ -42,6 +42,7 @@ class SiteSettings(models.Model):
     # Appearance
     primary_color = models.CharField(max_length=7, default='#667eea')
     secondary_color = models.CharField(max_length=7, default='#764ba2')
+    visitor_count = models.PositiveIntegerField(default=0)
     # Legal pages
     privacy_enabled = models.BooleanField(default=True)
     terms_enabled = models.BooleanField(default=True)
@@ -58,7 +59,7 @@ class SiteSettings(models.Model):
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('customer', 'عميل'),
-        ('admin', 'مدير'),
+        ('admin', 'صاحب متجر'),
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
