@@ -112,14 +112,16 @@ class Product(models.Model):
         ('men', 'رجالي'),
         ('women', 'نسائي'),
         ('kids', 'أطفال'),
+        ('cosmetics', 'كوزمتك'),
+        ('perfumes', 'عطور'),
         ('sports', 'رياضية'),
         ('casual', 'كاجوال'),
         ('formal', 'رسمية'),
         ('accessories', 'إكسسوارات'),
-        ('electronics', 'إلكترونيات'),
-        ('beauty', 'جمال'),
         ('watches', 'ساعات'),
         ('shoes', 'أحذية'),
+        ('electronics', 'إلكترونيات'),
+        ('beauty', 'جمال'),
     ]
     
     store = models.ForeignKey(Store, on_delete=models.CASCADE)

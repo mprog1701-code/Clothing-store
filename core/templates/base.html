@@ -1033,15 +1033,7 @@
         </nav>
         <script>
             function openAnnouncements(){
-                try {
-                    localStorage.removeItem('appAnnouncementDismissed');
-                    sessionStorage.setItem('showAnnouncements','1');
-                } catch(e) {}
-                if (window.location.pathname !== '/') {
-                    window.location.assign('/');
-                } else {
-                    window.dispatchEvent(new CustomEvent('showAnnouncement'));
-                }
+                window.location.assign('/announcements/');
             }
         </script>
         

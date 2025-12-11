@@ -21,9 +21,10 @@
             <div class="col-auto">
                 <div class="search-container">
                     <form action="{% url 'search' %}" method="get" class="position-relative">
-                        <input type="text" name="q" id="hybridLiveSearchInput" class="form-control form-control-sm rounded-pill" placeholder="ابحث عن منتج أو مطعم..." style="padding-right: 2rem; background: transparent;" autocomplete="off">
-                        <button type="submit" class="btn btn-link p-0 m-0 position-absolute" style="left: 10px; top: 50%; transform: translateY(-50%); color: #6c757d;">
-                            <i class="bi bi-search"></i>
+                        <input type="text" name="q" id="hybridLiveSearchInput" class="form-control form-control-sm rounded-pill" placeholder="ابحث عن منتج أو متجر..." style="background: transparent;" autocomplete="off">
+                        <button type="button" class="adv-search-btn position-absolute" style="left: 10px; top: 50%; transform: translateY(-50%);" onclick="window.location.href='/search/?q='+encodeURIComponent(document.getElementById('hybridLiveSearchInput').value||'');">
+                            <i class="bi bi-search me-1"></i>
+                            <span>بحث متقدم</span>
                         </button>
                     </form>
                     <div id="hybridLiveSearchResults" class="live-search-results" style="position:absolute; left:0; right:0; top:100%; z-index:1000; display:none;"></div>
@@ -300,7 +301,7 @@
 }
 
 .search-container input {
-    padding-right: 2.5rem;
+    padding-left: 7.5rem;
     background: rgba(255,255,255,0.15);
     border: 1px solid rgba(255,255,255,0.35);
     width: 200px;
@@ -313,6 +314,19 @@
     box-shadow: none;
     outline: none;
     color: #fff;
+}
+
+.adv-search-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 24px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+.adv-search-btn:hover {
+    background: rgba(255,255,255,0.2);
 }
 
 .search-icon {

@@ -1292,15 +1292,36 @@ def search(request):
     product_qs = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')
     store_qs = Store.objects.filter(is_active=True)
 
+    product_types_map = {
+        'shirt': ['قميص', 'قمصان', 'shirt'],
+        'pants': ['بنطلون', 'بنطال', 'pants'],
+        'dress': ['فستان', 'فساتين', 'dress'],
+        'tracksuit': ['تراك', 'ترنج', 'tracksuit'],
+        'shoes': ['حذاء', 'أحذية', 'shoes'],
+    }
+    product_types = [
+        ('shirt', 'قميص'),
+        ('pants', 'بنطلون'),
+        ('dress', 'فساتين'),
+        ('tracksuit', 'تراك'),
+        ('shoes', 'أحذية'),
+    ]
+
     if q:
         product_qs = product_qs.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(store__name__icontains=q))
         store_qs = store_qs.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(city__icontains=q))
 
     if category:
-        product_qs = product_qs.filter(category=category)
+        words = product_types_map.get(category, [])
+        if words:
+            qobj = Q()
+            for w in words:
+                qobj |= Q(name__icontains=w) | Q(description__icontains=w)
+            product_qs = product_qs.filter(qobj)
 
     if store_category:
         store_qs = store_qs.filter(category=store_category)
+        product_qs = product_qs.filter(store__category=store_category)
 
     if city:
         product_qs = product_qs.filter(store__city=city)
@@ -1332,8 +1353,10 @@ def search(request):
         elif sort == 'store_rating_desc':
             store_qs = store_qs.order_by('-rating')
 
-    product_categories = getattr(Product, 'CATEGORY_CHOICES', [])
-    store_categories = getattr(Store, 'CATEGORY_CHOICES', [])
+    store_categories_all = getattr(Store, 'CATEGORY_CHOICES', [])
+    allowed_store = ['women','men','kids','cosmetics','watches','perfumes','shoes']
+    product_categories = product_types
+    store_categories = [c for c in store_categories_all if c[0] in allowed_store]
     cities = Store.objects.filter(is_active=True).values_list('city', flat=True).distinct()
 
     products = product_qs[:24]
@@ -1356,6 +1379,18 @@ def search(request):
         'cart_items_count': len(request.session.get('cart', [])),
     }
     return render(request, 'search/results.html', context)
+
+
+def announcements(request):
+    campaigns = []
+    try:
+        campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
+    except Exception:
+        campaigns = []
+    context = {
+        'campaigns': campaigns,
+    }
+    return render(request, 'announcements/index.html', context)
 
 
 @login_required

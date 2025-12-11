@@ -741,30 +741,8 @@
     }
     const announcementConfig = {
         enabled: true,
-        slides: [
-            {
-                kind: 'text',
-                title: 'إعلان خاص',
-                message: 'خصومات موسمية على أزياء الشتاء بخصم يصل إلى 60%.',
-                actionText: 'اكتشف العروض', actionUrl: '/featured-products/',
-                details: 'العروض تشمل الملابس النسائية والرجالية والأطفال والعطور. المدة محدودة.'
-            },
-            {
-                kind: 'image',
-                title: 'أحدث الوافدين',
-                message: 'تشكيلات جديدة وصلت الآن.' ,
-                mediaUrl: 'https://picsum.photos/seed/fashion/800/400',
-                actionText: 'تسوق الجديد', actionUrl: '/featured-products/'
-            },
-            {
-                kind: 'video',
-                title: 'حملة الأناقة',
-                message: 'شاهد الفيديو القصير لحملة الأناقة الشتوية.' ,
-                mediaUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
-                actionText: 'تسوق الحملة', actionUrl: '/featured-products/'
-            }
-        ],
-        ttlHours: 24,
+        slides: [],
+        ttlHours: 0.25,
         autoRotateMs: 12000
     };
 
@@ -776,7 +754,7 @@
         document.getElementById('ann-message').textContent = s.message || '';
         const action = document.getElementById('ann-action');
         action.textContent = s.actionText || 'عرض المزيد';
-        action.href = s.actionUrl || '#';
+        action.href = s.actionUrl || '/announcements/';
         const media = document.getElementById('ann-media');
         media.innerHTML = '';
         if (s.kind === 'image' && s.mediaUrl){
@@ -811,16 +789,42 @@
     function prevSlide(){ if (isVideoPlaying) return; annIndex = (annIndex-1+announcementConfig.slides.length) % announcementConfig.slides.length; renderSlide(annIndex); }
     function restartAuto(){ if (annTimer) clearInterval(annTimer); if (!isVideoPlaying) { annTimer = setInterval(nextSlide, announcementConfig.autoRotateMs); } }
 
+    function loadSlidesFromLocal(){
+        try{
+            const raw = localStorage.getItem('appAnnouncementsSlides');
+            if(raw){
+                const parsed = JSON.parse(raw);
+                if(Array.isArray(parsed) && parsed.length){
+                    announcementConfig.slides = parsed;
+                }
+            }
+            const ttlMinRaw = localStorage.getItem('appAnnouncementsTTLMinutes');
+            if(ttlMinRaw){
+                const m = parseInt(ttlMinRaw, 10);
+                if(!isNaN(m) && m>0){ announcementConfig.ttlHours = m/60; }
+            }
+        }catch(e){}
+        if(!announcementConfig.slides.length){
+            announcementConfig.slides = [
+                { kind:'text', title:'إعلان خاص', message:'خصومات موسمية على الأزياء', actionText:'عرض المزيد', actionUrl:'/announcements/', priority:0 },
+            ];
+        }
+    }
+
     function showAnnouncement() {
         if (!announcementConfig.enabled) return;
+        loadSlidesFromLocal();
         const ttlMs = (announcementConfig.ttlHours || 24) * 3600 * 1000;
         const dismissedAtStr = localStorage.getItem('appAnnouncementDismissedAt');
         const dismissedAt = dismissedAtStr ? Date.parse(dismissedAtStr) : 0;
         const nowMs = Date.now();
         const dismissedWithinTTL = dismissedAt && (nowMs - dismissedAt) < ttlMs;
-        const forceShow = sessionStorage.getItem('showAnnouncements') === '1';
-        const shownThisSession = sessionStorage.getItem('appAnnouncementShown') === 'true';
-        if ((dismissedWithinTTL && !forceShow) || (shownThisSession && !forceShow)) return;
+        const navEntries = (performance && performance.getEntriesByType) ? performance.getEntriesByType('navigation') : [];
+        const navType = navEntries && navEntries[0] ? navEntries[0].type : ((performance && performance.navigation && performance.navigation.type === 1) ? 'reload' : '');
+        const reloadOrNavigate = navType === 'reload' || navType === 'navigate';
+        const forceShow = reloadOrNavigate || (sessionStorage.getItem('showAnnouncements') === '1');
+        if (!dismissedWithinTTL) { try { sessionStorage.removeItem('appAnnouncementShown'); } catch(e){} }
+        if (!forceShow && dismissedWithinTTL) return;
         const banner = document.getElementById('app-announcement');
         banner.style.display = 'block';
         renderSlide(annIndex); restartAuto();
@@ -829,6 +833,12 @@
         document.getElementById('ann-close').addEventListener('click', function() {
             try { localStorage.setItem('appAnnouncementDismissedAt', new Date().toISOString()); localStorage.setItem('appAnnouncementDismissed','true'); } catch(e) {}
             banner.style.display = 'none';
+        });
+
+        document.getElementById('ann-card').addEventListener('click', function(e){
+            const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
+            if(tag==='button' || tag==='a' || tag==='video') return;
+            window.location.assign('/announcements/');
         });
 
         // Swipe/drag support
