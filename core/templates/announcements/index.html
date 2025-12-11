@@ -17,32 +17,20 @@
 
 {% block content %}
 <div class="container py-4">
-  <h1 class="mb-3" style="color: var(--gold);">الإعلانات</h1>
-  <p class="text-white-50">تعرض هذه الصفحة الإعلانات المضافة من قبل المالك. تظهر الإعلانات كشرائح في راية الصفحة الرئيسية.</p>
-
   <div class="ann-grid">
     {% for c in campaigns %}
     <div class="ann-card">
-      <div class="mb-2">
-        <div class="ann-title">{{ c.title }}</div>
-        <div class="ann-meta">{% if c.is_active %}نشط{% else %}غير نشط{% endif %}</div>
-      </div>
-      <p class="text-white-50 mb-2">{{ c.description|default:'' }}</p>
       {% if c.banner_image %}
         <img src="{{ c.banner_image.url }}" alt="{{ c.title }}" class="img-fluid ann-img mb-2">
       {% endif %}
-      {% if c.action_url %}
-        <a href="{{ c.action_url }}" class="ann-action">الانتقال للإعلان</a>
+      <div class="ann-title">{{ c.title }}</div>
+      {% if c.description %}
+        <p class="text-white-50 mb-0">{{ c.description }}</p>
       {% endif %}
     </div>
     {% empty %}
-    <div class="text-white-50">لا توجد حملات الآن.</div>
+    <div class="text-white-50">لا توجد إعلانات حالياً.</div>
     {% endfor %}
-  </div>
-
-  <div class="mt-4 d-flex gap-2">
-    <a href="/" class="btn btn-outline-light"><i class="bi bi-arrow-right"></i> العودة للرئيسية</a>
-    <a href="/dashboard/super-owner/announcements/" class="btn btn-outline-warning"><i class="bi bi-gear"></i> إدارة الإعلانات (المالك)</a>
   </div>
 </div>
 {% endblock %}
