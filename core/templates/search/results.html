@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load math_filters %}
+
+{% block title %}نتائج البحث{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-header { background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%); padding: 24px 0; margin-bottom: 24px; }
+    .search-form .form-control { border-radius: 40px; padding: 12px 20px; }
+    .search-form .btn { border-radius: 40px; padding: 10px 20px; }
+    .result-title { color: var(--gold); font-weight: 800; }
+    .product-card, .store-card { background: linear-gradient(135deg, var(--black-light) 0%, var(--black) 100%); border-radius: 16px; padding: 16px; border: 2px solid transparent; }
+    .product-card:hover, .store-card:hover { border-color: var(--copper); }
+    .product-image, .store-image { width: 100%; height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; }
+    .product-name, .store-name { color: var(--gold); font-weight: 700; font-size: 1.1rem; }
+    .product-price { color: var(--copper-light); font-weight: 700; }
+    .visit-btn { background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: #fff; border: none; border-radius: 24px; padding: 10px 16px; width: 100%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-header">
+    <div class="container">
+        <form class="row g-2 search-form" action="{% url 'search' %}" method="get">
+            <div class="col-lg-6 col-md-12">
+                <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="ابحث عن منتج أو متجر...">
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <select class="form-control" name="type">
+                    <option value="all" {% if selected_type == 'all' %}selected{% endif %}>الكل</option>
+                    <option value="products" {% if selected_type == 'products' %}selected{% endif %}>منتجات</option>
+                    <option value="stores" {% if selected_type == 'stores' %}selected{% endif %}>متاجر</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <select class="form-control" name="category">
+                    <option value="">فئة المنتج</option>
+                    {% for val,name in product_categories %}
+                    <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <select class="form-control" name="store_category">
+                    <option value="">فئة المتجر</option>
+                    {% for val,name in store_categories %}
+                    <option value="{{ val }}" {% if selected_store_category == val %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <select class="form-control" name="city">
+                    <option value="">المحافظة</option>
+                    {% for c in cities %}
+                    <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <input type="number" name="min_price" value="{{ selected_min_price }}" class="form-control" placeholder="السعر من">
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <input type="number" name="max_price" value="{{ selected_max_price }}" class="form-control" placeholder="السعر إلى">
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <select class="form-control" name="sort">
+                    <option value="">الترتيب</option>
+                    <option value="new" {% if selected_sort == 'new' %}selected{% endif %}>الأحدث</option>
+                    <option value="price_asc" {% if selected_sort == 'price_asc' %}selected{% endif %}>السعر الأقل</option>
+                    <option value="price_desc" {% if selected_sort == 'price_desc' %}selected{% endif %}>السعر الأعلى</option>
+                    <option value="rating_desc" {% if selected_sort == 'rating_desc' %}selected{% endif %}>التقييم الأعلى</option>
+                    <option value="store_new" {% if selected_sort == 'store_new' %}selected{% endif %}>متاجر: الأحدث</option>
+                    <option value="store_name_asc" {% if selected_sort == 'store_name_asc' %}selected{% endif %}>متاجر: الاسم تصاعدي</option>
+                    <option value="store_name_desc" {% if selected_sort == 'store_name_desc' %}selected{% endif %}>متاجر: الاسم تنازلي</option>
+                    <option value="store_rating_desc" {% if selected_sort == 'store_rating_desc' %}selected{% endif %}>متاجر: التقييم الأعلى</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-12">
+                <button class="btn btn-light w-100" type="submit">
+                    <i class="bi bi-search"></i> تطبيق
+                </button>
+            </div>
+        </form>
+    </div>
+    </div>
+
+<div class="container">
+    {% if q %}
+    <div class="mb-4">
+        <h2 class="result-title">نتائج عن: "{{ q }}"</h2>
+        <small class="text-muted">منتجات: {{ products|length }} • متاجر: {{ stores|length }}</small>
+    </div>
+    {% endif %}
+
+    {% if products %}
+    <h3 class="text-white mb-3">منتجات</h3>
+    <div class="row g-3 mb-4">
+        {% for product in products %}
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="product-card">
+                {% if product.main_image and product.main_image.image %}
+                <img src="{{ product.main_image.image.url }}" alt="{{ product.name }}" class="product-image">
+                {% else %}
+                <div class="product-image d-flex align-items-center justify-content-center" style="background: var(--copper); color: white;">
+                    <i class="bi bi-image" style="font-size: 2.5rem;"></i>
+                </div>
+                {% endif %}
+                <div class="product-name">{{ product.name }}</div>
+                <div class="product-price">{{ product.base_price|iqd }}</div>
+                <a href="{% url 'product_detail' product.id %}" class="visit-btn d-block mt-2">
+                    <i class="bi bi-bag"></i> عرض المنتج
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if stores %}
+    <h3 class="text-white mb-3">متاجر</h3>
+    <div class="row g-3">
+        {% for store in stores %}
+        <div class="col-lg-4 col-md-6">
+            <div class="store-card">
+                {% with main=store.product_set.first %}
+                    {% if main and main.main_image and main.main_image.image %}
+                    <img src="{{ main.main_image.image.url }}" alt="{{ store.name }}" class="store-image">
+                    {% else %}
+                    <div class="store-image d-flex align-items-center justify-content-center" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                        <i class="bi bi-shop" style="font-size: 3rem;"></i>
+                    </div>
+                    {% endif %}
+                {% endwith %}
+                <div class="store-name">{{ store.name }}</div>
+                <small class="text-muted">{{ store.city }}</small>
+                <a href="{% url 'store_detail' store.id %}" class="visit-btn d-block mt-2">
+                    <i class="bi bi-bag-heart"></i> دخول المتجر
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not products and not stores and q %}
+    <div class="text-center py-5">
+        <i class="bi bi-search" style="font-size: 3rem; color: var(--copper);"></i>
+        <p class="text-white mt-3">لا توجد نتائج مطابقة</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

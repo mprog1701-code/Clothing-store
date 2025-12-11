@@ -464,12 +464,13 @@
             </div>
             <div class="col-md-6">
                 <div class="search-container">
-                    <div class="input-group">
-                        <input type="text" class="form-control search-input" placeholder="ابحث عن أزياءك المفضلة...">
-                        <button class="search-btn">
+                    <form class="input-group" action="{% url 'search' %}" method="get">
+                        <input type="text" name="q" class="form-control search-input" id="liveSearchInput" placeholder="ابحث عن أزياءك المفضلة..." autocomplete="off">
+                        <button class="search-btn" type="submit">
                             <i class="bi bi-search"></i>
                         </button>
-                    </div>
+                    </form>
+                    <div id="liveSearchResults" class="live-search-results" style="position:absolute; left:0; right:0; top:100%; z-index:1000; display:none;"></div>
                 </div>
             </div>
         </div>
@@ -587,8 +588,70 @@
 
 {% block extra_js %}
 <script>
-    
-    
+    let __liveTimer;
+    const input = document.getElementById('liveSearchInput');
+    const box = document.getElementById('liveSearchResults');
+    function hideBox(){ if(box) box.style.display='none'; }
+    function showBox(){ if(box) box.style.display='block'; }
+    function renderResults(products, stores){
+        const p = (products||[]).slice(0,5);
+        const s = (stores||[]).slice(0,5);
+        let html = '<div class="bg-dark bg-opacity-90 border rounded-3 p-2">';
+        if(p.length){
+            html += '<div class="text-white-50 px-2 mb-1">منتجات</div>';
+            p.forEach(item=>{
+                const id = item.id;
+                const name = item.name;
+                const price = (item.base_price!=null)? item.base_price : '';
+                html += `<a href="/products/${id}/" class="d-flex align-items-center text-decoration-none text-white p-2 rounded-2 hover-bg">`+
+                        `<i class="bi bi-bag me-2"></i><span class="flex-grow-1">${name}</span>`+
+                        `<small class="text-white-50 ms-2">${price}</small>`+
+                        `</a>`;
+            });
+        }
+        if(s.length){
+            html += '<div class="text-white-50 px-2 mt-2 mb-1">متاجر</div>';
+            s.forEach(item=>{
+                const id = item.id;
+                const name = item.name;
+                const city = item.city||'';
+                html += `<a href="/stores/${id}/" class="d-flex align-items-center text-decoration-none text-white p-2 rounded-2 hover-bg">`+
+                        `<i class="bi bi-shop me-2"></i><span class="flex-grow-1">${name}</span>`+
+                        `<small class="text-white-50 ms-2">${city}</small>`+
+                        `</a>`;
+            });
+        }
+        if(!p.length && !s.length){
+            html += '<div class="text-center text-white-50 p-2"><i class="bi bi-search"></i> لا توجد نتائج</div>';
+        }
+        html += `<a href="/search/?q=${encodeURIComponent(input.value||'')}" class="d-block text-center text-decoration-none text-white-50 p-2">عرض المزيد</a>`;
+        html += '</div>';
+        box.innerHTML = html;
+        showBox();
+    }
+    async function fetchLive(q){
+        if(!q || q.trim().length<2){ hideBox(); return; }
+        try{
+            const [pr, sr] = await Promise.all([
+                fetch(`/api/products/?q=${encodeURIComponent(q)}`),
+                fetch(`/api/stores/?q=${encodeURIComponent(q)}`)
+            ]);
+            const pd = await pr.json();
+            const sd = await sr.json();
+            const products = pd.results || pd;
+            const stores = sd.results || sd;
+            renderResults(products, stores);
+        }catch(e){ hideBox(); }
+    }
+    if(input){
+        input.addEventListener('input', function(){
+            clearTimeout(__liveTimer);
+            const q = this.value;
+            __liveTimer = setTimeout(()=>fetchLive(q), 250);
+        });
+        input.addEventListener('blur', ()=> setTimeout(hideBox, 200));
+        input.addEventListener('focus', ()=>{ if((input.value||'').trim().length>=2) fetchLive(input.value); });
+    }
     // Add to Cart Function
     function addToCart(productId) {
         const meta = document.querySelector('meta[name="csrf-token"]');

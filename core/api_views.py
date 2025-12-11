@@ -59,8 +59,21 @@ class StoreViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         city = self.request.query_params.get('city')
+        q = self.request.query_params.get('q')
+        category = self.request.query_params.get('category')
+        ordering = self.request.query_params.get('ordering')
         if city:
             queryset = queryset.filter(city=city)
+        if category:
+            queryset = queryset.filter(category=category)
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q) | Q(description__icontains=q) | Q(city__icontains=q)
+            )
+        if ordering:
+            allowed = ['name', '-name', 'created_at', '-created_at', 'rating', '-rating']
+            if ordering in allowed:
+                queryset = queryset.order_by(ordering)
         return queryset
     
     @action(detail=False, methods=['get', 'post', 'put', 'patch'], permission_classes=[IsStoreOwner])
@@ -100,14 +113,29 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         store_id = self.request.query_params.get('store')
         category = self.request.query_params.get('category')
         city = self.request.query_params.get('city')
-        
+        q = self.request.query_params.get('q')
+        min_price = self.request.query_params.get('min_price')
+        max_price = self.request.query_params.get('max_price')
+        ordering = self.request.query_params.get('ordering')
         if store_id:
             queryset = queryset.filter(store_id=store_id)
         if category:
             queryset = queryset.filter(category=category)
         if city:
             queryset = queryset.filter(store__city=city)
-        
+        if q:
+            queryset = queryset.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(store__name__icontains=q))
+        try:
+            if min_price:
+                queryset = queryset.filter(base_price__gte=float(min_price))
+            if max_price:
+                queryset = queryset.filter(base_price__lte=float(max_price))
+        except ValueError:
+            pass
+        if ordering:
+            allowed = ['created_at', '-created_at', 'base_price', '-base_price', 'rating', '-rating', 'name', '-name']
+            if ordering in allowed:
+                queryset = queryset.order_by(ordering)
         return queryset
     
     @action(detail=False, methods=['get', 'post', 'put', 'patch', 'delete'], permission_classes=[IsStoreOwner])

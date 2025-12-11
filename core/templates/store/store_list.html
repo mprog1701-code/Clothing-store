@@ -263,12 +263,9 @@
                 <label class="filter-label"><i class="bi bi-grid me-2"></i>الفئة</label>
                 <select id="categorySelect" class="filter-select" onchange="applyFilters()">
                     <option value="" {% if not selected_category %}selected{% endif %}>الكل</option>
-                    <option value="women" {% if selected_category == 'women' %}selected{% endif %}>ملابس نسائية</option>
-                    <option value="men" disabled>ملابس رجالية (قريبًا)</option>
-                    <option value="kids" {% if selected_category == 'kids' %}selected{% endif %}>ملابس أطفال</option>
-                    <option value="perfumes" disabled>عطور (قريبًا)</option>
-                    <option value="cosmetics" {% if selected_category == 'cosmetics' %}selected{% endif %}>كوزمتك</option>
-                    <option value="watches" disabled>ساعات (قريبًا)</option>
+                    {% for val, name in store_categories %}
+                    <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="col-md-6">

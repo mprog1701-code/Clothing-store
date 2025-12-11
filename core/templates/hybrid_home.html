@@ -20,8 +20,13 @@
             </div>
             <div class="col-auto">
                 <div class="search-container">
-                    <input type="text" class="form-control form-control-sm rounded-pill" placeholder="ابحث عن منتج أو مطعم...">
-                    <i class="bi bi-search search-icon"></i>
+                    <form action="{% url 'search' %}" method="get" class="position-relative">
+                        <input type="text" name="q" id="hybridLiveSearchInput" class="form-control form-control-sm rounded-pill" placeholder="ابحث عن منتج أو مطعم..." style="padding-right: 2rem;" autocomplete="off">
+                        <button type="submit" class="btn btn-link p-0 m-0 position-absolute" style="left: 10px; top: 50%; transform: translateY(-50%); color: #6c757d;">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </form>
+                    <div id="hybridLiveSearchResults" class="live-search-results" style="position:absolute; left:0; right:0; top:100%; z-index:1000; display:none;"></div>
                 </div>
             </div>
         </div>
@@ -895,5 +900,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Live search
+(function(){
+    let t; const input = document.getElementById('hybridLiveSearchInput'); const box=document.getElementById('hybridLiveSearchResults');
+    function hide(){ if(box) box.style.display='none'; }
+    function show(){ if(box) box.style.display='block'; }
+    function render(products,stores){
+        const p=(products||[]).slice(0,5); const s=(stores||[]).slice(0,5);
+        let html='<div class="bg-dark bg-opacity-90 border rounded-3 p-2">';
+        if(p.length){ html+='<div class="text-white-50 px-2 mb-1">منتجات</div>'; p.forEach(it=>{ html+=`<a href="/products/${it.id}/" class="d-flex align-items-center text-decoration-none text-white p-2 rounded-2"><i class="bi bi-bag me-2"></i><span class="flex-grow-1">${it.name}</span></a>`; }); }
+        if(s.length){ html+='<div class="text-white-50 px-2 mt-2 mb-1">متاجر</div>'; s.forEach(it=>{ html+=`<a href="/stores/${it.id}/" class="d-flex align-items-center text-decoration-none text-white p-2 rounded-2"><i class="bi bi-shop me-2"></i><span class="flex-grow-1">${it.name}</span><small class="text-white-50 ms-2">${it.city||''}</small></a>`; }); }
+        if(!p.length && !s.length){ html+='<div class="text-center text-white-50 p-2"><i class="bi bi-search"></i> لا توجد نتائج</div>'; }
+        html += `<a href="/search/?q=${encodeURIComponent(input.value||'')}" class="d-block text-center text-decoration-none text-white-50 p-2">عرض المزيد</a>`;
+        html+='</div>'; box.innerHTML=html; show();
+    }
+    async function fetchLive(q){ if(!q||q.trim().length<2){ hide(); return; } try{ const [pr,sr]=await Promise.all([fetch(`/api/products/?q=${encodeURIComponent(q)}`), fetch(`/api/stores/?q=${encodeURIComponent(q)}`)]); const pd=await pr.json(); const sd=await sr.json(); render(pd.results||pd, sd.results||sd); }catch(e){ hide(); } }
+    if(input){ input.addEventListener('input', function(){ clearTimeout(t); const q=this.value; t=setTimeout(()=>fetchLive(q), 250); }); input.addEventListener('blur', ()=> setTimeout(hide, 200)); input.addEventListener('focus', ()=>{ if((input.value||'').trim().length>=2) fetchLive(input.value); }); }
+})();
 </script>
 {% endblock %}

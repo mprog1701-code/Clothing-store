@@ -18,11 +18,12 @@ from .forms import AddressForm
 def hybrid_home(request):
     """Fashion marketplace homepage specialized in clothing and fashion"""
     
-    # Get new arrivals for fashion categories
-    new_arrivals = Product.objects.filter(
+    new_arrivals = list(Product.objects.filter(
         is_active=True,
-        store__category__in=['women', 'men', 'kids', 'perfumes']
-    ).select_related('store').order_by('-created_at')[:8]
+        category__in=['women', 'men', 'kids', 'sports']
+    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8])
+    if len(new_arrivals) == 0:
+        new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
     
     # Get cart items count
     cart = request.session.get('cart', [])
@@ -82,7 +83,8 @@ def store_list(request):
     
     category = request.GET.get('category')
     if category:
-        stores = stores.filter(category=category)
+        from django.db.models import Q
+        stores = stores.filter(Q(category=category) | Q(product__category=category)).distinct()
     
     city = request.GET.get('city')
     if city:
@@ -99,6 +101,7 @@ def store_list(request):
         'cities': cities,
         'selected_city': city,
         'selected_category': category,
+        'store_categories': Store.CATEGORY_CHOICES,
         'cart_items_count': cart_items_count,
     }
     return render(request, 'store/store_list.html', context)
@@ -1268,6 +1271,87 @@ def most_sold_products(request):
         'page_description': 'اكتشف المنتجات الأكثر مبيعاً لدينا'
     }
     return render(request, 'products/featured.html', context)
+
+
+def search(request):
+    q = (request.GET.get('q') or '').strip()
+    search_type = (request.GET.get('type') or 'all').strip()
+    category = (request.GET.get('category') or '').strip()
+    store_category = (request.GET.get('store_category') or '').strip()
+    city = (request.GET.get('city') or '').strip()
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+    sort = (request.GET.get('sort') or '').strip()
+
+    from django.db.models import Q
+
+    product_qs = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')
+    store_qs = Store.objects.filter(is_active=True)
+
+    if q:
+        product_qs = product_qs.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(store__name__icontains=q))
+        store_qs = store_qs.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(city__icontains=q))
+
+    if category:
+        product_qs = product_qs.filter(category=category)
+
+    if store_category:
+        store_qs = store_qs.filter(category=store_category)
+
+    if city:
+        product_qs = product_qs.filter(store__city=city)
+        store_qs = store_qs.filter(city=city)
+
+    try:
+        if min_price:
+            product_qs = product_qs.filter(base_price__gte=float(min_price))
+        if max_price:
+            product_qs = product_qs.filter(base_price__lte=float(max_price))
+    except ValueError:
+        pass
+
+    if sort:
+        if sort == 'new':
+            product_qs = product_qs.order_by('-created_at')
+        elif sort == 'price_asc':
+            product_qs = product_qs.order_by('base_price')
+        elif sort == 'price_desc':
+            product_qs = product_qs.order_by('-base_price')
+        elif sort == 'rating_desc':
+            product_qs = product_qs.order_by('-rating')
+        elif sort == 'store_new':
+            store_qs = store_qs.order_by('-created_at')
+        elif sort == 'store_name_asc':
+            store_qs = store_qs.order_by('name')
+        elif sort == 'store_name_desc':
+            store_qs = store_qs.order_by('-name')
+        elif sort == 'store_rating_desc':
+            store_qs = store_qs.order_by('-rating')
+
+    product_categories = getattr(Product, 'CATEGORY_CHOICES', [])
+    store_categories = getattr(Store, 'CATEGORY_CHOICES', [])
+    cities = Store.objects.filter(is_active=True).values_list('city', flat=True).distinct()
+
+    products = product_qs[:24]
+    stores = store_qs[:24]
+
+    context = {
+        'q': q,
+        'products': products if search_type in ['all', 'products'] else [],
+        'stores': stores if search_type in ['all', 'stores'] else [],
+        'product_categories': product_categories,
+        'store_categories': store_categories,
+        'cities': cities,
+        'selected_type': search_type,
+        'selected_category': category,
+        'selected_store_category': store_category,
+        'selected_city': city,
+        'selected_min_price': min_price or '',
+        'selected_max_price': max_price or '',
+        'selected_sort': sort,
+        'cart_items_count': len(request.session.get('cart', [])),
+    }
+    return render(request, 'search/results.html', context)
 
 
 @login_required
