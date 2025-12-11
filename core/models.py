@@ -80,6 +80,7 @@ class Store(models.Model):
         ('perfumes', 'عطور'),
         ('cosmetics', 'كوزمتك'),
         ('watches', 'ساعات'),
+        ('shoes', 'أحذية'),
         ('clothing', 'ملابس عامة'),
         ('electronics', 'إلكترونيات'),
         ('food', 'مطاعم'),
@@ -118,6 +119,7 @@ class Product(models.Model):
         ('electronics', 'إلكترونيات'),
         ('beauty', 'جمال'),
         ('watches', 'ساعات'),
+        ('shoes', 'أحذية'),
     ]
     
     store = models.ForeignKey(Store, on_delete=models.CASCADE)

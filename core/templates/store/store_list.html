@@ -334,9 +334,10 @@
         const cityEl = document.getElementById('citySelect');
         const category = categoryEl ? categoryEl.value : '';
         const city = cityEl ? cityEl.value : '';
-        const params = new URLSearchParams();
-        if (category) params.set('category', category);
-        if (city) params.set('city', city);
+        const params = new URLSearchParams(window.location.search || '');
+        params.delete('page');
+        if (category) { params.set('category', category); } else { params.delete('category'); }
+        if (city) { params.set('city', city); } else { params.delete('city'); }
         const url = '{% url 'store_list' %}' + (params.toString() ? ('?' + params.toString()) : '');
         window.location.href = url;
     }

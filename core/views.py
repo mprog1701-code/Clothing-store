@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Q, Sum
 from django.conf import settings
 from django.utils import timezone
+from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 import json
@@ -18,9 +19,10 @@ from .forms import AddressForm
 def hybrid_home(request):
     """Fashion marketplace homepage specialized in clothing and fashion"""
     
+    since = timezone.now() - timedelta(hours=24)
     new_arrivals = list(Product.objects.filter(
         is_active=True,
-        category__in=['women', 'men', 'kids', 'sports']
+        created_at__gte=since
     ).select_related('store').prefetch_related('images').order_by('-created_at')[:8])
     if len(new_arrivals) == 0:
         new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
@@ -91,6 +93,8 @@ def store_list(request):
         stores = stores.filter(city=city)
     
     cities = Store.objects.filter(is_active=True).values_list('city', flat=True).distinct()
+    allowed_store_categories = ['women','men','kids','cosmetics','watches','perfumes','shoes']
+    filtered_categories = [c for c in Store.CATEGORY_CHOICES if c[0] in allowed_store_categories]
     
     # Get cart items count
     cart = request.session.get('cart', [])
@@ -101,7 +105,7 @@ def store_list(request):
         'cities': cities,
         'selected_city': city,
         'selected_category': category,
-        'store_categories': Store.CATEGORY_CHOICES,
+        'store_categories': filtered_categories,
         'cart_items_count': cart_items_count,
     }
     return render(request, 'store/store_list.html', context)
