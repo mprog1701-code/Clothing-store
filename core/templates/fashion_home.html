@@ -463,9 +463,7 @@
       </div>
     </div>
     <div id="ann-dots" class="ann-dots"></div>
-    <div class="home-ad-more">
-      <a id="ann-action" class="btn" href="#">عرض المزيد</a>
-    </div>
+    
   </div>
 </div>
 <!-- Fashion Header -->
@@ -752,9 +750,6 @@
         const s = announcementConfig.slides[i];
         document.getElementById('ann-title').textContent = s.title || '';
         document.getElementById('ann-message').textContent = s.message || '';
-        const action = document.getElementById('ann-action');
-        action.textContent = s.actionText || 'عرض المزيد';
-        action.href = s.actionUrl || '/announcements/';
         const media = document.getElementById('ann-media');
         media.innerHTML = '';
         if (s.kind === 'image' && s.mediaUrl){
@@ -791,12 +786,21 @@
 
     function loadSlidesFromLocal(){
         try{
-            const raw = localStorage.getItem('appAnnouncementsSlides');
-            if(raw){
-                const parsed = JSON.parse(raw);
-                if(Array.isArray(parsed) && parsed.length){
-                    announcementConfig.slides = parsed;
-                }
+            const srvSlides = [
+                {% for c in campaigns %}
+                {
+                    kind: {% if c.banner_image %}'image'{% else %}'text'{% endif %},
+                    title: '{{ c.title|escapejs }}',
+                    message: '{{ c.description|default:""|escapejs }}',
+                    mediaUrl: '{% if c.banner_image %}{{ c.banner_image.url }}{% endif %}',
+                    actionText: 'عرض المزيد',
+                    actionUrl: '{{ c.action_url|default:"/stores/" }}',
+                    priority: 0
+                },
+                {% endfor %}
+            ];
+            if (srvSlides.length){
+                announcementConfig.slides = srvSlides;
             }
             const ttlMinRaw = localStorage.getItem('appAnnouncementsTTLMinutes');
             if(ttlMinRaw){
@@ -838,7 +842,9 @@
         document.getElementById('ann-card').addEventListener('click', function(e){
             const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
             if(tag==='button' || tag==='a' || tag==='video') return;
-            window.location.assign('/announcements/');
+            const current = announcementConfig.slides[annIndex] || {};
+            const url = current.actionUrl || '/announcements/';
+            window.location.assign(url);
         });
 
         // Swipe/drag support

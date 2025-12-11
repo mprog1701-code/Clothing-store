@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة المالك - إدارة الإعلانات{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-3" style="color: var(--gold);">إدارة الإعلانات</h1>
+  <p class="text-muted">أضف إعلانات جديدة أو فعّل/عطّل الإعلانات الحالية. تظهر الإعلانات كشرائح في راية الصفحة الرئيسية.</p>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="col-md-6">
+          <label class="form-label">العنوان</label>
+          <input type="text" name="title" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">رابط الإجراء</label>
+          <input type="text" name="action_url" class="form-control" value="/stores/">
+        </div>
+        <div class="col-12">
+          <label class="form-label">الوصف</label>
+          <textarea name="description" class="form-control" rows="2"></textarea>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">نسبة الخصم</label>
+          <input type="number" name="discount_percent" class="form-control" min="0" max="100" value="0">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">تاريخ البداية</label>
+          <input type="datetime-local" name="start_date" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">تاريخ النهاية</label>
+          <input type="datetime-local" name="end_date" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">صورة البانر</label>
+          <input type="file" name="banner_image" class="form-control" accept="image/*">
+        </div>
+        <div class="col-md-6 d-flex align-items-center">
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" id="isActiveCheck" name="is_active">
+            <label class="form-check-label" for="isActiveCheck">نشط</label>
+          </div>
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> إضافة إعلان</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    {% for c in campaigns %}
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="card-title mb-0">{{ c.title }}</h5>
+            <span class="badge {% if c.is_active %}bg-success{% else %}bg-secondary{% endif %}">{% if c.is_active %}نشط{% else %}غير نشط{% endif %}</span>
+          </div>
+          <p class="card-text text-muted">{{ c.description|default:'' }}</p>
+          {% if c.banner_image %}
+            <img src="{{ c.banner_image.url }}" alt="{{ c.title }}" class="img-fluid rounded mb-2" style="max-height:160px; object-fit:cover;">
+          {% endif %}
+          <div class="small text-muted">من {{ c.start_date }} إلى {{ c.end_date }}</div>
+        </div>
+        <div class="card-footer d-flex gap-2">
+          <form method="post" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="{% if c.is_active %}deactivate{% else %}activate{% endif %}">
+            <input type="hidden" name="campaign_id" value="{{ c.id }}">
+            <button class="btn btn-sm {% if c.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+              {% if c.is_active %}تعطيل{% else %}تفعيل{% endif %}
+            </button>
+          </form>
+          <form method="post" class="d-inline flex-grow-1">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_url">
+            <input type="hidden" name="campaign_id" value="{{ c.id }}">
+            <div class="input-group input-group-sm">
+              <input type="text" class="form-control" name="action_url" value="{{ c.action_url|default:'/stores/' }}">
+              <button class="btn btn-outline-primary">تحديث الرابط</button>
+            </div>
+          </form>
+          <form method="post" class="d-inline ms-auto">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="campaign_id" value="{{ c.id }}">
+            <button class="btn btn-sm btn-outline-danger">حذف</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+      <div class="col-12">
+        <div class="alert alert-info">لا توجد إعلانات بعد. قم بإضافة إعلان جديد من النموذج أعلى الصفحة.</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .card .badge { font-size: .8rem; }
+</style>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

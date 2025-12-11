@@ -32,17 +32,19 @@ def hybrid_home(request):
     cart_items_count = len(cart)
     
     campaign = None
+    campaigns = []
     try:
-        campaign = Campaign.objects.filter(is_active=True).order_by('-start_date').first()
-        if campaign and not campaign.is_running:
-            campaign = None
+        campaigns = list(Campaign.objects.filter(is_active=True).order_by('-start_date'))
+        campaign = campaigns[0] if campaigns else None
     except (OperationalError, ProgrammingError):
+        campaigns = []
         campaign = None
 
     context = {
         'new_arrivals': new_arrivals,
         'cart_items_count': cart_items_count,
         'campaign': campaign,
+        'campaigns': campaigns,
     }
     
     response = render(request, 'fashion_home.html', context)
@@ -843,6 +845,79 @@ def super_owner_dashboard(request):
         'visitor_count': settings_obj.visitor_count,
     }
     return render(request, 'dashboard/super_owner/dashboard.html', context)
+
+
+@login_required
+def super_owner_announcements(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            if action == 'create':
+                title = request.POST.get('title') or ''
+                description = request.POST.get('description') or ''
+                action_url = request.POST.get('action_url') or '/stores/'
+                discount_percent = int(request.POST.get('discount_percent') or 0)
+                start_raw = request.POST.get('start_date') or ''
+                end_raw = request.POST.get('end_date') or ''
+                is_active = request.POST.get('is_active') == 'on'
+                banner_image = request.FILES.get('banner_image')
+
+                from datetime import datetime
+                def parse_dt(s):
+                    try:
+                        return datetime.fromisoformat(s)
+                    except Exception:
+                        # fallback to now if parsing fails
+                        return timezone.now()
+
+                campaign = Campaign.objects.create(
+                    title=title,
+                    description=description,
+                    action_url=action_url,
+                    discount_percent=discount_percent,
+                    start_date=parse_dt(start_raw),
+                    end_date=parse_dt(end_raw),
+                    is_active=is_active,
+                )
+                if banner_image:
+                    campaign.banner_image = banner_image
+                    campaign.save()
+                messages.success(request, 'تم إنشاء الإعلان بنجاح!')
+                return redirect('super_owner_announcements')
+            elif action in ['activate', 'deactivate', 'delete', 'update_url']:
+                cid = request.POST.get('campaign_id')
+                campaign = get_object_or_404(Campaign, id=cid)
+                if action == 'activate':
+                    campaign.is_active = True
+                    campaign.save()
+                    messages.success(request, 'تم تفعيل الإعلان')
+                elif action == 'deactivate':
+                    campaign.is_active = False
+                    campaign.save()
+                    messages.success(request, 'تم تعطيل الإعلان')
+                elif action == 'update_url':
+                    new_url = request.POST.get('action_url') or '/stores/'
+                    campaign.action_url = new_url
+                    campaign.save()
+                    messages.success(request, 'تم تحديث رابط الإعلان')
+                elif action == 'delete':
+                    title = campaign.title
+                    campaign.delete()
+                    messages.success(request, f'تم حذف الإعلان "{title}"')
+                return redirect('super_owner_announcements')
+        except Exception as e:
+            messages.error(request, f'حدث خطأ: {str(e)}')
+            return redirect('super_owner_announcements')
+
+    campaigns = Campaign.objects.all().order_by('-start_date')
+    context = {
+        'campaigns': campaigns,
+    }
+    return render(request, 'dashboard/super_owner/announcements.html', context)
 
 
 @login_required

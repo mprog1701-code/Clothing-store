@@ -5,110 +5,46 @@
 
 {% block extra_css %}
 <style>
-  .ann-admin-card { background: #111; border: 2px solid var(--copper); border-radius: 16px; padding: 16px; color: #fff; }
-  .ann-admin-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 16px; }
-  .ann-admin-controls { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; }
-  .form-check-input { cursor: pointer; }
-  .save-btn { background: var(--copper); border: none; border-radius: 24px; padding: 12px 20px; font-weight: 700; }
+  .ann-card { background: #111; border: 2px solid var(--copper); border-radius: 16px; padding: 16px; color: #fff; }
+  .ann-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 16px; }
+  .ann-img { max-height: 160px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.25); }
+  .ann-meta { color: #bbb; font-size: .9rem; }
+  .ann-title { color: var(--gold); font-weight: 900; }
+  .ann-action { color: #fff; font-weight: 700; }
+  .ann-action:hover { text-decoration: underline; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
-  <h1 class="mb-3" style="color: var(--gold);">إدارة الإعلانات</h1>
-  <p class="text-white-50">حدد الإعلانات التي ستظهر في راية الإعلان في الصفحة الرئيسية، واضبط مدة الظهور والأولوية.</p>
+  <h1 class="mb-3" style="color: var(--gold);">الإعلانات</h1>
+  <p class="text-white-50">تعرض هذه الصفحة الإعلانات المضافة من قبل المالك. تظهر الإعلانات كشرائح في راية الصفحة الرئيسية.</p>
 
-  <div class="row g-3 mb-3">
-    <div class="col-md-4">
-      <div class="ann-admin-controls">
-        <label class="form-label">مدة إعادة الظهور (دقائق)</label>
-        <input type="number" id="ttlMinutesInput" class="form-control" min="1" step="1" value="{{ 15 }}">
-        <small class="text-white-50">تحدد كل كم دقيقة تظهر الراية مجددًا.</small>
-      </div>
-    </div>
-    <div class="col-md-8 d-flex align-items-end justify-content-end">
-      <button id="saveAnnouncementsBtn" class="save-btn">
-        <i class="bi bi-save"></i> حفظ الإعلانات للراية
-      </button>
-    </div>
-  </div>
-
-  <div class="ann-admin-grid">
+  <div class="ann-grid">
     {% for c in campaigns %}
-    <div class="ann-admin-card" data-id="{{ c.id }}">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <strong>{{ c.title }}</strong>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" role="switch" id="showSwitch{{ c.id }}" checked>
-          <label class="form-check-label" for="showSwitch{{ c.id }}">إظهار في الراية</label>
-        </div>
+    <div class="ann-card">
+      <div class="mb-2">
+        <div class="ann-title">{{ c.title }}</div>
+        <div class="ann-meta">{% if c.is_active %}نشط{% else %}غير نشط{% endif %}</div>
       </div>
       <p class="text-white-50 mb-2">{{ c.description|default:'' }}</p>
       {% if c.banner_image %}
-      <img src="{{ c.banner_image.url }}" alt="{{ c.title }}" class="img-fluid rounded mb-2" style="max-height:160px; object-fit:cover;">
+        <img src="{{ c.banner_image.url }}" alt="{{ c.title }}" class="img-fluid ann-img mb-2">
       {% endif %}
-      <div class="row g-2">
-        <div class="col-6">
-          <label class="form-label">الأولوية</label>
-          <input type="number" class="form-control" id="priority{{ c.id }}" value="0" step="1">
-        </div>
-        <div class="col-6">
-          <label class="form-label">رابط الإجراء</label>
-          <input type="text" class="form-control" id="actionUrl{{ c.id }}" value="{{ c.action_url|default:'/stores/' }}">
-        </div>
-      </div>
+      {% if c.action_url %}
+        <a href="{{ c.action_url }}" class="ann-action">الانتقال للإعلان</a>
+      {% endif %}
     </div>
     {% empty %}
-    <div class="text-white-50">لا توجد حملات نشطة الآن.</div>
+    <div class="text-white-50">لا توجد حملات الآن.</div>
     {% endfor %}
   </div>
 
-  <div class="mt-4">
+  <div class="mt-4 d-flex gap-2">
     <a href="/" class="btn btn-outline-light"><i class="bi bi-arrow-right"></i> العودة للرئيسية</a>
+    <a href="/dashboard/super-owner/announcements/" class="btn btn-outline-warning"><i class="bi bi-gear"></i> إدارة الإعلانات (المالك)</a>
   </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-  function toast(msg){
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--copper);color:#fff;padding:12px 16px;border-radius:12px;z-index:10000;font-weight:700;';
-    t.textContent = msg; document.body.appendChild(t); setTimeout(()=>t.remove(), 2500);
-  }
-  function buildSlides(){
-    const cards = document.querySelectorAll('.ann-admin-card');
-    const slides = [];
-    cards.forEach(card=>{
-      const id = card.getAttribute('data-id');
-      const title = card.querySelector('strong').textContent.trim();
-      const message = (card.querySelector('p')?.textContent || '').trim();
-      const img = card.querySelector('img');
-      const actionUrl = card.querySelector('#actionUrl'+id)?.value || '/stores/';
-      const priority = parseInt(card.querySelector('#priority'+id)?.value || '0', 10);
-      const enabled = card.querySelector('#showSwitch'+id)?.checked;
-      if(!enabled) return;
-      const slide = {
-        kind: img ? 'image' : 'text',
-        title, message,
-        mediaUrl: img ? img.src : '',
-        actionText: 'عرض المزيد', actionUrl,
-        priority
-      };
-      slides.push(slide);
-    });
-    slides.sort((a,b)=> (a.priority||0) - (b.priority||0));
-    return slides;
-  }
-  document.getElementById('saveAnnouncementsBtn')?.addEventListener('click', ()=>{
-    try{
-      const slides = buildSlides();
-      const ttlMinutes = parseInt(document.getElementById('ttlMinutesInput')?.value || '15', 10);
-      localStorage.setItem('appAnnouncementsSlides', JSON.stringify(slides));
-      localStorage.setItem('appAnnouncementsTTLMinutes', String(ttlMinutes));
-      toast('تم حفظ الإعلانات لراية الإعلان');
-    }catch(e){ toast('تعذر الحفظ'); }
-  });
-</script>
-{% endblock %}
-
+{% block extra_js %}{% endblock %}
