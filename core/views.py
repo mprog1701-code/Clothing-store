@@ -97,6 +97,16 @@ def store_list(request):
     cities = Store.objects.filter(is_active=True).values_list('city', flat=True).distinct()
     allowed_store_categories = ['women','men','kids','cosmetics','watches','perfumes','shoes']
     filtered_categories = [c for c in Store.CATEGORY_CHOICES if c[0] in allowed_store_categories]
+    showcase_products = []
+    try:
+        prod_qs = Product.objects.filter(is_active=True)
+        if category:
+            prod_qs = prod_qs.filter(store__category=category)
+        if city:
+            prod_qs = prod_qs.filter(store__city=city)
+        showcase_products = prod_qs.select_related('store').prefetch_related('images').order_by('?')[:12]
+    except Exception:
+        showcase_products = []
     
     # Get cart items count
     cart = request.session.get('cart', [])
@@ -109,6 +119,7 @@ def store_list(request):
         'selected_category': category,
         'store_categories': filtered_categories,
         'cart_items_count': cart_items_count,
+        'showcase_products': showcase_products,
     }
     return render(request, 'store/store_list.html', context)
 

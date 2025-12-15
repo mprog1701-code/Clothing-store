@@ -5,17 +5,7 @@
 
 {% block extra_css %}
 <style>
-  .showcase { background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%); border: 2px solid var(--copper); border-radius: 18px; padding: 12px; margin-bottom: 24px; position: relative; overflow: hidden; }
-  .showcase-track { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; align-items: stretch; }
-  .showcase-card { background: #0f0f0f; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
-  .showcase-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(184,115,51,.25); }
-  .showcase-img { width: 100%; height: 130px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.15); }
-  .showcase-info { padding: 10px; }
-  .showcase-title { color: var(--gold); font-weight: 800; font-size: .95rem; margin-bottom: 4px; }
-  .showcase-store { color: #bbb; font-size: .8rem; }
-  .showcase-price { color: var(--copper-light); font-weight: 700; font-size: .9rem; }
-  .showcase-controls { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; }
-  .showcase-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); color: #fff; padding: 6px 10px; border-radius: 20px; font-size: .85rem; font-weight: 700; }
+  
   .ann-card { background: #111; border: 2px solid var(--copper); border-radius: 16px; padding: 16px; color: #fff; }
   .ann-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 16px; }
   .ann-img { max-height: 160px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.25); }
@@ -28,32 +18,7 @@
 
 {% block content %}
 <div class="container py-4">
-  <div class="showcase">
-    <div class="showcase-controls">
-      <button class="showcase-btn" id="scPrev">السابق</button>
-      <button class="showcase-btn" id="scNext">التالي</button>
-    </div>
-    <div class="showcase-track" id="showcaseTrack">
-      {% for p in products %}
-      <div class="showcase-card" onclick="window.location.href='/products/{{ p.id }}/'">
-        {% if p.images.all %}
-        <img src="{{ p.images.all.0.image.url }}" alt="{{ p.name }}" class="showcase-img">
-        {% else %}
-        <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
-          <i class="bi bi-bag" style="font-size:2rem;"></i>
-        </div>
-        {% endif %}
-        <div class="showcase-info">
-          <div class="showcase-title">{{ p.name|truncatechars:32 }}</div>
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="showcase-store">{{ p.store.name|truncatechars:22 }}</div>
-            <div class="showcase-price">{{ p.base_price|iqd }}</div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
+  
   <div class="ann-grid">
     {% for c in campaigns %}
     <div class="ann-card">
@@ -72,20 +37,4 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-  (function(){
-    const track = document.getElementById('showcaseTrack');
-    const prev = document.getElementById('scPrev');
-    const next = document.getElementById('scNext');
-    let timer = null;
-    function rotateForward(){ if(track && track.children.length>0){ track.appendChild(track.children[0]); } }
-    function rotateBackward(){ if(track && track.children.length>0){ track.insertBefore(track.lastElementChild, track.firstElementChild); } }
-    function start(){ stop(); timer = setInterval(rotateForward, 5000); }
-    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
-    if(prev){ prev.addEventListener('click', function(){ rotateBackward(); start(); }); }
-    if(next){ next.addEventListener('click', function(){ rotateForward(); start(); }); }
-    start();
-  })();
-</script>
-{% endblock %}
+{% block extra_js %}{% endblock %}
