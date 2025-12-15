@@ -277,8 +277,26 @@
         <div class="showcase-track" id="showcaseTrack">
             {% for p in showcase_products %}
             <div class="showcase-card" onclick="window.location.href='{% url 'product_detail' p.id %}'">
-                {% if p.images.all %}
-                <img src="{{ p.images.all.0.image.url }}" alt="{{ p.name }}" class="showcase-img">
+                {% if p.main_image %}
+                    {% with url=p.main_image.get_image_url %}
+                        {% if url %}
+                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img">
+                        {% else %}
+                            <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
+                                <i class="bi bi-bag" style="font-size:2rem;"></i>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                {% elif p.images.all %}
+                    {% with url=p.images.all.0.get_image_url %}
+                        {% if url %}
+                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img">
+                        {% else %}
+                            <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
+                                <i class="bi bi-bag" style="font-size:2rem;"></i>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
                 {% else %}
                 <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
                     <i class="bi bi-bag" style="font-size:2rem;"></i>
@@ -324,13 +342,28 @@
         {% for store in stores %}
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="store-card">
-                {% if store.main_image and store.main_image.image %}
-                <img src="{{ store.main_image.image.url }}" alt="{{ store.name }}" class="store-image">
+                {% if store.logo %}
+                    <img src="{{ store.logo.url }}" alt="{{ store.name }}" class="store-image">
                 {% else %}
-                <div class="store-image d-flex align-items-center justify-content-center" 
-                     style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
-                    <i class="bi bi-shop" style="font-size: 4rem;"></i>
-                </div>
+                    {% with first_product=store.product_set.all.0 %}
+                        {% if first_product and first_product.main_image %}
+                            {% with cover_url=first_product.main_image.get_image_url %}
+                                {% if cover_url %}
+                                    <img src="{{ cover_url }}" alt="{{ store.name }}" class="store-image">
+                                {% else %}
+                                    <div class="store-image d-flex align-items-center justify-content-center" 
+                                         style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                                        <i class="bi bi-shop" style="font-size: 4rem;"></i>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+                        {% else %}
+                            <div class="store-image d-flex align-items-center justify-content-center" 
+                                 style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                                <i class="bi bi-shop" style="font-size: 4rem;"></i>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
                 {% endif %}
                 
                 <h3 class="store-name">{{ store.name }}</h3>

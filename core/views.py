@@ -65,7 +65,7 @@ def home(request):
     site_settings, created = SiteSettings.objects.get_or_create(id=1)
     
     stores = Store.objects.filter(is_active=True)[:site_settings.featured_stores_count]
-    products = Product.objects.filter(is_active=True)[:site_settings.featured_products_count]
+    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
     context = {
         'stores': stores,
         'products': products,
@@ -83,7 +83,7 @@ def home(request):
 
 
 def store_list(request):
-    stores = Store.objects.filter(is_active=True)
+    stores = Store.objects.filter(is_active=True).prefetch_related('product_set', 'product_set__images')
     
     category = request.GET.get('category')
     if category:
@@ -129,7 +129,7 @@ def store_detail(request, store_id):
     if not store or not store.is_active:
         messages.error(request, 'المتجر غير متوفر أو تم إيقافه')
         return redirect('store_list')
-    products = Product.objects.filter(store=store, is_active=True)
+    products = Product.objects.filter(store=store, is_active=True).prefetch_related('images')
     category = request.GET.get('category')
     if category:
         products = products.filter(category=category)
@@ -1099,9 +1099,10 @@ def super_owner_edit_store(request, store_id):
             messages.error(request, 'المستخدم المختار غير صالح!')
             return redirect('super_owner_edit_store', store_id=store_id)
     
+    store_owners = User.objects.filter(role='admin').order_by('username')
     context = {
         'store': store,
-        # Admin manages stores directly - no owner selection needed
+        'store_owners': store_owners,
     }
     return render(request, 'dashboard/super_owner/edit_store.html', context)
 

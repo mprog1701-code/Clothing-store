@@ -80,10 +80,20 @@
             <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
                 <div class="card product-card h-100 position-relative">
                     <div class="position-relative overflow-hidden">
-                        {% if product.main_image and product.main_image.image and product.main_image.image.name %}
-                            <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}">
-                                <img src="{{ product.main_image.image.url }}" class="product-image w-100" alt="{{ product.name }}">
-                            </a>
+                        {% if product.main_image %}
+                            {% with url=product.main_image.get_image_url %}
+                                {% if url %}
+                                    <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}">
+                                        <img src="{{ url }}" class="product-image w-100" alt="{{ product.name }}">
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
+                                        <div class="bg-light d-flex align-items-center justify-content-center product-image w-100">
+                                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                        </div>
+                                    </a>
+                                {% endif %}
+                            {% endwith %}
                         {% else %}
                             <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
                                 <div class="bg-light d-flex align-items-center justify-content-center product-image w-100">

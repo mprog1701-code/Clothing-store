@@ -58,13 +58,15 @@
                         <div class="carousel-inner rounded-3 overflow-hidden">
                             {% for image in images %}
                             <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                {% if image.image and image.image.name %}
-                                <img src="{{ image.image.url }}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;">
-                                {% else %}
-                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 500px;">
-                                    <i class="bi bi-image display-1 text-muted opacity-25"></i>
-                                </div>
-                                {% endif %}
+                                {% with url=image.get_image_url %}
+                                    {% if url %}
+                                    <img src="{{ url }}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 500px;">
+                                        <i class="bi bi-image display-1 text-muted opacity-25"></i>
+                                    </div>
+                                    {% endif %}
+                                {% endwith %}
                             </div>
                             {% empty %}
                             <div class="carousel-item active">

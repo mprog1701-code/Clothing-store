@@ -135,7 +135,11 @@
             <div class="col-lg-4 text-center">
                 <div class="store-hero-icon animate-bounce">
                     <div class="store-logo-container bg-white rounded-circle p-4 shadow-lg d-inline-block">
-                        <i class="bi bi-shop display-1 text-primary-gradient"></i>
+                        {% if store.logo %}
+                            <img src="{{ store.logo.url }}" alt="{{ store.name }}" style="width:120px;height:120px;object-fit:cover;border-radius:50%;">
+                        {% else %}
+                            <i class="bi bi-shop display-1 text-primary-gradient"></i>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -280,9 +284,17 @@
             <div class="col-lg-3 col-md-6">
                 <div class="product-card-modern h-100 animate-fade-in-up">
                     <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
-                        {% if product.main_image and product.main_image.image %}
+                        {% if product.main_image %}
                         <div class="product-image-container">
-                            <img src="{{ product.main_image.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 250px; object-fit: cover;">
+                            {% with url=product.main_image.get_image_url %}
+                                {% if url %}
+                                    <img src="{{ url }}" class="card-img-top" alt="{{ product.name }}" style="height: 250px; object-fit: cover;">
+                                {% else %}
+                                    <div class="product-image-container bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
+                                        <i class="bi bi-image display-1 text-muted opacity-25"></i>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
                             <div class="product-overlay">
                                 <div class="overlay-content">
                                     <a href="{% url 'product_detail' product.id %}" class="btn btn-light btn-lg">

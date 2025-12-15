@@ -96,6 +96,7 @@ class Store(models.Model):
     city = models.CharField(max_length=100)
     address = models.TextField()
     description = models.TextField(blank=True)
+    logo = models.ImageField(upload_to='stores/', blank=True, null=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='clothing')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
