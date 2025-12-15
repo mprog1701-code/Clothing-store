@@ -342,28 +342,13 @@
         {% for store in stores %}
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="store-card">
-                {% if store.logo %}
-                    <img src="{{ store.logo.url }}" alt="{{ store.name }}" class="store-image">
+                {% if store.main_logo_url %}
+                    <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image">
                 {% else %}
-                    {% with first_product=store.product_set.all.0 %}
-                        {% if first_product and first_product.main_image %}
-                            {% with cover_url=first_product.main_image.get_image_url %}
-                                {% if cover_url %}
-                                    <img src="{{ cover_url }}" alt="{{ store.name }}" class="store-image">
-                                {% else %}
-                                    <div class="store-image d-flex align-items-center justify-content-center" 
-                                         style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
-                                        <i class="bi bi-shop" style="font-size: 4rem;"></i>
-                                    </div>
-                                {% endif %}
-                            {% endwith %}
-                        {% else %}
-                            <div class="store-image d-flex align-items-center justify-content-center" 
-                                 style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
-                                <i class="bi bi-shop" style="font-size: 4rem;"></i>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
+                    <div class="store-image d-flex align-items-center justify-content-center" 
+                         style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                        <i class="bi bi-shop" style="font-size: 4rem;"></i>
+                    </div>
                 {% endif %}
                 
                 <h3 class="store-name">{{ store.name }}</h3>

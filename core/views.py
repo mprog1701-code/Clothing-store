@@ -148,7 +148,7 @@ def product_detail(request, product_id):
         messages.error(request, 'المنتج غير متوفر أو تم إيقافه')
         return redirect('home')
     variants = product.variants.all()
-    images = product.images.all()
+    images = product.images.select_related('color', 'variant').all()
     variant_data = [
         {
             'id': v.id,
@@ -160,6 +160,19 @@ def product_detail(request, product_id):
         for v in variants
     ]
     variant_colors = sorted({v.color for v in variants})
+    images_by_color = {}
+    for c in variant_colors:
+        images_by_color[c] = []
+    default_images = []
+    for img in images:
+        url = img.get_image_url()
+        if not url:
+            continue
+        default_images.append(url)
+        if img.color and img.color.name in images_by_color:
+            images_by_color[img.color.name].append(url)
+        elif img.variant and img.variant.color_obj and img.variant.color_obj.name in images_by_color:
+            images_by_color[img.variant.color_obj.name].append(url)
     sizes_by_color = {}
     for c in variant_colors:
         sizes_by_color[c] = sorted({v.size for v in variants if v.color == c})
@@ -170,6 +183,8 @@ def product_detail(request, product_id):
         'variant_colors': variant_colors,
         'sizes_by_color': sizes_by_color,
         'images': images,
+        'images_by_color': images_by_color,
+        'default_images': default_images,
     }
     return render(request, 'products/detail.html', context)
 
@@ -366,35 +381,60 @@ def owner_password_reset(request):
 
 def cart_view(request):
     cart = request.session.get('cart', [])
+    new_cart = []
     cart_items = []
     total = 0
-    
+
     for item in cart:
-        try:
-            product = Product.objects.get(id=item['product_id'], is_active=True)
-            variant = None
-            raw_variant_id = item.get('variant_id')
-            if raw_variant_id:
-                try:
-                    variant_id = int(raw_variant_id)
-                    variant = ProductVariant.objects.get(id=variant_id)
-                except (ValueError, ProductVariant.DoesNotExist):
-                    variant = None
-            
-            price = variant.price if variant else product.base_price
-            subtotal = price * item['quantity']
-            
-            cart_items.append({
-                'product': product,
-                'variant': variant,
-                'quantity': item['quantity'],
-                'price': price,
-                'subtotal': subtotal,
-            })
-            total += subtotal
-        except (Product.DoesNotExist, ProductVariant.DoesNotExist):
+        raw_variant_id = item.get('variant_id')
+        if not raw_variant_id:
             continue
-    
+        try:
+            variant_id = int(raw_variant_id)
+            variant = ProductVariant.objects.get(id=variant_id)
+        except (ValueError, ProductVariant.DoesNotExist):
+            continue
+        product = variant.product
+        # revalidate stock
+        quantity = int(item.get('quantity') or 1)
+        if variant.stock_qty <= 0:
+            # skip item with zero stock
+            continue
+        if quantity > variant.stock_qty:
+            quantity = variant.stock_qty
+        # compute price and image url
+        price = variant.price
+        subtotal = price * quantity
+        image_url = None
+        try:
+            vimg = variant.images.first()
+            if vimg:
+                image_url = vimg.get_image_url()
+        except Exception:
+            image_url = None
+        if not image_url and variant.color_obj:
+            cimg = product.images.filter(color=variant.color_obj).first()
+            if cimg:
+                image_url = cimg.get_image_url()
+        if not image_url:
+            mimg = product.main_image or product.images.first()
+            if mimg:
+                image_url = mimg.get_image_url()
+
+        cart_items.append({
+            'product': product,
+            'variant': variant,
+            'quantity': quantity,
+            'price': price,
+            'subtotal': subtotal,
+            'image_url': image_url,
+        })
+        total += subtotal
+        new_cart.append({'variant_id': variant_id, 'quantity': quantity})
+
+    # persist revalidated cart
+    request.session['cart'] = new_cart
+
     context = {
         'cart_items': cart_items,
         'total': total,
@@ -434,13 +474,19 @@ def add_to_cart(request, product_id):
                     variant_id = None
             except (TypeError, ValueError):
                 variant_id = None
+        # enforce variant selection when product has variants
+        if product.variants.exists() and not variant_id:
+            if request.headers.get('Content-Type', '').startswith('application/json'):
+                return JsonResponse({'success': False, 'error': 'يرجى اختيار نسخة صالحة'}, status=400)
+            messages.error(request, 'يرجى اختيار نسخة صالحة')
+            return redirect('product_detail', product_id)
         
         cart = request.session.get('cart', [])
         
-        # Check if item already exists in cart
+        # Check if item already exists in cart (by variant)
         existing_item = None
         for item in cart:
-            if item['product_id'] == product_id and item.get('variant_id') == variant_id:
+            if item.get('variant_id') == variant_id:
                 existing_item = item
                 break
         
@@ -470,7 +516,6 @@ def add_to_cart(request, product_id):
             existing_item['quantity'] = new_qty
         else:
             cart.append({
-                'product_id': product_id,
                 'variant_id': variant_id,
                 'quantity': quantity,
             })
@@ -568,34 +613,34 @@ def checkout(request):
         
         for item in cart:
             try:
-                product = Product.objects.get(id=item['product_id'], is_active=True)
-                variant = None
-                raw_variant_id = item.get('variant_id')
-                if raw_variant_id:
-                    try:
-                        variant_id = int(raw_variant_id)
-                        variant = ProductVariant.objects.get(id=variant_id, product_id=product.id)
-                    except (ValueError, ProductVariant.DoesNotExist):
-                        variant = None
-                
-                if not store:
-                    store = product.store
-                elif store != product.store:
-                    messages.error(request, 'لا يمكن الطلب من متاجر مختلفة في نفس الطلب!')
-                    return redirect('cart_view')
-                
-                price = variant.price if variant else product.base_price
-                subtotal = price * item['quantity']
-                
-                cart_items.append({
-                    'product': product,
-                    'variant': variant,
-                    'quantity': item['quantity'],
-                    'price': price,
-                })
-                total += subtotal
-            except (Product.DoesNotExist, ProductVariant.DoesNotExist):
+                variant_id = int(item.get('variant_id'))
+            except (TypeError, ValueError):
                 continue
+            try:
+                variant = ProductVariant.objects.get(id=variant_id)
+            except ProductVariant.DoesNotExist:
+                continue
+            product = variant.product
+            # single-store enforcement
+            if not store:
+                store = product.store
+            elif store != product.store:
+                messages.error(request, 'لا يمكن الطلب من متاجر مختلفة في نفس الطلب!')
+                return redirect('cart_view')
+            # stock enforcement
+            quantity = int(item.get('quantity') or 1)
+            if variant.stock_qty < quantity:
+                messages.error(request, 'تم تعديل المخزون، يرجى تحديث السلة')
+                return redirect('cart_view')
+            price = variant.price
+            subtotal = price * quantity
+            cart_items.append({
+                'product': product,
+                'variant': variant,
+                'quantity': quantity,
+                'price': price,
+            })
+            total += subtotal
         
         if not cart_items:
             messages.error(request, 'السلة فارغة أو تحتوي على منتجات غير متوفرة!')
@@ -1237,6 +1282,73 @@ def super_owner_add_product(request):
                         product=product,
                         image=image
                     )
+            created_colors = {}
+            try:
+                colors_count = int(request.POST.get('colors_count') or 0)
+            except (TypeError, ValueError):
+                colors_count = 0
+            if colors_count <= 0:
+                colors_range = range(1, 11)
+            else:
+                colors_range = range(1, colors_count + 1)
+            for i in colors_range:
+                cname = (request.POST.get(f'color_name_{i}') or '').strip()
+                if not cname:
+                    continue
+                ccode = (request.POST.get(f'color_code_{i}') or '').strip()
+                from .models import ProductColor
+                color_obj, _ = ProductColor.objects.get_or_create(product=product, name=cname, defaults={'code': ccode})
+                if ccode and color_obj.code != ccode:
+                    color_obj.code = ccode
+                    color_obj.save()
+                created_colors[cname] = color_obj
+                cimg = request.FILES.get(f'color_image_{i}')
+                if cimg:
+                    ProductImage.objects.create(product=product, color=color_obj, image=cimg)
+            try:
+                variants_count = int(request.POST.get('variants_count') or 0)
+            except (TypeError, ValueError):
+                variants_count = 0
+            if variants_count <= 0:
+                variants_range = range(1, 21)
+            else:
+                variants_range = range(1, variants_count + 1)
+            from decimal import Decimal, InvalidOperation
+            for i in variants_range:
+                size = (request.POST.get(f'variant_size_{i}') or '').strip()
+                color_name = (request.POST.get(f'variant_color_{i}') or '').strip()
+                stock_raw = request.POST.get(f'variant_stock_{i}')
+                price_raw = (request.POST.get(f'variant_price_{i}') or '').strip()
+                if not size or not color_name or stock_raw is None:
+                    continue
+                try:
+                    stock_qty = int(stock_raw)
+                except (TypeError, ValueError):
+                    continue
+                if stock_qty < 0:
+                    continue
+                price_override = None
+                if price_raw:
+                    try:
+                        price_override = Decimal(price_raw)
+                    except InvalidOperation:
+                        price_override = None
+                color_obj = created_colors.get(color_name)
+                if not color_obj:
+                    from .models import ProductColor
+                    color_obj = ProductColor.objects.filter(product=product, name=color_name).first()
+                if not color_obj:
+                    continue
+                try:
+                    ProductVariant.objects.create(
+                        product=product,
+                        color_obj=color_obj,
+                        size=size,
+                        stock_qty=stock_qty,
+                        price_override=price_override,
+                    )
+                except Exception:
+                    pass
             
             messages.success(request, f'تم إنشاء المنتج "{product.name}" بنجاح!')
             return redirect('super_owner_products')
@@ -1311,19 +1423,21 @@ def super_owner_edit_product(request, product_id):
 
         elif action == 'add_variant':
             size = (request.POST.get('size') or '').strip()
-            color = (request.POST.get('color') or '').strip()
+            color_id_raw = request.POST.get('color_id')
+            color_name_fallback = (request.POST.get('color') or '').strip()
             stock_qty_raw = request.POST.get('stock_qty')
             price_override_raw = (request.POST.get('price_override') or '').strip()
 
-            if not size or not color or stock_qty_raw is None:
+            if not size or (not color_id_raw and not color_name_fallback) or stock_qty_raw is None:
                 messages.error(request, 'يرجى إدخال المقاس واللون والكمية!')
                 return redirect('super_owner_edit_product', product_id=product_id)
 
             try:
                 stock_qty = int(stock_qty_raw)
-                if stock_qty < 0:
-                    raise ValueError()
             except ValueError:
+                messages.error(request, 'الكمية يجب أن تكون رقمًا غير سالب')
+                return redirect('super_owner_edit_product', product_id=product_id)
+            if stock_qty < 0:
                 messages.error(request, 'الكمية يجب أن تكون رقمًا غير سالب')
                 return redirect('super_owner_edit_product', product_id=product_id)
 
@@ -1336,13 +1450,32 @@ def super_owner_edit_product(request, product_id):
                     messages.error(request, 'سعر الخاص غير صالح')
                     return redirect('super_owner_edit_product', product_id=product_id)
 
-            ProductVariant.objects.create(
-                product=product,
-                size=size,
-                color=color,
-                stock_qty=stock_qty,
-                price_override=price_override,
-            )
+            color_obj = None
+            if color_id_raw:
+                try:
+                    color_id = int(color_id_raw)
+                    from .models import ProductColor
+                    color_obj = ProductColor.objects.get(id=color_id, product=product)
+                except (ValueError, ProductColor.DoesNotExist):
+                    color_obj = None
+            if not color_obj and color_name_fallback:
+                from .models import ProductColor
+                color_obj = ProductColor.objects.filter(product=product, name=color_name_fallback).first()
+            if not color_obj:
+                messages.error(request, 'اللون غير موجود لهذا المنتج')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+            try:
+                ProductVariant.objects.create(
+                    product=product,
+                    color_obj=color_obj,
+                    size=size,
+                    stock_qty=stock_qty,
+                    price_override=price_override,
+                )
+            except Exception:
+                messages.error(request, 'لا يمكن إنشاء متغير مكرر لهذا اللون والمقاس')
+                return redirect('super_owner_edit_product', product_id=product_id)
             messages.success(request, 'تمت إضافة المتغير بنجاح!')
             return redirect('super_owner_edit_product', product_id=product_id)
 
@@ -1359,14 +1492,20 @@ def super_owner_edit_product(request, product_id):
                 return redirect('super_owner_edit_product', product_id=product_id)
 
             size = (request.POST.get('size') or '').strip()
-            color = (request.POST.get('color') or '').strip()
+            color_id_raw = request.POST.get('color_id')
             stock_qty_raw = request.POST.get('stock_qty')
             price_override_raw = (request.POST.get('price_override') or '').strip()
 
             if size:
                 variant.size = size
-            if color:
-                variant.color = color
+            if color_id_raw:
+                try:
+                    cid = int(color_id_raw)
+                    from .models import ProductColor
+                    color_obj = ProductColor.objects.get(id=cid, product=product)
+                    variant.color_obj = color_obj
+                except (ValueError, ProductColor.DoesNotExist):
+                    pass
             try:
                 variant.stock_qty = int(stock_qty_raw)
             except (TypeError, ValueError):
@@ -1383,7 +1522,11 @@ def super_owner_edit_product(request, product_id):
                     messages.error(request, 'سعر الخاص غير صالح')
                     return redirect('super_owner_edit_product', product_id=product_id)
 
-            variant.save()
+            try:
+                variant.save()
+            except Exception:
+                messages.error(request, 'تعذر تحديث المتغير بسبب تكرار اللون والمقاس')
+                return redirect('super_owner_edit_product', product_id=product_id)
             messages.success(request, 'تم تحديث المتغير بنجاح!')
             return redirect('super_owner_edit_product', product_id=product_id)
 
@@ -1395,6 +1538,24 @@ def super_owner_edit_product(request, product_id):
                 messages.success(request, 'تم حذف المتغير بنجاح!')
             except (ProductVariant.DoesNotExist, ValueError):
                 messages.error(request, 'المتغير غير موجود')
+            return redirect('super_owner_edit_product', product_id=product_id)
+
+        elif action == 'add_color':
+            cname = (request.POST.get('color_name') or '').strip()
+            ccode = (request.POST.get('color_code') or '').strip()
+            cimg = request.FILES.get('color_image')
+            if not cname:
+                messages.error(request, 'يرجى إدخال اسم اللون')
+                return redirect('super_owner_edit_product', product_id=product_id)
+            from .models import ProductColor
+            color_obj, created = ProductColor.objects.get_or_create(product=product, name=cname, defaults={'code': ccode})
+            if not created:
+                if ccode and color_obj.code != ccode:
+                    color_obj.code = ccode
+                    color_obj.save()
+            if cimg:
+                ProductImage.objects.create(product=product, color=color_obj, image=cimg)
+            messages.success(request, 'تمت إضافة اللون بنجاح!')
             return redirect('super_owner_edit_product', product_id=product_id)
     
     context = {
@@ -1411,6 +1572,7 @@ def super_owner_edit_product(request, product_id):
         size_choices = []
     context['size_choices'] = size_choices
     context['size_type'] = product.size_type
+    context['colors'] = list(product.colors.all())
     return render(request, 'dashboard/super_owner/edit_product.html', context)
 
 

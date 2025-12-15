@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 
 class SiteSettings(models.Model):
@@ -107,6 +108,20 @@ class Store(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def main_logo_url(self):
+        try:
+            if self.logo:
+                return self.logo.url
+        except Exception:
+            pass
+        p = self.product_set.prefetch_related('images').first()
+        if p:
+            img = p.main_image or p.images.first()
+            if img:
+                return img.get_image_url()
+        return None
+
 
 class Product(models.Model):
     CATEGORY_CHOICES = [
@@ -150,8 +165,22 @@ class Product(models.Model):
         return self.images.filter(is_main=True).first()
 
 
+class ProductColor(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='colors')
+    name = models.CharField(max_length=50)
+    code = models.CharField(max_length=7, blank=True)
+
+    class Meta:
+        unique_together = ('product', 'name')
+
+    def __str__(self):
+        return f"{self.product.name} - {self.name}"
+
+
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+    color = models.ForeignKey('ProductColor', on_delete=models.CASCADE, related_name='images', null=True, blank=True)
+    variant = models.ForeignKey('ProductVariant', on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
     is_main = models.BooleanField(default=False)
@@ -167,20 +196,57 @@ class ProductImage(models.Model):
             return self.image.url
         return None
 
+    def clean(self):
+        # Require attachment to either a color or a variant
+        if not self.color and not self.variant:
+            raise ValidationError({'color': 'يجب إرفاق الصورة إلى لون أو نسخة', 'variant': 'يجب إرفاق الصورة إلى لون أو نسخة'})
+        # Ensure consistency with product
+        if self.color and self.color.product_id != self.product_id:
+            raise ValidationError({'color': 'اللون لا ينتمي إلى نفس المنتج'})
+        if self.variant and self.variant.product_id != self.product_id:
+            raise ValidationError({'variant': 'النسخة لا تنتمي إلى نفس المنتج'})
+
 
 class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
+    color_obj = models.ForeignKey('ProductColor', on_delete=models.CASCADE, related_name='variants', null=True, blank=True)
     size = models.CharField(max_length=20)
-    color = models.CharField(max_length=50)
     stock_qty = models.IntegerField(validators=[MinValueValidator(0)])
     price_override = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['product', 'color_obj', 'size'], name='uniq_product_color_size')
+        ]
+
+    def clean(self):
+        if self.color_obj and self.product and self.color_obj.product_id != self.product_id:
+            raise ValidationError('اللون لا ينتمي إلى نفس المنتج')
+        if self.product_id:
+            st = self.product.size_type
+            if st == 'symbolic':
+                if self.size not in ['XS', 'S', 'M', 'L', 'XL']:
+                    raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
+            elif st == 'numeric':
+                if self.size not in ['38', '40', '42', '44']:
+                    raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
+            elif st == 'none':
+                self.size = 'ONE'
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.product.name} - {self.size} - {self.color}"
-    
+
     @property
     def price(self):
         return self.price_override or self.product.base_price
+
+    @property
+    def color(self):
+        return self.color_obj.name if self.color_obj else ''
 
 
 class Address(models.Model):

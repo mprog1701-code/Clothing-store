@@ -137,16 +137,13 @@ function clearCartServer() {
     if (overlay) overlay.style.display = 'flex';
 }
 
-function updateQuantity(productId, variantId, newQuantity) {
+function updateQuantity(variantId, newQuantity) {
     if (newQuantity <= 0) {
-        removeFromCart(productId, variantId);
-        return;
+        newQuantity = 1;
     }
     
     let cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
-    const item = cart.find(item => 
-        item.product_id === productId && item.variant_id === variantId
-    );
+    const item = cart.find(item => item.variant_id === variantId);
     
     if (item) {
         item.quantity = newQuantity;
@@ -154,14 +151,14 @@ function updateQuantity(productId, variantId, newQuantity) {
         updateCartCount();
         
         // Update price display
-        const priceElement = document.querySelector(`[data-price="${productId}-${variantId}"]`);
+        const priceElement = document.querySelector(`[data-price="${variantId}"]`);
         if (priceElement) {
             const unitPrice = parseFloat(priceElement.dataset.unitPrice);
             priceElement.textContent = formatIQD(unitPrice * newQuantity);
         }
         
         // Add success animation
-        const cartItem = document.querySelector(`[data-cart-item="${productId}-${variantId}"]`);
+        const cartItem = document.querySelector(`[data-cart-item="${variantId}"]`);
         if (cartItem) {
             cartItem.style.backgroundColor = '#d4edda';
             setTimeout(() => {
@@ -182,10 +179,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantityInputs = document.querySelectorAll('.quantity-input');
     quantityInputs.forEach(input => {
         input.addEventListener('change', function() {
-            const productId = this.dataset.productId;
             const variantId = this.dataset.variantId;
             const newQuantity = parseInt(this.value);
-            updateQuantity(productId, variantId, newQuantity);
+            updateQuantity(variantId, newQuantity);
         });
     });
     
@@ -306,13 +302,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="col-md-2">الإجمالي</div>
                         </div>
                         {% for item in cart_items %}
-                        <div class="cart-item p-4 border rounded-3 mb-3 animate-fade-in-up" data-cart-item="{{ item.product.id }}-{{ item.variant.id|default:'none' }}">
+                        <div class="cart-item p-4 border rounded-3 mb-3 animate-fade-in-up" data-cart-item="{{ item.variant.id|default:'none' }}">
                             <div class="row align-items-center">
                                 <div class="col-md-2">
                                     <div class="product-image">
-                                        {% if item.product.main_image and item.product.main_image.image %}
-                                        <img src="{{ item.product.main_image.image.url }}" alt="{{ item.product.name }}" 
-                                             class="img-fluid rounded-3" style="height: 80px; object-fit: cover;">
+                                        {% if item.image_url %}
+                                        <img src="{{ item.image_url }}" alt="{{ item.product.name }}" 
+                                             class="img-fluid rounded-3">
                                         {% else %}
                                         <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" 
                                              style="height: 80px;">
@@ -357,16 +353,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="quantity-control text-center">
                                         <div class="input-group input-group-sm">
                                             <button class="btn btn-outline-secondary btn-sm" type="button" 
-                                                    onclick="updateQuantity('{{ item.product.id }}', '{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'-1' }})">
+                                                    onclick="updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'-1' }})">
                                                 <i class="bi bi-dash"></i>
                                             </button>
                                             <input type="number" class="form-control text-center quantity-input" 
-                                                   value="{{ item.quantity }}" min="1" max="99"
-                                                   data-product-id="{{ item.product.id }}"
+                                                   value="{{ item.quantity }}" min="1" max="{{ item.variant.stock_qty|default:'99' }}"
                                                    data-variant-id="{{ item.variant.id|default:'none' }}"
                                                    style="max-width: 60px;">
                                             <button class="btn btn-outline-secondary btn-sm" type="button"
-                                                    onclick="updateQuantity('{{ item.product.id }}', '{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'1' }})">
+                                                    onclick="updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'1' }})">
                                                 <i class="bi bi-plus"></i>
                                             </button>
                                         </div>
@@ -376,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 
                                 <div class="col-md-2">
                                     <div class="item-total text-center">
-                                        <div class="total fw-bold text-success fs-5" data-price="{{ item.product.id }}-{{ item.variant.id|default:'none' }}">
+                                        <div class="total fw-bold text-success fs-5" data-price="{{ item.variant.id|default:'none' }}">
                                             {{ item.subtotal|iqd }}
                                         </div>
                                         <small class="text-muted">الإجمالي</small>
@@ -407,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <!-- Order Summary -->
             <div class="col-lg-4">
-                <div class="order-summary-card p-4 bg-white rounded-4 shadow-lg sticky-top" style="top: 100px;">
+                <div class="order-summary-card p-4 bg-white rounded-4 shadow-lg sticky-top">
                     <div class="section-header mb-4">
                         <h5 class="fw-bold text-gradient">
                             <i class="bi bi-receipt me-2"></i>

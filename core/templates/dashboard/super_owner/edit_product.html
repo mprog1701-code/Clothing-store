@@ -164,7 +164,11 @@
                                                                 {% endif %}
                                                             </td>
                                                             <td style="min-width:160px;">
-                                                                <input type="text" name="color" class="form-control" value="{{ v.color }}" required>
+                                                                <select name="color_id" class="form-select" required>
+                                                                    {% for c in colors %}
+                                                                        <option value="{{ c.id }}" {% if v.color_obj and c.id == v.color_obj.id %}selected{% endif %}>{{ c.name }}</option>
+                                                                    {% endfor %}
+                                                                </select>
                                                             </td>
                                                             <td style="min-width:140px;">
                                                                 <input type="number" name="stock_qty" class="form-control" value="{{ v.stock_qty }}" min="0" required>
@@ -211,7 +215,12 @@
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">اللون</label>
-                                                    <input type="text" name="color" class="form-control" required>
+                                                    <select name="color_id" class="form-select" required>
+                                                        <option value="">اختر اللون</option>
+                                                        {% for c in colors %}
+                                                            <option value="{{ c.id }}">{{ c.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">الكمية</label>
@@ -224,6 +233,29 @@
                                             </div>
                                             <div class="mt-3">
                                                 <button type="submit" class="btn btn-info"><i class="fas fa-plus me-1"></i>إضافة متغير</button>
+                                            </div>
+                                        </form>
+                                        <hr>
+                                        <h6 class="fw-bold mb-3">إضافة لون جديد</h6>
+                                        <form method="post" enctype="multipart/form-data" class="mb-3">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="add_color">
+                                            <div class="row g-3">
+                                                <div class="col-md-4">
+                                                    <label class="form-label">اسم اللون</label>
+                                                    <input type="text" name="color_name" class="form-control" required>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">كود اللون (اختياري)</label>
+                                                    <input type="text" name="color_code" class="form-control" placeholder="#000000">
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label">صورة اللون (اختياري)</label>
+                                                    <input type="file" name="color_image" class="form-control" accept="image/*">
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <button type="submit" class="btn btn-info"><i class="fas fa-plus me-1"></i>إضافة لون</button>
                                             </div>
                                         </form>
                                     </div>

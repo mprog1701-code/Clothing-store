@@ -135,8 +135,8 @@
             <div class="col-lg-4 text-center">
                 <div class="store-hero-icon animate-bounce">
                     <div class="store-logo-container bg-white rounded-circle p-4 shadow-lg d-inline-block">
-                        {% if store.logo %}
-                            <img src="{{ store.logo.url }}" alt="{{ store.name }}" style="width:120px;height:120px;object-fit:cover;border-radius:50%;">
+                        {% if store.main_logo_url %}
+                            <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" style="width:120px;height:120px;object-fit:cover;border-radius:50%;">
                         {% else %}
                             <i class="bi bi-shop display-1 text-primary-gradient"></i>
                         {% endif %}

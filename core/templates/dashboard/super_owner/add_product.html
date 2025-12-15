@@ -114,7 +114,7 @@
                                 
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle me-2"></i>
-                                    <strong>ملاحظة:</strong> يمكنك إضافة المتغيرات (الأحجام والألوان) لاحقاً من صفحة تعديل المنتج.
+                                    <strong>ملاحظة:</strong> يمكنك إضافة الألوان والصور والمتغيرات هنا مباشرة.
                                 </div>
                             </div>
                         </div>
@@ -131,6 +131,153 @@
                                         <i class="fas fa-times me-2"></i>
                                         إلغاء
                                     </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h5 class="mb-3"><i class="fas fa-palette me-2"></i>الألوان</h5>
+                                <input type="hidden" name="colors_count" value="3">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">اسم اللون 1</label>
+                                        <input type="text" name="color_name_1" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">كود اللون 1 (اختياري)</label>
+                                        <input type="text" name="color_code_1" class="form-control" placeholder="#000000">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">صورة اللون 1 (اختياري)</label>
+                                        <input type="file" name="color_image_1" class="form-control" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">اسم اللون 2</label>
+                                        <input type="text" name="color_name_2" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">كود اللون 2 (اختياري)</label>
+                                        <input type="text" name="color_code_2" class="form-control" placeholder="#000000">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">صورة اللون 2 (اختياري)</label>
+                                        <input type="file" name="color_image_2" class="form-control" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label">اسم اللون 3</label>
+                                        <input type="text" name="color_name_3" class="form-control">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">كود اللون 3 (اختياري)</label>
+                                        <input type="text" name="color_code_3" class="form-control" placeholder="#000000">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">صورة اللون 3 (اختياري)</label>
+                                        <input type="file" name="color_image_3" class="form-control" accept="image/*">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h5 class="mb-3"><i class="fas fa-ruler-combined me-2"></i>المتغيرات (المقاس/اللون/الكمية)</h5>
+                                <input type="hidden" name="variants_count" value="5">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">المقاس 1</label>
+                                        <input type="text" name="variant_size_1" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">اللون 1</label>
+                                        <input type="text" name="variant_color_1" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">الكمية 1</label>
+                                        <input type="number" name="variant_stock_1" class="form-control" min="0" value="0">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">سعر خاص 1 (اختياري)</label>
+                                        <input type="number" name="variant_price_1" class="form-control" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label">المقاس 2</label>
+                                        <input type="text" name="variant_size_2" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">اللون 2</label>
+                                        <input type="text" name="variant_color_2" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">الكمية 2</label>
+                                        <input type="number" name="variant_stock_2" class="form-control" min="0" value="0">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">سعر خاص 2 (اختياري)</label>
+                                        <input type="number" name="variant_price_2" class="form-control" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label">المقاس 3</label>
+                                        <input type="text" name="variant_size_3" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">اللون 3</label>
+                                        <input type="text" name="variant_color_3" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">الكمية 3</label>
+                                        <input type="number" name="variant_stock_3" class="form-control" min="0" value="0">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">سعر خاص 3 (اختياري)</label>
+                                        <input type="number" name="variant_price_3" class="form-control" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label">المقاس 4</label>
+                                        <input type="text" name="variant_size_4" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">اللون 4</label>
+                                        <input type="text" name="variant_color_4" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">الكمية 4</label>
+                                        <input type="number" name="variant_stock_4" class="form-control" min="0" value="0">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">سعر خاص 4 (اختياري)</label>
+                                        <input type="number" name="variant_price_4" class="form-control" step="0.01" min="0">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-3">
+                                        <label class="form-label">المقاس 5</label>
+                                        <input type="text" name="variant_size_5" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">اللون 5</label>
+                                        <input type="text" name="variant_color_5" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">الكمية 5</label>
+                                        <input type="number" name="variant_stock_5" class="form-control" min="0" value="0">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">سعر خاص 5 (اختياري)</label>
+                                        <input type="number" name="variant_price_5" class="form-control" step="0.01" min="0">
+                                    </div>
                                 </div>
                             </div>
                         </div>

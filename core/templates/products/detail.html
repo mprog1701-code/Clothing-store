@@ -179,6 +179,8 @@
                         <script>
                             const VARIANTS = {{ variant_data|safe }};
                             const SIZES_BY_COLOR = {{ sizes_by_color|safe }};
+                            const IMAGES_BY_COLOR = {{ images_by_color|safe }};
+                            const DEFAULT_IMAGES = {{ default_images|safe }};
                             const colorSelect = document.getElementById('colorSelect');
                             const sizeSelect = document.getElementById('sizeSelect');
                             const qtyInput = document.getElementById('qtyInput');
@@ -198,6 +200,26 @@
                                 qtyInput.removeAttribute('max');
                             }
 
+                            function updateCarousel(color){
+                                const inner = document.querySelector('#productCarousel .carousel-inner');
+                                const indicators = document.querySelector('#productCarousel .carousel-indicators');
+                                if (!inner) return;
+                                const urls = (color && IMAGES_BY_COLOR[color] && IMAGES_BY_COLOR[color].length > 0) ? IMAGES_BY_COLOR[color] : DEFAULT_IMAGES;
+                                inner.innerHTML = '';
+                                if (indicators) indicators.innerHTML = '';
+                                if (!urls || urls.length === 0){
+                                    inner.innerHTML = '<div class="carousel-item active"><div class="bg-light d-flex align-items-center justify-content-center" style="height: 500px;"><i class="bi bi-image display-1 text-muted opacity-25"></i></div></div>';
+                                    return;
+                                }
+                                urls.forEach((url, idx) => {
+                                    const activeClass = idx === 0 ? 'active' : '';
+                                    inner.insertAdjacentHTML('beforeend', `<div class="carousel-item ${activeClass}"><img src="${url}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;"></div>`);
+                                    if (indicators){
+                                        indicators.insertAdjacentHTML('beforeend', `<button type="button" data-bs-target="#productCarousel" data-bs-slide-to="${idx}" class="${activeClass}" aria-label="Slide ${idx+1}"></button>`);
+                                    }
+                                });
+                            }
+
                             colorSelect.addEventListener('change', () => {
                                 const color = colorSelect.value;
                                 resetSize();
@@ -206,10 +228,14 @@
                                 sizes.forEach(s => {
                                     const opt = document.createElement('option');
                                     opt.value = s;
-                                    opt.textContent = s;
+                                    const v = VARIANTS.find(x => x.color === color && x.size === s);
+                                    const disabled = !v || v.stock_qty <= 0;
+                                    opt.textContent = disabled ? `${s} (غير متاح)` : s;
+                                    opt.disabled = disabled;
                                     sizeSelect.appendChild(opt);
                                 });
                                 sizeSelect.disabled = sizes.length === 0;
+                                updateCarousel(color);
                             });
 
                             sizeSelect.addEventListener('change', () => {

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem, SiteSettings, Campaign
+from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem, SiteSettings, Campaign, ProductColor
 
 
 @admin.register(User)
@@ -25,18 +25,40 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'store', 'category', 'size_type', 'base_price', 'is_active', 'created_at']
     list_filter = ['category', 'size_type', 'is_active', 'created_at']
     search_fields = ['name', 'store__name']
+    inlines = []
+
+class ProductColorInline(admin.TabularInline):
+    model = ProductColor
+    extra = 0
+    fields = ['name', 'code']
+
+ProductAdmin.inlines = [ProductColorInline]
+
+@admin.register(ProductColor)
+class ProductColorAdmin(admin.ModelAdmin):
+    list_display = ['product', 'name', 'code']
+    list_filter = ['product']
+    search_fields = ['product__name', 'name']
+    inlines = []
+
+class ProductVariantInline(admin.TabularInline):
+    model = ProductVariant
+    extra = 0
+    fields = ['size', 'stock_qty', 'price_override']
+
+ProductColorAdmin.inlines = [ProductVariantInline]
 
 
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ['product', 'is_main']
-    list_filter = ['is_main']
+    list_display = ['product', 'color', 'variant', 'is_main']
+    list_filter = ['is_main', 'color', 'variant']
 
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ['product', 'size', 'color', 'stock_qty', 'price_override']
-    list_filter = ['size', 'color']
+    list_display = ['product', 'color_obj', 'size', 'stock_qty', 'price_override']
+    list_filter = ['size', 'color_obj']
     search_fields = ['product__name']
 
 
