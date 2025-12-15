@@ -1458,12 +1458,16 @@ def search(request):
 
 def announcements(request):
     campaigns = []
+    products = []
     try:
         campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
+        products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('?')[:12]
     except Exception:
         campaigns = []
+        products = []
     context = {
         'campaigns': campaigns,
+        'products': products,
     }
     return render(request, 'announcements/index.html', context)
 
