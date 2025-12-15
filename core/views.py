@@ -1217,51 +1217,143 @@ def super_owner_edit_product(request, product_id):
     stores = Store.objects.all()
     
     if request.method == 'POST':
-        name = request.POST.get('name')
-        store_id = request.POST.get('store')
-        category = request.POST.get('category')
-        base_price = request.POST.get('base_price')
-        description = request.POST.get('description')
-        is_active = request.POST.get('is_active') == 'on'
-        is_featured = request.POST.get('is_featured') == 'on'
-        new_images = request.FILES.getlist('new_images')
-        
-        # Validate required fields
-        if not all([name, store_id, category, base_price, description]):
-            messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
+        action = (request.POST.get('action') or '').strip()
+
+        if action in ('', 'update_product'):
+            name = request.POST.get('name')
+            store_id = request.POST.get('store')
+            category = request.POST.get('category')
+            base_price = request.POST.get('base_price')
+            description = request.POST.get('description')
+            is_active = request.POST.get('is_active') == 'on'
+            is_featured = request.POST.get('is_featured') == 'on'
+            new_images = request.FILES.getlist('new_images')
+
+            # Validate required fields
+            if not all([name, store_id, category, base_price, description]):
+                messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+            try:
+                store = Store.objects.get(id=store_id)
+
+                product.name = name
+                product.store = store
+                product.category = category
+                product.base_price = base_price
+                product.description = description
+                product.is_active = is_active
+                product.is_featured = is_featured
+
+                product.save()
+
+                # Handle new images
+                if new_images:
+                    for image in new_images:
+                        ProductImage.objects.create(
+                            product=product,
+                            image=image
+                        )
+
+                messages.success(request, f'تم تحديث المنتج "{product.name}" بنجاح!')
+                return redirect('super_owner_products')
+
+            except Store.DoesNotExist:
+                messages.error(request, 'المتجر المختار غير صالح!')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+        elif action == 'add_variant':
+            size = (request.POST.get('size') or '').strip()
+            color = (request.POST.get('color') or '').strip()
+            stock_qty_raw = request.POST.get('stock_qty')
+            price_override_raw = (request.POST.get('price_override') or '').strip()
+
+            if not size or not color or stock_qty_raw is None:
+                messages.error(request, 'يرجى إدخال المقاس واللون والكمية!')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+            try:
+                stock_qty = int(stock_qty_raw)
+                if stock_qty < 0:
+                    raise ValueError()
+            except ValueError:
+                messages.error(request, 'الكمية يجب أن تكون رقمًا غير سالب')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+            from decimal import Decimal, InvalidOperation
+            price_override = None
+            if price_override_raw:
+                try:
+                    price_override = Decimal(price_override_raw)
+                except InvalidOperation:
+                    messages.error(request, 'سعر الخاص غير صالح')
+                    return redirect('super_owner_edit_product', product_id=product_id)
+
+            ProductVariant.objects.create(
+                product=product,
+                size=size,
+                color=color,
+                stock_qty=stock_qty,
+                price_override=price_override,
+            )
+            messages.success(request, 'تمت إضافة المتغير بنجاح!')
             return redirect('super_owner_edit_product', product_id=product_id)
-        
-        try:
-            store = Store.objects.get(id=store_id)
-            
-            product.name = name
-            product.store = store
-            product.category = category
-            product.base_price = base_price
-            product.description = description
-            product.is_active = is_active
-            product.is_featured = is_featured
-            
-            product.save()
-            
-            # Handle new images
-            if new_images:
-                for image in new_images:
-                    ProductImage.objects.create(
-                        product=product,
-                        image=image
-                    )
-            
-            messages.success(request, f'تم تحديث المنتج "{product.name}" بنجاح!')
-            return redirect('super_owner_products')
-            
-        except Store.DoesNotExist:
-            messages.error(request, 'المتجر المختار غير صالح!')
+
+        elif action == 'update_variant':
+            variant_id = request.POST.get('variant_id')
+            if not variant_id:
+                messages.error(request, 'معرّف المتغير مفقود')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+            try:
+                variant = ProductVariant.objects.get(id=int(variant_id), product=product)
+            except (ProductVariant.DoesNotExist, ValueError):
+                messages.error(request, 'المتغير غير موجود')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+            size = (request.POST.get('size') or '').strip()
+            color = (request.POST.get('color') or '').strip()
+            stock_qty_raw = request.POST.get('stock_qty')
+            price_override_raw = (request.POST.get('price_override') or '').strip()
+
+            if size:
+                variant.size = size
+            if color:
+                variant.color = color
+            try:
+                variant.stock_qty = int(stock_qty_raw)
+            except (TypeError, ValueError):
+                messages.error(request, 'الكمية غير صالحة')
+                return redirect('super_owner_edit_product', product_id=product_id)
+
+            if price_override_raw == '':
+                variant.price_override = None
+            else:
+                from decimal import Decimal, InvalidOperation
+                try:
+                    variant.price_override = Decimal(price_override_raw)
+                except InvalidOperation:
+                    messages.error(request, 'سعر الخاص غير صالح')
+                    return redirect('super_owner_edit_product', product_id=product_id)
+
+            variant.save()
+            messages.success(request, 'تم تحديث المتغير بنجاح!')
+            return redirect('super_owner_edit_product', product_id=product_id)
+
+        elif action == 'delete_variant':
+            variant_id = request.POST.get('variant_id')
+            try:
+                variant = ProductVariant.objects.get(id=int(variant_id), product=product)
+                variant.delete()
+                messages.success(request, 'تم حذف المتغير بنجاح!')
+            except (ProductVariant.DoesNotExist, ValueError):
+                messages.error(request, 'المتغير غير موجود')
             return redirect('super_owner_edit_product', product_id=product_id)
     
     context = {
         'product': product,
         'stores': stores,
+        'size_choices': ProductVariant.SIZE_CHOICES,
     }
     return render(request, 'dashboard/super_owner/edit_product.html', context)
 
