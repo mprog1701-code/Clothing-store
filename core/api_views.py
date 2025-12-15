@@ -157,6 +157,22 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['get'], url_path='sizes-for-color')
+    def sizes_for_color(self, request, pk=None):
+        color = (request.query_params.get('color') or '').strip()
+        product = self.get_object()
+        variants = product.variants.filter(color=color)
+        data = [
+            {
+                'id': v.id,
+                'size': v.size,
+                'stock_qty': v.stock_qty,
+                'price': float(v.price),
+            }
+            for v in variants
+        ]
+        return Response({'color': color, 'sizes': data})
+
 
 class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = AddressSerializer

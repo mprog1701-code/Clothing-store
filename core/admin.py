@@ -22,8 +22,8 @@ class StoreAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'store', 'category', 'base_price', 'is_active', 'created_at']
-    list_filter = ['category', 'is_active', 'created_at']
+    list_display = ['name', 'store', 'category', 'size_type', 'base_price', 'is_active', 'created_at']
+    list_filter = ['category', 'size_type', 'is_active', 'created_at']
     search_fields = ['name', 'store__name']
 
 

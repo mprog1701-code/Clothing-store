@@ -63,6 +63,15 @@
                                 </div>
                                 
                                 <div class="mb-3">
+                                    <label for="size_type" class="form-label">نوع القياس *</label>
+                                    <select class="form-select" id="size_type" name="size_type" required>
+                                        <option value="symbolic" selected>رمزية (XS, S, M ...)</option>
+                                        <option value="numeric">رقمية (38, 40, 42 ...)</option>
+                                        <option value="none">بدون قياس</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
                                     <label for="base_price" class="form-label">السعر الأساسي *</label>
                                     <input type="number" class="form-control" id="base_price" name="base_price" 
                                            min="0" step="0.01" required>

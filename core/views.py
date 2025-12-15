@@ -419,7 +419,10 @@ def add_to_cart(request, product_id):
             quantity = int(data.get('quantity') or 1)
         else:
             variant_id = request.POST.get('variant_id')
-            quantity = int(request.POST.get('quantity', 1))
+            try:
+                quantity = int(request.POST.get('quantity', 1))
+            except (TypeError, ValueError):
+                quantity = 1
         # sanitize variant_id
         if variant_id:
             try:
@@ -441,8 +444,30 @@ def add_to_cart(request, product_id):
                 existing_item = item
                 break
         
+        # stock enforcement
+        if variant_id:
+            try:
+                variant_obj = ProductVariant.objects.get(id=variant_id, product_id=product_id)
+                if variant_obj.stock_qty < quantity:
+                    if request.headers.get('Content-Type', '').startswith('application/json'):
+                        return JsonResponse({'success': False, 'error': 'غير متوفر بالكمية المطلوبة'}, status=400)
+                    messages.error(request, 'غير متوفر بالكمية المطلوبة')
+                    return redirect('product_detail', product_id)
+            except ProductVariant.DoesNotExist:
+                variant_obj = None
         if existing_item:
-            existing_item['quantity'] += quantity
+            new_qty = existing_item['quantity'] + quantity
+            if variant_id:
+                try:
+                    variant_obj = ProductVariant.objects.get(id=variant_id, product_id=product_id)
+                    if new_qty > variant_obj.stock_qty:
+                        if request.headers.get('Content-Type', '').startswith('application/json'):
+                            return JsonResponse({'success': False, 'error': 'تجاوزت المخزون'}, status=400)
+                        messages.error(request, 'تجاوزت المخزون')
+                        return redirect('product_detail', product_id)
+                except ProductVariant.DoesNotExist:
+                    pass
+            existing_item['quantity'] = new_qty
         else:
             cart.append({
                 'product_id': product_id,
@@ -1183,6 +1208,7 @@ def super_owner_add_product(request):
         description = request.POST.get('description')
         is_active = request.POST.get('is_active') == 'on'
         is_featured = request.POST.get('is_featured') == 'on'
+        size_type = (request.POST.get('size_type') or 'symbolic').strip()
         images = request.FILES.getlist('images')
         
         # Validate required fields
@@ -1199,6 +1225,7 @@ def super_owner_add_product(request):
                 category=category,
                 base_price=base_price,
                 description=description,
+                size_type=size_type,
                 is_active=is_active,
                 is_featured=is_featured
             )
