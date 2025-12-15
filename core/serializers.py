@@ -99,7 +99,7 @@ class ProductSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Product
-        fields = ['id', 'store', 'name', 'description', 'base_price', 'category', 'is_active', 'created_at', 'images', 'variants', 'main_image']
+        fields = ['id', 'store', 'name', 'description', 'base_price', 'category', 'size_type', 'is_active', 'created_at', 'images', 'variants', 'main_image']
     
     def get_main_image(self, obj):
         main_image = obj.main_image

@@ -68,6 +68,15 @@
                                 </div>
                                 
                                 <div class="mb-3">
+                                    <label for="size_type" class="form-label">نوع القياس *</label>
+                                    <select class="form-select" id="size_type" name="size_type" required>
+                                        <option value="symbolic" {% if size_type == 'symbolic' %}selected{% endif %}>رمزية (XS, S, M ...)</option>
+                                        <option value="numeric" {% if size_type == 'numeric' %}selected{% endif %}>رقمية (38, 40, 42 ...)</option>
+                                        <option value="none" {% if size_type == 'none' %}selected{% endif %}>بدون قياس</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
                                     <label for="base_price" class="form-label">السعر الأساسي *</label>
                                     <input type="number" class="form-control" id="base_price" name="base_price" 
                                            value="{{ product.base_price|unlocalize }}" step="0.01" min="0" required>
@@ -144,11 +153,15 @@
                                                             <input type="hidden" name="action" value="update_variant">
                                                             <input type="hidden" name="variant_id" value="{{ v.id }}">
                                                             <td style="min-width:120px;">
-                                                                <select name="size" class="form-select">
-                                                                    {% for s in size_choices %}
-                                                                        <option value="{{ s.0 }}" {% if s.0 == v.size %}selected{% endif %}>{{ s.1 }}</option>
-                                                                    {% endfor %}
-                                                                </select>
+                                                                {% if size_type != 'none' %}
+                                                                    <select name="size" class="form-select">
+                                                                        {% for s in size_choices %}
+                                                                            <option value="{{ s.0 }}" {% if s.0 == v.size %}selected{% endif %}>{{ s.1 }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                {% else %}
+                                                                    <input type="text" name="size" class="form-control" value="{{ v.size }}" required>
+                                                                {% endif %}
                                                             </td>
                                                             <td style="min-width:160px;">
                                                                 <input type="text" name="color" class="form-control" value="{{ v.color }}" required>
@@ -185,12 +198,16 @@
                                             <div class="row g-3">
                                                 <div class="col-md-3">
                                                     <label class="form-label">المقاس</label>
-                                                    <select name="size" class="form-select" required>
-                                                        <option value="">اختر المقاس</option>
-                                                        {% for s in size_choices %}
-                                                            <option value="{{ s.0 }}">{{ s.1 }}</option>
-                                                        {% endfor %}
-                                                    </select>
+                                                    {% if size_type != 'none' %}
+                                                        <select name="size" class="form-select" required>
+                                                            <option value="">اختر المقاس</option>
+                                                            {% for s in size_choices %}
+                                                                <option value="{{ s.0 }}">{{ s.1 }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    {% else %}
+                                                        <input type="text" name="size" class="form-control" placeholder="اكتب القياس" required>
+                                                    {% endif %}
                                                 </div>
                                                 <div class="col-md-3">
                                                     <label class="form-label">اللون</label>

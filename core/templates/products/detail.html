@@ -135,76 +135,111 @@
                     <div class="product-variants mb-5">
                         <h5 class="fw-bold mb-4 text-gradient">
                             <i class="bi bi-palette me-2"></i>
-                            اختر المواصفات
+                            اختر اللون والمقاس
                         </h5>
-                        
-                        <div class="variants-grid">
-                            {% for variant in variants %}
-                            <div class="variant-card p-4 border rounded-3 mb-3 {% if variant.stock_qty <= 0 %}opacity-50{% endif %}">
-                                <div class="row align-items-center">
-                                    <div class="col-md-6">
-                                        <div class="variant-info">
-                                            <div class="variant-specs mb-2">
-                                                <span class="badge bg-light text-dark me-2">
-                                                    <i class="bi bi-rulers me-1"></i>
-                                                    {{ variant.size }}
-                                                </span>
-                                                <span class="badge bg-light text-dark">
-                                                    <i class="bi bi-palette me-1"></i>
-                                                    {{ variant.color }}
-                                                </span>
-                                            </div>
-                                            <div class="variant-price">
-                                                <span class="h5 text-primary fw-bold">{{ variant.price|iqd }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="variant-stock text-end">
-                                            {% if variant.stock_qty > 0 %}
-                                            <div class="stock-info mb-2">
-                                                <span class="text-success fw-semibold">
-                                                    <i class="bi bi-check-circle me-1"></i>
-                                                    متاح ({{ variant.stock_qty }} قطعة)
-                                                </span>
-                                            </div>
-                                            <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="variant_id" value="{{ variant.id }}">
-                                                <div class="input-group mb-2">
-                                                    <span class="input-group-text">الكمية</span>
-                                                    <input type="number" class="form-control" name="quantity" value="1" min="1" max="{{ variant.stock_qty }}" style="width: 80px;">
-                                                </div>
-                                                <button type="submit" class="btn btn-gradient w-100">
-                                                    <i class="bi bi-cart-plus me-2"></i>
-                                                    أضف للسلة
-                                                </button>
-                                            </form>
-                                            {% else %}
-                                            <div class="stock-info mb-2">
-                                                <span class="text-danger fw-semibold">
-                                                    <i class="bi bi-x-circle me-1"></i>
-                                                    غير متاح
-                                                </span>
-                                            </div>
-                                        <button class="btn btn-secondary w-100" disabled>
-                                                <i class="bi bi-cart-x me-2"></i>
-                                                غير متاح
-                                            </button>
-                                            {% endif %}
-                                        </div>
-                                    </div>
+                        <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form" id="variantPickerForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="variant_id" id="selectedVariantId">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold"><i class="bi bi-palette me-2"></i>اللون</label>
+                                    <select class="form-select" id="colorSelect">
+                                        <option value="">اختر اللون</option>
+                                        {% for c in variant_colors %}
+                                            <option value="{{ c }}">{{ c }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold"><i class="bi bi-rulers me-2"></i>المقاس</label>
+                                    <select class="form-select" id="sizeSelect" disabled>
+                                        <option value="">اختر المقاس</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">الكمية</label>
+                                    <input type="number" class="form-control" name="quantity" id="qtyInput" value="1" min="1" style="width: 120px;">
                                 </div>
                             </div>
-                            {% endfor %}
-                        </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div id="stockInfo" class="text-muted"></div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <div id="variantPrice" class="h5 text-primary fw-bold"></div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-gradient btn-lg w-100" id="addToCartBtn" disabled>
+                                    <i class="bi bi-cart-plus me-2"></i>
+                                    أضف للسلة
+                                </button>
+                            </div>
+                        </form>
+                        <script>
+                            const VARIANTS = {{ variant_data|safe }};
+                            const SIZES_BY_COLOR = {{ sizes_by_color|safe }};
+                            const colorSelect = document.getElementById('colorSelect');
+                            const sizeSelect = document.getElementById('sizeSelect');
+                            const qtyInput = document.getElementById('qtyInput');
+                            const stockInfo = document.getElementById('stockInfo');
+                            const variantPrice = document.getElementById('variantPrice');
+                            const addBtn = document.getElementById('addToCartBtn');
+                            const hiddenVariantId = document.getElementById('selectedVariantId');
+
+                            function resetSize(){
+                                sizeSelect.innerHTML = '<option value="">اختر المقاس</option>';
+                                sizeSelect.disabled = true;
+                                hiddenVariantId.value = '';
+                                addBtn.disabled = true;
+                                stockInfo.textContent = '';
+                                variantPrice.textContent = '';
+                                qtyInput.value = 1;
+                                qtyInput.removeAttribute('max');
+                            }
+
+                            colorSelect.addEventListener('change', () => {
+                                const color = colorSelect.value;
+                                resetSize();
+                                if (!color) return;
+                                const sizes = SIZES_BY_COLOR[color] || [];
+                                sizes.forEach(s => {
+                                    const opt = document.createElement('option');
+                                    opt.value = s;
+                                    opt.textContent = s;
+                                    sizeSelect.appendChild(opt);
+                                });
+                                sizeSelect.disabled = sizes.length === 0;
+                            });
+
+                            sizeSelect.addEventListener('change', () => {
+                                const color = colorSelect.value;
+                                const size = sizeSelect.value;
+                                const v = VARIANTS.find(x => x.color === color && x.size === size);
+                                if (!v){
+                                    hiddenVariantId.value = '';
+                                    addBtn.disabled = true;
+                                    stockInfo.textContent = '';
+                                    variantPrice.textContent = '';
+                                    qtyInput.value = 1;
+                                    qtyInput.removeAttribute('max');
+                                    return;
+                                }
+                                hiddenVariantId.value = v.id;
+                                addBtn.disabled = v.stock_qty <= 0;
+                                stockInfo.textContent = v.stock_qty > 0 ? `متاح (${v.stock_qty} قطعة)` : 'غير متاح';
+                                qtyInput.value = 1;
+                                qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
+                                variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
+                            });
+                        </script>
                     </div>
                     {% else %}
-                    <!-- Simple Add to Cart for products without variants -->
-                    <div class="simple-add-to-cart mb-5">
-                        <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
-                            {% csrf_token %}
-                            <div class="row g-3 align-items-end">
+                        <!-- Simple Add to Cart for products without variants -->
+                        <div class="simple-add-to-cart mb-5">
+                            <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
+                                {% csrf_token %}
+                                <div class="row g-3 align-items-end">
                                 <div class="col-md-6">
                                     <label for="quantity" class="form-label fw-semibold">
                                         <i class="bi bi-hash me-2"></i>

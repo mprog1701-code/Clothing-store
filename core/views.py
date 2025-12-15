@@ -149,9 +149,26 @@ def product_detail(request, product_id):
         return redirect('home')
     variants = product.variants.all()
     images = product.images.all()
+    variant_data = [
+        {
+            'id': v.id,
+            'color': v.color,
+            'size': v.size,
+            'stock_qty': v.stock_qty,
+            'price': float(v.price),
+        }
+        for v in variants
+    ]
+    variant_colors = sorted({v.color for v in variants})
+    sizes_by_color = {}
+    for c in variant_colors:
+        sizes_by_color[c] = sorted({v.size for v in variants if v.color == c})
     context = {
         'product': product,
         'variants': variants,
+        'variant_data': variant_data,
+        'variant_colors': variant_colors,
+        'sizes_by_color': sizes_by_color,
         'images': images,
     }
     return render(request, 'products/detail.html', context)
@@ -1227,6 +1244,7 @@ def super_owner_edit_product(request, product_id):
             description = request.POST.get('description')
             is_active = request.POST.get('is_active') == 'on'
             is_featured = request.POST.get('is_featured') == 'on'
+            size_type = (request.POST.get('size_type') or '').strip()
             new_images = request.FILES.getlist('new_images')
 
             # Validate required fields
@@ -1244,6 +1262,8 @@ def super_owner_edit_product(request, product_id):
                 product.description = description
                 product.is_active = is_active
                 product.is_featured = is_featured
+                if size_type in ['symbolic', 'numeric', 'none']:
+                    product.size_type = size_type
 
                 product.save()
 
@@ -1353,8 +1373,17 @@ def super_owner_edit_product(request, product_id):
     context = {
         'product': product,
         'stores': stores,
-        'size_choices': ProductVariant.SIZE_CHOICES,
     }
+    def numeric_sizes():
+        return [str(n) for n in range(28, 61, 2)]
+    if product.size_type == 'symbolic':
+        size_choices = [('XS','XS'),('S','S'),('M','M'),('L','L'),('XL','XL'),('XXL','XXL'),('3XL','3XL'),('4XL','4XL')]
+    elif product.size_type == 'numeric':
+        size_choices = [(s, s) for s in numeric_sizes()]
+    else:
+        size_choices = []
+    context['size_choices'] = size_choices
+    context['size_type'] = product.size_type
     return render(request, 'dashboard/super_owner/edit_product.html', context)
 
 

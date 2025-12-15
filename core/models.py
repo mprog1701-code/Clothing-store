@@ -131,6 +131,12 @@ class Product(models.Model):
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    SIZE_TYPE_CHOICES = [
+        ('symbolic', 'رمزية'),
+        ('numeric', 'رقمية'),
+        ('none', 'بدون'),
+    ]
+    size_type = models.CharField(max_length=10, choices=SIZE_TYPE_CHOICES, default='symbolic')
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
@@ -163,19 +169,8 @@ class ProductImage(models.Model):
 
 
 class ProductVariant(models.Model):
-    SIZE_CHOICES = [
-        ('XS', 'XS'),
-        ('S', 'S'),
-        ('M', 'M'),
-        ('L', 'L'),
-        ('XL', 'XL'),
-        ('XXL', 'XXL'),
-        ('3XL', '3XL'),
-        ('4XL', '4XL'),
-    ]
-    
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    size = models.CharField(max_length=10, choices=SIZE_CHOICES)
+    size = models.CharField(max_length=20)
     color = models.CharField(max_length=50)
     stock_qty = models.IntegerField(validators=[MinValueValidator(0)])
     price_override = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
