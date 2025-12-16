@@ -53,3 +53,22 @@ def iqd(value, use_arabic_indic=True):
     if use_arabic_indic in (True, 'True', 'true', '1', 'yes', 'y'):
         formatted = _to_arabic_indic(formatted)
     return f"{formatted} د.ع"
+
+@register.filter(name='cart_count')
+def cart_count(cart):
+    try:
+        if not cart:
+            return 0
+        total = 0
+        for item in cart:
+            try:
+                q = int(item.get('quantity') or 1)
+            except Exception:
+                q = 1
+            total += q
+        return total
+    except Exception:
+        try:
+            return len(cart) if cart else 0
+        except Exception:
+            return 0

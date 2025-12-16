@@ -421,16 +421,20 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Update cart badge
+                const count = parseInt(data.cart_items_count || 0);
                 const badge = document.querySelector('.cart-badge');
                 if (badge) {
-                    badge.textContent = data.cart_items_count;
+                    badge.textContent = String(count);
+                    badge.style.display = count > 0 ? 'flex' : 'none';
                 } else {
-                    const cartNav = document.querySelector('.nav-item[onclick*="cart"]');
-                    const span = document.createElement('span');
-                    span.className = 'cart-badge';
-                    span.textContent = data.cart_items_count;
-                    cartNav.appendChild(span);
+                    const cartNav = document.querySelector('.global-bottom-nav a[href$="/cart/"]');
+                    if (cartNav) {
+                        const span = document.createElement('span');
+                        span.className = 'cart-badge';
+                        span.textContent = String(count);
+                        span.style.display = count > 0 ? 'flex' : 'none';
+                        cartNav.appendChild(span);
+                    }
                 }
                 
                 // Show success message

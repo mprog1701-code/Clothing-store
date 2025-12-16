@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% load static %}
+{% load math_filters %}
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -126,8 +127,9 @@
             padding: 10px;
         }
 
-        .global-bottom-nav { background: var(--black-light); border-top: 2px solid var(--copper); padding: 12px 0; padding-bottom: env(safe-area-inset-bottom); position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; width: 100%; backdrop-filter: blur(10px); }
-        .global-bottom-nav .nav-item { display: block; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .global-bottom-nav { background: var(--black-light); border-top: 2px solid var(--copper); padding: 12px 0; padding-bottom: env(safe-area-inset-bottom); position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; width: 100%; backdrop-filter: blur(10px); height: var(--bottom-nav-height); }
+        .global-bottom-nav .row { align-items: stretch; }
+        .global-bottom-nav .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: var(--bottom-nav-height); -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         body.theme-light .global-bottom-nav { background: #f7f7f7; }
         .global-bottom-nav .nav-item {
             text-align: center;
@@ -142,11 +144,13 @@
         .global-bottom-nav .nav-icon {
             font-size: 1.4rem;
             display: block;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            line-height: 1;
         }
         .global-bottom-nav .nav-text {
             font-size: 0.8rem;
             font-weight: 700;
+            line-height: 1;
         }
         main { overflow-y: auto; -webkit-overflow-scrolling: touch; }
         
@@ -299,8 +303,8 @@
         
         .cart-badge {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: 6px;
+            right: 12px;
             background: linear-gradient(135deg, var(--accent-color) 0%, #fd79a8 100%);
             color: white;
             border-radius: 50%;
@@ -1085,9 +1089,11 @@
                         <a href="{% url 'cart_view' %}" class="nav-item">
                             <i class="bi bi-cart nav-icon"></i>
                             <span class="nav-text" data-i18n="nav_cart">السلة</span>
-                            {% if request.session.cart and request.session.cart|length > 0 %}
-                            <span class="cart-badge">{{ request.session.cart|length }}</span>
+                            {% with count=request.session.cart|cart_count %}
+                            {% if count > 0 %}
+                            <span class="cart-badge">{{ count }}</span>
                             {% endif %}
+                            {% endwith %}
                         </a>
                     </div>
                     <div class="col-3">

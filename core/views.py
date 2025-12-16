@@ -14,6 +14,7 @@ from .models import User, Store, Product, ProductVariant, ProductImage, Address,
 from django.db.utils import OperationalError, ProgrammingError
 from .serializers import UserRegistrationSerializer
 from .forms import AddressForm
+from .templatetags.math_filters import cart_count
 # Fashion marketplace view
 @ensure_csrf_cookie
 def hybrid_home(request):
@@ -27,9 +28,8 @@ def hybrid_home(request):
     if len(new_arrivals) == 0:
         new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
     
-    # Get cart items count
     cart = request.session.get('cart', [])
-    cart_items_count = len(cart)
+    cart_items_count = cart_count(cart)
     
     campaign = None
     campaigns = []
@@ -111,9 +111,8 @@ def store_list(request):
     except Exception:
         showcase_products = []
     
-    # Get cart items count
     cart = request.session.get('cart', [])
-    cart_items_count = len(cart)
+    cart_items_count = cart_count(cart)
     
     context = {
         'stores': stores,
@@ -526,7 +525,7 @@ def add_to_cart(request, product_id):
         request.session['cart'] = cart
 
         if request.headers.get('Content-Type', '').startswith('application/json'):
-            return JsonResponse({'success': True, 'cart_items_count': len(cart)})
+            return JsonResponse({'success': True, 'cart_items_count': cart_count(cart)})
         else:
             messages.success(request, 'تمت الإضافة إلى السلة!')
     
@@ -812,7 +811,7 @@ def main_dashboard(request):
         total_orders = Order.objects.filter(user=request.user).count()
         recent_orders = Order.objects.filter(user=request.user).order_by('-created_at')[:5]
         total_addresses = Address.objects.filter(user=request.user).count()
-        cart_items_count = len(request.session.get('cart', []))
+        cart_items_count = cart_count(request.session.get('cart', []))
         
         context.update({
             'total_orders': total_orders,
@@ -843,7 +842,7 @@ def main_dashboard(request):
             'total_orders': 0,
             'recent_orders': [],
             'total_addresses': 0,
-            'cart_items_count': len(request.session.get('cart', [])),
+            'cart_items_count': cart_count(request.session.get('cart', [])),
         })
     return render(request, 'dashboard/main_dashboard.html', context)
 
@@ -1776,7 +1775,7 @@ def search(request):
         'selected_min_price': min_price or '',
         'selected_max_price': max_price or '',
         'selected_sort': sort,
-        'cart_items_count': len(request.session.get('cart', [])),
+        'cart_items_count': cart_count(request.session.get('cart', [])),
     }
     return render(request, 'search/results.html', context)
 
