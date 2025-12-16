@@ -288,9 +288,17 @@
                         {% endif %}
                     {% endwith %}
                 {% elif p.images.all %}
-                    {% with url=p.images.all.0.get_image_url %}
-                        {% if url %}
-                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img">
+                    {% with img=p.images.all|first %}
+                        {% if img %}
+                            {% with url=img.get_image_url %}
+                                {% if url %}
+                                    <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img">
+                                {% else %}
+                                    <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
+                                        <i class="bi bi-bag" style="font-size:2rem;"></i>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
                         {% else %}
                             <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
                                 <i class="bi bi-bag" style="font-size:2rem;"></i>

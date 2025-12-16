@@ -88,7 +88,10 @@ def store_list(request):
     category = request.GET.get('category')
     if category:
         from django.db.models import Q
-        stores = stores.filter(Q(category=category) | Q(product__category=category)).distinct()
+        stores = stores.filter(
+            Q(category=category) |
+            Q(product_set__category=category)
+        ).distinct()
     
     city = request.GET.get('city')
     if city:
