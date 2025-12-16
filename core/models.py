@@ -192,11 +192,13 @@ class ProductImage(models.Model):
         return f"Image for {self.product.name}"
     
     def get_image_url(self):
-        """Get the image URL, preferring image_url over image field"""
         if self.image_url:
             return self.image_url
         elif self.image:
-            return self.image.url
+            try:
+                return self.image.url
+            except Exception:
+                return None
         return None
 
     def clean(self):
