@@ -14,10 +14,10 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config(
+AALLOWED_HOSTS = [h.strip() for h in config(
     'ALLOWED_HOSTS',
     default='127.0.0.1,localhost,.railway.app,.up.railway.app,.onrender.com,.vercel.app'
-).split(',')
+).split(',') if h.strip()]
 
 INSTALLED_APPS = [
     'core',
