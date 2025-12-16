@@ -1,4 +1,5 @@
 from django.db import models
+import os
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
@@ -119,8 +120,10 @@ class Store(models.Model):
         if p:
             img = p.main_image or p.images.first()
             if img:
-                return img.get_image_url()
-        return None
+                u = img.get_image_url()
+                if u:
+                    return u
+        return os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL', 'https://placehold.co/120x120?text=Store')
 
 
 class Product(models.Model):

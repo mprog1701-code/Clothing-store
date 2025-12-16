@@ -75,8 +75,8 @@
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            {% if product.store.logo %}
-                                                <img src="{{ product.store.logo.url }}" alt="{{ product.store.name }}" class="rounded-circle me-2" width="30" height="30">
+                                            {% if product.store.main_logo_url %}
+                                                <img src="{{ product.store.main_logo_url }}" alt="{{ product.store.name }}" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
                                             {% else %}
                                                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
                                                     <i class="fas fa-store text-white"></i>

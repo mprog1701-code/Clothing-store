@@ -87,8 +87,16 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            {% if item.product.main_image and item.product.main_image.image and item.product.main_image.image.name %}
-                                            <img src="{{ item.product.main_image.image.url }}" alt="{{ item.product.name }}" class="img-thumbnail me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                            {% if item.product.main_image %}
+                                            {% with url=item.product.main_image.get_image_url %}
+                                            {% if url %}
+                                            <img src="{{ url }}" alt="{{ item.product.name }}" class="img-thumbnail me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                            {% else %}
+                                            <div class="img-thumbnail me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background-color: #f8f9fa;">
+                                                <i class="fas fa-image text-muted"></i>
+                                            </div>
+                                            {% endif %}
+                                            {% endwith %}
                                             {% else %}
                                             <div class="img-thumbnail me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background-color: #f8f9fa;">
                                                 <i class="fas fa-image text-muted"></i>

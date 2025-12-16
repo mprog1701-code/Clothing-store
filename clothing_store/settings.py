@@ -12,9 +12,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,clothing-store-production-4387.up.railway.app').split(',')
 
 INSTALLED_APPS = [
     'core',
@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -100,8 +101,37 @@ STATICFILES_DIRS = [
 ]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Cloudflare R2 storage configuration
+AWS_ACCESS_KEY_ID = config('R2_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('R2_SECRET_ACCESS_KEY', default='')
+AWS_STORAGE_BUCKET_NAME = config('R2_BUCKET_NAME', default='')
+AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='')
+AWS_S3_REGION_NAME = config('R2_REGION', default='auto')
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_ADDRESSING_STYLE = 'path'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_CUSTOM_DOMAIN = config('R2_PUBLIC_DOMAIN', default='')
+
+STORAGES = {
+    "default": {
+        "BACKEND": "core.storage.R2MediaStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='')
+if AWS_S3_CUSTOM_DOMAIN:
+    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN.strip('/')}/"
+elif R2_PUBLIC_BASE_URL:
+    MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/'
+elif AWS_S3_ENDPOINT_URL and AWS_STORAGE_BUCKET_NAME:
+    MEDIA_URL = AWS_S3_ENDPOINT_URL.rstrip('/') + '/' + AWS_STORAGE_BUCKET_NAME.strip('/') + '/'
+else:
+    MEDIA_URL = '/media/'
+
+ 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -146,9 +176,9 @@ AUTHENTICATION_BACKENDS = [
 DELIVERY_FEE = Decimal('50.00')  # 50 SAR
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS = [
-        " `https://clothing-store-production-4387.up.railway.app` ",
-    ]
-SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
-SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
-CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
-SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
+    "https://clothing-store-production-4387.up.railway.app",
+]
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0

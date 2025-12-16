@@ -561,10 +561,20 @@
         {% for product in new_arrivals %}
         <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
             <div class="product-card position-relative">
-                {% if product.main_image and product.main_image.image and product.main_image.image.name %}
+                {% if product.main_image %}
+                {% with url=product.main_image.get_image_url %}
+                {% if url %}
                 <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
-                    <img src="{{ product.main_image.image.url }}" alt="{{ product.name }}" class="product-image">
+                    <img src="{{ url }}" alt="{{ product.name }}" class="product-image">
                 </a>
+                {% else %}
+                <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
+                    <div class="product-image d-flex align-items-center justify-content-center" style="background: var(--copper); color: white;">
+                        <i class="bi bi-image" style="font-size: 3rem;"></i>
+                    </div>
+                </a>
+                {% endif %}
+                {% endwith %}
                 {% else %}
                 <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
                     <div class="product-image d-flex align-items-center justify-content-center" style="background: var(--copper); color: white;">

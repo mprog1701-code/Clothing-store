@@ -226,9 +226,18 @@
                             <div class="row align-items-center">
                                 <div class="col-md-3">
                                     <div class="product-image">
-                                        {% if product.main_image and product.main_image.image %}
-                                        <img src="{{ product.main_image.image.url }}" alt="{{ product.name }}" 
+                                        {% if product.main_image %}
+                                        {% with url=product.main_image.get_image_url %}
+                                        {% if url %}
+                                        <img src="{{ url }}" alt="{{ product.name }}" 
                                              class="img-fluid rounded-2" style="height: 60px; object-fit: cover;">
+                                        {% else %}
+                                        <div class="bg-light rounded-2 d-flex align-items-center justify-content-center" 
+                                             style="height: 60px; width: 60px;">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                        {% endwith %}
                                         {% else %}
                                         <div class="bg-light rounded-2 d-flex align-items-center justify-content-center" 
                                              style="height: 60px; width: 60px;">

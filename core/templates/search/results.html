@@ -98,8 +98,16 @@
         {% for product in products %}
         <div class="col-lg-3 col-md-4 col-sm-6">
             <div class="product-card">
-                {% if product.main_image and product.main_image.image %}
-                <img src="{{ product.main_image.image.url }}" alt="{{ product.name }}" class="product-image">
+                {% if product.main_image %}
+                {% with url=product.main_image.get_image_url %}
+                {% if url %}
+                <img src="{{ url }}" alt="{{ product.name }}" class="product-image">
+                {% else %}
+                <div class="product-image d-flex align-items-center justify-content-center" style="background: var(--copper); color: white;">
+                    <i class="bi bi-image" style="font-size: 2.5rem;"></i>
+                </div>
+                {% endif %}
+                {% endwith %}
                 {% else %}
                 <div class="product-image d-flex align-items-center justify-content-center" style="background: var(--copper); color: white;">
                     <i class="bi bi-image" style="font-size: 2.5rem;"></i>
@@ -123,8 +131,16 @@
         <div class="col-lg-4 col-md-6">
             <div class="store-card">
                 {% with main=store.product_set.first %}
-                    {% if main and main.main_image and main.main_image.image %}
-                    <img src="{{ main.main_image.image.url }}" alt="{{ store.name }}" class="store-image">
+                    {% if main and main.main_image %}
+                    {% with url=main.main_image.get_image_url %}
+                    {% if url %}
+                    <img src="{{ url }}" alt="{{ store.name }}" class="store-image">
+                    {% else %}
+                    <div class="store-image d-flex align-items-center justify-content-center" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                        <i class="bi bi-shop" style="font-size: 3rem;"></i>
+                    </div>
+                    {% endif %}
+                    {% endwith %}
                     {% else %}
                     <div class="store-image d-flex align-items-center justify-content-center" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
                         <i class="bi bi-shop" style="font-size: 3rem;"></i>
