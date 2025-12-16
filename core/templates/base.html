@@ -507,7 +507,7 @@
         footer {
             background: linear-gradient(135deg, var(--dark-color) 0%, #2c3e50 100%);
             color: white;
-            padding: 2rem 0 2.5rem;
+            padding: 2rem 0 calc(2.5rem + var(--bottom-nav-height) + env(safe-area-inset-bottom));
             margin-top: 2rem;
         }
         body.theme-light footer { background: #f7f7f7; color: #000; }
