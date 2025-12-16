@@ -99,7 +99,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Cloudflare R2 storage configuration
 AWS_ACCESS_KEY_ID = config('R2_ACCESS_KEY_ID', default='')
