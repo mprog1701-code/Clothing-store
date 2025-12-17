@@ -305,8 +305,9 @@
         
         .cart-badge {
             position: absolute;
-            top: -6px;
-            right: 10px;
+            top: 6px;
+            left: 50%;
+            transform: translate(-50%, -6px);
             background: linear-gradient(135deg, var(--accent-color) 0%, #fd79a8 100%);
             color: white;
             border-radius: 50%;
@@ -1421,6 +1422,11 @@
             })
             .then(r => r.json())
             .then(data => {
+                try {
+                    if (data && typeof data.cart_items_count !== 'undefined') {
+                        updateCartBadge(parseInt(data.cart_items_count || 0));
+                    }
+                } catch(e) {}
                 const toast = document.createElement('div');
                 toast.className = 'position-fixed top-0 end-0 p-3';
                 toast.style.zIndex = '9999';
@@ -1439,6 +1445,21 @@
                 hideLoading();
             })
             .catch(() => { hideLoading(); });
+        }
+        function updateCartBadge(count){
+            try{
+                const inCartPage = (window.location.pathname || '').startsWith('/cart/');
+                const navCart = document.querySelector('.global-bottom-nav a.nav-item[href$="/cart/"]');
+                if(!navCart) return;
+                let badge = navCart.querySelector('.cart-badge');
+                if(!badge){
+                    badge = document.createElement('span');
+                    badge.className = 'cart-badge';
+                    navCart.appendChild(badge);
+                }
+                badge.textContent = String(count);
+                badge.style.display = (!inCartPage && count > 0) ? 'flex' : 'none';
+            }catch(e){}
         }
         </script>
     

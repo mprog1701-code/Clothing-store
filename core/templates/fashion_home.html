@@ -697,10 +697,8 @@
         .then(response => response.json())
         .then(data => {
             if (data && data.success) {
-                const cartCountElement = document.getElementById('cart-count');
-                if (cartCountElement) {
-                    cartCountElement.textContent = data.cart_items_count;
-                    cartCountElement.style.display = data.cart_items_count > 0 ? 'block' : 'none';
+                if (typeof updateCartBadge === 'function') {
+                    updateCartBadge(parseInt(data.cart_items_count || 0));
                 }
                 showToast('تمت الإضافة إلى السلة بنجاح!');
             } else {

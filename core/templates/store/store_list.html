@@ -422,19 +422,8 @@
         .then(data => {
             if (data.success) {
                 const count = parseInt(data.cart_items_count || 0);
-                const badge = document.querySelector('.cart-badge');
-                if (badge) {
-                    badge.textContent = String(count);
-                    badge.style.display = count > 0 ? 'flex' : 'none';
-                } else {
-                    const cartNav = document.querySelector('.global-bottom-nav a[href$="/cart/"]');
-                    if (cartNav) {
-                        const span = document.createElement('span');
-                        span.className = 'cart-badge';
-                        span.textContent = String(count);
-                        span.style.display = count > 0 ? 'flex' : 'none';
-                        cartNav.appendChild(span);
-                    }
+                if (typeof updateCartBadge === 'function') {
+                    updateCartBadge(count);
                 }
                 
                 // Show success message

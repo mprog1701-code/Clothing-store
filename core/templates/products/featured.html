@@ -316,10 +316,8 @@ function addToCart(productId) {
     .then(data => {
         if (data && data.success) {
             showToast('✅ تم إضافة المنتج إلى السلة بنجاح!', 'success');
-            const cartCountElement = document.getElementById('cart-count');
-            if (cartCountElement) {
-                cartCountElement.textContent = data.cart_items_count;
-                cartCountElement.style.display = data.cart_items_count > 0 ? 'block' : 'none';
+            if (typeof updateCartBadge === 'function') {
+                updateCartBadge(parseInt(data.cart_items_count || 0));
             }
             animateCartButton();
         }
