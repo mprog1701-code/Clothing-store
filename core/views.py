@@ -476,12 +476,27 @@ def add_to_cart(request, product_id):
                     variant_id = None
             except (TypeError, ValueError):
                 variant_id = None
-        # enforce variant selection when product has variants
+        # enforce/auto-select variant when product has variants
         if product.variants.exists() and not variant_id:
-            if request.headers.get('Content-Type', '').startswith('application/json'):
-                return JsonResponse({'success': False, 'error': 'يرجى اختيار نسخة صالحة'}, status=400)
-            messages.error(request, 'يرجى اختيار نسخة صالحة')
-            return redirect('product_detail', product_id)
+            try:
+                default_variant_id = (
+                    product.variants.filter(stock_qty__gt=0)
+                    .order_by('-stock_qty')
+                    .values_list('id', flat=True)
+                    .first()
+                ) or product.variants.values_list('id', flat=True).first()
+                if default_variant_id:
+                    variant_id = int(default_variant_id)
+                else:
+                    if request.headers.get('Content-Type', '').startswith('application/json'):
+                        return JsonResponse({'success': False, 'error': 'لا توجد نسخة متاحة'}, status=400)
+                    messages.error(request, 'لا توجد نسخة متاحة')
+                    return redirect('product_detail', product_id)
+            except Exception:
+                if request.headers.get('Content-Type', '').startswith('application/json'):
+                    return JsonResponse({'success': False, 'error': 'تعذر تحديد نسخة صالحة'}, status=400)
+                messages.error(request, 'تعذر تحديد نسخة صالحة')
+                return redirect('product_detail', product_id)
         
         cart = request.session.get('cart', [])
         

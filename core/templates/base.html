@@ -148,6 +148,7 @@
             line-height: 1;
             transform: translateY(-2px);
         }
+        .global-bottom-nav .nav-icon-wrap { position: relative; display: inline-flex; }
         .global-bottom-nav .nav-text {
             font-size: 0.8rem;
             font-weight: 700;
@@ -305,9 +306,8 @@
         
         .cart-badge {
             position: absolute;
-            top: 6px;
-            left: 50%;
-            transform: translate(-50%, -6px);
+            top: -6px;
+            right: -6px;
             background: linear-gradient(135deg, var(--accent-color) 0%, #fd79a8 100%);
             color: white;
             border-radius: 50%;
@@ -1091,15 +1091,17 @@
                     </div>
                     <div class="col-3">
                         <a href="{% url 'cart_view' %}" class="nav-item">
-                            <i class="bi bi-cart nav-icon"></i>
-                            <span class="nav-text" data-i18n="nav_cart">السلة</span>
-                            {% if request.path|slice:":6" != '/cart/' %}
-                                {% with count=request.session.cart|cart_count %}
-                                {% if count > 0 %}
-                                <span class="cart-badge">{{ count }}</span>
+                            <span class="nav-icon-wrap">
+                                <i class="bi bi-cart nav-icon"></i>
+                                {% if request.path|slice:":6" != '/cart/' %}
+                                    {% with count=request.session.cart|cart_count %}
+                                    {% if count > 0 %}
+                                    <span class="cart-badge">{{ count }}</span>
+                                    {% endif %}
+                                    {% endwith %}
                                 {% endif %}
-                                {% endwith %}
-                            {% endif %}
+                            </span>
+                            <span class="nav-text" data-i18n="nav_cart">السلة</span>
                         </a>
                     </div>
                     <div class="col-3">
@@ -1399,6 +1401,14 @@
                     window.open = function(url){ try{ window.location.assign(url); } catch(e){ window.location.href = url; } return null; };
                 }
             }catch(e){}
+            try{
+                const navCart = document.querySelector('.global-bottom-nav a.nav-item[href$="/cart/"]');
+                if(navCart){
+                    const wrap = navCart.querySelector('.nav-icon-wrap');
+                    const stray = navCart.querySelector(':scope > .cart-badge');
+                    if(stray && wrap){ wrap.appendChild(stray); }
+                }
+            }catch(e){}
         });
         
         // CSRF helper
@@ -1451,11 +1461,12 @@
                 const inCartPage = (window.location.pathname || '').startsWith('/cart/');
                 const navCart = document.querySelector('.global-bottom-nav a.nav-item[href$="/cart/"]');
                 if(!navCart) return;
-                let badge = navCart.querySelector('.cart-badge');
+                const wrap = navCart.querySelector('.nav-icon-wrap') || navCart;
+                let badge = wrap.querySelector('.cart-badge');
                 if(!badge){
                     badge = document.createElement('span');
                     badge.className = 'cart-badge';
-                    navCart.appendChild(badge);
+                    wrap.appendChild(badge);
                 }
                 badge.textContent = String(count);
                 badge.style.display = (!inCartPage && count > 0) ? 'flex' : 'none';
