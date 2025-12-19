@@ -115,7 +115,7 @@ STATICFILES_DIRS = [
 AWS_ACCESS_KEY_ID = config('R2_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = config('R2_SECRET_ACCESS_KEY', default='')
 AWS_STORAGE_BUCKET_NAME = config('R2_BUCKET_NAME', default='')
-AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='').strip()
+AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='')
 AWS_S3_REGION_NAME = config('R2_REGION', default='auto')
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_ADDRESSING_STYLE = 'path'
