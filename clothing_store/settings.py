@@ -15,17 +15,17 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 _AH = config('ALLOWED_HOSTS', default='').strip()
-if _AH:
-    ALLOWED_HOSTS = [h.strip() for h in _AH.split(',') if h.strip()]
-else:
-    ALLOWED_HOSTS = [
-        '127.0.0.1',
-        'localhost',
-        '.railway.app',
-        '.up.railway.app',
-        '.onrender.com',
-        '.vercel.app',
-    ]
+_ENV_HOSTS = [h.strip() for h in _AH.split(',') if h.strip()]
+_DEFAULT_HOSTS = [
+    '127.0.0.1',
+    'localhost',
+    '.railway.app',
+    '.up.railway.app',
+    '.onrender.com',
+    '.vercel.app',
+]
+# allow union of env + defaults to prevent DisallowedHost on cloud previews
+ALLOWED_HOSTS = list(dict.fromkeys(_ENV_HOSTS + _DEFAULT_HOSTS))
 
 INSTALLED_APPS = [
     'core',
@@ -115,31 +115,57 @@ STATICFILES_DIRS = [
 AWS_ACCESS_KEY_ID = config('R2_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = config('R2_SECRET_ACCESS_KEY', default='')
 AWS_STORAGE_BUCKET_NAME = config('R2_BUCKET_NAME', default='')
-AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='')
+AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='').strip()
 AWS_S3_REGION_NAME = config('R2_REGION', default='auto')
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_ADDRESSING_STYLE = 'path'
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 AWS_S3_CUSTOM_DOMAIN = config('R2_PUBLIC_DOMAIN', default='')
 
-STORAGES = {
-    "default": {
-        "BACKEND": "core.storage.R2MediaStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+def _valid_url(u):
+    try:
+        from urllib.parse import urlparse
+        if not isinstance(u, str):
+            return False
+        p = urlparse(u.strip())
+        return p.scheme in ('http', 'https') and bool(p.netloc)
+    except Exception:
+        return False
 
-R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='')
-if AWS_S3_CUSTOM_DOMAIN:
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN.strip('/')}/"
-elif R2_PUBLIC_BASE_URL:
-    MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/'
-elif AWS_S3_ENDPOINT_URL and AWS_STORAGE_BUCKET_NAME:
-    MEDIA_URL = AWS_S3_ENDPOINT_URL.rstrip('/') + '/' + AWS_STORAGE_BUCKET_NAME.strip('/') + '/'
+USE_R2 = all([
+    AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY,
+    AWS_STORAGE_BUCKET_NAME,
+    _valid_url(AWS_S3_ENDPOINT_URL),
+])
+
+if USE_R2:
+    STORAGES = {
+        "default": {
+            "BACKEND": "core.storage.R2MediaStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='')
+    if _valid_url(AWS_S3_CUSTOM_DOMAIN):
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN.strip('/')}/"
+    elif _valid_url(R2_PUBLIC_BASE_URL):
+        MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/'
+    else:
+        MEDIA_URL = AWS_S3_ENDPOINT_URL.rstrip('/') + '/' + AWS_STORAGE_BUCKET_NAME.strip('/') + '/'
 else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
     MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
  
 
