@@ -436,6 +436,10 @@ def cart_view(request):
 
     # persist revalidated cart
     request.session['cart'] = new_cart
+    try:
+        request.session.modified = True
+    except Exception:
+        pass
 
     context = {
         'cart_items': cart_items,
@@ -487,6 +491,19 @@ def add_to_cart(request, product_id):
                 ) or product.variants.values_list('id', flat=True).first()
                 if default_variant_id:
                     variant_id = int(default_variant_id)
+                    try:
+                        variant_obj = ProductVariant.objects.get(id=variant_id, product_id=product_id)
+                        if variant_obj.stock_qty <= 0:
+                            if request.headers.get('Content-Type', '').startswith('application/json'):
+                                return JsonResponse({'success': False, 'error': 'غير متوفر بالكمية المطلوبة'}, status=400)
+                            messages.error(request, 'غير متوفر بالكمية المطلوبة')
+                            return redirect('product_detail', product_id)
+                    except ProductVariant.DoesNotExist:
+                        variant_id = None
+                        if request.headers.get('Content-Type', '').startswith('application/json'):
+                            return JsonResponse({'success': False, 'error': 'تعذر تحديد نسخة صالحة'}, status=400)
+                        messages.error(request, 'تعذر تحديد نسخة صالحة')
+                        return redirect('product_detail', product_id)
                 else:
                     if request.headers.get('Content-Type', '').startswith('application/json'):
                         return JsonResponse({'success': False, 'error': 'لا توجد نسخة متاحة'}, status=400)
@@ -538,6 +555,10 @@ def add_to_cart(request, product_id):
             })
         
         request.session['cart'] = cart
+        try:
+            request.session.modified = True
+        except Exception:
+            pass
 
         if request.headers.get('Content-Type', '').startswith('application/json'):
             return JsonResponse({'success': True, 'cart_items_count': cart_count(cart)})

@@ -306,9 +306,11 @@ function addToCart(productId) {
     const csrfToken = tokenMatch ? tokenMatch[1] : '';
     fetch(`/cart/add/${productId}/`, {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
             'X-CSRFToken': csrfToken,
             'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
         },
         body: JSON.stringify({ quantity: 1 })
     })
