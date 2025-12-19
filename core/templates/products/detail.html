@@ -60,7 +60,7 @@
                             <div class="carousel-item {% if forloop.first %}active{% endif %}">
                                 {% with url=image.get_image_url %}
                                     {% if url %}
-                                    <img src="{{ url }}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;">
+                                    <img src="{{ url }}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
                                     {% else %}
                                     <div class="bg-light d-flex align-items-center justify-content-center" style="height: 500px;">
                                         <i class="bi bi-image display-1 text-muted opacity-25"></i>
@@ -213,7 +213,7 @@
                                 }
                                 urls.forEach((url, idx) => {
                                     const activeClass = idx === 0 ? 'active' : '';
-                                    inner.insertAdjacentHTML('beforeend', `<div class="carousel-item ${activeClass}"><img src="${url}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;"></div>`);
+                                    inner.insertAdjacentHTML('beforeend', `<div class="carousel-item ${activeClass}"><img src="${url}" class="d-block w-100" alt="{{ product.name }}" style="height: 500px; object-fit: cover;" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'"></div>`);
                                     if (indicators){
                                         indicators.insertAdjacentHTML('beforeend', `<button type="button" data-bs-target="#productCarousel" data-bs-slide-to="${idx}" class="${activeClass}" aria-label="Slide ${idx+1}"></button>`);
                                     }

@@ -192,14 +192,20 @@ class ProductImage(models.Model):
         return f"Image for {self.product.name}"
     
     def get_image_url(self):
-        if self.image_url:
-            return self.image_url
-        elif self.image:
-            try:
-                return self.image.url
-            except Exception:
-                return None
-        return None
+        try:
+            if self.image_url:
+                return self.image_url
+            if self.image:
+                try:
+                    return self.image.url
+                except Exception:
+                    pass
+            placeholder = os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL')
+            if placeholder:
+                return placeholder
+            return 'https://placehold.co/300x300?text=Image'
+        except Exception:
+            return 'https://placehold.co/300x300?text=Image'
 
     def clean(self):
         # Require attachment to either a color or a variant

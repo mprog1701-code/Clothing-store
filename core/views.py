@@ -8,6 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
+import os
 import json
 import uuid
 from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign
@@ -187,6 +188,7 @@ def product_detail(request, product_id):
         'images': images,
         'images_by_color': images_by_color,
         'default_images': default_images,
+        'placeholder_image_url': os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/500x500?text=Image',
     }
     return render(request, 'products/detail.html', context)
 
