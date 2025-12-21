@@ -84,7 +84,7 @@
                             {% with url=product.main_image.get_image_url %}
                                 {% if url %}
                                     <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}">
-                                        <img src="{{ url }}" class="product-image w-100" alt="{{ product.name }}">
+                                        <img src="{{ url }}" class="product-image w-100" alt="{{ product.name }}" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
                                     </a>
                                 {% else %}
                                     <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">

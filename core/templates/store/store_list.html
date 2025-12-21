@@ -280,7 +280,7 @@
                 {% if p.main_image %}
                     {% with url=p.main_image.get_image_url %}
                         {% if url %}
-                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img">
+                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
                         {% else %}
                             <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
                                 <i class="bi bi-bag" style="font-size:2rem;"></i>
@@ -292,7 +292,7 @@
                         {% if img %}
                             {% with url=img.get_image_url %}
                                 {% if url %}
-                                    <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img">
+                                    <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
                                 {% else %}
                                     <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
                                         <i class="bi bi-bag" style="font-size:2rem;"></i>
@@ -351,7 +351,7 @@
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="store-card">
                 {% if store.main_logo_url %}
-                    <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image">
+                    <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image" onerror="this.onerror=null;this.src='https://placehold.co/320x220?text=Store'">
                 {% else %}
                     <div class="store-image d-flex align-items-center justify-content-center" 
                          style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
