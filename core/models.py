@@ -208,9 +208,6 @@ class ProductImage(models.Model):
             return 'https://placehold.co/300x300?text=Image'
 
     def clean(self):
-        # Require attachment to either a color or a variant
-        if not self.color and not self.variant:
-            raise ValidationError({'color': 'يجب إرفاق الصورة إلى لون أو نسخة', 'variant': 'يجب إرفاق الصورة إلى لون أو نسخة'})
         # Ensure consistency with product
         if self.color and self.color.product_id != self.product_id:
             raise ValidationError({'color': 'اللون لا ينتمي إلى نفس المنتج'})

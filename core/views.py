@@ -1319,10 +1319,14 @@ def super_owner_add_product(request):
             # Handle images
             if images:
                 for image in images:
-                    ProductImage.objects.create(
-                        product=product,
-                        image=image
-                    )
+                    try:
+                        ProductImage.objects.create(
+                            product=product,
+                            image=image
+                        )
+                    except Exception:
+                        messages.error(request, 'فشل حفظ إحدى صور المنتج')
+                        return redirect('super_owner_add_product')
             created_colors = {}
             try:
                 colors_count = int(request.POST.get('colors_count') or 0)
@@ -1450,10 +1454,14 @@ def super_owner_edit_product(request, product_id):
                 # Handle new images
                 if new_images:
                     for image in new_images:
-                        ProductImage.objects.create(
-                            product=product,
-                            image=image
-                        )
+                        try:
+                            ProductImage.objects.create(
+                                product=product,
+                                image=image
+                            )
+                        except Exception:
+                            messages.error(request, 'فشل حفظ إحدى الصور الجديدة')
+                            return redirect('super_owner_edit_product', product_id=product_id)
 
                 messages.success(request, f'تم تحديث المنتج "{product.name}" بنجاح!')
                 return redirect('super_owner_products')
