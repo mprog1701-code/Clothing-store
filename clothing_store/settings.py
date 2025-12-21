@@ -171,7 +171,7 @@ if USE_R2:
     if R2_PUBLIC_DOMAIN:
         MEDIA_URL = f"https://{R2_PUBLIC_DOMAIN.strip('/')}/"
     elif _valid_url(R2_PUBLIC_BASE_URL):
-        MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/media/'
+        MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/'
     else:
         MEDIA_URL = '/media/'
     print("USE_R2 =", USE_R2)

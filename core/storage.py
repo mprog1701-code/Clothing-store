@@ -41,6 +41,9 @@ class R2MediaStorage(S3Boto3Storage):
         )
         base = os.environ.get('R2_PUBLIC_BASE_URL', '')
         key = str(name).lstrip('/')
+        prefix = str(getattr(self, 'location', '') or '').strip('/')
+        if prefix and not key.startswith(prefix + '/'):
+            key = f"{prefix}/{key}"
         if cd:
             return f"https://{str(cd).strip('/').strip()}/{key}"
         if base and (base.startswith('http://') or base.startswith('https://')):
