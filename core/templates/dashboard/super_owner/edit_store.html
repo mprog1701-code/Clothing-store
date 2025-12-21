@@ -73,7 +73,7 @@
                                     <label for="logo" class="form-label">شعار المتجر</label>
                                     {% if store.main_logo_url %}
                                         <div class="mb-2">
-                                            <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="img-thumbnail" style="max-height: 100px; object-fit: cover;">
+                                            <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="img-thumbnail" style="max-height: 100px; object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/120x120?text=Store'">
                                         </div>
                                     {% endif %}
                                     <input type="file" class="form-control" id="logo" name="logo" accept="image/*">

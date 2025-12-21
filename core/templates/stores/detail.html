@@ -136,7 +136,7 @@
                 <div class="store-hero-icon animate-bounce">
                     <div class="store-logo-container bg-white rounded-circle p-4 shadow-lg d-inline-block">
                         {% if store.main_logo_url %}
-                            <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" style="width:120px;height:120px;object-fit:cover;border-radius:50%;">
+                            <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" style="width:120px;height:120px;object-fit:cover;border-radius:50%;" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
                         {% else %}
                             <i class="bi bi-shop display-1 text-primary-gradient"></i>
                         {% endif %}

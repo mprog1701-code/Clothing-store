@@ -141,6 +141,7 @@ def store_detail(request, store_id):
         'products': products,
         'categories': Product.CATEGORY_CHOICES,
         'selected_category': category,
+        'placeholder_image_url': os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/120x120?text=Store',
     }
     return render(request, 'stores/detail.html', context)
 

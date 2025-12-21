@@ -115,7 +115,7 @@ STATICFILES_DIRS = [
 AWS_ACCESS_KEY_ID = config('R2_ACCESS_KEY_ID', default='')
 AWS_SECRET_ACCESS_KEY = config('R2_SECRET_ACCESS_KEY', default='')
 AWS_STORAGE_BUCKET_NAME = config('R2_BUCKET_NAME', default='')
-AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='')
+AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='').strip()
 AWS_S3_REGION_NAME = config('R2_REGION', default='auto')
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_ADDRESSING_STYLE = 'path'
@@ -132,11 +132,29 @@ def _valid_url(u):
     except Exception:
         return False
 
+def _is_r2_api_endpoint(u):
+    try:
+        from urllib.parse import urlparse
+        if not isinstance(u, str):
+            return False
+        p = urlparse(u.strip())
+        if p.scheme not in ('http', 'https') or not p.netloc:
+            return False
+        host = p.netloc.lower()
+        # Require Cloudflare R2 API host without bucket suffix
+        if not host.endswith('.r2.cloudflarestorage.com'):
+            return False
+        # No bucket segment allowed in path
+        path = (p.path or '').strip()
+        return path in ('', '/')
+    except Exception:
+        return False
+
 USE_R2 = all([
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
     AWS_STORAGE_BUCKET_NAME,
-    _valid_url(AWS_S3_ENDPOINT_URL),
+    _is_r2_api_endpoint(AWS_S3_ENDPOINT_URL),
 ])
 
 if USE_R2:
@@ -148,13 +166,14 @@ if USE_R2:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-    R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='')
-    if _valid_url(AWS_S3_CUSTOM_DOMAIN):
-        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN.strip('/')}/"
+    R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='').strip()
+    R2_PUBLIC_DOMAIN = config('R2_PUBLIC_DOMAIN', default='').strip()
+    if R2_PUBLIC_DOMAIN:
+        MEDIA_URL = f"https://{R2_PUBLIC_DOMAIN.strip('/')}/"
     elif _valid_url(R2_PUBLIC_BASE_URL):
         MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/'
     else:
-        MEDIA_URL = AWS_S3_ENDPOINT_URL.rstrip('/') + '/' + AWS_STORAGE_BUCKET_NAME.strip('/') + '/'
+        MEDIA_URL = '/media/'
 else:
     STORAGES = {
         "default": {
@@ -225,3 +244,9 @@ SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+
+try:
+    from django.core.files.storage import default_storage
+    print(f"[diagnostic] default_storage backend: {default_storage.__class__.__module__}.{default_storage.__class__.__name__}")
+except Exception:
+    pass
