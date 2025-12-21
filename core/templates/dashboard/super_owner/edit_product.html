@@ -126,6 +126,32 @@
                             </div>
                         </div>
                         
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">وصف المنتج *</label>
+                                    <textarea class="form-control" id="description" name="description" rows="4" required>{{ product.description }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-info">
+                                        <i class="fas fa-save me-2"></i>
+                                        حفظ التغييرات
+                                    </button>
+                                    <a href="{% url 'super_owner_products' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>
+                                        إلغاء
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
                         <div class="row mt-4">
                             <div class="col-12">
                                 <div class="card border-0 shadow-sm">
@@ -263,31 +289,7 @@
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label for="description" class="form-label">وصف المنتج *</label>
-                                    <textarea class="form-control" id="description" name="description" rows="4" required>{{ product.description }}</textarea>
-                                </div>
-                            </div>
-                        </div>
                         
-                        <div class="row">
-                            <div class="col-12">
-                                <hr>
-                                <div class="d-flex justify-content-between">
-                                    <button type="submit" class="btn btn-info">
-                                        <i class="fas fa-save me-2"></i>
-                                        حفظ التغييرات
-                                    </button>
-                                    <a href="{% url 'super_owner_products' %}" class="btn btn-secondary">
-                                        <i class="fas fa-times me-2"></i>
-                                        إلغاء
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
                 </div>
             </div>
         </div>
