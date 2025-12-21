@@ -84,15 +84,15 @@ def home(request):
 
 
 def store_list(request):
-    stores = Store.objects.filter(is_active=True).prefetch_related('product_set', 'product_set__images')
+    stores = Store.objects.filter(is_active=True)
     
     category = request.GET.get('category')
     if category:
-        from django.db.models import Q
+        from django.db.models import Q, Exists, OuterRef
         stores = stores.filter(
             Q(category=category) |
-            Q(product_set__category=category)
-        ).distinct()
+            Exists(Product.objects.filter(store=OuterRef('pk'), category=category))
+        )
     
     city = request.GET.get('city')
     if city:

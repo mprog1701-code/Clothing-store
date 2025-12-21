@@ -116,7 +116,8 @@ class Store(models.Model):
                 return self.logo.url
         except Exception:
             pass
-        p = self.product_set.prefetch_related('images').first()
+        from .models import Product
+        p = Product.objects.filter(store=self).prefetch_related('images').first()
         if p:
             img = p.main_image or p.images.first()
             if img:

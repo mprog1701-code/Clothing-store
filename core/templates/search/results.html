@@ -130,23 +130,13 @@
         {% for store in stores %}
         <div class="col-lg-4 col-md-6">
             <div class="store-card">
-                {% with main=store.product_set.first %}
-                    {% if main and main.main_image %}
-                    {% with url=main.main_image.get_image_url %}
-                    {% if url %}
-                    <img src="{{ url }}" alt="{{ store.name }}" class="store-image">
-                    {% else %}
+                {% if store.main_logo_url %}
+                    <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image" onerror="this.onerror=null;this.src='https://placehold.co/320x220?text=Store'">
+                {% else %}
                     <div class="store-image d-flex align-items-center justify-content-center" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
                         <i class="bi bi-shop" style="font-size: 3rem;"></i>
                     </div>
-                    {% endif %}
-                    {% endwith %}
-                    {% else %}
-                    <div class="store-image d-flex align-items-center justify-content-center" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
-                        <i class="bi bi-shop" style="font-size: 3rem;"></i>
-                    </div>
-                    {% endif %}
-                {% endwith %}
+                {% endif %}
                 <div class="store-name">{{ store.name }}</div>
                 <small class="text-muted">{{ store.city }}</small>
                 <a href="{% url 'store_detail' store.id %}" class="visit-btn d-block mt-2">
