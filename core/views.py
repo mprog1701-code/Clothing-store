@@ -1318,11 +1318,12 @@ def super_owner_add_product(request):
             
             # Handle images
             if images:
-                for image in images:
+                for idx, image in enumerate(images):
                     try:
                         ProductImage.objects.create(
                             product=product,
-                            image=image
+                            image=image,
+                            is_main=(idx == 0)
                         )
                     except Exception:
                         messages.error(request, 'فشل حفظ إحدى صور المنتج')
@@ -1453,11 +1454,13 @@ def super_owner_edit_product(request, product_id):
 
                 # Handle new images
                 if new_images:
-                    for image in new_images:
+                    has_main = product.images.filter(is_main=True).exists()
+                    for idx, image in enumerate(new_images):
                         try:
                             ProductImage.objects.create(
                                 product=product,
-                                image=image
+                                image=image,
+                                is_main=(not has_main and idx == 0)
                             )
                         except Exception:
                             messages.error(request, 'فشل حفظ إحدى الصور الجديدة')

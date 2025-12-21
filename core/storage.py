@@ -39,7 +39,10 @@ class R2MediaStorage(S3Boto3Storage):
             getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
             or os.environ.get('R2_PUBLIC_DOMAIN', '')
         )
-        base = os.environ.get('R2_PUBLIC_BASE_URL', '')
+        base = (
+            getattr(settings, 'R2_PUBLIC_BASE_URL', '')
+            or os.environ.get('R2_PUBLIC_BASE_URL', '')
+        )
         key = str(name).lstrip('/')
         prefix = str(getattr(self, 'location', '') or '').strip('/')
         if prefix and not key.startswith(prefix + '/'):
