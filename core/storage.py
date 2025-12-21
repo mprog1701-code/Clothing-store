@@ -40,9 +40,9 @@ class R2MediaStorage(S3Boto3Storage):
             or os.environ.get('R2_PUBLIC_DOMAIN', '')
         )
         base = os.environ.get('R2_PUBLIC_BASE_URL', '')
+        key = str(name).lstrip('/')
         if cd:
-            return f"https://{str(cd).strip('/').strip()}/{str(name).lstrip('/')}"
+            return f"https://{str(cd).strip('/').strip()}/{key}"
         if base and (base.startswith('http://') or base.startswith('https://')):
-            bucket = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', '')
-            return f"{base.rstrip('/')}/{str(bucket).strip('/')}/{str(name).lstrip('/')}"
+            return f"{base.rstrip('/')}/{key}"
         return super().url(name, parameters=parameters, expire=expire)
