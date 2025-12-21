@@ -236,10 +236,12 @@ class ProductVariant(models.Model):
         if self.product_id:
             st = self.product.size_type
             if st == 'symbolic':
-                if self.size not in ['XS', 'S', 'M', 'L', 'XL']:
+                allowed = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
+                if self.size not in allowed:
                     raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
             elif st == 'numeric':
-                if self.size not in ['38', '40', '42', '44']:
+                allowed = [str(n) for n in range(28, 61, 2)]
+                if self.size not in allowed:
                     raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
             elif st == 'none':
                 self.size = 'ONE'

@@ -1507,15 +1507,20 @@ def super_owner_edit_product(request, product_id):
                 return redirect('super_owner_edit_product', product_id=product_id)
 
             try:
-                ProductVariant.objects.create(
+                pv = ProductVariant(
                     product=product,
                     color_obj=color_obj,
                     size=size,
                     stock_qty=stock_qty,
                     price_override=price_override,
                 )
-            except Exception:
-                messages.error(request, 'لا يمكن إنشاء متغير مكرر لهذا اللون والمقاس')
+                pv.save()
+            except Exception as e:
+                from django.core.exceptions import ValidationError
+                if isinstance(e, ValidationError):
+                    messages.error(request, 'خطأ في البيانات: ' + str(e))
+                else:
+                    messages.error(request, 'لا يمكن إنشاء متغير مكرر لهذا اللون والمقاس')
                 return redirect('super_owner_edit_product', product_id=product_id)
             messages.success(request, 'تمت إضافة المتغير بنجاح!')
             return redirect('super_owner_edit_product', product_id=product_id)
@@ -1565,8 +1570,12 @@ def super_owner_edit_product(request, product_id):
 
             try:
                 variant.save()
-            except Exception:
-                messages.error(request, 'تعذر تحديث المتغير بسبب تكرار اللون والمقاس')
+            except Exception as e:
+                from django.core.exceptions import ValidationError
+                if isinstance(e, ValidationError):
+                    messages.error(request, 'خطأ في البيانات: ' + str(e))
+                else:
+                    messages.error(request, 'تعذر تحديث المتغير بسبب تكرار اللون والمقاس')
                 return redirect('super_owner_edit_product', product_id=product_id)
             messages.success(request, 'تم تحديث المتغير بنجاح!')
             return redirect('super_owner_edit_product', product_id=product_id)
