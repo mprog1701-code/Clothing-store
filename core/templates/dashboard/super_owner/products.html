@@ -59,8 +59,18 @@
                                     <td>{{ product.id }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            {% if product.images.first %}
-                                                <img src="{{ product.images.first.get_image_url }}" alt="{{ product.name }}" class="rounded me-2" width="50" height="50" style="object-fit: cover;">
+                                            {% if product.main_image %}
+                                                {% with url=product.main_image.get_image_url %}
+                                                {% if url %}
+                                                <img src="{{ url }}" alt="{{ product.name }}" class="rounded me-2" width="50" height="50" style="object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/50x50?text=Img'">
+                                                {% else %}
+                                                <div class="bg-gradient-secondary rounded d-flex align-items-center justify-content-center me-2" style="width: 50px; height: 50px;">
+                                                    <i class="fas fa-box text-white"></i>
+                                                </div>
+                                                {% endif %}
+                                                {% endwith %}
+                                            {% elif product.images.first %}
+                                                <img src="{{ product.images.first.get_image_url }}" alt="{{ product.name }}" class="rounded me-2" width="50" height="50" style="object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/50x50?text=Img'">
                                             {% else %}
                                                 <div class="bg-gradient-secondary rounded d-flex align-items-center justify-content-center me-2" style="width: 50px; height: 50px;">
                                                     <i class="fas fa-box text-white"></i>
