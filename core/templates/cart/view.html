@@ -101,6 +101,10 @@
     color: #212529;
 }
 
+/* minimal chips */
+.size-chip, .color-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #e9ecef; border-radius: 10px; color: #6c757d; }
+.color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid #dee2e6; }
+
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
     .cart-item {
@@ -311,8 +315,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="product-info">
                                         <h5 class="fw-bold mb-2">{{ item.product.name }}</h5>
                                         {% if item.variant %}
-                                        <div class="variant-info text-muted">
-                                            <i class="bi bi-rulers me-1"></i>{{ item.variant.size }}{% if item.variant.color %} • <i class="bi bi-palette me-1"></i>{{ item.variant.color }}{% endif %}
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <span class="size-chip"><i class="bi bi-rulers me-1"></i>{{ item.variant.size }}</span>
+                                            {% if item.variant.color %}
+                                            <span class="color-chip"><span class="color-dot" style="background-color: {{ item.variant.color_obj.code|default:'#999' }};"></span>{{ item.variant.color }}</span>
+                                            {% endif %}
                                         </div>
                                         {% endif %}
                                     </div>
@@ -392,12 +399,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </a>
                     </div>
                     
-                    <div class="payment-methods mt-3 text-center">
-                        <small class="text-muted">
-                            <i class="bi bi-shield-check me-1"></i>
-                            دفع آمن وموثوق
-                        </small>
-                    </div>
+                    
                 </div>
             </div>
         </div>
