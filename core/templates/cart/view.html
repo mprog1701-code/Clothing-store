@@ -331,6 +331,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <span class="color-chip"><span class="color-dot" style="background-color: {{ item.variant.color_obj.code|default:'#999' }};"></span>{{ item.variant.color }}</span>
                                             {% endif %}
                                         </div>
+                                        {% if item.unavailable %}
+                                        <div class="text-danger small mt-2">غير متوفر حالياً</div>
+                                        {% endif %}
                                         {% endif %}
                                     </div>
                                 </div>

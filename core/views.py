@@ -425,14 +425,12 @@ def cart_view(request):
         product = variant.product
         # revalidate stock
         quantity = int(item.get('quantity') or 1)
-        if variant.stock_qty <= 0:
-            # skip item with zero stock
-            continue
-        if quantity > variant.stock_qty:
+        unavailable = variant.stock_qty <= 0
+        if not unavailable and quantity > variant.stock_qty:
             quantity = variant.stock_qty
         # compute price and image url
         price = variant.price
-        subtotal = price * quantity
+        subtotal = 0 if unavailable else price * quantity
         image_url = None
         try:
             vimg = variant.images.first()
@@ -456,9 +454,10 @@ def cart_view(request):
             'price': price,
             'subtotal': subtotal,
             'image_url': image_url,
+            'unavailable': unavailable,
         })
         total += subtotal
-        new_cart.append({'variant_id': variant_id, 'quantity': quantity})
+        new_cart.append({'variant_id': variant_id, 'quantity': (0 if unavailable else quantity)})
 
     # persist revalidated cart
     request.session['cart'] = new_cart
