@@ -259,21 +259,34 @@
         </div>
         
         <div class="row mb-4">
-            <div class="col-lg-4 col-md-6 mx-auto">
+            <div class="col-lg-8 col-md-10 mx-auto">
                 <form method="get" class="filter-form">
-                    <div class="form-group">
-                        <label class="form-label fw-semibold mb-2">
-                            <i class="bi bi-tags me-2 text-primary-gradient"></i>
-                            تصفية حسب الفئة
-                        </label>
-                        <select name="category" class="form-select form-select-lg border-0 shadow-sm" onchange="this.form.submit()">
-                            <option value="">جميع الفئات</option>
-                            {% for category_value, category_name in categories %}
-                            <option value="{{ category_value }}" {% if category_value == selected_category %}selected{% endif %}>
-                                {{ category_name }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold mb-2">
+                                <i class="bi bi-rulers me-2 text-primary-gradient"></i>
+                                تصفية حسب المقاس
+                            </label>
+                            <select name="size" class="form-select form-select-lg border-0 shadow-sm" onchange="this.form.submit()">
+                                <option value="">جميع المقاسات</option>
+                                {% for s in available_sizes %}
+                                <option value="{{ s }}" {% if s == selected_size %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold mb-2">
+                                <i class="bi bi-sort-down-alt me-2 text-primary-gradient"></i>
+                                ترتيب المنتجات
+                            </label>
+                            <select name="sort" class="form-select form-select-lg border-0 shadow-sm" onchange="this.form.submit()">
+                                <option value="">بدون ترتيب</option>
+                                <option value="new" {% if selected_sort == 'new' %}selected{% endif %}>الأحدث</option>
+                                <option value="price_asc" {% if selected_sort == 'price_asc' %}selected{% endif %}>السعر الأقل</option>
+                                <option value="price_desc" {% if selected_sort == 'price_desc' %}selected{% endif %}>السعر الأعلى</option>
+                                <option value="most_sold" {% if selected_sort == 'most_sold' %}selected{% endif %}>الأكثر مبيعاً</option>
+                            </select>
+                        </div>
                     </div>
                 </form>
             </div>

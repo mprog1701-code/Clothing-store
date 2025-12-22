@@ -132,15 +132,38 @@ def store_detail(request, store_id):
     if not store or not store.is_active:
         messages.error(request, 'المتجر غير متوفر أو تم إيقافه')
         return redirect('store_list')
-    products = Product.objects.filter(store=store, is_active=True).prefetch_related('images')
+    products = Product.objects.filter(store=store, is_active=True).prefetch_related('images', 'variants')
     category = request.GET.get('category')
     if category:
         products = products.filter(category=category)
+
+    selected_size = (request.GET.get('size') or '').strip()
+    if selected_size:
+        products = products.filter(variants__size=selected_size).distinct()
+
+    sort = (request.GET.get('sort') or '').strip()
+    if sort == 'price_asc':
+        products = products.order_by('base_price')
+    elif sort == 'price_desc':
+        products = products.order_by('-base_price')
+    elif sort == 'new':
+        products = products.order_by('-created_at')
+    elif sort == 'most_sold':
+        products = products.annotate(sales=Sum('orderitem__quantity')).order_by('-sales', '-created_at')
+
+    available_sizes = list(ProductVariant.objects.filter(product__store=store).values_list('size', flat=True).distinct())
+    try:
+        available_sizes = sorted(set(available_sizes))
+    except Exception:
+        pass
     context = {
         'store': store,
         'products': products,
         'categories': Product.CATEGORY_CHOICES,
         'selected_category': category,
+        'available_sizes': available_sizes,
+        'selected_size': selected_size,
+        'selected_sort': sort,
         'placeholder_image_url': os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/120x120?text=Store',
     }
     return render(request, 'stores/detail.html', context)
