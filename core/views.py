@@ -415,7 +415,38 @@ def cart_view(request):
 
     for item in cart:
         raw_variant_id = item.get('variant_id')
+        raw_product_id = item.get('product_id')
+        # Fallback for products without variants
         if not raw_variant_id:
+            try:
+                product_id = int(raw_product_id)
+            except (TypeError, ValueError):
+                continue
+            try:
+                product = Product.objects.get(id=product_id)
+            except Product.DoesNotExist:
+                continue
+            quantity = int(item.get('quantity') or 1)
+            price = product.base_price
+            subtotal = price * quantity
+            image_url = None
+            try:
+                mimg = getattr(product, 'main_image', None) or product.images.first()
+                if mimg:
+                    image_url = mimg.get_image_url()
+            except Exception:
+                image_url = None
+            cart_items.append({
+                'product': product,
+                'variant': None,
+                'quantity': quantity,
+                'price': price,
+                'subtotal': subtotal,
+                'image_url': image_url,
+                'unavailable': False,
+            })
+            total += subtotal
+            new_cart.append({'product_id': product_id, 'variant_id': None, 'quantity': quantity})
             continue
         try:
             variant_id = int(raw_variant_id)
@@ -457,7 +488,7 @@ def cart_view(request):
             'unavailable': unavailable,
         })
         total += subtotal
-        new_cart.append({'variant_id': variant_id, 'quantity': (0 if unavailable else quantity)})
+        new_cart.append({'product_id': variant.product_id, 'variant_id': variant_id, 'quantity': (0 if unavailable else quantity)})
 
     # persist revalidated cart
     request.session['cart'] = new_cart
@@ -542,12 +573,17 @@ def add_to_cart(request, product_id):
         
         cart = request.session.get('cart', [])
         
-        # Check if item already exists in cart (by variant)
+        # Check if item already exists in cart
         existing_item = None
-        for item in cart:
-            if item.get('variant_id') == variant_id:
-                existing_item = item
-                break
+        for citem in cart:
+            if variant_id is not None:
+                if citem.get('variant_id') == variant_id:
+                    existing_item = citem
+                    break
+            else:
+                if citem.get('variant_id') is None and citem.get('product_id') == product_id:
+                    existing_item = citem
+                    break
         
         # stock enforcement
         if variant_id:
@@ -575,6 +611,7 @@ def add_to_cart(request, product_id):
             existing_item['quantity'] = new_qty
         else:
             cart.append({
+                'product_id': product_id,
                 'variant_id': variant_id,
                 'quantity': quantity,
             })
