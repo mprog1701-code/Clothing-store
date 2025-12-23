@@ -83,6 +83,7 @@
     border: 1px solid #e9ecef;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border-right: 3px solid var(--primary-color);
 }
 .order-summary-card {
     background: #fff;
@@ -90,18 +91,20 @@
     color: #000;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border-top: 3px solid var(--primary-color);
 }
 .item-total .total, .product-price .price {
     color: #212529;
     font-weight: 700;
 }
 .btn-outline-primary {
-    border-color: #ced4da;
-    color: #212529;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 }
 .btn-outline-primary:hover {
-    background: #f8f9fa;
-    color: #212529;
+    background: var(--copper-light);
+    color: #fff;
+    border-color: var(--primary-color);
 }
 
 .btn-primary-checkout {
@@ -113,10 +116,10 @@
     filter: brightness(0.95);
 }
 
-.size-chip, .color-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid #e9ecef; border-radius: 10px; color: #212529; }
+.size-chip, .color-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--copper-light); border-radius: 10px; color: #212529; }
 .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid #dee2e6; }
 
-.mobile-checkout-bar { display: none; position: fixed; left: 0; right: 0; bottom: calc(var(--bottom-nav-height) + 12px); background: #fff; border-top: 1px solid #e9ecef; box-shadow: 0 -4px 16px rgba(0,0,0,0.06); padding: 12px; z-index: 1050; }
+.mobile-checkout-bar { display: none; position: fixed; left: 0; right: 0; bottom: calc(var(--bottom-nav-height) + 12px); background: #fff; border-top: 3px solid var(--primary-color); box-shadow: 0 -4px 16px rgba(0,0,0,0.06); padding: 12px; z-index: 1050; }
 .mobile-checkout-bar .summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 @media (max-width: 768px) { .mobile-checkout-bar { display: block; } .cart-section { padding-bottom: calc(var(--bottom-nav-height) + 84px); } }
 
@@ -449,3 +452,9 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </section>
 {% endblock %}
+.cart-items-card { border-top: 3px solid var(--primary-color); }
+.section-header h4, .section-header h5 { color: var(--primary-color); }
+.section-header i, .summary-item i, .summary-total i { color: var(--primary-color); }
+.summary-total { border: 1px solid var(--copper-light); }
+.summary-total .h5 { color: var(--primary-color); }
+.cart-hero { border-bottom: 2px solid var(--primary-color); }
