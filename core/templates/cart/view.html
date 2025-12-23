@@ -80,17 +80,16 @@
 
 .cart-item {
     background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    border-right: 3px solid var(--primary-color);
+    border: 2px solid var(--copper);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 .order-summary-card {
     background: #fff;
-    border: 1px solid #e9ecef;
+    border: 2px solid var(--black-light);
     color: #000;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
     border-top: 3px solid var(--primary-color);
 }
 .item-total .total, .product-price .price {
@@ -111,17 +110,41 @@
     background: var(--primary-color);
     color: #fff;
     border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 24px rgba(184,115,51,0.35);
+    transition: all .2s ease;
 }
 .btn-primary-checkout:hover {
     filter: brightness(0.95);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 32px rgba(184,115,51,0.4);
 }
 
-.size-chip, .color-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--copper-light); border-radius: 10px; color: #212529; }
+.size-chip, .color-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--copper-light); border-radius: 10px; color: #212529; background: var(--copper-light); }
 .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid #dee2e6; }
 
 .mobile-checkout-bar { display: none; position: fixed; left: 0; right: 0; bottom: calc(var(--bottom-nav-height) + 12px); background: #fff; border-top: 3px solid var(--primary-color); box-shadow: 0 -4px 16px rgba(0,0,0,0.06); padding: 12px; z-index: 1050; }
 .mobile-checkout-bar .summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 @media (max-width: 768px) { .mobile-checkout-bar { display: block; } .cart-section { padding-bottom: calc(var(--bottom-nav-height) + 84px); } }
+
+.cart-item:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+.cart-items-card { border-top: 3px solid var(--primary-color); }
+.section-header h4, .section-header h5 { color: var(--black); }
+.section-header i, .summary-item i, .summary-total i { color: var(--copper); }
+.summary-total { border: 1px solid var(--black-light); }
+.summary-total .h5, .summary-total span.h5 { color: var(--black); }
+.quantity-control .btn { border-color: var(--black-light); color: var(--black-light); }
+.quantity-control .btn:hover { background: var(--black); color: #fff; }
+
+.product-image img { border: 2px solid var(--copper); box-shadow: 0 6px 14px rgba(0,0,0,0.08); }
+.summary-item { border: 1px solid var(--copper-light); background: #fff; }
+.cart-item .btn-link.text-danger { color: var(--black-light) !important; }
+.cart-item .btn-link.text-danger:hover { color: var(--copper) !important; }
+
+.cart-item .row { gap: 8px; }
+.quantity-control .input-group { gap: 0; }
+.quantity-control .input-group .btn, .quantity-control .input-group .form-control { margin-left: -1px; }
+.product-image img { height: 180px !important; }
 
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
@@ -129,10 +152,10 @@
         touch-action: manipulation;
     }
     
-    .quantity-control .btn {
-        min-height: 44px;
-        min-width: 44px;
-    }
+.quantity-control .btn {
+    min-height: 44px;
+    min-width: 44px;
+}
     
     .btn-sm-enhanced {
         min-height: 50px;
@@ -311,14 +334,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     <div class="cart-items">
                         {% for item in cart_items %}
-                        <div class="cart-item p-4 mb-3 animate-fade-in-up" data-cart-item="{{ item.variant.id|default:'none' }}">
-                            <div class="row g-3 align-items-center">
+                        <div class="cart-item p-4 mb-3 animate-fade-in-up" data-cart-item="{{ item.variant.id|default:'none' }}" onclick="window.location.href='{% url 'product_detail' item.product.id %}'">
+                            <div class="row g-2 align-items-center">
                                 <div class="col-md-3">
                                     <div class="product-image">
                                         {% if item.image_url %}
-                                        <img src="{{ item.image_url }}" alt="{{ item.product.name }}" class="img-fluid rounded-3" style="height: 120px; object-fit: cover;">
+                                        <img src="{{ item.image_url }}" alt="{{ item.product.name }}" class="img-fluid rounded-3" style="height: 180px; object-fit: cover;">
                                         {% else %}
-                                        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="height: 120px;">
+                                        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="height: 180px;">
                                             <i class="bi bi-image text-muted"></i>
                                         </div>
                                         {% endif %}
@@ -343,9 +366,9 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <div class="col-md-2">
                                     <div class="quantity-control text-center">
                                         <div class="input-group input-group-sm justify-content-center">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'-1' }})"><i class="bi bi-dash"></i></button>
-                                            <input type="number" class="form-control text-center quantity-input" value="{{ item.quantity }}" min="1" max="{{ item.variant.stock_qty|default:'99' }}" data-variant-id="{{ item.variant.id|default:'none' }}" style="max-width: 70px;">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'1' }})"><i class="bi bi-plus"></i></button>
+                                            <button class="btn btn-outline-secondary" type="button" onclick="event.stopPropagation(); updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'-1' }})"><i class="bi bi-dash"></i></button>
+                                            <input type="number" class="form-control text-center quantity-input" value="{{ item.quantity }}" min="1" max="{{ item.variant.stock_qty|default:'99' }}" data-variant-id="{{ item.variant.id|default:'none' }}" style="max-width: 70px;" onclick="event.stopPropagation()">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="event.stopPropagation(); updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'1' }})"><i class="bi bi-plus"></i></button>
                                         </div>
                                     </div>
                                 </div>
@@ -353,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="text-end">
                                         <div class="price fw-bold mb-1" data-unit-price="{{ item.price }}">{{ item.price|iqd }}</div>
                                         <div class="total fw-bold fs-5" data-price="{{ item.variant.id|default:'none' }}">{{ item.subtotal|iqd }}</div>
-                                        <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartServer({{ forloop.counter0 }})"><i class="bi bi-trash"></i></button>
+                                        <button type="button" class="btn btn-link text-danger p-0" onclick="event.stopPropagation(); removeCartServer({{ forloop.counter0 }})"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </div>
                             </div>
