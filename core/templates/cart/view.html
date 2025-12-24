@@ -146,6 +146,8 @@
 .quantity-control .input-group .btn, .quantity-control .input-group .form-control { margin-left: -1px; }
 .product-image img { height: 180px !important; }
 
+.cart-hero { border-bottom: 2px solid var(--primary-color); }
+
 /* Touch device optimizations */
 @media (hover: none) and (pointer: coarse) {
     .cart-item {
@@ -232,8 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add keyboard shortcuts
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.key === 'Enter') {
-            // Ctrl+Enter to proceed to checkout
-            const checkoutBtn = document.querySelector('.btn-primary[href*="checkout"]');
+            const checkoutBtn = document.querySelector('.btn-primary-checkout[href*="checkout"]');
             if (checkoutBtn) {
                 checkoutBtn.click();
             }
@@ -292,10 +293,10 @@ document.addEventListener('DOMContentLoaded', function() {
 </section>
 <div id="delete-confirm-overlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:1050;">
     <div class="bg-white rounded-4 shadow p-4" style="min-width:280px;">
-        <div class="mb-3">
+    <div class="mb-3">
             هل تريد حذف هذا المنتج من السلة؟
         </div>
-        <div class="د-flex gap-2 justify-content-end">
+        <div class="d-flex gap-2 justify-content-end">
             <button id="delete-cancel-btn" class="btn btn-secondary">إلغاء</button>
             <button id="delete-confirm-btn" class="btn btn-danger">حذف</button>
         </div>
@@ -475,9 +476,3 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </section>
 {% endblock %}
-.cart-items-card { border-top: 3px solid var(--primary-color); }
-.section-header h4, .section-header h5 { color: var(--primary-color); }
-.section-header i, .summary-item i, .summary-total i { color: var(--primary-color); }
-.summary-total { border: 1px solid var(--copper-light); }
-.summary-total .h5 { color: var(--primary-color); }
-.cart-hero { border-bottom: 2px solid var(--primary-color); }
