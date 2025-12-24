@@ -684,7 +684,16 @@ def checkout(request):
             details = request.POST.get('details', '')
             if not all([guest_name, guest_phone, city, area, street]):
                 messages.error(request, 'يرجى ملء بيانات التوصيل كاملة!')
-                return redirect('checkout')
+                return render(request, 'orders/checkout.html', {
+                    'addresses': [],
+                    'guest_post': request.POST,
+                })
+            if city.strip() != 'بغداد':
+                messages.error(request, 'التوصيل متاح داخل بغداد فقط الآن. المحافظات الأخرى قريبًا.')
+                return render(request, 'orders/checkout.html', {
+                    'addresses': [],
+                    'guest_post': request.POST,
+                })
             checkout_user, _ = User.objects.get_or_create(
                 phone=guest_phone,
                 defaults={
@@ -704,7 +713,12 @@ def checkout(request):
         # Delivery region gating: Baghdad only
         if address.city.strip() != 'بغداد':
             messages.error(request, 'التوصيل متاح داخل بغداد فقط الآن. المحافظات الأخرى قريبًا.')
-            return redirect('checkout')
+            if request.user.is_authenticated:
+                return redirect('checkout')
+            return render(request, 'orders/checkout.html', {
+                'addresses': [],
+                'guest_post': request.POST,
+            })
         
         # Calculate total
         cart_items = []

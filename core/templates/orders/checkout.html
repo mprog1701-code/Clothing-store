@@ -42,33 +42,33 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">الاسم</label>
-                            <input type="text" name="guest_name" class="form-control" required>
+                            <input type="text" name="guest_name" class="form-control" required value="{{ guest_post.guest_name|default:'' }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">رقم الهاتف</label>
-                            <input type="tel" name="guest_phone" class="form-control" required>
+                            <input type="tel" name="guest_phone" class="form-control" required value="{{ guest_post.guest_phone|default:'' }}">
                         </div>
                         <div class="col-12 d-flex align-items-center gap-2">
                             <button type="button" id="gpsFillBtn" class="btn btn-outline-primary btn-sm">استخدم موقعي الحالي</button>
                             <span id="gpsStatus" class="text-muted small"></span>
-                            <input type="hidden" name="latitude" id="latitude">
-                            <input type="hidden" name="longitude" id="longitude">
+                            <input type="hidden" name="latitude" id="latitude" value="{{ guest_post.latitude|default:'' }}">
+                            <input type="hidden" name="longitude" id="longitude" value="{{ guest_post.longitude|default:'' }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">المدينة</label>
-                            <input type="text" name="city" class="form-control" required>
+                            <input type="text" name="city" class="form-control" required value="{{ guest_post.city|default:'' }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">المنطقة</label>
-                            <input type="text" name="area" class="form-control" required>
+                            <input type="text" name="area" class="form-control" required value="{{ guest_post.area|default:'' }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">الشارع</label>
-                            <input type="text" name="street" class="form-control" required>
+                            <input type="text" name="street" class="form-control" required value="{{ guest_post.street|default:'' }}">
                         </div>
                         <div class="col-12">
                             <label class="form-label">تفاصيل إضافية</label>
-                            <textarea name="details" class="form-control" rows="2"></textarea>
+                            <textarea name="details" class="form-control" rows="2">{{ guest_post.details|default:'' }}</textarea>
                         </div>
                         <div class="col-12">
                             <button type="submit" class="btn btn-primary">إتمام الطلب كضيف</button>
@@ -168,7 +168,12 @@ function fillAddressFromPlace(place){
     var areaInput = document.querySelector('input[name="area"]');
     var streetInput = document.querySelector('input[name="street"]');
     var detailsTextarea = document.querySelector('textarea[name="details"]');
-    if(cityInput){ cityInput.value = addr.city || addr.town || addr.village || addr.state || ''; }
+    if(cityInput){
+        var guessedCity = addr.city || addr.town || addr.village || addr.state || '';
+        var dn = (place.display_name || '') + ' ' + (addr.state || '') + ' ' + (addr.city || '');
+        var isBaghdad = /\bBaghdad\b/i.test(dn) || /بغداد/.test(dn);
+        cityInput.value = isBaghdad ? 'بغداد' : guessedCity;
+    }
     var areaCandidate = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || '';
     if(areaInput){ areaInput.value = areaCandidate; }
     var road = addr.road || '';
@@ -222,6 +227,21 @@ document.addEventListener('DOMContentLoaded', function(){
                 console.log('GPS error:', err);
                 btn.disabled = false; btn.textContent = btn.dataset.originalText || 'استخدم موقعي الحالي';
             }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+        });
+    }
+    var formEl = btn ? btn.closest('form') : document.querySelector('form');
+    if(formEl){
+        formEl.addEventListener('submit', function(){
+            console.log('Form submission data:', {
+                guest_name: document.querySelector('input[name="guest_name"]').value,
+                guest_phone: document.querySelector('input[name="guest_phone"]').value,
+                city: document.querySelector('input[name="city"]').value,
+                area: document.querySelector('input[name="area"]').value,
+                street: document.querySelector('input[name="street"]').value,
+                details: document.querySelector('textarea[name="details"]').value,
+                latitude: document.querySelector('input[name="latitude"]').value,
+                longitude: document.querySelector('input[name="longitude"]').value,
+            });
         });
     }
 });
