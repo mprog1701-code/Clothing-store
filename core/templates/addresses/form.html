@@ -62,6 +62,7 @@
                         <div class="row">
                             <div class="col-12 mb-3 d-flex align-items-center gap-2">
                                 <button type="button" id="addrGpsBtn" class="btn btn-outline-primary btn-sm">استخدم موقعي الحالي</button>
+                                <span id="addrGpsSpinner" class="spinner-border spinner-border-sm" style="display:none;" aria-hidden="true"></span>
                                 <span id="addrGpsStatus" class="text-muted small"></span>
                                 <input type="hidden" id="addrLatitude" name="latitude">
                                 <input type="hidden" id="addrLongitude" name="longitude">
@@ -196,12 +197,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.target.value = value;
         });
     }
-    });
 });
 
 function addrReverseGeocode(lat, lon){
-    var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
-    return fetch(url).then(function(r){return r.json()});
+    var url1 = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
+    var url2 = 'https://geocode.maps.co/reverse?lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon);
+    return fetch(url1).then(function(r){ if(!r.ok) throw new Error('nominatim_fail'); return r.json(); }).catch(function(){ return fetch(url2).then(function(r){return r.json()}); });
 }
 
 function addrFillFields(place){
@@ -228,6 +229,7 @@ function addrFillFields(place){
 document.addEventListener('DOMContentLoaded', function(){
     var btn = document.getElementById('addrGpsBtn');
     var statusEl = document.getElementById('addrGpsStatus');
+    var spinnerEl = document.getElementById('addrGpsSpinner');
     var latEl = document.getElementById('addrLatitude');
     var lonEl = document.getElementById('addrLongitude');
     if(btn){
@@ -238,22 +240,29 @@ document.addEventListener('DOMContentLoaded', function(){
             }
             btn.disabled = true;
             if(statusEl){ statusEl.textContent = 'جارٍ تحديد الموقع...'; }
+            if(spinnerEl){ spinnerEl.style.display = 'inline-block'; }
             navigator.geolocation.getCurrentPosition(function(pos){
                 var lat = pos.coords.latitude;
                 var lon = pos.coords.longitude;
                 if(latEl){ latEl.value = lat; }
                 if(lonEl){ lonEl.value = lon; }
+                if(statusEl){ statusEl.textContent = 'تم الحصول على الإحداثيات ('+lat.toFixed(5)+', '+lon.toFixed(5)+')، جارٍ التعرف على العنوان...'; }
                 addrReverseGeocode(lat, lon).then(function(place){
                     addrFillFields(place);
-                    if(statusEl){ statusEl.textContent = 'تم تحديد الموقع'; }
+                    if(statusEl){ statusEl.textContent = 'تم ملء العنوان من الموقع'; }
                     btn.disabled = false;
+                    if(spinnerEl){ spinnerEl.style.display = 'none'; }
                 }).catch(function(){
-                    if(statusEl){ statusEl.textContent = 'تعذر التعرف على العنوان'; }
+                    var detailsTextarea = document.querySelector('textarea[name="details"]') || document.querySelector('textarea[name="additional_info"]');
+                    if(detailsTextarea){ detailsTextarea.value = 'إحداثيات: '+lat+', '+lon; }
+                    if(statusEl){ statusEl.textContent = 'تم تحديد الإحداثيات ولم يُتعرف على العنوان، الرجاء إدخاله يدوياً'; }
                     btn.disabled = false;
+                    if(spinnerEl){ spinnerEl.style.display = 'none'; }
                 });
             }, function(){
                 if(statusEl){ statusEl.textContent = 'تعذر الحصول على الإذن'; }
                 btn.disabled = false;
+                if(spinnerEl){ spinnerEl.style.display = 'none'; }
             }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
         });
     }

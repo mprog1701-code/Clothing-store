@@ -141,8 +141,14 @@ function loadCartSummary() {
 loadCartSummary();
 
 function reverseGeocode(lat, lon){
-    var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
-    return fetch(url).then(function(r){return r.json()});
+    var url1 = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
+    var url2 = 'https://geocode.maps.co/reverse?lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon);
+    return fetch(url1).then(function(r){
+        if(!r.ok) throw new Error('nominatim_fail');
+        return r.json();
+    }).catch(function(){
+        return fetch(url2).then(function(r){return r.json()});
+    });
 }
 
 function fillAddressFromPlace(place){
@@ -182,12 +188,15 @@ document.addEventListener('DOMContentLoaded', function(){
                 var lon = pos.coords.longitude;
                 if(latEl){ latEl.value = lat; }
                 if(lonEl){ lonEl.value = lon; }
+                if(statusEl){ statusEl.textContent = 'تم الحصول على الإحداثيات ('+lat.toFixed(5)+', '+lon.toFixed(5)+')، جارٍ التعرف على العنوان...'; }
                 reverseGeocode(lat, lon).then(function(place){
                     fillAddressFromPlace(place);
-                    if(statusEl){ statusEl.textContent = 'تم تحديد الموقع'; }
+                    if(statusEl){ statusEl.textContent = 'تم ملء العنوان من الموقع'; }
                     btn.disabled = false;
                 }).catch(function(){
-                    if(statusEl){ statusEl.textContent = 'تعذر التعرف على العنوان'; }
+                    var detailsTextarea = document.querySelector('textarea[name="details"]');
+                    if(detailsTextarea){ detailsTextarea.value = 'إحداثيات: '+lat+', '+lon; }
+                    if(statusEl){ statusEl.textContent = 'تم تحديد الإحداثيات ولم يُتعرف على العنوان، الرجاء إدخاله يدوياً'; }
                     btn.disabled = false;
                 });
             }, function(){
