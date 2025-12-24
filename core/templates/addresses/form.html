@@ -200,9 +200,25 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function addrReverseGeocode(lat, lon){
-    var url1 = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
-    var url2 = 'https://geocode.maps.co/reverse?lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon);
-    return fetch(url1).then(function(r){ if(!r.ok) throw new Error('nominatim_fail'); return r.json(); }).catch(function(){ return fetch(url2).then(function(r){return r.json()}); });
+    var apiKey = window.GOOGLE_MAPS_API_KEY || '';
+    if(apiKey){
+        var gurl = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='+encodeURIComponent(lat+','+lon)+'&key='+encodeURIComponent(apiKey);
+        return fetch(gurl).then(function(r){return r.json()}).then(function(data){
+            var res = (data && data.results && data.results[0]) || {};
+            var comps = res.address_components || [];
+            var addr = {};
+            comps.forEach(function(c){
+                if(c.types.indexOf('locality')>-1){ addr.city = c.long_name; }
+                if(c.types.indexOf('administrative_area_level_1')>-1 && !addr.city){ addr.city = c.long_name; }
+                if(c.types.indexOf('sublocality')>-1 || c.types.indexOf('neighborhood')>-1){ addr.suburb = c.long_name; }
+                if(c.types.indexOf('route')>-1){ addr.road = c.long_name; }
+                if(c.types.indexOf('street_number')>-1){ addr.house_number = c.long_name; }
+            });
+            return { address: addr, display_name: res.formatted_address || '' };
+        });
+    }
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
+    return fetch(url).then(function(r){return r.json()});
 }
 
 function addrFillFields(place){
@@ -238,32 +254,42 @@ document.addEventListener('DOMContentLoaded', function(){
                 if(statusEl){ statusEl.textContent = 'المتصفح لا يدعم GPS'; }
                 return;
             }
+            var secure = (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+            if(!secure){ if(statusEl){ statusEl.textContent = 'يتطلب تحديد الموقع اتصالاً آمناً (HTTPS)'; } console.log('GPS error: insecure context'); return; }
             btn.disabled = true;
             if(statusEl){ statusEl.textContent = 'جارٍ تحديد الموقع...'; }
             if(spinnerEl){ spinnerEl.style.display = 'inline-block'; }
             navigator.geolocation.getCurrentPosition(function(pos){
                 var lat = pos.coords.latitude;
                 var lon = pos.coords.longitude;
-                if(latEl){ latEl.value = lat; }
-                if(lonEl){ lonEl.value = lon; }
+                if(!latEl){ latEl = document.createElement('input'); latEl.type='hidden'; latEl.name='latitude'; latEl.id='addrLatitude'; btn.closest('form')?.appendChild(latEl); }
+                if(!lonEl){ lonEl = document.createElement('input'); lonEl.type='hidden'; lonEl.name='longitude'; lonEl.id='addrLongitude'; btn.closest('form')?.appendChild(lonEl); }
+                latEl.value = lat; lonEl.value = lon; console.log('GPS success:', lat, lon);
                 if(statusEl){ statusEl.textContent = 'تم الحصول على الإحداثيات ('+lat.toFixed(5)+', '+lon.toFixed(5)+')، جارٍ التعرف على العنوان...'; }
                 addrReverseGeocode(lat, lon).then(function(place){
                     addrFillFields(place);
                     if(statusEl){ statusEl.textContent = 'تم ملء العنوان من الموقع'; }
                     btn.disabled = false;
                     if(spinnerEl){ spinnerEl.style.display = 'none'; }
+                    console.log('Reverse geocode success:', place);
                 }).catch(function(){
                     var detailsTextarea = document.querySelector('textarea[name="details"]') || document.querySelector('textarea[name="additional_info"]');
                     if(detailsTextarea){ detailsTextarea.value = 'إحداثيات: '+lat+', '+lon; }
                     if(statusEl){ statusEl.textContent = 'تم تحديد الإحداثيات ولم يُتعرف على العنوان، الرجاء إدخاله يدوياً'; }
                     btn.disabled = false;
                     if(spinnerEl){ spinnerEl.style.display = 'none'; }
+                    console.log('Reverse geocode error');
                 });
-            }, function(){
-                if(statusEl){ statusEl.textContent = 'تعذر الحصول على الإذن'; }
+            }, function(err){
+                var msg = 'تعذر تحديد الموقع';
+                if(err && err.code === 1){ msg = 'تم رفض الإذن لتحديد الموقع'; }
+                else if(err && err.code === 2){ msg = 'الموقع غير متاح حالياً'; }
+                else if(err && err.code === 3){ msg = 'انتهت مهلة تحديد الموقع'; }
+                if(statusEl){ statusEl.textContent = msg; }
+                console.log('GPS error:', err);
                 btn.disabled = false;
                 if(spinnerEl){ spinnerEl.style.display = 'none'; }
-            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
         });
     }
 });
