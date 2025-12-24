@@ -58,6 +58,15 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-3 d-flex align-items-center gap-2">
+                                <button type="button" id="addrGpsBtn" class="btn btn-outline-primary btn-sm">استخدم موقعي الحالي</button>
+                                <span id="addrGpsStatus" class="text-muted small"></span>
+                                <input type="hidden" id="addrLatitude" name="latitude">
+                                <input type="hidden" id="addrLongitude" name="longitude">
+                            </div>
+                        </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -185,6 +194,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 value = value.substring(0, 10);
             }
             e.target.value = value;
+        });
+    }
+    });
+});
+
+function addrReverseGeocode(lat, lon){
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
+    return fetch(url).then(function(r){return r.json()});
+}
+
+function addrFillFields(place){
+    var addr = place.address || {};
+    var cityInput = document.querySelector('input[name="city"]');
+    var areaInput = document.querySelector('input[name="area"]') || document.querySelector('input[name="district"]');
+    var streetInput = document.querySelector('input[name="street"]');
+    var buildingInput = document.querySelector('input[name="building_number"]');
+    var detailsTextarea = document.querySelector('textarea[name="details"]') || document.querySelector('textarea[name="additional_info"]');
+    if(cityInput){ cityInput.value = addr.city || addr.town || addr.village || addr.state || ''; }
+    var areaCandidate = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || '';
+    if(areaInput){ areaInput.value = areaCandidate; }
+    var road = addr.road || '';
+    var house = addr.house_number || '';
+    var streetStr = road + (house ? ' ' + house : '');
+    if(streetInput){ streetInput.value = streetStr; }
+    if(buildingInput && house){ buildingInput.value = house; }
+    if(detailsTextarea && place.display_name){
+        var dn = place.display_name.split(',').slice(0,5).join(',').trim();
+        detailsTextarea.value = dn;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    var btn = document.getElementById('addrGpsBtn');
+    var statusEl = document.getElementById('addrGpsStatus');
+    var latEl = document.getElementById('addrLatitude');
+    var lonEl = document.getElementById('addrLongitude');
+    if(btn){
+        btn.addEventListener('click', function(){
+            if(!navigator.geolocation){
+                if(statusEl){ statusEl.textContent = 'المتصفح لا يدعم GPS'; }
+                return;
+            }
+            btn.disabled = true;
+            if(statusEl){ statusEl.textContent = 'جارٍ تحديد الموقع...'; }
+            navigator.geolocation.getCurrentPosition(function(pos){
+                var lat = pos.coords.latitude;
+                var lon = pos.coords.longitude;
+                if(latEl){ latEl.value = lat; }
+                if(lonEl){ lonEl.value = lon; }
+                addrReverseGeocode(lat, lon).then(function(place){
+                    addrFillFields(place);
+                    if(statusEl){ statusEl.textContent = 'تم تحديد الموقع'; }
+                    btn.disabled = false;
+                }).catch(function(){
+                    if(statusEl){ statusEl.textContent = 'تعذر التعرف على العنوان'; }
+                    btn.disabled = false;
+                });
+            }, function(){
+                if(statusEl){ statusEl.textContent = 'تعذر الحصول على الإذن'; }
+                btn.disabled = false;
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
         });
     }
 });
