@@ -137,6 +137,10 @@
                             <i class="bi bi-palette me-2"></i>
                             اختر اللون والمقاس
                         </h5>
+                        <div class="mb-3">
+                            <span class="badge bg-light text-dark">لون: <span id="selColor">غير محدد</span></span>
+                            <span class="badge bg-light text-dark ms-2">قياس: <span id="selSize">غير محدد</span></span>
+                        </div>
                         <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form" id="variantPickerForm">
                             {% csrf_token %}
                             <input type="hidden" name="variant_id" id="selectedVariantId">
@@ -183,6 +187,8 @@
                             const DEFAULT_IMAGES = {{ default_images|safe }};
                             const colorSelect = document.getElementById('colorSelect');
                             const sizeSelect = document.getElementById('sizeSelect');
+                            const selColor = document.getElementById('selColor');
+                            const selSize = document.getElementById('selSize');
                             const qtyInput = document.getElementById('qtyInput');
                             const stockInfo = document.getElementById('stockInfo');
                             const variantPrice = document.getElementById('variantPrice');
@@ -239,6 +245,8 @@
                                 sizeSelect.disabled = sizes.length === 0;
                                 updateCarousel(color);
                                 stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
+                                selColor.textContent = color || 'غير محدد';
+                                selSize.textContent = 'غير محدد';
                             });
 
                             sizeSelect.addEventListener('change', () => {
@@ -252,6 +260,7 @@
                                     variantPrice.textContent = '';
                                     qtyInput.value = 1;
                                     qtyInput.removeAttribute('max');
+                                    selSize.textContent = size || 'غير محدد';
                                     return;
                                 }
                                 hiddenVariantId.value = v.id;
@@ -260,6 +269,8 @@
                                 qtyInput.value = 1;
                                 qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
                                 variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
+                                selColor.textContent = color || 'غير محدد';
+                                selSize.textContent = size || 'غير محدد';
                             });
                         </script>
                     </div>
