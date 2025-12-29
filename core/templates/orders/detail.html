@@ -49,19 +49,22 @@
             </div>
 
             <!-- Delivery Address Card -->
-            {% if order.delivery_address %}
+            {% if order.address %}
             <div class="card mb-4">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">عنوان التوصيل</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>الاسم:</strong> {{ order.delivery_address.full_name }}</p>
-                    <p><strong>العنوان:</strong> {{ order.delivery_address.street_address }}</p>
-                    <p><strong>المدينة:</strong> {{ order.delivery_address.city }}</p>
-                    {% if order.delivery_address.postal_code %}
-                    <p><strong>الرمز البريدي:</strong> {{ order.delivery_address.postal_code }}</p>
+                    <p><strong>المدينة:</strong> {{ order.address.city }}</p>
+                    <p><strong>المنطقة:</strong> {{ order.address.area }}</p>
+                    <p><strong>الشارع:</strong> {{ order.address.street }}</p>
+                    {% if order.address.details %}
+                    <p><strong>تفاصيل إضافية:</strong> {{ order.address.details }}</p>
                     {% endif %}
-                    <p><strong>رقم الجوال:</strong> {{ order.delivery_address.phone }}</p>
+                    {% if order.address.latitude and order.address.longitude %}
+                    <p class="mb-0"><strong>الإحداثيات:</strong> <span dir="ltr">{{ order.address.latitude }}, {{ order.address.longitude }}</span></p>
+                    <a class="btn btn-sm btn-outline-success mt-2" target="_blank" href="https://www.google.com/maps?q={{ order.address.latitude }},{{ order.address.longitude }}">افتح على خرائط Google</a>
+                    {% endif %}
                 </div>
             </div>
             {% endif %}

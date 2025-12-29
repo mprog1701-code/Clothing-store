@@ -111,7 +111,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ['id', 'city', 'area', 'street', 'details']
+        fields = ['id', 'city', 'area', 'street', 'details', 'latitude', 'longitude']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):

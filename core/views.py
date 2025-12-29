@@ -682,6 +682,8 @@ def checkout(request):
             area = request.POST.get('area')
             street = request.POST.get('street')
             details = request.POST.get('details', '')
+            latitude = request.POST.get('latitude')
+            longitude = request.POST.get('longitude')
             if not all([guest_name, guest_phone, city, area, street]):
                 messages.error(request, 'يرجى ملء بيانات التوصيل كاملة!')
                 return render(request, 'orders/checkout.html', {
@@ -708,6 +710,8 @@ def checkout(request):
                 area=area,
                 street=street,
                 details=details,
+                latitude=latitude or None,
+                longitude=longitude or None,
             )
 
         # Delivery region gating: Baghdad only
@@ -852,6 +856,10 @@ def address_create(request):
         if form.is_valid():
             address = form.save(commit=False)
             address.user = request.user
+            lat = request.POST.get('latitude')
+            lon = request.POST.get('longitude')
+            address.latitude = lat or None
+            address.longitude = lon or None
             address.save()
             messages.success(request, 'تم إضافة العنوان بنجاح!')
             return redirect('address_list')
@@ -871,7 +879,12 @@ def address_edit(request, address_id):
     if request.method == 'POST':
         form = AddressForm(request.POST, instance=address)
         if form.is_valid():
-            form.save()
+            address = form.save(commit=False)
+            lat = request.POST.get('latitude')
+            lon = request.POST.get('longitude')
+            address.latitude = lat or address.latitude
+            address.longitude = lon or address.longitude
+            address.save()
             messages.success(request, 'تم تحديث العنوان بنجاح!')
             return redirect('address_list')
     else:

@@ -76,6 +76,13 @@
                                             {% if order.address.details %}
                                             {{ order.address.details }}
                                             {% endif %}
+                                            {% if order.address.latitude and order.address.longitude %}
+                                            <div class="mt-2">
+                                                <strong>الإحداثيات:</strong>
+                                                <span dir="ltr">{{ order.address.latitude }}, {{ order.address.longitude }}</span>
+                                                <a class="btn btn-sm btn-outline-success ms-2" target="_blank" href="https://www.google.com/maps?q={{ order.address.latitude }},{{ order.address.longitude }}">افتح على خرائط Google</a>
+                                            </div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                     
