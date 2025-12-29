@@ -665,16 +665,38 @@ def checkout(request):
     if request.method == 'POST':
         if request.user.is_authenticated:
             raw_address_id = request.POST.get('address_id')
-            if not raw_address_id:
-                messages.error(request, 'يرجى اختيار عنوان التوصيل!')
-                return redirect('checkout')
-            try:
-                address_id = int(raw_address_id)
-            except (TypeError, ValueError):
-                messages.error(request, 'معرّف العنوان غير صالح')
-                return redirect('checkout')
-            address = get_object_or_404(Address, id=address_id, user=request.user)
-            checkout_user = request.user
+            if raw_address_id:
+                try:
+                    address_id = int(raw_address_id)
+                except (TypeError, ValueError):
+                    messages.error(request, 'معرّف العنوان غير صالح')
+                    return redirect('checkout')
+                address = get_object_or_404(Address, id=address_id, user=request.user)
+                checkout_user = request.user
+            else:
+                # السماح للمستخدم المسجل بإتمام الطلب عبر إدخال عنوان كضيف
+                city = request.POST.get('city')
+                area = request.POST.get('area')
+                street = request.POST.get('street')
+                details = request.POST.get('details', '')
+                latitude = request.POST.get('latitude')
+                longitude = request.POST.get('longitude')
+                if not all([city, area, street]):
+                    messages.error(request, 'يرجى اختيار عنوان التوصيل أو ملء العنوان كضيف!')
+                    return render(request, 'orders/checkout.html', {
+                        'addresses': addresses,
+                        'guest_post': request.POST,
+                    })
+                checkout_user = request.user
+                address = Address.objects.create(
+                    user=checkout_user,
+                    city=city,
+                    area=area,
+                    street=street,
+                    details=details,
+                    latitude=latitude or None,
+                    longitude=longitude or None,
+                )
         else:
             guest_name = request.POST.get('guest_name')
             guest_phone = request.POST.get('guest_phone')
@@ -686,12 +708,6 @@ def checkout(request):
             longitude = request.POST.get('longitude')
             if not all([guest_name, guest_phone, city, area, street]):
                 messages.error(request, 'يرجى ملء بيانات التوصيل كاملة!')
-                return render(request, 'orders/checkout.html', {
-                    'addresses': [],
-                    'guest_post': request.POST,
-                })
-            if city.strip() != 'بغداد':
-                messages.error(request, 'التوصيل متاح داخل بغداد فقط الآن. المحافظات الأخرى قريبًا.')
                 return render(request, 'orders/checkout.html', {
                     'addresses': [],
                     'guest_post': request.POST,
@@ -718,7 +734,10 @@ def checkout(request):
         if address.city.strip() != 'بغداد':
             messages.error(request, 'التوصيل متاح داخل بغداد فقط الآن. المحافظات الأخرى قريبًا.')
             if request.user.is_authenticated:
-                return redirect('checkout')
+                return render(request, 'orders/checkout.html', {
+                    'addresses': addresses,
+                    'guest_post': request.POST,
+                })
             return render(request, 'orders/checkout.html', {
                 'addresses': [],
                 'guest_post': request.POST,
