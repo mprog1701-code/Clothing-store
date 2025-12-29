@@ -241,12 +241,18 @@
                                     if (!out) availableCount++;
                                     sizeSelect.appendChild(opt);
                                 });
-                                sizeSelect.disabled = sizes.length === 0;
-                                updateCarousel(color);
-                                stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
-                                selColor.textContent = color || 'غير محدد';
-                                selSize.textContent = 'غير محدد';
-                            });
+                            sizeSelect.disabled = sizes.length === 0;
+                            updateCarousel(color);
+                            stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
+                            selColor.textContent = color || 'غير محدد';
+                            selSize.textContent = 'غير محدد';
+                            // Auto-select first available size for this color
+                            const firstAvail = VARIANTS.find(x => x.color === color && x.stock_qty > 0);
+                            if (firstAvail){
+                                sizeSelect.value = firstAvail.size;
+                                sizeSelect.dispatchEvent(new Event('change'));
+                            }
+                        });
 
                             sizeSelect.addEventListener('change', () => {
                                 const color = colorSelect.value;
@@ -267,10 +273,21 @@
                                 stockInfo.textContent = v.stock_qty > 0 ? `متاح (${v.stock_qty} قطعة)` : 'هذا القياس غير متوفر';
                                 qtyInput.value = 1;
                                 qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
-                                variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
-                                selColor.textContent = color || 'غير محدد';
-                                selSize.textContent = size || 'غير محدد';
-                            });
+                            variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
+                            selColor.textContent = color || 'غير محدد';
+                            selSize.textContent = size || 'غير محدد';
+                        });
+
+                        // Initialize default selection on page load if variants exist
+                        (function initDefault(){
+                            try{
+                                const colors = Object.keys(SIZES_BY_COLOR || {});
+                                if (colors.length === 0) return;
+                                const firstColorWithStock = colors.find(c => VARIANTS.some(v => v.color === c && v.stock_qty > 0)) || colors[0];
+                                colorSelect.value = firstColorWithStock;
+                                colorSelect.dispatchEvent(new Event('change'));
+                            }catch(e){}
+                        })();
                             const BASE_PRICE = {{ product.discount_price|default:product.base_price }};
                             if (!Array.isArray(VARIANTS) || VARIANTS.length === 0){
                                 colorSelect.disabled = true;
