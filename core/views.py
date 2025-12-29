@@ -820,8 +820,38 @@ def checkout(request):
         else:
             return redirect('order_detail', order_id=order.id)
     
+    # Build server-side cart summary for checkout sidebar
+    cart_total = 0
+    try:
+        for item in request.session.get('cart', []):
+            try:
+                variant_id = int(item.get('variant_id'))
+            except (TypeError, ValueError):
+                variant_id = None
+            quantity = int(item.get('quantity') or 1)
+            price = 0
+            if variant_id:
+                try:
+                    variant = ProductVariant.objects.get(id=variant_id)
+                    price = variant.price
+                except ProductVariant.DoesNotExist:
+                    price = 0
+            else:
+                try:
+                    product_id = int(item.get('product_id'))
+                    product = Product.objects.get(id=product_id)
+                    price = product.base_price
+                except Exception:
+                    price = 0
+            cart_total += price * quantity
+    except Exception:
+        cart_total = 0
+
     context = {
         'addresses': addresses,
+        'cart_total': cart_total,
+        'delivery_fee': settings.DELIVERY_FEE,
+        'grand_total': cart_total + settings.DELIVERY_FEE,
     }
     return render(request, 'orders/checkout.html', context)
 
