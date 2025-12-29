@@ -131,7 +131,6 @@
                     {% endif %}
                     
                     <!-- Variants -->
-                    {% if variants %}
                     <div class="product-variants mb-5">
                         <h5 class="fw-bold mb-4 text-gradient">
                             <i class="bi bi-palette me-2"></i>
@@ -272,31 +271,17 @@
                                 selColor.textContent = color || 'غير محدد';
                                 selSize.textContent = size || 'غير محدد';
                             });
+                            const BASE_PRICE = {{ product.discount_price|default:product.base_price }};
+                            if (!Array.isArray(VARIANTS) || VARIANTS.length === 0){
+                                colorSelect.disabled = true;
+                                sizeSelect.disabled = true;
+                                hiddenVariantId.value = '';
+                                addBtn.disabled = false;
+                                stockInfo.textContent = '';
+                                variantPrice.textContent = `${parseFloat(BASE_PRICE).toLocaleString('ar-IQ')} دينار`;
+                            }
                         </script>
                     </div>
-                    {% else %}
-                        <!-- Simple Add to Cart for products without variants -->
-                        <div class="simple-add-to-cart mb-5">
-                            <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form">
-                                {% csrf_token %}
-                                <div class="row g-3 align-items-end">
-                                <div class="col-md-6">
-                                    <label for="quantity" class="form-label fw-semibold">
-                                        <i class="bi bi-hash me-2"></i>
-                                        الكمية
-                                    </label>
-                                    <input type="number" class="form-control form-control-lg" name="quantity" value="1" min="1" style="width: 120px;">
-                                </div>
-                                <div class="col-md-6">
-                                    <button type="submit" class="btn btn-gradient btn-lg w-100">
-                                        <i class="bi bi-cart-plus me-2"></i>
-                                        أضف للسلة
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    {% endif %}
                     
                     <!-- Store Info -->
                     <div class="store-info-section p-4 bg-light rounded-3">
