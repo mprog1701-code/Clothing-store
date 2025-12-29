@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}تفاصيل الطلب #{{ order.id }} - متجر الملابس{% endblock %}
 
@@ -6,14 +7,23 @@
 <div class="container mt-4">
     <div class="row">
         <div class="col-12">
+            {% if request.user.role == 'admin' %}
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>تفاصيل الطلب #{{ order.id }}</h2>
                 <a href="{% url 'super_owner_orders' %}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-right me-2"></i>العودة إلى الطلبات
                 </a>
             </div>
+            {% else %}
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>طلبك رقم #{{ order.id }}</h2>
+                <a href="{% url 'order_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-right me-2"></i>رجوع إلى طلباتي
+                </a>
+            </div>
+            {% endif %}
 
-            <!-- Order Information Card -->
+            {% if request.user.role == 'admin' %}
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">معلومات الطلب</h5>
@@ -39,7 +49,6 @@
                                 </span>
                             </p>
                             <p><strong>طريقة الدفع:</strong> {{ order.get_payment_method_display }}</p>
-                            <p><strong>طريقة التوصيل:</strong> {{ order.get_delivery_method_display }}</p>
                             {% if order.tracking_number %}
                             <p><strong>رقم التتبع:</strong> {{ order.tracking_number }}</p>
                             {% endif %}
@@ -47,9 +56,32 @@
                     </div>
                 </div>
             </div>
+            {% else %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">ملخص الطلب</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>الحالة:</strong> 
+                        <span class="badge 
+                            {% if order.status == 'pending' %}bg-warning
+                            {% elif order.status == 'accepted' %}bg-info
+                            {% elif order.status == 'preparing' %}bg-primary
+                            {% elif order.status == 'on_the_way' %}bg-secondary
+                            {% elif order.status == 'delivered' %}bg-success
+                            {% elif order.status == 'canceled' %}bg-danger
+                            {% endif %}">{{ order.get_status_display }}</span>
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                        <span class="fw-bold">الإجمالي النهائي:</span>
+                        <span class="fw-bold">{{ order.total_amount|iqd }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Delivery Address Card -->
-            {% if order.address %}
+{% if request.user.role == 'admin' and order.address %}
             <div class="card mb-4">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">عنوان التوصيل</h5>
@@ -69,12 +101,12 @@
             </div>
             {% endif %}
 
-            <!-- Order Items Card -->
             <div class="card mb-4">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">منتجات الطلب</h5>
                 </div>
                 <div class="card-body">
+                    {% if request.user.role == 'admin' %}
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
@@ -111,30 +143,30 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>{{ item.price }} ريال</td>
+                                    <td>{{ item.price|iqd }}</td>
                                     <td>{{ item.quantity }}</td>
-                                    <td>{{ item.total_price }} ريال</td>
+                                    <td>{{ item.quantity|multiply:item.price|iqd }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                             <tfoot>
                                 <tr class="table-light">
-                                    <td colspan="3" class="text-end"><strong>المجموع:</strong></td>
-                                    <td><strong>{{ order.total_amount }} ريال</strong></td>
+                                    <td colspan="3" class="text-end"><strong>الإجمالي:</strong></td>
+                                    <td><strong>{{ order.total_amount|iqd }}</strong></td>
                                 </tr>
-                                {% if order.delivery_fee > 0 %}
-                                <tr class="table-light">
-                                    <td colspan="3" class="text-end"><strong>رسوم التوصيل:</strong></td>
-                                    <td><strong>{{ order.delivery_fee }} ريال</strong></td>
-                                </tr>
-                                <tr class="table-light">
-                                    <td colspan="3" class="text-end"><strong>الإجمالي الكلي:</strong></td>
-                                    <td><strong>{{ order.final_total }} ريال</strong></td>
-                                </tr>
-                                {% endif %}
                             </tfoot>
                         </table>
                     </div>
+                    {% else %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in order_items %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ item.product.name }}</span>
+                            <span class="text-muted">× {{ item.quantity }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
                 </div>
             </div>
 
