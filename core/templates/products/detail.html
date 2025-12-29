@@ -225,17 +225,20 @@
                                 resetSize();
                                 if (!color) return;
                                 const sizes = SIZES_BY_COLOR[color] || [];
+                                let availableCount = 0;
+                                sizeSelect.innerHTML = '<option value="">اختر المقاس</option>';
                                 sizes.forEach(s => {
                                     const opt = document.createElement('option');
                                     opt.value = s;
                                     const v = VARIANTS.find(x => x.color === color && x.size === s);
-                                    const disabled = !v || v.stock_qty <= 0;
-                                    opt.textContent = disabled ? `${s} (غير متاح)` : s;
-                                    opt.disabled = disabled;
+                                    const out = !v || v.stock_qty <= 0;
+                                    opt.textContent = out ? `${s} (غير متاح)` : s;
+                                    if (!out) availableCount++;
                                     sizeSelect.appendChild(opt);
                                 });
                                 sizeSelect.disabled = sizes.length === 0;
                                 updateCarousel(color);
+                                stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
                             });
 
                             sizeSelect.addEventListener('change', () => {
@@ -253,7 +256,7 @@
                                 }
                                 hiddenVariantId.value = v.id;
                                 addBtn.disabled = v.stock_qty <= 0;
-                                stockInfo.textContent = v.stock_qty > 0 ? `متاح (${v.stock_qty} قطعة)` : 'غير متاح';
+                                stockInfo.textContent = v.stock_qty > 0 ? `متاح (${v.stock_qty} قطعة)` : 'هذا القياس غير متوفر';
                                 qtyInput.value = 1;
                                 qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
                                 variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;

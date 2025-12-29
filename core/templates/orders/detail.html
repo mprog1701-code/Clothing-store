@@ -112,6 +112,7 @@
                             <thead>
                                 <tr>
                                     <th>المنتج</th>
+                                    <th>المتغير</th>
                                     <th>السعر</th>
                                     <th>الكمية</th>
                                     <th>الإجمالي</th>
@@ -142,6 +143,13 @@
                                                 <small class="text-muted">{{ item.product.store.name }}</small>
                                             </div>
                                         </div>
+                                    </td>
+                                    <td>
+                                        {% if item.variant %}
+                                            {{ item.variant.size }} - {{ item.variant.color }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
                                     </td>
                                     <td>{{ item.price|iqd }}</td>
                                     <td>{{ item.quantity }}</td>
