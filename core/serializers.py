@@ -112,7 +112,7 @@ class ProductSerializer(serializers.ModelSerializer):
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ['id', 'city', 'area', 'street', 'details', 'latitude', 'longitude']
+        fields = ['id', 'city', 'area', 'street', 'details', 'latitude', 'longitude', 'accuracy_m', 'formatted_address', 'provider', 'provider_place_id']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):

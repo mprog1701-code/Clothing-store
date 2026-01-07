@@ -6,6 +6,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
 from .models import User, Store, Product, Address, Order
+import logging
+import json
+from urllib.request import Request, urlopen
+from urllib.parse import urlencode
+from urllib.error import URLError
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, StoreSerializer, 
     ProductSerializer, AddressSerializer, OrderSerializer, OrderCreateSerializer
@@ -182,6 +187,100 @@ class AddressViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['post'], url_path='reverse-geocode', permission_classes=[])
+    def reverse_geocode(self, request):
+        """
+        Accepts lat,lng and returns parsed address using OpenStreetMap Nominatim.
+        Restricted to Iraq and Arabic language.
+        """
+        logger = logging.getLogger('geo')
+        try:
+            lat = float(request.data.get('lat') or request.data.get('latitude'))
+            lon = float(request.data.get('lng') or request.data.get('longitude'))
+        except Exception:
+            return Response({'error': 'إحداثيات غير صالحة'}, status=status.HTTP_400_BAD_REQUEST)
+
+        params = {
+            'format': 'jsonv2',
+            'lat': lat,
+            'lon': lon,
+            'accept-language': 'ar',
+        }
+        url = 'https://nominatim.openstreetmap.org/reverse?' + urlencode(params)
+        try:
+            req = Request(url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
+            resp = urlopen(req, timeout=8)
+            data = json.loads(resp.read().decode('utf-8'))
+        except URLError as e:
+            logger.error(f"reverse_geocode error: {e}")
+            return Response({'error': 'تعذر التعرف على العنوان'}, status=status.HTTP_502_BAD_GATEWAY)
+        except Exception as e:
+            logger.error(f"reverse_geocode unexpected: {e}")
+            return Response({'error': 'حدث خطأ غير متوقع'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        addr = data.get('address') or {}
+        city = addr.get('city') or addr.get('town') or addr.get('village') or addr.get('state') or ''
+        area = addr.get('suburb') or addr.get('neighbourhood') or addr.get('quarter') or addr.get('district') or addr.get('county') or ''
+        street = (addr.get('road') or '') + (' ' + addr.get('house_number') if addr.get('house_number') else '')
+        result = {
+            'city': city,
+            'area': area,
+            'street': street.strip(),
+            'formatted': data.get('display_name') or '',
+            'provider': 'nominatim',
+            'provider_place_id': str(data.get('place_id') or ''),
+            'lat': lat,
+            'lng': lon,
+        }
+        return Response(result)
+
+    @action(detail=False, methods=['get'], url_path='autocomplete', permission_classes=[])
+    def autocomplete(self, request):
+        """
+        Autocomplete by query using Nominatim search. Restricted to Iraq.
+        """
+        logger = logging.getLogger('geo')
+        q = (request.query_params.get('q') or '').strip()
+        if not q:
+            return Response({'results': []})
+        params = {
+            'format': 'jsonv2',
+            'q': q,
+            'accept-language': 'ar',
+            'countrycodes': 'iq',
+            'limit': 6,
+        }
+        url = 'https://nominatim.openstreetmap.org/search?' + urlencode(params)
+        try:
+            req = Request(url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
+            resp = urlopen(req, timeout=8)
+            items = json.loads(resp.read().decode('utf-8'))
+        except URLError as e:
+            logger.error(f"autocomplete error: {e}")
+            return Response({'results': []}, status=status.HTTP_502_BAD_GATEWAY)
+        except Exception as e:
+            logger.error(f"autocomplete unexpected: {e}")
+            return Response({'results': []}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        results = []
+        for it in (items or [])[:6]:
+            addr = it.get('address') or {}
+            city = addr.get('city') or addr.get('town') or addr.get('village') or addr.get('state') or ''
+            area = addr.get('suburb') or addr.get('neighbourhood') or addr.get('quarter') or addr.get('district') or addr.get('county') or ''
+            road = addr.get('road') or ''
+            hn = addr.get('house_number') or ''
+            street = (road + (' ' + hn if hn else '')).strip()
+            results.append({
+                'label': it.get('display_name') or street or city,
+                'city': city,
+                'area': area,
+                'street': street,
+                'lat': it.get('lat'),
+                'lng': it.get('lon'),
+                'provider': 'nominatim',
+                'provider_place_id': str(it.get('place_id') or ''),
+            })
+        return Response({'results': results})
 
 
 class OrderViewSet(viewsets.ModelViewSet):

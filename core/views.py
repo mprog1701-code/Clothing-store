@@ -713,6 +713,10 @@ def checkout(request):
                     details=details,
                     latitude=latitude or None,
                     longitude=longitude or None,
+                    accuracy_m=(request.POST.get('accuracy_m') or None),
+                    formatted_address=(request.POST.get('formatted_address') or ''),
+                    provider=(request.POST.get('provider') or ''),
+                    provider_place_id=(request.POST.get('provider_place_id') or ''),
                 )
         else:
             guest_name = request.POST.get('guest_name')
@@ -745,6 +749,10 @@ def checkout(request):
                 details=details,
                 latitude=latitude or None,
                 longitude=longitude or None,
+                accuracy_m=(request.POST.get('accuracy_m') or None),
+                formatted_address=(request.POST.get('formatted_address') or ''),
+                provider=(request.POST.get('provider') or ''),
+                provider_place_id=(request.POST.get('provider_place_id') or ''),
             )
 
         # Delivery available across Iraq (no city restriction)
