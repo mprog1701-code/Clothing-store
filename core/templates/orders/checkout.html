@@ -53,9 +53,9 @@
                         </div>
                         <div class="col-12">
                             <div id="mapPicker2" class="mt-2"></div>
-                            <div class="mt-2 d-flex gap-2">
-                                <button type="button" id="confirmPin2" class="btn btn-success btn-sm">تأكيد الدبوس</button>
-                                <button type="button" id="editOnMap2" class="btn btn-secondary btn-sm">تعديل على الخريطة</button>
+                            <div class="mt-2 d-flex gap-2 map-controls">
+                                <button type="button" id="confirmPin2" class="btn btn-success btn-sm" style="display:none;">تأكيد الدبوس</button>
+                                <button type="button" id="editOnMap2" class="btn btn-secondary btn-sm" style="display:none;">تعديل على الخريطة</button>
                             </div>
                         </div>
                         <div class="col-12 d-flex align-items-center gap-2">
@@ -105,9 +105,9 @@
                         </div>
                         <div class="col-12">
                             <div id="mapPicker" class="mt-2"></div>
-                            <div class="mt-2 d-flex gap-2">
-                                <button type="button" id="confirmPin" class="btn btn-success btn-sm">تأكيد الدبوس</button>
-                                <button type="button" id="editOnMap" class="btn btn-secondary btn-sm">تعديل على الخريطة</button>
+                            <div class="mt-2 d-flex gap-2 map-controls">
+                                <button type="button" id="confirmPin" class="btn btn-success btn-sm" style="display:none;">تأكيد الدبوس</button>
+                                <button type="button" id="editOnMap" class="btn btn-secondary btn-sm" style="display:none;">تعديل على الخريطة</button>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -184,7 +184,8 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2sRlaRykGGBqBPdZiZsa1+ltdIpfQ5pP+B4VYlY=" crossorigin=""/>
 <style>
-#mapPicker, #mapPicker2, #savedMap { height: 300px; background: #f0f0f0; border-radius: 12px; }
+#mapPicker, #mapPicker2, #savedMap { display: none; height: 240px; background: #f0f0f0; border-radius: 12px; }
+.map-controls { display: none; }
 </style>
 {% endblock %}
 
@@ -275,6 +276,11 @@ document.addEventListener('DOMContentLoaded', function(){
                     reverseGeocode(p.lat, p.lng).then(function(place){ fillAddressFromPlace(place); }).catch(function(){});
                 });
             }
+            if(guestMapEl){ guestMapEl.style.display = 'block'; }
+            var cp = document.getElementById('confirmPin'); var em = document.getElementById('editOnMap');
+            if(cp){ cp.style.display = 'inline-block'; }
+            if(em){ em.style.display = 'inline-block'; }
+            guestMap.invalidateSize && guestMap.invalidateSize(true);
             guestMap.setView(ll, guestMap.getZoom() || 15);
         };
         guestMap.on('click', function(e){
@@ -301,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 if(!latEl){ latEl = document.createElement('input'); latEl.type='hidden'; latEl.name='latitude'; latEl.id='latitude'; btn.closest('form')?.appendChild(latEl); }
                 if(!lonEl){ lonEl = document.createElement('input'); lonEl.type='hidden'; lonEl.name='longitude'; lonEl.id='longitude'; btn.closest('form')?.appendChild(lonEl); }
                 latEl.value = lat; lonEl.value = lon; if(accuracyEl){ accuracyEl.value = acc; }
+                if(typeof setGuestMarker === 'function'){ setGuestMarker(lat, lon); }
                 if(accInfoEl){ accInfoEl.textContent = 'دقة الموقع: ' + (acc ? Math.round(acc) : '-') + ' متر'; if(acc && acc > 200){ accInfoEl.classList.add('text-danger'); } else { accInfoEl.classList.remove('text-danger'); } }
                 if(statusEl){ statusEl.textContent = 'تم الحصول على الإحداثيات ('+lat.toFixed(5)+', '+lon.toFixed(5)+')، جارٍ التعرف على العنوان...'; }
                 reverseGeocode(lat, lon).then(function(place){
@@ -380,7 +387,7 @@ document.addEventListener('DOMContentLoaded', function(){
     var savedMap = null;
     var savedMarker = null;
     if(window.L && savedMapEl){ savedMap = L.map('savedMap', { zoomControl: true }).setView([33.3152, 44.3661], 12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(savedMap); }
-    function setSavedMarker(lat, lon){ if(!savedMap) return; var ll = [parseFloat(lat), parseFloat(lon)]; if(savedMarker){ savedMarker.setLatLng(ll); } else { savedMarker = L.marker(ll).addTo(savedMap); } savedMap.setView(ll, 15); }
+    function setSavedMarker(lat, lon){ if(!savedMap) return; var ll = [parseFloat(lat), parseFloat(lon)]; var savedMapEl = document.getElementById('savedMap'); if(savedMapEl){ savedMapEl.style.display = 'block'; } if(savedMarker){ savedMarker.setLatLng(ll); } else { savedMarker = L.marker(ll).addTo(savedMap); } savedMap.invalidateSize && savedMap.invalidateSize(true); savedMap.setView(ll, 15); }
     var addressRadios = document.querySelectorAll('input[name="address_id"]');
     addressRadios.forEach(function(r){ r.addEventListener('change', function(){ var lat = r.dataset.lat, lon = r.dataset.lon; if(lat && lon){ setSavedMarker(lat, lon); } }); });
 });
@@ -420,6 +427,11 @@ document.addEventListener('DOMContentLoaded', function(){
                 reverseGeocode2(p.lat, p.lng).then(function(place){ fill2(place); }).catch(function(){});
             });
         }
+        if(newMapEl){ newMapEl.style.display = 'block'; }
+        var cp2 = document.getElementById('confirmPin2'); var em2 = document.getElementById('editOnMap2');
+        if(cp2){ cp2.style.display = 'inline-block'; }
+        if(em2){ em2.style.display = 'inline-block'; }
+        newMap.invalidateSize && newMap.invalidateSize(true);
         newMap.setView(ll, newMap.getZoom() || 15);
     }
     if(window.L && newMapEl){
@@ -470,6 +482,7 @@ document.addEventListener('DOMContentLoaded', function(){
             navigator.geolocation.getCurrentPosition(function(pos){
                 var lat = pos.coords.latitude; var lon = pos.coords.longitude; var acc = pos.coords.accuracy || '';
                 if(lat2){ lat2.value = lat; } if(lon2){ lon2.value = lon; }
+                setNewMarker(lat, lon);
                 if(accuracy2){ accuracy2.value = acc; }
                 if(accInfo2){ accInfo2.textContent = 'دقة الموقع: ' + (acc ? Math.round(acc) : '-') + ' متر'; if(acc && acc > 200){ accInfo2.classList.add('text-danger'); } else { accInfo2.classList.remove('text-danger'); } }
                 if(status2){ status2.textContent = 'تم الحصول على الإحداثيات، جارٍ التعرف على العنوان...'; }
