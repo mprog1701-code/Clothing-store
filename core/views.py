@@ -923,8 +923,22 @@ def address_create(request):
             lon = request.POST.get('longitude')
             address.latitude = lat or None
             address.longitude = lon or None
+            address.formatted_address = request.POST.get('formatted_address') or ''
+            address.provider = request.POST.get('provider') or ''
+            address.provider_place_id = request.POST.get('provider_place_id') or ''
+            address.plus_code = request.POST.get('plus_code') or ''
+            address.accuracy_m = (request.POST.get('accuracy_m') or None)
+            if (request.POST.get('is_default') or '').lower() in ['true', 'on', '1']:
+                try:
+                    Address.objects.filter(user=request.user).update(is_default=False)
+                except Exception:
+                    pass
+                address.is_default = True
             address.save()
             messages.success(request, 'تم إضافة العنوان بنجاح!')
+            next_url = request.GET.get('next') or request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect('address_list')
     else:
         form = AddressForm()
@@ -947,8 +961,32 @@ def address_edit(request, address_id):
             lon = request.POST.get('longitude')
             address.latitude = lat or address.latitude
             address.longitude = lon or address.longitude
+            fa = request.POST.get('formatted_address')
+            pr = request.POST.get('provider')
+            pp = request.POST.get('provider_place_id')
+            pc = request.POST.get('plus_code')
+            acc = request.POST.get('accuracy_m')
+            if fa is not None:
+                address.formatted_address = fa
+            if pr is not None:
+                address.provider = pr
+            if pp is not None:
+                address.provider_place_id = pp
+            if pc is not None:
+                address.plus_code = pc
+            if acc is not None:
+                address.accuracy_m = acc or address.accuracy_m
+            if (request.POST.get('is_default') or '').lower() in ['true', 'on', '1']:
+                try:
+                    Address.objects.filter(user=request.user).update(is_default=False)
+                except Exception:
+                    pass
+                address.is_default = True
             address.save()
             messages.success(request, 'تم تحديث العنوان بنجاح!')
+            next_url = request.GET.get('next') or request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect('address_list')
     else:
         form = AddressForm(instance=address)

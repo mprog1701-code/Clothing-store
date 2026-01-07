@@ -272,6 +272,8 @@ class Address(models.Model):
     formatted_address = models.TextField(blank=True)
     provider = models.CharField(max_length=50, blank=True)
     provider_place_id = models.CharField(max_length=100, blank=True)
+    plus_code = models.CharField(max_length=20, blank=True)
+    is_default = models.BooleanField(default=False)
     
     def __str__(self):
         return f"{self.city} - {self.area} - {self.street}"

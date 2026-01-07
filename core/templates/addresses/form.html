@@ -20,7 +20,64 @@
                 <div class="card-body p-4">
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
-                        
+
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="text" id="addrPlaceSearch" class="form-control" placeholder="ابحث عن مكان أو عنوان">
+                                <button type="button" id="addrSearchBtn" class="btn btn-outline-secondary">ابحث</button>
+                            </div>
+                            <div id="addrPlaceResults" class="list-group mt-2"></div>
+                        </div>
+
+                        <div class="position-relative mb-3">
+                            <div id="addrMap" style="height: calc(100vh - 280px); border-radius: 12px; background: #f7f7f7;"></div>
+                            <button type="button" id="addrGpsFab" class="btn btn-light position-absolute" style="top:10px; left:10px; border:1px solid #ddd; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center;">📍</button>
+                            <div class="position-absolute" style="top:10px; right:10px;">
+                                <span id="addrDiag" class="badge bg-light text-dark"></span>
+                            </div>
+                        </div>
+
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <strong>العنوان المختصر:</strong>
+                                    <span id="addrSummary" class="text-muted">اختر موقعاً على الخريطة أو استخدم GPS</span>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-md-4"><div class="small">المدينة</div><div id="addrCity" class="fw-semibold"></div></div>
+                                    <div class="col-md-4"><div class="small">المنطقة</div><div id="addrArea" class="fw-semibold"></div></div>
+                                    <div class="col-md-4"><div class="small">الشارع</div><div id="addrStreet" class="fw-semibold"></div></div>
+                                </div>
+                                <div class="mt-2"><span class="small">Plus Code</span> <span id="addrPlusCode" class="fw-semibold"></span></div>
+                                <div class="mt-3">
+                                    <label class="form-label">تفاصيل إضافية</label>
+                                    <textarea name="details" class="form-control" rows="2" placeholder="(اختياري) رقم البيت/الشقة أو علامة مميزة"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="city" id="addrCityInput">
+                        <input type="hidden" name="area" id="addrAreaInput">
+                        <input type="hidden" name="street" id="addrStreetInput">
+                        <input type="hidden" name="latitude" id="addrLatitude" value="">
+                        <input type="hidden" name="longitude" id="addrLongitude" value="">
+                        <input type="hidden" name="accuracy_m" id="addrAccuracy" value="">
+                        <input type="hidden" name="formatted_address" id="addrFormatted" value="">
+                        <input type="hidden" name="provider" id="addrProvider" value="">
+                        <input type="hidden" name="provider_place_id" id="addrPlaceId" value="">
+                        <input type="hidden" name="plus_code" id="addrPlusInput" value="">
+                        <input type="hidden" name="next" value="{{ request.GET.next|default:'' }}">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <a href="{% url 'address_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-return-right me-2"></i>العودة
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>تأكيد الموقع
+                            </button>
+                        </div>
+
+                        <div id="legacyFields" style="display:none;">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="{{ form.title.id_for_label }}" class="form-label">اسم العنوان</label>
@@ -121,18 +178,6 @@
                             </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'address_list' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-return-right me-2"></i>العودة
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle me-2"></i>
-                                {% if form.instance.pk %}
-                                    حفظ التغييرات
-                                {% else %}
-                                    إضافة العنوان
-                                {% endif %}
-                            </button>
                         </div>
                     </form>
                 </div>
@@ -141,157 +186,114 @@
     </div>
 </div>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.form-control {
-    border-radius: 10px;
-    padding: 12px 15px;
-    border: 2px solid #e9ecef;
-    transition: all 0.3s ease;
-}
-
-.form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.form-control::placeholder {
-    color: #6c757d;
-    opacity: 0.7;
-}
+.bg-gradient-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.form-control { border-radius: 10px; padding: 12px 15px; border: 2px solid #e9ecef; transition: all 0.3s ease; }
+.form-control:focus { border-color: #667eea; box-shadow: 0 0 0 0.2rem rgba(102,126,234,.25); }
+.form-control::placeholder { color: #6c757d; opacity: .7; }
 </style>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-// Form validation
-(function() {
-    'use strict';
-    window.addEventListener('load', function() {
-        var forms = document.getElementsByClassName('needs-validation');
-        var validation = Array.prototype.filter.call(forms, function(form) {
-            form.addEventListener('submit', function(event) {
-                if (form.checkValidity() === false) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                form.classList.add('was-validated');
-            }, false);
-        });
-    }, false);
-})();
+(function(){
+    var mapEl = document.getElementById('addrMap');
+    var summaryEl = document.getElementById('addrSummary');
+    var cityEl = document.getElementById('addrCity');
+    var areaEl = document.getElementById('addrArea');
+    var streetEl = document.getElementById('addrStreet');
+    var plusEl = document.getElementById('addrPlusCode');
+    var cityIn = document.getElementById('addrCityInput');
+    var areaIn = document.getElementById('addrAreaInput');
+    var streetIn = document.getElementById('addrStreetInput');
+    var latIn = document.getElementById('addrLatitude');
+    var lonIn = document.getElementById('addrLongitude');
+    var accIn = document.getElementById('addrAccuracy');
+    var formattedIn = document.getElementById('addrFormatted');
+    var providerIn = document.getElementById('addrProvider');
+    var placeIdIn = document.getElementById('addrPlaceId');
+    var plusIn = document.getElementById('addrPlusInput');
+    var diagEl = document.getElementById('addrDiag');
+    var searchInput = document.getElementById('addrPlaceSearch');
+    var searchBtn = document.getElementById('addrSearchBtn');
+    var resultsEl = document.getElementById('addrPlaceResults');
+    var gpsFab = document.getElementById('addrGpsFab');
 
-// Phone number formatting
-document.addEventListener('DOMContentLoaded', function() {
-    const phoneInput = document.querySelector('input[name="phone"]');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/[^0-9]/g, '');
-            if (value.length > 0 && !value.startsWith('07')) {
-                value = '07' + value.substring(2);
-            }
-            if (value.length > 11) {
-                value = value.substring(0, 11);
-            }
-            e.target.value = value;
-        });
+    function setSummary(place){
+        var addr = place.address || {};
+        var city = addr.city || addr.town || addr.village || addr.state || '';
+        var area = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || '';
+        var road = addr.road || '';
+        var house = addr.house_number || '';
+        var street = (road + (house ? ' ' + house : '')).trim();
+        if(cityEl) cityEl.textContent = city;
+        if(areaEl) areaEl.textContent = area;
+        if(streetEl) streetEl.textContent = street;
+        if(cityIn) cityIn.value = city;
+        if(areaIn) areaIn.value = area;
+        if(streetIn) streetIn.value = street;
+        var dn = (place.display_name || '').split(',').slice(0,4).join(',');
+        if(summaryEl) summaryEl.textContent = dn || street || city || 'تم تحديد الموقع';
+        if(place.plus_code){
+            var pc = (place.plus_code.global_code || place.plus_code.compound_code || '').split(' ').shift();
+            if(plusEl) plusEl.textContent = pc || '';
+            if(plusIn) plusIn.value = pc || '';
+        }
+        if(formattedIn) formattedIn.value = place.display_name || '';
+        if(providerIn) providerIn.value = place.provider || providerIn.value || '';
+        if(placeIdIn) placeIdIn.value = place.place_id || placeIdIn.value || '';
     }
-});
 
-function addrReverseGeocode(lat, lon){
-    var apiKey = window.GOOGLE_MAPS_API_KEY || '';
-    if(apiKey){
-        var gurl = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='+encodeURIComponent(lat+','+lon)+'&key='+encodeURIComponent(apiKey);
-        return fetch(gurl).then(function(r){return r.json()}).then(function(data){
-            var res = (data && data.results && data.results[0]) || {};
-            var comps = res.address_components || [];
-            var addr = {};
-            comps.forEach(function(c){
-                if(c.types.indexOf('locality')>-1){ addr.city = c.long_name; }
-                if(c.types.indexOf('administrative_area_level_1')>-1 && !addr.city){ addr.city = c.long_name; }
-                if(c.types.indexOf('sublocality')>-1 || c.types.indexOf('neighborhood')>-1){ addr.suburb = c.long_name; }
-                if(c.types.indexOf('route')>-1){ addr.road = c.long_name; }
-                if(c.types.indexOf('street_number')>-1){ addr.house_number = c.long_name; }
-            });
-            return { address: addr, display_name: res.formatted_address || '' };
-        });
-    }
-    var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lon)+'&accept-language=ar';
-    return fetch(url).then(function(r){return r.json()});
-}
-
-function addrFillFields(place){
-    var addr = place.address || {};
-    var cityInput = document.querySelector('input[name="city"]');
-    var areaInput = document.querySelector('input[name="area"]') || document.querySelector('input[name="district"]');
-    var streetInput = document.querySelector('input[name="street"]');
-    var buildingInput = document.querySelector('input[name="building_number"]');
-    var detailsTextarea = document.querySelector('textarea[name="details"]') || document.querySelector('textarea[name="additional_info"]');
-    if(cityInput){ cityInput.value = addr.city || addr.town || addr.village || addr.state || ''; }
-    var areaCandidate = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || '';
-    if(areaInput){ areaInput.value = areaCandidate; }
-    var road = addr.road || '';
-    var house = addr.house_number || '';
-    var streetStr = road + (house ? ' ' + house : '');
-    if(streetInput){ streetInput.value = streetStr; }
-    if(buildingInput && house){ buildingInput.value = house; }
-    if(detailsTextarea && place.display_name){
-        var dn = place.display_name.split(',').slice(0,5).join(',').trim();
-        detailsTextarea.value = dn;
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function(){
-    var btn = document.getElementById('addrGpsBtn');
-    var statusEl = document.getElementById('addrGpsStatus');
-    var spinnerEl = document.getElementById('addrGpsSpinner');
-    var latEl = document.getElementById('addrLatitude');
-    var lonEl = document.getElementById('addrLongitude');
-    if(btn){
-        btn.addEventListener('click', function(){
-            if(!navigator.geolocation){
-                if(statusEl){ statusEl.textContent = 'المتصفح لا يدعم GPS'; }
-                return;
-            }
-            var secure = (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-            if(!secure){ if(statusEl){ statusEl.textContent = 'يتطلب تحديد الموقع اتصالاً آمناً (HTTPS)'; } console.log('GPS error: insecure context'); return; }
-            btn.disabled = true;
-            if(statusEl){ statusEl.textContent = 'جارٍ تحديد الموقع...'; }
-            if(spinnerEl){ spinnerEl.style.display = 'inline-block'; }
-            navigator.geolocation.getCurrentPosition(function(pos){
-                var lat = pos.coords.latitude;
-                var lon = pos.coords.longitude;
-                if(!latEl){ latEl = document.createElement('input'); latEl.type='hidden'; latEl.name='latitude'; latEl.id='addrLatitude'; btn.closest('form')?.appendChild(latEl); }
-                if(!lonEl){ lonEl = document.createElement('input'); lonEl.type='hidden'; lonEl.name='longitude'; lonEl.id='addrLongitude'; btn.closest('form')?.appendChild(lonEl); }
-                latEl.value = lat; lonEl.value = lon; console.log('GPS success:', lat, lon);
-                if(statusEl){ statusEl.textContent = 'تم الحصول على الإحداثيات ('+lat.toFixed(5)+', '+lon.toFixed(5)+')، جارٍ التعرف على العنوان...'; }
-                addrReverseGeocode(lat, lon).then(function(place){
-                    addrFillFields(place);
-                    if(statusEl){ statusEl.textContent = 'تم ملء العنوان من الموقع'; }
-                    btn.disabled = false;
-                    if(spinnerEl){ spinnerEl.style.display = 'none'; }
-                    console.log('Reverse geocode success:', place);
-                }).catch(function(){
-                    var detailsTextarea = document.querySelector('textarea[name="details"]') || document.querySelector('textarea[name="additional_info"]');
-                    if(detailsTextarea){ detailsTextarea.value = 'إحداثيات: '+lat+', '+lon; }
-                    if(statusEl){ statusEl.textContent = 'تم تحديد الإحداثيات ولم يُتعرف على العنوان، الرجاء إدخاله يدوياً'; }
-                    btn.disabled = false;
-                    if(spinnerEl){ spinnerEl.style.display = 'none'; }
-                    console.log('Reverse geocode error');
+    function reverseGeocode(lat, lon){
+        var key = window.GOOGLE_MAPS_API_KEY || '';
+        if(key){
+            var url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='+encodeURIComponent(lat+','+lon)+'&key='+encodeURIComponent(key);
+            return fetch(url).then(function(r){return r.json()}).then(function(data){
+                var res = (data && data.results && data.results[0]) || {};
+                var comps = res.address_components || [];
+                var addr = {};
+                comps.forEach(function(c){
+                    if(c.types.indexOf('locality')>-1){ addr.city = c.long_name; }
+                    if(c.types.indexOf('administrative_area_level_1')>-1 && !addr.city){ addr.city = c.long_name; }
+                    if(c.types.indexOf('sublocality')>-1 || c.types.indexOf('neighborhood')>-1){ addr.suburb = c.long_name; }
+                    if(c.types.indexOf('route')>-1){ addr.road = c.long_name; }
+                    if(c.types.indexOf('street_number')>-1){ addr.house_number = c.long_name; }
                 });
-            }, function(err){
-                var msg = 'تعذر تحديد الموقع';
-                if(err && err.code === 1){ msg = 'تم رفض الإذن لتحديد الموقع'; }
-                else if(err && err.code === 2){ msg = 'الموقع غير متاح حالياً'; }
-                else if(err && err.code === 3){ msg = 'انتهت مهلة تحديد الموقع'; }
-                if(statusEl){ statusEl.textContent = msg; }
-                console.log('GPS error:', err);
-                btn.disabled = false;
-                if(spinnerEl){ spinnerEl.style.display = 'none'; }
-            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-        });
+                return { address: addr, display_name: res.formatted_address || '', provider: 'google', place_id: (res.place_id || ''), plus_code: data.plus_code || {} };
+            }).catch(function(){ return fetch('/api/addresses/reverse-geocode/', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('input[name="csrfmiddlewaretoken"]').value }, body: JSON.stringify({lat:lat,lng:lon}) }).then(function(r){return r.json()}); });
+        }
+        return fetch('/api/addresses/reverse-geocode/', { method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('input[name="csrfmiddlewaretoken"]').value }, body: JSON.stringify({lat:lat,lng:lon}) }).then(function(r){return r.json()});
     }
-});
+
+    function forwardGeocode(q){
+        return fetch('/api/addresses/autocomplete/?q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(p){ return (p.results||[]).map(function(it){ return { display_name: it.label, address:{ city: it.city, suburb: it.area, road: it.street }, lat: it.lat, lon: it.lng, provider: it.provider, place_id: it.provider_place_id }; }); });
+    }
+
+    var map = null, marker = null, debTimer = null;
+    function initMap(){
+        if(!window.L || !mapEl){ if(diagEl){ diagEl.textContent = 'تعذّر تحميل الخريطة'; } return; }
+        map = L.map('addrMap', { zoomControl: true }).setView([33.3152, 44.3661], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        marker = L.marker([33.3152, 44.3661], { draggable: true }).addTo(map);
+        marker.on('dragend', function(){ var p = marker.getLatLng(); latIn.value = p.lat; lonIn.value = p.lng; debouncedLookup(p.lat, p.lng); });
+        map.on('click', function(e){ latIn.value = e.latlng.lat; lonIn.value = e.latlng.lng; marker.setLatLng(e.latlng); debouncedLookup(e.latlng.lat, e.latlng.lng); });
+        map.on('moveend', function(){ var c = map.getCenter(); latIn.value = c.lat; lonIn.value = c.lng; debouncedLookup(c.lat, c.lng); });
+    }
+    function debouncedLookup(lat, lon){ clearTimeout(debTimer); debTimer = setTimeout(function(){ reverseGeocode(lat, lon).then(function(place){ setSummary(place); formattedIn.value = place.display_name || ''; providerIn.value = place.provider || providerIn.value || ''; placeIdIn.value = place.place_id || placeIdIn.value || ''; }); }, 500); }
+
+    function setFromCoords(lat, lon, acc){
+        latIn.value = lat; lonIn.value = lon; accIn.value = acc || '';
+        if(map){ marker.setLatLng([lat, lon]); map.setView([lat, lon], map.getZoom()||15); }
+        reverseGeocode(lat, lon).then(function(place){ setSummary(place); }).catch(function(){ if(summaryEl){ summaryEl.textContent = '('+lat+', '+lon+')'; } });
+    }
+
+    if(gpsFab){ gpsFab.addEventListener('click', function(){ if(!navigator.geolocation){ if(diagEl){ diagEl.textContent = 'المتصفح لا يدعم GPS'; } return; } var secure = (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1'); if(!secure){ if(diagEl){ diagEl.textContent = 'يتطلب GPS اتصالاً آمناً (HTTPS)'; } return; } gpsFab.disabled=true; diagEl.textContent='جارٍ تحديد الموقع...'; navigator.geolocation.getCurrentPosition(function(pos){ var lat = pos.coords.latitude, lon = pos.coords.longitude, acc = pos.coords.accuracy||''; gpsFab.disabled=false; diagEl.textContent=''; setFromCoords(lat, lon, acc); }, function(err){ gpsFab.disabled=false; var msg='تعذر تحديد الموقع'; if(err && err.code===1){ msg='تم رفض الإذن لتحديد الموقع'; } else if(err && err.code===2){ msg='الموقع غير متاح حالياً'; } else if(err && err.code===3){ msg='انتهت مهلة تحديد الموقع'; } if(diagEl){ diagEl.textContent = msg; } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }); }); }
+
+    if(searchBtn){ function render(items){ resultsEl.innerHTML=''; (items||[]).forEach(function(it){ var a=document.createElement('a'); a.href='#'; a.className='list-group-item list-group-item-action'; a.textContent = it.display_name || 'نتيجة'; a.addEventListener('click', function(ev){ ev.preventDefault(); latIn.value=it.lat; lonIn.value=it.lon; if(map){ marker.setLatLng([it.lat,it.lon]); map.setView([it.lat,it.lon], 15); } setSummary(it); formattedIn.value = it.display_name || ''; providerIn.value = it.provider || 'nominatim'; placeIdIn.value = it.place_id || ''; }); resultsEl.appendChild(a); }); }
+        var d=null; function trigger(){ var q=(searchInput.value||'').trim(); if(!q){ resultsEl.innerHTML=''; return; } clearTimeout(d); d=setTimeout(function(){ forwardGeocode(q).then(function(items){ render(items); }).catch(function(){ resultsEl.innerHTML=''; }); }, 300); }
+        searchBtn.addEventListener('click', function(){ trigger(); }); searchInput.addEventListener('keyup', function(){ trigger(); }); }
+
+    initMap();
+})();
 </script>
 {% endblock %}
