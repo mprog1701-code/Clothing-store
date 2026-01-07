@@ -193,6 +193,7 @@
                             const variantPrice = document.getElementById('variantPrice');
                             const addBtn = document.getElementById('addToCartBtn');
                             const hiddenVariantId = document.getElementById('selectedVariantId');
+                            const DEFAULT_VARIANT = {{ default_variant|default:'null'|safe }};
 
                             function resetSize(){
                                 sizeSelect.innerHTML = '<option value="">اختر المقاس</option>';
@@ -281,6 +282,15 @@
                         // Initialize default selection on page load if variants exist
                         (function initDefault(){
                             try{
+                                if (DEFAULT_VARIANT){
+                                    colorSelect.value = DEFAULT_VARIANT.color || '';
+                                    colorSelect.dispatchEvent(new Event('change'));
+                                    if (DEFAULT_VARIANT.size){
+                                        sizeSelect.value = DEFAULT_VARIANT.size;
+                                        sizeSelect.dispatchEvent(new Event('change'));
+                                    }
+                                    return;
+                                }
                                 const colors = Object.keys(SIZES_BY_COLOR || {});
                                 if (colors.length === 0) return;
                                 const firstColorWithStock = colors.find(c => VARIANTS.some(v => v.color === c && v.stock_qty > 0)) || colors[0];

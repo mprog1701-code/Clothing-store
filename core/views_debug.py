@@ -16,11 +16,11 @@ def owner_login_debug(request):
         print(f"Owner Key: {owner_key}")
         
         # Special owner authentication with owner key
-        if phone == '0500000000' and owner_key == 'OWNER2025':
+        if phone == '07700000000' and owner_key == 'OWNER2025':
             print("Owner credentials matched!")
             try:
                 # Try to find the owner user
-                user = User.objects.get(phone='0500000000')
+                user = User.objects.get(phone='07700000000')
                 print(f"Found user: {user.username}")
                 
                 # Authenticate and login

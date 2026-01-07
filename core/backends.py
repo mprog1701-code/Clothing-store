@@ -15,8 +15,8 @@ class PhoneBackend(ModelBackend):
         """
         # Try to get user by phone number first
         try:
-            # If username looks like a phone number, try phone authentication
-            if username and username.startswith('05'):
+            # If username looks like an Iraqi mobile number, try phone authentication
+            if username and username.startswith('07'):
                 user = User.objects.get(phone=username)
             else:
                 # Try regular username authentication

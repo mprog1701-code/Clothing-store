@@ -47,7 +47,7 @@
                                 <div class="invalid-feedback">
                                     {{ form.phone.errors }}
                                 </div>
-                                <small class="form-text text-muted">05xxxxxxxx</small>
+                                <small class="form-text text-muted">07xxxxxxxxx</small>
                             </div>
                             
                             <div class="col-md-6 mb-3">
@@ -188,11 +188,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (phoneInput) {
         phoneInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/[^0-9]/g, '');
-            if (value.length > 0 && !value.startsWith('05')) {
-                value = '05' + value.substring(2);
+            if (value.length > 0 && !value.startsWith('07')) {
+                value = '07' + value.substring(2);
             }
-            if (value.length > 10) {
-                value = value.substring(0, 10);
+            if (value.length > 11) {
+                value = value.substring(0, 11);
             }
             e.target.value = value;
         });

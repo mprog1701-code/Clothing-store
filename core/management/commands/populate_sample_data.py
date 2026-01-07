@@ -26,11 +26,11 @@ class Command(BaseCommand):
     def create_sample_users(self):
         """Create sample users with different roles"""
         users_data = [
-            {'username': 'admin_store', 'email': 'admin@example.com', 'role': 'admin', 'first_name': 'أحمد', 'last_name': 'الإداري', 'phone': '0500000001'},
-            {'username': 'fashion_store', 'email': 'fashion@example.com', 'role': 'store_owner', 'first_name': 'فاطمة', 'last_name': 'أبوالعز', 'phone': '0500000002'},
-            {'username': 'sport_store', 'email': 'sport@example.com', 'role': 'store_owner', 'first_name': 'محمد', 'last_name': 'الرياضي', 'phone': '0500000003'},
-            {'username': 'luxury_store', 'email': 'luxury@example.com', 'role': 'store_owner', 'first_name': 'سارة', 'last_name': 'الفاخرة', 'phone': '0500000004'},
-            {'username': 'customer1', 'email': 'customer1@example.com', 'role': 'customer', 'first_name': 'عبدالله', 'last_name': 'الزبون', 'phone': '0500000005'},
+            {'username': 'admin_store', 'email': 'admin@example.com', 'role': 'admin', 'first_name': 'أحمد', 'last_name': 'الإداري', 'phone': '07700000001'},
+            {'username': 'fashion_store', 'email': 'fashion@example.com', 'role': 'admin', 'first_name': 'فاطمة', 'last_name': 'أبوالعز', 'phone': '07700000002'},
+            {'username': 'sport_store', 'email': 'sport@example.com', 'role': 'admin', 'first_name': 'محمد', 'last_name': 'الرياضي', 'phone': '07700000003'},
+            {'username': 'luxury_store', 'email': 'luxury@example.com', 'role': 'admin', 'first_name': 'سارة', 'last_name': 'الفاخرة', 'phone': '07700000004'},
+            {'username': 'customer1', 'email': 'customer1@example.com', 'role': 'customer', 'first_name': 'عبدالله', 'last_name': 'الزبون', 'phone': '07700000005'},
         ]
         
         for user_data in users_data:
@@ -49,32 +49,32 @@ class Command(BaseCommand):
             {
                 'owner_username': 'fashion_store',
                 'name': 'بوتيك الأزياء الحديثة',
-                'city': 'الرياض',
-                'address': 'شارع العليا، حي الملك فهد',
+                'city': 'بغداد',
+                'address': 'شارع السعدون، منطقة الكرادة',
                 'description': 'متجر متخصص في أحدث صيحات الموضة والأزياء العصرية للنساء والرجال. نقدم تشكيلة واسعة من الملابس ذات الجودة العالية بأسعار منافسة.',
                 'is_active': True
             },
             {
                 'owner_username': 'sport_store',
                 'name': 'رياضة برو سبورت',
-                'city': 'جدة',
-                'address': 'شارع التحلية، حي الشاطئ',
+                'city': 'البصرة',
+                'address': 'شارع الكورنيش، منطقة العشار',
                 'description': 'كل ما تحتاجه من ملابس ومعدات رياضية عالية الجودة. نحمل أفضل الماركات العالمية ونوفر خدمة ممتازة لعملائنا.',
                 'is_active': True
             },
             {
                 'owner_username': 'luxury_store',
                 'name': 'الدار للأزياء الفاخرة',
-                'city': 'الدمام',
-                'address': 'شارع الأمير محمد بن فهد، حي الفيصلية',
+                'city': 'أربيل',
+                'address': 'شارع 60، حي عينكاوة',
                 'description': 'متجر متخصص في الأزياء الفاخرة والماركات العالمية. نقدم تجربة تسوق فاخرة مع منتجات نادرة وخدمة شخصية مميزة.',
                 'is_active': True
             },
             {
                 'owner_username': 'fashion_store',
                 'name': 'أساسيات الموضة',
-                'city': 'مكة',
-                'address': 'شارع إبراهيم الخليل، حي الزاهر',
+                'city': 'النجف',
+                'address': 'شارع المدينة القديمة، حي الحنانة',
                 'description': 'متجر يوفر أساسيات الموضة اليومية بأسعار مناسبة. تشكيلة متنوعة من الملابس الكاجوال والرسمية.',
                 'is_active': True
             }

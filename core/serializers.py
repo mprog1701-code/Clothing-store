@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.conf import settings
 from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem
 
 
@@ -21,9 +22,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         fields = ['phone', 'password', 'password_confirm', 'city', 'full_name']
     
     def validate_phone(self, value):
-        # Validate Saudi phone number format
-        if not value.startswith('05') or len(value) != 10:
-            raise serializers.ValidationError("رقم الجوال يجب أن يبدأ بـ 05 ويحتوي على 10 أرقام")
+        # Validate Iraqi mobile number format (starts with 07 and 11 digits)
+        if not value.startswith('07') or len(value) != 11:
+            raise serializers.ValidationError("رقم الجوال يجب أن يبدأ بـ 07 ويكون 11 رقماً")
         
         # Check if phone already exists
         if User.objects.filter(phone=value).exists():
@@ -46,7 +47,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         last_name = name_parts[1] if len(name_parts) > 1 else ''
         
         # Generate username from phone number
-        username = f"user_{validated_data['phone'][-6:]}"  # Use last 6 digits of phone
+        username = f"user_{validated_data['phone'][-6:]}"
         
         # Ensure unique username
         counter = 1
@@ -172,7 +173,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             user=user,
             store=store,
             address=address,
-            delivery_fee=5000,  # 50 SAR
+            delivery_fee=settings.DELIVERY_FEE,
             payment_method='cod',
             status='pending'
         )

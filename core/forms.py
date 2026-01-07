@@ -47,12 +47,12 @@ class AddressForm(forms.ModelForm):
     )
     
     phone = forms.CharField(
-        max_length=10,
+        max_length=11,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': '05xxxxxxxx',
-            'pattern': '05[0-9]{8}',
-            'maxlength': '10'
+            'placeholder': '07xxxxxxxxx',
+            'pattern': '07[0-9]{9}',
+            'maxlength': '11'
         }),
         help_text='رقم الجوال للتواصل',
         required=False
@@ -78,8 +78,8 @@ class AddressForm(forms.ModelForm):
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone:
-            if not phone.startswith('05'):
-                raise forms.ValidationError('رقم الجوال يجب أن يبدأ بـ 05')
-            if len(phone) != 10:
-                raise forms.ValidationError('رقم الجوال يجب أن يكون 10 أرقام')
+            if not phone.startswith('07'):
+                raise forms.ValidationError('رقم الجوال يجب أن يبدأ بـ 07')
+            if len(phone) != 11:
+                raise forms.ValidationError('رقم الجوال يجب أن يكون 11 رقماً')
         return phone

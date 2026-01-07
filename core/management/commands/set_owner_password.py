@@ -20,7 +20,7 @@ class Command(BaseCommand):
         try:
             # Get or create the owner user
             user, created = User.objects.get_or_create(
-                phone='0500000000',
+                phone='07700000000',
                 defaults={
                     'username': 'owner_admin',
                     'first_name': 'صاحب',
@@ -46,7 +46,7 @@ class Command(BaseCommand):
             )
             
             self.stdout.write(
-                self.style.SUCCESS(f'📱 رقم الجوال: 0500000000')
+                self.style.SUCCESS(f'📱 رقم الجوال: 07700000000')
             )
             
             self.stdout.write(

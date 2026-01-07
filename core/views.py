@@ -203,6 +203,22 @@ def product_detail(request, product_id):
     sizes_by_color = {}
     for c in variant_colors:
         sizes_by_color[c] = sorted({v.size for v in variants if v.color == c})
+    # Determine default variant to initialize UI
+    default_variant_dict = None
+    try:
+        default_v = next((v for v in variants if v.stock_qty > 0), None)
+        if not default_v:
+            default_v = variants.first()
+        if default_v:
+            default_variant_dict = {
+                'id': default_v.id,
+                'color': default_v.color,
+                'size': default_v.size,
+                'stock_qty': default_v.stock_qty,
+                'price': float(default_v.price),
+            }
+    except Exception:
+        default_variant_dict = None
     context = {
         'product': product,
         'variants': variants,
@@ -212,6 +228,7 @@ def product_detail(request, product_id):
         'images': images,
         'images_by_color': images_by_color,
         'default_images': default_images,
+        'default_variant': default_variant_dict,
         'placeholder_image_url': os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/500x500?text=Image',
     }
     return render(request, 'products/detail.html', context)
@@ -253,15 +270,15 @@ def user_login(request):
             user = User.objects.get(phone=phone)
         except User.DoesNotExist:
             user = None
-            if phone == '0500000000':
+            if phone == '07700000000':
                 try:
                     user = User.objects.create(
                         username='super_owner',
                         first_name='صاحب',
                         last_name='المتجر',
                         role='admin',
-                        phone='0500000000',
-                        city='الرياض',
+                        phone='07700000000',
+                        city='بغداد',
                         is_staff=True,
                         is_superuser=True
                     )
@@ -274,12 +291,12 @@ def user_login(request):
             user_auth = authenticate(request, username=user.username, password=password)
             if user_auth is not None:
                 login(request, user_auth)
-                if phone == '0500000000':
+                if phone == '07700000000':
                     messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
                     return redirect('super_owner_dashboard')
                 messages.success(request, 'تم تسجيل الدخول بنجاح!')
                 return redirect('home')
-            if phone == '0500000000':
+            if phone == '07700000000':
                 try:
                     user.username = 'super_owner'
                     user.is_staff = True
@@ -308,15 +325,15 @@ def owner_login(request):
             user = User.objects.get(phone=phone)
         except User.DoesNotExist:
             user = None
-            if phone == '0500000000':
+            if phone == '07700000000':
                 try:
                     user = User.objects.create(
                         username='super_owner',
                         first_name='صاحب',
                         last_name='المتجر',
                         role='admin',
-                        phone='0500000000',
-                        city='الرياض',
+                        phone='07700000000',
+                        city='بغداد',
                         is_staff=True,
                         is_superuser=True
                     )
@@ -330,7 +347,7 @@ def owner_login(request):
                 return render(request, 'registration/owner_login.html')
 
         if user:
-            if phone == '0500000000':
+            if phone == '07700000000':
                 user.username = 'super_owner'
                 user.is_staff = True
                 user.is_superuser = True
@@ -339,7 +356,7 @@ def owner_login(request):
             user_auth = authenticate(request, username=user.username, password=password)
             if user_auth is not None:
                 login(request, user_auth)
-                if phone == '0500000000':
+                if phone == '07700000000':
                     messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
                     return redirect('super_owner_dashboard')
                 if user.role == 'admin':
@@ -347,7 +364,7 @@ def owner_login(request):
                     return redirect('main_dashboard')
                 messages.error(request, 'ليس لديك صلاحية المدير')
             else:
-                if phone == '0500000000':
+                if phone == '07700000000':
                     try:
                         user.set_password(password)
                         user.is_active = True
@@ -367,7 +384,7 @@ def owner_login(request):
 @login_required
 def owner_password_reset(request):
     """Allow owner to reset their password"""
-    if request.user.phone != '0500000000':
+    if request.user.phone != '07700000000':
         messages.error(request, 'ليس لديك صلاحية لتغيير كلمة مرور المالك!')
         return redirect('home')
     
@@ -730,18 +747,7 @@ def checkout(request):
                 longitude=longitude or None,
             )
 
-        # Delivery region gating: Baghdad only
-        if address.city.strip() != 'بغداد':
-            messages.error(request, 'التوصيل متاح داخل بغداد فقط الآن. المحافظات الأخرى قريبًا.')
-            if request.user.is_authenticated:
-                return render(request, 'orders/checkout.html', {
-                    'addresses': addresses,
-                    'guest_post': request.POST,
-                })
-            return render(request, 'orders/checkout.html', {
-                'addresses': [],
-                'guest_post': request.POST,
-            })
+        # Delivery available across Iraq (no city restriction)
         
         # Calculate total
         cart_items = []
@@ -2046,7 +2052,7 @@ def debug_owner_login(request):
         
         # Step 1: Check if owner user exists
         try:
-            user = User.objects.get(phone='0500000000')
+            user = User.objects.get(phone='07700000000')
             print(f"✓ Owner user found: {user.username}")
             print(f"✓ Owner user phone: {user.phone}")
             print(f"✓ Owner user role: {user.role}")
