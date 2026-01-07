@@ -52,7 +52,14 @@
                             <div id="placeResults2" class="list-group mt-2"></div>
                         </div>
                         <div class="col-12">
-                            <div id="mapPicker2" class="mt-2"></div>
+                            <div id="mapPicker2Wrap" class="mt-2 map-wrap">
+                                <div id="mapPicker2"></div>
+                                <button type="button" id="gpsFab2" class="map-fab" title="استخدم موقعي الحالي">📍</button>
+                                <div id="currentAddressCard2" class="address-card">
+                                    <div id="currentAddressLabel2" class="address-text">اختر موقعاً على الخريطة أو استخدم GPS</div>
+                                    <button type="button" id="confirmLocationMain2" class="btn btn-primary w-100 mt-2">تأكيد الموقع</button>
+                                </div>
+                            </div>
                             <div class="mt-2 d-flex gap-2 map-controls">
                                 <button type="button" id="confirmPin2" class="btn btn-success btn-sm" style="display:none;">تأكيد الدبوس</button>
                                 <button type="button" id="editOnMap2" class="btn btn-secondary btn-sm" style="display:none;">تعديل على الخريطة</button>
@@ -104,7 +111,14 @@
                             <div id="placeResults" class="list-group mt-2"></div>
                         </div>
                         <div class="col-12">
-                            <div id="mapPicker" class="mt-2"></div>
+                            <div id="mapPickerWrap" class="mt-2 map-wrap">
+                                <div id="mapPicker"></div>
+                                <button type="button" id="gpsFab" class="map-fab" title="استخدم موقعي الحالي">📍</button>
+                                <div id="currentAddressCard" class="address-card">
+                                    <div id="currentAddressLabel" class="address-text">اختر موقعاً على الخريطة أو استخدم GPS</div>
+                                    <button type="button" id="confirmLocationMain" class="btn btn-primary w-100 mt-2">تأكيد الموقع</button>
+                                </div>
+                            </div>
                             <div class="mt-2 d-flex gap-2 map-controls">
                                 <button type="button" id="confirmPin" class="btn btn-success btn-sm" style="display:none;">تأكيد الدبوس</button>
                                 <button type="button" id="editOnMap" class="btn btn-secondary btn-sm" style="display:none;">تعديل على الخريطة</button>
@@ -184,8 +198,12 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2sRlaRykGGBqBPdZiZsa1+ltdIpfQ5pP+B4VYlY=" crossorigin=""/>
 <style>
-#mapPicker, #mapPicker2, #savedMap { display: none; height: 240px; background: #f0f0f0; border-radius: 12px; }
+.map-wrap { position: relative; }
+#mapPicker, #mapPicker2, #savedMap { display: block; height: 360px; background: #f0f0f0; border-radius: 12px; }
 .map-controls { display: none; }
+.map-fab { position: absolute; top: 10px; left: 10px; background: #fff; border: 1px solid #ddd; border-radius: 50%; width: 42px; height: 42px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.address-card { position: absolute; bottom: 10px; left: 10px; right: 10px; background: #fff; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.1); padding: 10px; }
+.address-text { font-size: 14px; color: #333; }
 </style>
 {% endblock %}
 
@@ -312,6 +330,8 @@ document.addEventListener('DOMContentLoaded', function(){
                 if(statusEl){ statusEl.textContent = 'تم الحصول على الإحداثيات ('+lat.toFixed(5)+', '+lon.toFixed(5)+')، جارٍ التعرف على العنوان...'; }
                 reverseGeocode(lat, lon).then(function(place){
                     fillAddressFromPlace(place);
+                    var lab = document.getElementById('currentAddressLabel');
+                    if(lab){ lab.textContent = (place.display_name || '').split(',').slice(0,4).join(','); }
                     if(formattedEl){ formattedEl.value = place.display_name || ''; }
                     if(providerEl){ providerEl.value = place.provider || 'nominatim'; }
                     if(providerPlaceEl){ providerPlaceEl.value = place.place_id || ''; }
@@ -346,6 +366,8 @@ document.addEventListener('DOMContentLoaded', function(){
                     ev.preventDefault();
                     latEl.value = it.lat; lonEl.value = it.lon;
                     fillAddressFromPlace(it);
+                    var lab = document.getElementById('currentAddressLabel');
+                    if(lab){ lab.textContent = (it.display_name || '').split(',').slice(0,4).join(','); }
                     if(formattedEl){ formattedEl.value = it.display_name || ''; }
                     if(providerEl){ providerEl.value = it.provider || 'nominatim'; }
                     if(providerPlaceEl){ providerPlaceEl.value = it.place_id || ''; }
@@ -382,6 +404,22 @@ document.addEventListener('DOMContentLoaded', function(){
     var editOnMapBtn = document.getElementById('editOnMap');
     if(confirmPinBtn){ confirmPinBtn.addEventListener('click', function(){ if(guestMarker && guestMarker.dragging){ guestMarker.dragging.disable(); } }); }
     if(editOnMapBtn){ editOnMapBtn.addEventListener('click', function(){ if(guestMarker && guestMarker.dragging){ guestMarker.dragging.enable(); } }); }
+
+    var gpsFab = document.getElementById('gpsFab');
+    if(gpsFab){ gpsFab.addEventListener('click', function(){ var b = document.getElementById('gpsFillBtn'); if(b){ b.click(); } }); }
+
+    var confirmMain = document.getElementById('confirmLocationMain');
+    if(confirmMain){
+        confirmMain.addEventListener('click', function(){
+            if(guestMarker && guestMarker.dragging){ guestMarker.dragging.disable(); }
+            var lab = document.getElementById('currentAddressLabel');
+            var formatted = formattedEl ? formattedEl.value : '';
+            var latV = latEl ? latEl.value : '';
+            var lonV = lonEl ? lonEl.value : '';
+            var text = formatted ? formatted.split(',').slice(0,4).join(',') : (latV && lonV ? ('(' + parseFloat(latV).toFixed(5) + ', ' + parseFloat(lonV).toFixed(5) + ')') : 'تم تأكيد الموقع');
+            if(lab){ lab.textContent = text; }
+        });
+    }
 
     var savedMapEl = document.getElementById('savedMap');
     var savedMap = null;
@@ -471,6 +509,8 @@ document.addEventListener('DOMContentLoaded', function(){
             var dn = (place.display_name || '').split(',').slice(0,5).join(',').trim();
             detailsTextarea.value = dn;
         }
+        var lab2 = document.getElementById('currentAddressLabel2');
+        if(lab2){ lab2.textContent = (place.display_name || '').split(',').slice(0,4).join(','); }
     }
     if(btn2){
         btn2.addEventListener('click', function(){
@@ -514,6 +554,22 @@ document.addEventListener('DOMContentLoaded', function(){
         var editOnMapBtn2 = document.getElementById('editOnMap2');
         if(confirmPinBtn2){ confirmPinBtn2.addEventListener('click', function(){ if(newMarker && newMarker.dragging){ newMarker.dragging.disable(); } }); }
         if(editOnMapBtn2){ editOnMapBtn2.addEventListener('click', function(){ if(newMarker && newMarker.dragging){ newMarker.dragging.enable(); } }); }
+
+        var gpsFab2 = document.getElementById('gpsFab2');
+        if(gpsFab2){ gpsFab2.addEventListener('click', function(){ if(btn2){ btn2.click(); } }); }
+
+        var confirmMain2 = document.getElementById('confirmLocationMain2');
+        if(confirmMain2){
+            confirmMain2.addEventListener('click', function(){
+                if(newMarker && newMarker.dragging){ newMarker.dragging.disable(); }
+                var lab = document.getElementById('currentAddressLabel2');
+                var formatted2El = document.getElementById('formatted2');
+                var latV = lat2 ? lat2.value : '';
+                var lonV = lon2 ? lon2.value : '';
+                var text = (formatted2El && formatted2El.value) ? formatted2El.value.split(',').slice(0,4).join(',') : (latV && lonV ? ('(' + parseFloat(latV).toFixed(5) + ', ' + parseFloat(lonV).toFixed(5) + ')') : 'تم تأكيد الموقع');
+                if(lab){ lab.textContent = text; }
+            });
+        }
     }
 })();
 </script>
