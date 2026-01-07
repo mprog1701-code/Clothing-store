@@ -1014,6 +1014,46 @@ def address_delete(request, address_id):
 
 
 @login_required
+@ensure_csrf_cookie
+def address_picker(request):
+    next_url = request.GET.get('next') or '/checkout/'
+    return render(request, 'addresses/picker.html', { 'next': next_url })
+
+
+@login_required
+def address_save_json(request):
+    if request.method != 'POST':
+        return JsonResponse({ 'success': False, 'error': 'invalid_method' }, status=405)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except Exception:
+        payload = {}
+    data = payload.get('data') or {}
+    next_url = payload.get('next') or '/checkout/'
+    lat = data.get('lat')
+    lng = data.get('lng')
+    fa = data.get('formatted_address') or ''
+    city = data.get('city') or ''
+    area = data.get('area') or ''
+    street = data.get('street') or ''
+    place_id = data.get('place_id') or ''
+    provider = data.get('provider') or ''
+    addr = Address.objects.create(
+        user=request.user,
+        city=city,
+        area=area,
+        street=street,
+        details='',
+        latitude=lat or None,
+        longitude=lng or None,
+        formatted_address=fa,
+        provider=provider,
+        provider_place_id=place_id,
+    )
+    return JsonResponse({ 'success': True, 'next': next_url, 'id': addr.id })
+
+
+@login_required
 def address_set_default(request, address_id):
     address = get_object_or_404(Address, id=address_id, user=request.user)
     

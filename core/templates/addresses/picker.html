@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}تحديد موقع التوصيل{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div id="pickerWrap" class="position-relative" style="height: calc(100vh - 56px);">
+    <div id="map" class="w-100 h-100"></div>
+    <div id="centerPin" class="position-absolute" style="top:50%; left:50%; transform: translate(-50%, -100%); font-size: 28px;">📍</div>
+    <div class="position-absolute top-0 start-0 end-0 p-3">
+      <div class="input-group">
+        <input type="text" id="searchInput" class="form-control" placeholder="ابحث عن مكان أو عنوان">
+        <button type="button" id="searchBtn" class="btn btn-outline-secondary">ابحث</button>
+      </div>
+      <div id="searchResults" class="list-group mt-2"></div>
+    </div>
+    <div class="position-absolute" style="top:12px; left:12px;">
+      <button type="button" id="gpsBtn" class="btn btn-light" title="استخدم موقعي الحالي">📍</button>
+    </div>
+    <div id="diag" class="position-absolute" style="top:12px; right:12px;"></div>
+    <div class="position-absolute bottom-0 start-0 end-0 p-3 bg-transparent">
+      <div class="card shadow">
+        <div class="card-body">
+          <div id="previewText" class="mb-2 text-muted">جارٍ تحديد الموقع...</div>
+          <button type="button" id="confirmBtn" class="btn btn-primary w-100">تأكيد الموقع</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+  #map { background: #f0f0f0; }
+  #centerPin { pointer-events: none; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+function getCSRF(){ var el = document.querySelector('input[name="csrfmiddlewaretoken"]'); return el ? el.value : ''; }
+function reverseGeocode(lat, lon){ return fetch('/api/addresses/reverse-geocode/', { method:'POST', headers:{ 'Content-Type':'application/json','X-CSRFToken': getCSRF() }, body: JSON.stringify({ lat: lat, lng: lon }) }).then(function(r){ return r.json(); }); }
+function forwardGeocode(q){ return fetch('/api/addresses/autocomplete/?q='+encodeURIComponent(q)).then(function(r){ return r.json(); }); }
+
+document.addEventListener('DOMContentLoaded', function(){
+  var mapEl = document.getElementById('map');
+  var diag = document.getElementById('diag');
+  var preview = document.getElementById('previewText');
+  var searchInput = document.getElementById('searchInput');
+  var searchBtn = document.getElementById('searchBtn');
+  var searchResults = document.getElementById('searchResults');
+  var gpsBtn = document.getElementById('gpsBtn');
+  var confirmBtn = document.getElementById('confirmBtn');
+  var nextUrl = new URLSearchParams(location.search).get('next') || '/checkout/';
+
+  if(!window.L){ diag.innerHTML = '<span class="badge bg-danger">الخريطة غير متاحة حالياً، يرجى إعادة المحاولة</span>'; return; }
+
+  var map = L.map('map', { zoomControl: true }).setView([33.3152, 44.3661], 13);
+  var tile = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+  tile.on('tileerror', function(){ diag.innerHTML = '<span class="badge bg-warning text-dark">الخريطة غير متاحة حالياً، يرجى إعادة المحاولة</span>'; });
+  tile.addTo(map);
+  setTimeout(function(){ if(mapEl && (mapEl.offsetHeight < 100 || mapEl.offsetWidth < 100)){ diag.innerHTML = '<span class="badge bg-warning text-dark">الخريطة لم تظهر – أعد تحميل الصفحة</span>'; map.invalidateSize(true); } }, 500);
+  var loadedOk = false;
+  tile.on('load', function(){ loadedOk = true; });
+  setTimeout(function(){ if(!loadedOk){ diag.innerHTML = '<span class="badge bg-warning text-dark">تعذر تحميل الخريطة، تحقق من الإنترنت أو عطّل مانع الإعلانات</span>'; } }, 7000);
+
+  var currentPlace = { display_name: '', city: '', area: '', street: '', place_id: '', provider: '' };
+  var debounceTimer = null;
+  function updateFromCenter(){
+    var c = map.getCenter();
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function(){
+      reverseGeocode(c.lat, c.lng).then(function(data){
+        var dn = data.formatted || data.display_name || '';
+        currentPlace.display_name = dn || '';
+        currentPlace.city = data.city || '';
+        currentPlace.area = data.area || '';
+        currentPlace.street = data.street || '';
+        currentPlace.place_id = data.provider_place_id || '';
+        currentPlace.provider = data.provider || '';
+        preview.textContent = (dn || 'اختر الموقع من الخريطة');
+      }).catch(function(){ preview.textContent = 'اختر الموقع من الخريطة'; });
+    }, 500);
+  }
+  map.on('moveend', updateFromCenter);
+  updateFromCenter();
+
+  function tryGeolocate(){
+    var secure = (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+    if(!secure){ diag.innerHTML = '<span class="badge bg-warning text-dark">يتطلب GPS اتصالاً آمناً (HTTPS)</span>'; return; }
+    if(!navigator.geolocation){ diag.innerHTML = '<span class="badge bg-danger">المتصفح لا يدعم تحديد الموقع</span>'; return; }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var lat = pos.coords.latitude, lon = pos.coords.longitude;
+      map.setView([lat, lon], 16);
+      updateFromCenter();
+      diag.innerHTML = '';
+    }, function(){
+      diag.innerHTML = '<span class="badge bg-warning text-dark">لم نتمكن من تحديد موقعك – اختر الموقع من الخريطة</span>';
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }
+  tryGeolocate();
+  gpsBtn.addEventListener('click', tryGeolocate);
+
+  function renderResults(items){
+    searchResults.innerHTML = '';
+    (items.results || []).forEach(function(it){
+      var a = document.createElement('a');
+      a.href = '#'; a.className = 'list-group-item list-group-item-action';
+      a.textContent = it.label || 'نتيجة';
+      a.addEventListener('click', function(e){ e.preventDefault(); map.setView([it.lat, it.lng], 16); currentPlace.display_name = it.label || ''; currentPlace.city = it.city || ''; currentPlace.area = it.area || ''; currentPlace.street = it.street || ''; currentPlace.place_id = it.provider_place_id || ''; currentPlace.provider = it.provider || ''; preview.textContent = (it.label || ''); searchResults.innerHTML = ''; });
+      searchResults.appendChild(a);
+    });
+  }
+  var sTimer = null;
+  function triggerSearch(){ var q = (searchInput.value || '').trim(); if(!q){ searchResults.innerHTML = ''; return; } forwardGeocode(q).then(renderResults).catch(function(){ searchResults.innerHTML=''; }); }
+  searchBtn.addEventListener('click', triggerSearch);
+  searchInput.addEventListener('keyup', function(){ clearTimeout(sTimer); sTimer = setTimeout(triggerSearch, 300); });
+
+  confirmBtn.addEventListener('click', function(){
+    var c = map.getCenter();
+    var payload = { lat: c.lat, lng: c.lng, formatted_address: currentPlace.display_name || '', city: currentPlace.city || '', area: currentPlace.area || '', street: currentPlace.street || '', place_id: currentPlace.place_id || '', provider: currentPlace.provider || '' };
+    fetch('/my/addresses/save-json/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() }, body: JSON.stringify({ data: payload, next: nextUrl }) })
+      .then(function(r){ return r.json(); })
+      .then(function(resp){ if(resp && resp.success){ window.location.href = resp.next || nextUrl; } else { diag.innerHTML = '<span class="badge bg-danger">تعذر حفظ العنوان</span>'; } })
+      .catch(function(){ diag.innerHTML = '<span class="badge bg-danger">تعذر حفظ العنوان</span>'; });
+  });
+});
+</script>
+{% endblock %}
