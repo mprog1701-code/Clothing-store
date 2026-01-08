@@ -812,11 +812,17 @@ def checkout(request):
             return redirect('cart_view')
         
         # Create order
+        applied_discount = 0
+        try:
+            applied_discount = int(request.session.get('discount') or 0)
+        except Exception:
+            applied_discount = 0
+        grand_total = max(0, (total + settings.DELIVERY_FEE) - applied_discount)
         order = Order.objects.create(
             user=checkout_user,
             store=store,
             address=address,
-            total_amount=total + settings.DELIVERY_FEE,
+            total_amount=grand_total,
             delivery_fee=settings.DELIVERY_FEE,
             payment_method='cod',
             status='pending'
@@ -838,9 +844,12 @@ def checkout(request):
                 item_data['variant'].stock_qty -= item_data['quantity']
                 item_data['variant'].save()
         
-        # Clear cart
+        # Clear cart and applied coupon
         request.session['cart'] = []
         request.session['guest_order_id'] = order.id
+        for k in ['discount','discount_code','discount_label']:
+            if k in request.session:
+                del request.session[k]
         
         messages.success(request, f'تم إنشاء الطلب رقم #{order.id} بنجاح!')
         if request.user.is_authenticated:
@@ -875,13 +884,139 @@ def checkout(request):
     except Exception:
         cart_total = 0
 
+    # Applied discount from session
+    try:
+        discount = int(request.session.get('discount') or 0)
+    except Exception:
+        discount = 0
+    discount_code = request.session.get('discount_code') or ''
+    discount_label = request.session.get('discount_label') or ''
+    grand_total = max(0, (cart_total + settings.DELIVERY_FEE) - discount)
+
     context = {
         'addresses': addresses,
         'cart_total': cart_total,
         'delivery_fee': settings.DELIVERY_FEE,
-        'grand_total': cart_total + settings.DELIVERY_FEE,
+        'grand_total': grand_total,
+        'discount': discount,
+        'discount_code': discount_code,
+        'discount_label': discount_label,
     }
     return render(request, 'orders/checkout.html', context)
+
+
+def apply_coupon_json(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'invalid_method'}, status=405)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except Exception:
+        payload = {}
+    code = (payload.get('code') or '').strip().upper()
+
+    # Remove coupon
+    if code == 'REMOVE':
+        for k in ['discount','discount_code','discount_label']:
+            if k in request.session:
+                del request.session[k]
+        request.session.modified = True
+        # Return current totals (no discount)
+        cart = request.session.get('cart', [])
+        product_total = 0
+        for item in cart:
+            try:
+                quantity = int(item.get('quantity') or 1)
+            except Exception:
+                quantity = 1
+            price = 0
+            variant_id = item.get('variant_id')
+            if variant_id is not None:
+                try:
+                    variant = ProductVariant.objects.get(id=int(variant_id))
+                    price = variant.price
+                except Exception:
+                    price = 0
+            else:
+                try:
+                    product = Product.objects.get(id=int(item.get('product_id')))
+                    price = product.base_price
+                except Exception:
+                    price = 0
+            product_total += price * quantity
+        delivery_fee = settings.DELIVERY_FEE
+        return JsonResponse({
+            'success': True,
+            'discount': 0,
+            'label': '',
+            'code': '',
+            'product_total': int(product_total),
+            'delivery_fee': int(delivery_fee),
+            'grand_total': int(product_total + delivery_fee),
+        })
+
+    # Compute product total from session cart
+    cart = request.session.get('cart', [])
+    product_total = 0
+    for item in cart:
+        try:
+            quantity = int(item.get('quantity') or 1)
+        except Exception:
+            quantity = 1
+        price = 0
+        variant_id = item.get('variant_id')
+        if variant_id is not None:
+            try:
+                variant = ProductVariant.objects.get(id=int(variant_id))
+                price = variant.price
+            except Exception:
+                price = 0
+        else:
+            try:
+                product = Product.objects.get(id=int(item.get('product_id')))
+                price = product.base_price
+            except Exception:
+                price = 0
+        product_total += price * quantity
+
+    delivery_fee = settings.DELIVERY_FEE
+
+    discount_amount = 0
+    label = ''
+    if code == 'FREESHIP':
+        discount_amount = int(delivery_fee)
+        label = 'شحن مجاني'
+    elif code == 'WELCOME10':
+        discount_amount = int(round(product_total * 0.10))
+        label = 'خصم 10%'
+    elif code.startswith('SAVE'):
+        digits = ''.join(ch for ch in code if ch.isdigit())
+        if digits:
+            try:
+                discount_amount = int(digits)
+                label = f'خصم {discount_amount} د.ع'
+            except Exception:
+                discount_amount = 0
+    else:
+        return JsonResponse({'success': False, 'error': 'invalid_code'}, status=400)
+
+    grand_before = int(product_total + delivery_fee)
+    if discount_amount > grand_before:
+        discount_amount = grand_before
+
+    request.session['discount'] = discount_amount
+    request.session['discount_code'] = code
+    request.session['discount_label'] = label
+    request.session.modified = True
+
+    return JsonResponse({
+        'success': True,
+        'discount': discount_amount,
+        'label': label,
+        'code': code,
+        'product_total': int(product_total),
+        'delivery_fee': int(delivery_fee),
+        'grand_total': int(max(0, grand_before - discount_amount)),
+    })
 
 
 def order_list(request):

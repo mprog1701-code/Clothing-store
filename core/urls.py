@@ -28,6 +28,7 @@ urlpatterns = [
     path('cart/clear/', views.clear_cart, name='clear_cart'),
     
     path('checkout/', views.checkout, name='checkout'),
+    path('checkout/apply-coupon/', views.apply_coupon_json, name='apply_coupon_json'),
     path('my/orders/', views.order_list, name='order_list'),
     path('my/orders/<int:order_id>/', views.order_detail, name='order_detail'),
     
