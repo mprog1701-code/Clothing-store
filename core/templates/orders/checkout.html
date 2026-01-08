@@ -1,415 +1,287 @@
 {% extends 'base.html' %}
 {% load math_filters %}
 
-{% block title %}إتمام الطلب - متجر الملابس{% endblock %}
+{% block title %}إتمام الطلب{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">إتمام الطلب</h1>
-    </div>
-</div>
+<div class="co-wrap">
+  <div class="steps">
+    <div class="step s1 active">العنوان</div>
+    <div class="step s2">التوصيل والدفع</div>
+    <div class="step s3">المراجعة</div>
+  </div>
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5>اختر عنوان التوصيل</h5>
-            </div>
-            <div class="card-body">
-                {% if addresses %}
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="fw-semibold">عناوينك المحفوظة</div>
-                    <a href="{% url 'address_picker' %}?next={% url 'checkout' %}" class="btn btn-outline-primary btn-sm">تحديد موقع التوصيل</a>
-                </div>
-                <form method="post" id="checkoutForm">
-                    {% csrf_token %}
-                    <div class="row g-3" id="addressCards">
-                        {% for address in addresses %}
-                        <div class="col-md-6">
-                            <div class="card h-100 address-card-item" data-id="{{ address.id }}" data-lat="{{ address.latitude }}" data-lon="{{ address.longitude }}">
-                                <div class="card-body d-flex gap-2">
-                                    <div class="form-check mt-1">
-                                        <input class="form-check-input" type="radio" name="address_id" id="address{{ address.id }}" value="{{ address.id }}" {% if address.is_default or forloop.first %}checked{% endif %}
-                                               data-city="{{ address.city }}" data-area="{{ address.area }}" data-street="{{ address.street }}" data-details="{{ address.details }}"
-                                               data-lat="{{ address.latitude }}" data-lon="{{ address.longitude }}" data-accuracy="{{ address.accuracy_m }}" data-provider="{{ address.provider }}" data-place="{{ address.provider_place_id }}">
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div>
-                                                <div class="fw-semibold">{{ address.city }} - {{ address.area }}</div>
-                                                <div>{{ address.street }}</div>
-                                                {% if address.details %}<div class="text-muted small">{{ address.details }}</div>{% endif %}
-                                                {% if address.plus_code %}<div class="text-muted small">{{ address.plus_code }}</div>{% endif %}
-                                            </div>
-                                            <div class="d-flex gap-2 ms-2">
-                                                <a href="{% url 'address_edit' address.id %}?next={% url 'checkout' %}" class="btn btn-outline-secondary btn-sm">تعديل</a>
-                                                <button type="button" class="btn btn-outline-danger btn-sm address-delete-btn" data-address-id="{{ address.id }}">حذف</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div id="savedMap" class="mt-3"></div>
+  <form id="coForm" method="post" action="{% url 'checkout' %}">
+    {% csrf_token %}
+    <input type="hidden" name="accuracy_m" id="accuracy_m">
+    <input type="hidden" name="formatted_address" id="formatted_address">
+    <input type="hidden" name="provider" id="provider">
+    <input type="hidden" name="provider_place_id" id="provider_place_id">
+    <input type="hidden" name="latitude" id="latitude">
+    <input type="hidden" name="longitude" id="longitude">
 
-                    
-                    <button type="submit" class="btn btn-primary">إتمام الطلب</button>
-                </form>
-                {% else %}
-                <div class="alert alert-info">
-                    <p>يمكنك متابعة تجربة الشراء كضيف بإدخال عنوان التوصيل.</p>
-                </div>
-                <form method="post">
-                    {% csrf_token %}
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">ابحث عن موقع</label>
-                            <div class="input-group">
-                                <input type="text" id="placeSearch" class="form-control" placeholder="أدخل اسم المكان أو العنوان">
-                                <button type="button" id="searchBtn" class="btn btn-outline-secondary">ابحث</button>
-                            </div>
-                            <div id="placeResults" class="list-group mt-2"></div>
-                        </div>
-                        <div class="col-12">
-                            <div id="mapPickerWrap" class="mt-2 map-wrap">
-                                <div id="mapPicker"></div>
-                                <button type="button" id="gpsFab" class="map-fab" title="استخدم موقعي الحالي">📍</button>
-                                <div id="currentAddressCard" class="address-card">
-                                    <div id="currentAddressLabel" class="address-text">اختر موقعاً على الخريطة أو استخدم GPS</div>
-                                    <button type="button" id="confirmLocationMain" class="btn btn-primary w-100 mt-2">تأكيد الموقع</button>
-                                </div>
-                            </div>
-                            <div class="mt-2 d-flex gap-2 map-controls">
-                                <button type="button" id="confirmPin" class="btn btn-success btn-sm" style="display:none;">تأكيد الدبوس</button>
-                                <button type="button" id="editOnMap" class="btn btn-secondary btn-sm" style="display:none;">تعديل على الخريطة</button>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">الاسم</label>
-                            <input type="text" name="guest_name" class="form-control" required value="{{ guest_post.guest_name|default:'' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">رقم الهاتف</label>
-                            <input type="tel" name="guest_phone" class="form-control" required value="{{ guest_post.guest_phone|default:'' }}" placeholder="07xxxxxxxxx" pattern="07[0-9]{9}" title="أدخل رقم جوال صحيح يبدأ بـ 07">
-                        </div>
-                        <div class="col-12 d-flex align-items-center gap-2">
-                            <button type="button" id="gpsFillBtn" class="btn btn-outline-primary btn-sm">استخدم موقعي الحالي</button>
-                            <span id="gpsStatus" class="text-muted small"></span>
-                            <input type="hidden" name="latitude" id="latitude" value="{{ guest_post.latitude|default:'' }}">
-                            <input type="hidden" name="longitude" id="longitude" value="{{ guest_post.longitude|default:'' }}">
-                            <input type="hidden" name="accuracy_m" id="accuracy" value="{{ guest_post.accuracy_m|default:'' }}">
-                            <input type="hidden" name="formatted_address" id="formatted" value="{{ guest_post.formatted_address|default:'' }}">
-                            <input type="hidden" name="provider" id="provider" value="{{ guest_post.provider|default:'' }}">
-                            <input type="hidden" name="provider_place_id" id="providerPlace" value="{{ guest_post.provider_place_id|default:'' }}">
-                            <span id="accuracyInfo" class="text-muted small ms-auto"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">المدينة</label>
-                            <input type="text" name="city" class="form-control" required value="{{ guest_post.city|default:'' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">المنطقة</label>
-                            <input type="text" name="area" class="form-control" required value="{{ guest_post.area|default:'' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">الشارع</label>
-                            <input type="text" name="street" class="form-control" required value="{{ guest_post.street|default:'' }}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">تفاصيل إضافية</label>
-                            <textarea name="details" class="form-control" rows="2">{{ guest_post.details|default:'' }}</textarea>
-                        </div>
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">إتمام الطلب كضيف</button>
-                        </div>
-                    </div>
-                </form>
-                {% endif %}
-            </div>
+    <div id="p1" class="panel active">
+      <div class="box">
+        <div class="box-head">
+          <div>عناوين التوصيل</div>
+          <button type="button" class="secondary" id="openMap">إضافة عنوان جديد</button>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>ملخص الطلب</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>المجموع:</span>
-                        <span>{{ cart_total|iqd }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>التوصيل:</span>
-                        <span>{{ delivery_fee|iqd }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between fw-bold border-top pt-2">
-                        <span>الإجمالي:</span>
-                        <span>{{ grand_total|iqd }}</span>
-                    </div>
-                </div>
-            </div>
+        {% if user.is_authenticated %}
+        <div id="addrList" class="addr-list">
+          {% if addresses %}
+            {% for a in addresses %}
+            <label class="addr-item">
+              <input type="radio" name="address_id" value="{{ a.id }}" {% if a.is_default or forloop.first %}checked{% endif %}>
+              <div class="addr-body">
+                <div class="addr-title">{{ a.city }} - {{ a.area }}</div>
+                <div class="addr-street">{{ a.street }}</div>
+                {% if a.formatted_address %}<div class="addr-sub">{{ a.formatted_address }}</div>{% endif %}
+              </div>
+            </label>
+            {% endfor %}
+          {% else %}
+            <div class="empty-note">لا توجد عناوين محفوظة</div>
+          {% endif %}
         </div>
+        {% else %}
+        <div class="guest-grid">
+          <div class="field">
+            <label>الاسم</label>
+            <input type="text" name="guest_name" id="guest_name" placeholder="الاسم الكامل">
+          </div>
+          <div class="field">
+            <label>رقم الهاتف</label>
+            <input type="tel" name="guest_phone" id="guest_phone" placeholder="07xxxxxxxx">
+          </div>
+          <div class="actions" style="margin:6px 0 10px">
+            <button type="button" class="secondary" id="openMapGuest">تحديد الموقع بالخريطة</button>
+          </div>
+          <div class="field">
+            <label>المدينة</label>
+            <input type="text" name="city" id="city" placeholder="المدينة">
+          </div>
+          <div class="field">
+            <label>المنطقة</label>
+            <input type="text" name="area" id="area" placeholder="المنطقة">
+          </div>
+          <div class="field">
+            <label>الشارع</label>
+            <input type="text" name="street" id="street" placeholder="الشارع">
+          </div>
+          <div class="field">
+            <label>ملاحظات للعنوان</label>
+            <textarea name="details" id="details" rows="2" placeholder="تفاصيل إضافية"></textarea>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="actions">
+          <button type="button" class="primary" id="toStep2">متابعة</button>
+        </div>
+      </div>
     </div>
+
+    <div id="p2" class="panel">
+      <div class="box">
+        <div class="box-head">
+          <div>التوصيل</div>
+        </div>
+        <div class="opt-list">
+          <label class="opt-item">
+            <input type="radio" name="delivery_opt" value="standard" checked>
+            <div class="opt-body">
+              <div class="opt-title">عادي</div>
+              <div class="opt-sub">خلال 24–48 ساعة</div>
+            </div>
+          </label>
+          <label class="opt-item disabled">
+            <input type="radio" disabled>
+            <div class="opt-body">
+              <div class="opt-title">سريع</div>
+              <div class="opt-sub">قريباً</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="box-head" style="margin-top:14px">
+          <div>الدفع</div>
+        </div>
+        <div class="opt-list">
+          <label class="opt-item">
+            <input type="radio" name="payment_method" value="cod" checked>
+            <div class="opt-body">
+              <div class="opt-title">عند الاستلام</div>
+              <div class="opt-sub">الدفع نقداً عند التسليم</div>
+            </div>
+          </label>
+          <label class="opt-item disabled">
+            <input type="radio" disabled>
+            <div class="opt-body">
+              <div class="opt-title">تحويل بنكي</div>
+              <div class="opt-sub">قريباً</div>
+            </div>
+          </label>
+          <label class="opt-item disabled">
+            <input type="radio" disabled>
+            <div class="opt-body">
+              <div class="opt-title">بطاقة</div>
+              <div class="opt-sub">قريباً</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="field" style="margin-top:12px">
+          <label>ملاحظات للطلب</label>
+          <textarea id="order_notes" rows="2" placeholder="اختياري"></textarea>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="secondary" id="backTo1">رجوع</button>
+          <button type="button" class="primary" id="toStep3">متابعة</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="p3" class="panel">
+      <div class="box">
+        <div class="box-head">
+          <div>مراجعة نهائية</div>
+        </div>
+        <div class="summary">
+          <div class="row"><span>المجموع</span><span>{{ cart_total|iqd }}</span></div>
+          <div class="row"><span>التوصيل</span><span>{{ delivery_fee|iqd }}</span></div>
+          <div class="row total"><span>الإجمالي</span><span>{{ grand_total|iqd }}</span></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="secondary" id="backTo2">رجوع</button>
+          <button type="submit" class="primary" id="confirmOrder">تأكيد الطلب</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <div id="mapModal" class="modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>تحديد الموقع</div>
+        <button type="button" class="icon-btn" id="closeMap">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="search">
+          <input id="searchInput" placeholder="ابحث عن مكان">
+          <button id="searchBtn" class="secondary">بحث</button>
+        </div>
+        <div id="selectedInfo" class="sel-info" style="display:none"></div>
+        <div id="list" class="list"></div>
+        <div id="map"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="secondary" id="cancelMap">إلغاء</button>
+        <button type="button" class="primary" id="confirmLocation">تأكيد الموقع</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"><div class="toast-box"></div></div>
 </div>
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2sRlaRykGGBqBPdZiZsa1+ltdIpfQ5pP+B4VYlY=" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-.map-wrap { position: relative; }
-#mapPicker, #mapPicker2, #savedMap { display: block; height: 360px; background: #f0f0f0; border-radius: 12px; }
-.map-controls { display: none; }
-.map-fab { position: absolute; top: 10px; left: 10px; background: #fff; border: 1px solid #ddd; border-radius: 50%; width: 42px; height: 42px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.address-card { position: absolute; bottom: 10px; left: 10px; right: 10px; background: #fff; border-radius: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.1); padding: 10px; }
-.address-text { font-size: 14px; color: #333; }
-.address-card-item { cursor: pointer; }
+.co-wrap{direction:rtl;max-width:980px;margin:0 auto;padding:16px}
+.steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.step{background:#f7f7f7;border:1px solid #eee;border-radius:10px;padding:10px;text-align:center;font-weight:700;color:#555}
+.step.active{background:#111;color:#fff;border-color:#111}
+.panel{display:none}
+.panel.active{display:block}
+.box{background:#fff;border:1px solid #eee;border-radius:12px;padding:12px}
+.box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.primary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+.secondary{background:#fff;color:#111;border:1px solid #ddd;border-radius:10px;padding:10px 14px;cursor:pointer}
+.field{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.field input,.field textarea{border:1px solid #ddd;border-radius:10px;padding:10px}
+.guest-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.addr-list{display:flex;flex-direction:column;gap:8px}
+.addr-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
+.addr-body{display:flex;flex-direction:column;gap:2px}
+.addr-title{font-weight:700}
+.addr-street{color:#333}
+.addr-sub{color:#777;font-size:13px}
+.empty-note{color:#777}
+.opt-list{display:grid;grid-template-columns:1fr;gap:8px}
+.opt-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
+.opt-item.disabled{opacity:.5}
+.opt-body{display:flex;flex-direction:column;gap:2px}
+.opt-title{font-weight:700}
+.opt-sub{color:#777;font-size:13px}
+.summary{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.summary .row{display:flex;justify-content:space-between}
+.summary .total{border-top:1px solid #eee;padding-top:8px;font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:10px;z-index:1000}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;max-width:920px;width:100%;padding:12px;border:1px solid #eee}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700}
+.icon-btn{background:#fff;border:1px solid #ddd;border-radius:10px;padding:8px 12px;cursor:pointer}
+.modal-body{display:flex;flex-direction:column;gap:8px}
+.search{display:grid;grid-template-columns:1fr auto;gap:8px}
+#searchInput{border:1px solid #ddd;border-radius:10px;padding:10px}
+#list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow:auto;border:1px solid #eee;border-radius:10px;padding:8px}
+#list .res{border:1px solid #eee;border-radius:10px;padding:8px;cursor:pointer}
+#map{height:360px;border-radius:12px;border:1px solid #eee;background:#f4f4f4}
+.sel-info{border:1px solid #eee;border-radius:10px;padding:8px;color:#333}
+.toast{position:fixed;bottom:16px;left:16px;right:16px;display:none;z-index:1100}
+.toast.show{display:block}
+.toast-box{background:#111;color:#fff;border-radius:12px;padding:12px;text-align:center}
+@media(max-width:900px){.co-wrap{padding:12px}}
 </style>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1jNwKfKxXfXzSxLtEPPYUajF1/MEGLjm+rXhN3m8=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-function getCSRF(){
-    var el = document.querySelector('input[name="csrfmiddlewaretoken"]');
-    return el ? el.value : '';
-}
-function reverseGeocode(lat, lon){
-    return fetch('/api/addresses/reverse-geocode/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
-        body: JSON.stringify({ lat: lat, lng: lon })
-    }).then(function(r){ return r.json(); }).then(function(data){
-        if(data && (data.city || data.formatted)){
-            var addr = { city: data.city, suburb: data.area, road: data.street };
-            return { address: addr, display_name: data.formatted || '', provider: data.provider, place_id: data.provider_place_id, lat: data.lat, lon: data.lng };
-        }
-        return Promise.reject(data);
-    });
-}
-function forwardGeocode(query){
-    return fetch('/api/addresses/autocomplete/?q='+encodeURIComponent(query))
-        .then(function(r){ return r.json(); })
-        .then(function(payload){
-            var items = payload && payload.results ? payload.results : [];
-            return items.map(function(it){
-                return { display_name: it.label, address: { city: it.city, suburb: it.area, road: it.street }, lat: it.lat, lon: it.lng, provider: it.provider, place_id: it.provider_place_id };
-            });
-        });
-}
+var IS_AUTH = {% if user.is_authenticated %}true{% else %}false{% endif %};
+var toastEl = document.getElementById('toast');
+var SEL = { city:'', area:'', street:'', display:'' };
+function showToast(msg){ var box = toastEl.querySelector('.toast-box'); if(box){ box.textContent = msg; } toastEl.classList.add('show'); setTimeout(function(){ toastEl.classList.remove('show'); }, 2500); }
+function getCsrf(){ var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; }
+function goStep(idx){ ['s1','s2','s3'].forEach(function(s,i){ var el = document.querySelector('.step.'+s); if(el){ el.classList.toggle('active', i===idx); } }); ['p1','p2','p3'].forEach(function(pid,i){ var p = document.getElementById(pid); if(p){ p.classList.toggle('active', i===idx); } }); }
+document.getElementById('toStep2').addEventListener('click', function(){ if(IS_AUTH){ var sel = document.querySelector('input[name="address_id"]:checked'); if(!sel){ showToast('يرجى اختيار العنوان'); return; } } else { var n = document.getElementById('guest_name').value.trim(); var ph = document.getElementById('guest_phone').value.trim(); var c = document.getElementById('city').value.trim(); var a = document.getElementById('area').value.trim(); var s = document.getElementById('street').value.trim(); if(!n || !ph || !(c && a && s)){ showToast('أكمل بيانات التوصيل'); return; } } goStep(1); });
+document.getElementById('backTo1').addEventListener('click', function(){ goStep(0); });
+document.getElementById('toStep3').addEventListener('click', function(){ goStep(2); });
+document.getElementById('backTo2').addEventListener('click', function(){ goStep(1); });
 
-function fillAddressFromPlace(place){
-    var addr = place.address || {};
-    var cityInput = document.querySelector('input[name="city"]');
-    var areaInput = document.querySelector('input[name="area"]');
-    var streetInput = document.querySelector('input[name="street"]');
-    var detailsTextarea = document.querySelector('textarea[name="details"]');
-    if(cityInput){
-        var guessedCity = addr.city || addr.town || addr.village || addr.state || '';
-        var dn = (place.display_name || '') + ' ' + (addr.state || '') + ' ' + (addr.city || '');
-        var isBaghdad = /\bBaghdad\b/i.test(dn) || /بغداد/.test(dn);
-        cityInput.value = isBaghdad ? 'بغداد' : guessedCity;
-    }
-    var areaCandidate = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || '';
-    if(areaInput){ areaInput.value = areaCandidate; }
-    var road = addr.road || '';
-    var house = addr.house_number || '';
-    var streetStr = road + (house ? ' ' + house : '');
-    if(streetInput){ streetInput.value = streetStr; }
-    if(detailsTextarea && place.display_name){
-        var dn = place.display_name.split(',').slice(0,5).join(',').trim();
-        detailsTextarea.value = dn;
-    }
-}
+var mapModal = document.getElementById('mapModal');
+var closeMap = document.getElementById('closeMap');
+var cancelMap = document.getElementById('cancelMap');
+var openMapBtn = document.getElementById('openMap');
+var openMapGuestBtn = document.getElementById('openMapGuest');
+function openMap(){ mapModal.classList.add('open'); initMap(); }
+function hideMap(){ mapModal.classList.remove('open'); }
+if(openMapBtn){ openMapBtn.addEventListener('click', openMap); }
+if(openMapGuestBtn){ openMapGuestBtn.addEventListener('click', openMap); }
+closeMap.addEventListener('click', hideMap); cancelMap.addEventListener('click', hideMap);
 
-document.addEventListener('DOMContentLoaded', function(){
-    var btn = document.getElementById('gpsFillBtn');
-    var statusEl = document.getElementById('gpsStatus');
-    var latEl = document.getElementById('latitude');
-    var lonEl = document.getElementById('longitude');
-    var searchInput = document.getElementById('placeSearch');
-    var searchBtn = document.getElementById('searchBtn');
-    var resultsEl = document.getElementById('placeResults');
-    var guestMapEl = document.getElementById('mapPicker');
-    var accuracyEl = document.getElementById('accuracy');
-    var formattedEl = document.getElementById('formatted');
-    var providerEl = document.getElementById('provider');
-    var providerPlaceEl = document.getElementById('providerPlace');
-    var accInfoEl = document.getElementById('accuracyInfo');
-    var guestMap = null;
-    var guestMarker = null;
-    var setGuestMarker = null;
-    if(window.L && guestMapEl){
-        guestMap = L.map('mapPicker', { zoomControl: true }).setView([33.3152, 44.3661], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(guestMap);
-        setGuestMarker = function(lat, lon){
-            var ll = [parseFloat(lat), parseFloat(lon)];
-            if(guestMarker){ guestMarker.setLatLng(ll); }
-            else {
-                guestMarker = L.marker(ll, { draggable: true }).addTo(guestMap);
-                guestMarker.on('dragend', function(){
-                    var p = guestMarker.getLatLng();
-                    if(latEl){ latEl.value = p.lat; }
-                    if(lonEl){ lonEl.value = p.lng; }
-                    reverseGeocode(p.lat, p.lng).then(function(place){ fillAddressFromPlace(place); }).catch(function(){});
-                });
-            }
-            if(guestMapEl){ guestMapEl.style.display = 'block'; }
-            var cp = document.getElementById('confirmPin'); var em = document.getElementById('editOnMap');
-            if(cp){ cp.style.display = 'inline-block'; }
-            if(em){ em.style.display = 'inline-block'; }
-            guestMap.invalidateSize && guestMap.invalidateSize(true);
-            guestMap.setView(ll, guestMap.getZoom() || 15);
-        };
-        guestMap.on('click', function(e){
-            var lat = e.latlng.lat, lon = e.latlng.lng;
-            if(latEl){ latEl.value = lat; }
-            if(lonEl){ lonEl.value = lon; }
-            setGuestMarker(lat, lon);
-            reverseGeocode(lat, lon).then(function(place){ fillAddressFromPlace(place); }).catch(function(){});
-        });
-        if(latEl && lonEl && latEl.value && lonEl.value){ setGuestMarker(latEl.value, lonEl.value); }
-    }
-    if(btn){
-        btn.addEventListener('click', function(){
-            var secure = (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1');
-            if(!secure){ if(statusEl){ statusEl.textContent = 'يتطلب تحديد الموقع اتصالاً آمناً (HTTPS)'; } console.log('GPS error: insecure context'); return; }
-            if(!navigator.geolocation){ if(statusEl){ statusEl.textContent = 'المتصفح لا يدعم GPS'; } console.log('GPS error: not supported'); return; }
-            btn.disabled = true;
-            var originalText = btn.dataset.originalText || btn.textContent; btn.dataset.originalText = originalText; btn.textContent = 'جارٍ تحديد الموقع...';
-            if(statusEl){ statusEl.textContent = 'جارٍ تحديد الموقع...'; }
-            navigator.geolocation.getCurrentPosition(function(pos){
-                var lat = pos.coords.latitude;
-                var lon = pos.coords.longitude;
-                var acc = pos.coords.accuracy || '';
-                if(!latEl){ latEl = document.createElement('input'); latEl.type='hidden'; latEl.name='latitude'; latEl.id='latitude'; btn.closest('form')?.appendChild(latEl); }
-                if(!lonEl){ lonEl = document.createElement('input'); lonEl.type='hidden'; lonEl.name='longitude'; lonEl.id='longitude'; btn.closest('form')?.appendChild(lonEl); }
-                latEl.value = lat; lonEl.value = lon; if(accuracyEl){ accuracyEl.value = acc; }
-                if(typeof setGuestMarker === 'function'){ setGuestMarker(lat, lon); }
-                if(accInfoEl){ accInfoEl.textContent = 'دقة الموقع: ' + (acc ? Math.round(acc) : '-') + ' متر'; if(acc && acc > 200){ accInfoEl.classList.add('text-danger'); } else { accInfoEl.classList.remove('text-danger'); } }
-                if(statusEl){ statusEl.textContent = 'تم الحصول على الإحداثيات ('+lat.toFixed(5)+', '+lon.toFixed(5)+')، جارٍ التعرف على العنوان...'; }
-                reverseGeocode(lat, lon).then(function(place){
-                    fillAddressFromPlace(place);
-                    var lab = document.getElementById('currentAddressLabel');
-                    if(lab){ lab.textContent = (place.display_name || '').split(',').slice(0,4).join(','); }
-                    if(formattedEl){ formattedEl.value = place.display_name || ''; }
-                    if(providerEl){ providerEl.value = place.provider || 'nominatim'; }
-                    if(providerPlaceEl){ providerPlaceEl.value = place.place_id || ''; }
-                    if(statusEl){ statusEl.textContent = 'تم ملء العنوان من الموقع'; }
-                    btn.disabled = false; btn.textContent = btn.dataset.originalText || 'استخدم موقعي الحالي';
-                }).catch(function(err){
-                    var detailsTextarea = document.querySelector('textarea[name="details"]');
-                    if(detailsTextarea){ detailsTextarea.value = 'إحداثيات: '+lat+', '+lon; }
-                    if(statusEl){ statusEl.textContent = 'تم تحديد الإحداثيات ولم يُتعرف على العنوان، الرجاء إدخاله يدوياً'; }
-                    btn.disabled = false; btn.textContent = btn.dataset.originalText || 'استخدم موقعي الحالي';
-                });
-            }, function(err){
-                var msg = 'تعذر تحديد الموقع';
-                if(err && err.code === 1){ msg = 'تم رفض الإذن لتحديد الموقع'; }
-                else if(err && err.code === 2){ msg = 'الموقع غير متاح حالياً'; }
-                else if(err && err.code === 3){ msg = 'انتهت مهلة تحديد الموقع'; }
-                if(statusEl){ statusEl.textContent = msg; }
-                console.log('GPS error:', err);
-                btn.disabled = false; btn.textContent = btn.dataset.originalText || 'استخدم موقعي الحالي';
-            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-        });
-    }
-    if(searchBtn && searchInput && resultsEl){
-        function renderResults(items){
-            resultsEl.innerHTML = '';
-            (items || []).forEach(function(it, idx){
-                var a = document.createElement('a');
-                a.href = '#';
-                a.className = 'list-group-item list-group-item-action';
-                a.textContent = it.display_name || (it.address && it.address.road) || 'نتيجة';
-                a.addEventListener('click', function(ev){
-                    ev.preventDefault();
-                    latEl.value = it.lat; lonEl.value = it.lon;
-                    fillAddressFromPlace(it);
-                    var lab = document.getElementById('currentAddressLabel');
-                    if(lab){ lab.textContent = (it.display_name || '').split(',').slice(0,4).join(','); }
-                    if(formattedEl){ formattedEl.value = it.display_name || ''; }
-                    if(providerEl){ providerEl.value = it.provider || 'nominatim'; }
-                    if(providerPlaceEl){ providerPlaceEl.value = it.place_id || ''; }
-                    if(setGuestMarker){ setGuestMarker(it.lat, it.lon); }
-                });
-                resultsEl.appendChild(a);
-            });
-        }
-        var debounceTimer = null;
-        function triggerSearch(){
-            var q = (searchInput.value || '').trim();
-            if(!q){ resultsEl.innerHTML=''; return; }
-            forwardGeocode(q).then(function(items){ renderResults(items); }).catch(function(){ resultsEl.innerHTML=''; });
-        }
-        searchBtn.addEventListener('click', function(){ triggerSearch(); });
-        searchInput.addEventListener('keyup', function(){ clearTimeout(debounceTimer); debounceTimer = setTimeout(triggerSearch, 300); });
-    }
-    var formEl = btn ? btn.closest('form') : document.querySelector('form');
-    if(formEl){
-        formEl.addEventListener('submit', function(){
-            console.log('Form submission data:', {
-                guest_name: document.querySelector('input[name="guest_name"]').value,
-                guest_phone: document.querySelector('input[name="guest_phone"]').value,
-                city: document.querySelector('input[name="city"]').value,
-                area: document.querySelector('input[name="area"]').value,
-                street: document.querySelector('input[name="street"]').value,
-                details: document.querySelector('textarea[name="details"]').value,
-                latitude: document.querySelector('input[name="latitude"]').value,
-                longitude: document.querySelector('input[name="longitude"]').value,
-            });
-        });
-    }
-    var confirmPinBtn = document.getElementById('confirmPin');
-    var editOnMapBtn = document.getElementById('editOnMap');
-    if(confirmPinBtn){ confirmPinBtn.addEventListener('click', function(){ if(guestMarker && guestMarker.dragging){ guestMarker.dragging.disable(); } }); }
-    if(editOnMapBtn){ editOnMapBtn.addEventListener('click', function(){ if(guestMarker && guestMarker.dragging){ guestMarker.dragging.enable(); } }); }
+var map, marker;
+function initMap(){ if(map) return; map = L.map('map').setView([33.3152,44.3661], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19}).addTo(map); map.on('click', function(e){ setMarker(e.latlng.lat, e.latlng.lng); reverseGeocode(e.latlng.lat, e.latlng.lng); }); }
+function setMarker(lat,lng){ if(!marker){ marker = L.marker([lat,lng], {draggable:true}).addTo(map); marker.on('dragend', function(){ var ll = marker.getLatLng(); updateLatLng(ll.lat, ll.lng); reverseGeocode(ll.lat, ll.lng); }); } marker.setLatLng([lat,lng]); updateLatLng(lat,lng); }
+function updateLatLng(lat,lng){ document.getElementById('latitude').value = lat; document.getElementById('longitude').value = lng; }
 
-    var gpsFab = document.getElementById('gpsFab');
-    if(gpsFab){ gpsFab.addEventListener('click', function(){ var b = document.getElementById('gpsFillBtn'); if(b){ b.click(); } }); }
+function updatePreview(){ var el = document.getElementById('selectedInfo'); if(!el) return; var txt = SEL.display || ((document.getElementById('latitude').value && document.getElementById('longitude').value) ? ('(' + parseFloat(document.getElementById('latitude').value).toFixed(5) + ', ' + parseFloat(document.getElementById('longitude').value).toFixed(5) + ')') : ''); el.textContent = txt; el.style.display = txt ? 'block' : 'none'; }
+function reverseGeocode(lat,lng){ fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=ar&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lng)).then(function(r){ return r.json(); }).then(function(data){ var addr = data.address || {}; var city = addr.city || addr.town || addr.village || addr.state || ''; var area = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || ''; var road = addr.road || ''; var house = addr.house_number || ''; var street = (road + (house?(' '+house):'')); document.getElementById('formatted_address').value = data.display_name || ''; document.getElementById('provider').value = 'nominatim'; document.getElementById('provider_place_id').value = data.place_id || ''; SEL.city = city; SEL.area = area; SEL.street = street; SEL.display = data.display_name || ''; var cEl = document.getElementById('city'); var aEl = document.getElementById('area'); var sEl = document.getElementById('street'); if(cEl) cEl.value = city; if(aEl) aEl.value = area; if(sEl) sEl.value = street; updatePreview(); }); }
 
-    var confirmMain = document.getElementById('confirmLocationMain');
-    if(confirmMain){
-        confirmMain.addEventListener('click', function(){
-            if(guestMarker && guestMarker.dragging){ guestMarker.dragging.disable(); }
-            var lab = document.getElementById('currentAddressLabel');
-            var formatted = formattedEl ? formattedEl.value : '';
-            var latV = latEl ? latEl.value : '';
-            var lonV = lonEl ? lonEl.value : '';
-            var text = formatted ? formatted.split(',').slice(0,4).join(',') : (latV && lonV ? ('(' + parseFloat(latV).toFixed(5) + ', ' + parseFloat(lonV).toFixed(5) + ')') : 'تم تأكيد الموقع');
-            if(lab){ lab.textContent = text; }
-        });
-    }
+var searchInput = document.getElementById('searchInput');
+var searchBtn = document.getElementById('searchBtn');
+function doSearch(){ var q = (searchInput.value||'').trim(); if(!q) return; fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=ar&q='+encodeURIComponent(q)).then(function(r){ return r.json(); }).then(function(items){ var list = document.getElementById('list'); list.innerHTML=''; items.slice(0,10).forEach(function(it){ var d = document.createElement('div'); d.className='res'; d.textContent = it.display_name; d.addEventListener('click', function(){ setMarker(parseFloat(it.lat), parseFloat(it.lon)); fillFromPlace(it); }); list.appendChild(d); }); }); }
+searchBtn.addEventListener('click', doSearch);
 
-    var savedMapEl = document.getElementById('savedMap');
-    var savedMap = null;
-    var savedMarker = null;
-    if(window.L && savedMapEl){ savedMap = L.map('savedMap', { zoomControl: true }).setView([33.3152, 44.3661], 12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(savedMap); }
-    function setSavedMarker(lat, lon){ if(!savedMap) return; var ll = [parseFloat(lat), parseFloat(lon)]; var savedMapEl = document.getElementById('savedMap'); if(savedMapEl){ savedMapEl.style.display = 'block'; } if(savedMarker){ savedMarker.setLatLng(ll); } else { savedMarker = L.marker(ll).addTo(savedMap); } savedMap.invalidateSize && savedMap.invalidateSize(true); savedMap.setView(ll, 15); }
-    var addressRadios = document.querySelectorAll('input[name="address_id"]');
-    addressRadios.forEach(function(r){ r.addEventListener('change', function(){ var lat = r.dataset.lat, lon = r.dataset.lon; if(lat && lon){ setSavedMarker(lat, lon); } }); });
-    var addressCards = document.querySelectorAll('.address-card-item');
-    addressCards.forEach(function(card){
-        card.addEventListener('click', function(ev){
-            var radio = card.querySelector('input[name="address_id"]');
-            if(radio){ radio.checked = true; var lat = radio.dataset.lat, lon = radio.dataset.lon; if(lat && lon){ setSavedMarker(lat, lon); } }
-        });
-    });
-    var deleteBtns = document.querySelectorAll('.address-delete-btn');
-    deleteBtns.forEach(function(btn){
-        btn.addEventListener('click', function(){
-            var id = btn.dataset.addressId;
-            if(!id) return;
-            fetch('/my/addresses/delete/'+id+'/', { method: 'POST', headers: { 'X-CSRFToken': getCSRF() } })
-                .then(function(r){ if(r.ok){ location.reload(); } else { alert('تعذر حذف العنوان'); } })
-                .catch(function(){ alert('تعذر حذف العنوان'); });
-        });
-    });
-});
+function fillFromPlace(place){ var addr = place.address || {}; var city = addr.city || addr.town || addr.village || addr.state || ''; var area = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || ''; var road = addr.road || ''; var house = addr.house_number || ''; var street = (road + (house?(' '+house):'')); document.getElementById('formatted_address').value = place.display_name || ''; document.getElementById('provider').value = 'nominatim'; document.getElementById('provider_place_id').value = place.place_id || ''; SEL.city = city; SEL.area = area; SEL.street = street; SEL.display = place.display_name || ''; var cEl = document.getElementById('city'); var aEl = document.getElementById('area'); var sEl = document.getElementById('street'); if(cEl) cEl.value = city; if(aEl) aEl.value = area; if(sEl) sEl.value = street; updatePreview(); }
+
+document.getElementById('confirmLocation').addEventListener('click', function(){ var lat = document.getElementById('latitude').value; var lng = document.getElementById('longitude').value; var fa = document.getElementById('formatted_address').value || SEL.display || ''; var cEl = document.getElementById('city'); var aEl = document.getElementById('area'); var sEl = document.getElementById('street'); var city = cEl ? (cEl.value || SEL.city) : SEL.city; var area = aEl ? (aEl.value || SEL.area) : SEL.area; var street = sEl ? (sEl.value || SEL.street) : SEL.street; if(!(lat && lng)){ showToast('اختر موقعاً على الخريطة'); return; } if(IS_AUTH){ var payload = { data: { lat: lat, lng: lng, formatted_address: fa, city: city, area: area, street: street, provider: 'nominatim', place_id: document.getElementById('provider_place_id').value||'' }, next: '{% url 'checkout' %}' }; fetch('{% url 'address_save_json' %}', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRFToken': getCsrf() }, body: JSON.stringify(payload) }).then(function(r){ return r.json(); }).then(function(res){ if(res && res.success){ var id = res.id; var list = document.getElementById('addrList'); var wrap = document.createElement('label'); wrap.className='addr-item'; wrap.innerHTML = '<input type="radio" name="address_id" value="'+id+'" checked><div class="addr-body"><div class="addr-title">'+(city||'')+' - '+(area||'')+'</div><div class="addr-street">'+(street||'')+'</div><div class="addr-sub">'+(fa||'')+'</div></div>'; list.insertBefore(wrap, list.firstChild); hideMap(); showToast('تم حفظ العنوان'); } else { showToast('تعذر حفظ العنوان'); } }); } else { hideMap(); showToast('تم تحديد الموقع'); } });
+
+var confirmBtn = document.getElementById('confirmOrder');
+confirmBtn.addEventListener('click', function(e){ confirmBtn.disabled = true; confirmBtn.textContent = 'جاري التأكيد...'; setTimeout(function(){ confirmBtn.disabled = false; confirmBtn.textContent = 'تأكيد الطلب'; }, 6000); });
 </script>
- 
 {% endblock %}
+

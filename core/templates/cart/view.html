@@ -1,478 +1,80 @@
 {% extends 'base.html' %}
 {% load math_filters %}
 
-{% block title %}السلة - متجر الملابس{% endblock %}
+{% block title %}السلة{% endblock %}
 
 {% block extra_css %}
 <style>
-/* Cart Mobile Enhancements */
-@media (max-width: 768px) {
-    .cart-item {
-        padding: 20px !important;
-        margin-bottom: 20px !important;
-    }
-    
-    .cart-item .row {
-        gap: 15px 0;
-    }
-    
-    .product-image {
-        text-align: center;
-        margin-bottom: 15px;
-    }
-    
-    .product-image img {
-        height: 120px !important;
-        width: 120px !important;
-        object-fit: cover;
-    }
-    
-    .quantity-control .input-group {
-        max-width: 140px !important;
-        margin: 0 auto;
-    }
-    
-    .quantity-control .input-group .btn {
-        padding: 10px 15px !important;
-        font-size: 1.1rem !important;
-    }
-    
-    .quantity-control .form-control {
-        padding: 10px !important;
-        font-size: 1.1rem !important;
-    }
-    
-    .product-price, .item-total {
-        margin: 10px 0;
-    }
-    
-    .btn-sm-enhanced {
-        padding: 12px 20px !important;
-        font-size: 1rem !important;
-        width: 100%;
-        margin-top: 10px;
-    }
-    
-    .cart-actions .btn {
-        width: 100%;
-        margin-bottom: 10px;
-        padding: 15px 30px !important;
-        font-size: 1.1rem !important;
-    }
-    
-    .order-summary-card {
-        margin-top: 30px;
-        position: relative !important;
-        top: 0 !important;
-    }
-    
-    .section-header {
-        flex-direction: column;
-        gap: 15px;
-        align-items: stretch !important;
-    }
-    
-    .section-header h4 {
-        text-align: center;
-        margin-bottom: 10px !important;
-    }
-}
-
-.cart-item {
-    background: #fff;
-    border: 2px solid var(--copper);
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-}
-.order-summary-card {
-    background: #fff;
-    border: 2px solid var(--black-light);
-    color: #000;
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    border-top: 3px solid var(--primary-color);
-}
-.item-total .total, .product-price .price {
-    color: #212529;
-    font-weight: 700;
-}
-.btn-outline-primary {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-}
-.btn-outline-primary:hover {
-    background: var(--copper-light);
-    color: #fff;
-    border-color: var(--primary-color);
-}
-
-.btn-primary-checkout {
-    background: var(--primary-color);
-    color: #fff;
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 10px 24px rgba(184,115,51,0.35);
-    transition: all .2s ease;
-}
-.btn-primary-checkout:hover {
-    filter: brightness(0.95);
-    transform: translateY(-1px);
-    box-shadow: 0 14px 32px rgba(184,115,51,0.4);
-}
-
-.size-chip, .color-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--copper-light); border-radius: 10px; color: #212529; background: var(--copper-light); }
-.color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1px solid #dee2e6; }
-
-.mobile-checkout-bar { display: none; position: fixed; left: 0; right: 0; bottom: calc(var(--bottom-nav-height) + 12px); background: #fff; border-top: 3px solid var(--primary-color); box-shadow: 0 -4px 16px rgba(0,0,0,0.06); padding: 12px; z-index: 1050; }
-.mobile-checkout-bar .summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-@media (max-width: 768px) { .mobile-checkout-bar { display: block; } .cart-section { padding-bottom: calc(var(--bottom-nav-height) + 84px); } }
-
-.cart-item:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
-.cart-items-card { border-top: 3px solid var(--primary-color); }
-.section-header h4, .section-header h5 { color: var(--black); }
-.section-header i, .summary-item i, .summary-total i { color: var(--copper); }
-.summary-total { border: 1px solid var(--black-light); }
-.summary-total .h5, .summary-total span.h5 { color: var(--black); }
-.quantity-control .btn { border-color: var(--black-light); color: var(--black-light); }
-.quantity-control .btn:hover { background: var(--black); color: #fff; }
-
-.product-image img { border: 2px solid var(--copper); box-shadow: 0 6px 14px rgba(0,0,0,0.08); }
-.summary-item { border: 1px solid var(--copper-light); background: #fff; }
-.cart-item .btn-link.text-danger { color: var(--black-light) !important; }
-.cart-item .btn-link.text-danger:hover { color: var(--copper) !important; }
-
-.cart-item .row { gap: 8px; }
-.quantity-control .input-group { gap: 0; }
-.quantity-control .input-group .btn, .quantity-control .input-group .form-control { margin-left: -1px; }
-.product-image img { height: 180px !important; }
-
-.cart-hero { border-bottom: 2px solid var(--primary-color); }
-
-/* Touch device optimizations */
-@media (hover: none) and (pointer: coarse) {
-    .cart-item {
-        touch-action: manipulation;
-    }
-    
-.quantity-control .btn {
-    min-height: 44px;
-    min-width: 44px;
-}
-    
-    .btn-sm-enhanced {
-        min-height: 50px;
-    }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-    .animate-fade-in, .animate-fade-in-delay, .animate-fade-in-up, .animate-bounce {
-        animation: none !important;
-    }
-}
+.cart-wrap{direction:rtl}
+.cart-grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
+@media(max-width:900px){.cart-grid{grid-template-columns:1fr}}
+.cart-card{display:grid;grid-template-columns:96px 1fr 120px;gap:12px;align-items:center;background:#fff;border:1px solid #eee;border-radius:12px;padding:12px}
+.cart-image img{width:96px;height:96px;border-radius:10px;object-fit:cover}
+.cart-title{font-weight:700;margin-bottom:6px}
+.chip{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:4px 8px;margin-inline-end:6px;font-size:13px}
+.qty{display:flex;gap:8px;align-items:center}
+.qty input{width:60px;text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px}
+.qty button{border:1px solid #ddd;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
+.price{justify-self:end;text-align:end}
+.summary{position:sticky;top:16px;background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;height:max-content}
+.summary-row{display:flex;justify-content:space-between;margin:8px 0}
+.summary-total{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:10px;font-weight:700}
+.primary{display:block;text-align:center;background:#111;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}
+.bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px}
+.bar .bar-content{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52vh}
+.cta{display:inline-block;background:#111;color:#fff;border-radius:10px;padding:12px 24px;text-decoration:none;margin-top:12px}
+.toast{position:fixed;bottom:70px;left:0;right:0;display:none}
+.toast .box{margin:0 auto;background:#111;color:#fff;padding:10px 14px;border-radius:10px;max-width:280px;text-align:center}
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="container cart-wrap">
+  {% if cart_items %}
+  <div class="cart-grid">
+    <div>
+      {% for item in cart_items %}
+      <div class="cart-card" data-index="{{ forloop.counter0 }}" data-pid="{{ item.product.id }}" data-vid="{{ item.variant.id|default:'' }}" data-unit="{{ item.price }}">
+        <div class="cart-image">{% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% endif %}</div>
+        <div>
+          <div class="cart-title">{{ item.product.name }}</div>
+          <div class="cart-meta">{% if item.variant %}<div class="chip">{{ item.variant.size }}</div>{% if item.variant.color %}<div class="chip">{{ item.variant.color }}</div>{% endif %}{% endif %}</div>
+          <div class="qty"><button class="dec">−</button><input type="number" value="{{ item.quantity }}" min="1"><button class="inc">+</button><button class="del-btn">حذف</button></div>
+        </div>
+        <div class="price"><div class="unit">سعر الوحدة</div><div class="subtotal">{{ item.subtotal|iqd }}</div></div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="summary">
+      <div class="summary-row"><span>المجموع</span><span id="sumProducts">{{ total|iqd }}</span></div>
+      <div class="summary-row" id="deliveryFee" data-fee="{{ delivery_fee }}"><span>التوصيل</span><span>{{ delivery_fee|iqd }}</span></div>
+      <div class="summary-total"><span>الإجمالي</span><span class="sumTotal">{{ grand_total|iqd }}</span></div>
+      <a href="{% url 'checkout' %}" class="primary">متابعة لإتمام الطلب</a>
+    </div>
+  </div>
+  <div class="bar"><div class="container"><div class="bar-content"><div>الإجمالي: <span class="sumTotal">{{ grand_total|iqd }}</span></div><a href="{% url 'checkout' %}" class="primary" style="width: 50%">متابعة لإتمام الطلب</a></div></div></div>
+  {% else %}
+  <div class="empty"><div style="font-size:22px;color:#777">سلة التسوق فارغة</div><a href="{% url 'store_list' %}" class="cta">ابدأ التسوق</a></div>
+  {% endif %}
+  <div id="toast" class="toast"><div class="box"></div></div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function toArabicIndicDigits(s){return s.replace(/[0-9]/g,function(c){return '٠١٢٣٤٥٦٧٨٩'[c];});}
-function formatIQD(value, useArabicIndic){if(useArabicIndic===undefined){useArabicIndic=true;}var num=Math.round(Number(value)||0);var formatted=num.toLocaleString('en-US');if(useArabicIndic){formatted=toArabicIndicDigits(formatted);}return formatted+' د.ع';}
-// Enhanced cart functionality
-function clearCartServer() {
-    const overlay = document.getElementById('clear-confirm-overlay');
-    if (overlay) overlay.style.display = 'flex';
-}
-
-function updateQuantity(variantId, newQuantity) {
-    if (newQuantity <= 0) {
-        newQuantity = 1;
-    }
-    
-    let cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
-    const item = cart.find(item => item.variant_id === variantId);
-    
-    if (item) {
-        item.quantity = newQuantity;
-        sessionStorage.setItem('cart', JSON.stringify(cart));
-        updateCartCount();
-        
-        // Update price display
-        const priceElement = document.querySelector(`[data-price="${variantId}"]`);
-        if (priceElement) {
-            const unitPrice = parseFloat(priceElement.dataset.unitPrice);
-            priceElement.textContent = formatIQD(unitPrice * newQuantity);
-        }
-        
-        // Add success animation
-        const cartItem = document.querySelector(`[data-cart-item="${variantId}"]`);
-        if (cartItem) {
-            cartItem.style.backgroundColor = '#d4edda';
-            setTimeout(() => {
-                cartItem.style.backgroundColor = '';
-            }, 500);
-        }
-    }
-}
-
-function removeCartServer(index) {
-    window.__pendingDeleteIndex = index;
-    const overlay = document.getElementById('delete-confirm-overlay');
-    if (overlay) overlay.style.display = 'flex';
-}
-
-// Add enhanced quantity controls
-document.addEventListener('DOMContentLoaded', function() {
-    const quantityInputs = document.querySelectorAll('.quantity-input');
-    quantityInputs.forEach(input => {
-        input.addEventListener('change', function() {
-            const variantId = this.dataset.variantId;
-            const newQuantity = parseInt(this.value);
-            updateQuantity(variantId, newQuantity);
-        });
-    });
-    
-    // Add keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        if (e.ctrlKey && e.key === 'Enter') {
-            const checkoutBtn = document.querySelector('.btn-primary-checkout[href*="checkout"]');
-            if (checkoutBtn) {
-                checkoutBtn.click();
-            }
-        }
-    });
-    const confirmBtn = document.getElementById('delete-confirm-btn');
-    const cancelBtn = document.getElementById('delete-cancel-btn');
-    const overlay = document.getElementById('delete-confirm-overlay');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', function(){
-            const tokenMatch = document.cookie.match(/csrftoken=([^;]+)/);
-            const csrfToken = tokenMatch ? tokenMatch[1] : '';
-            const index = window.__pendingDeleteIndex;
-            const url = '{% url "remove_from_cart" 0 %}'.replace('0', index);
-            fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
-                .then(()=>{ if (overlay) overlay.style.display = 'none'; location.reload(); });
-        });
-    }
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function(){ if (overlay) overlay.style.display = 'none'; });
-    }
-
-    const clearConfirmBtn = document.getElementById('clear-confirm-btn');
-    const clearCancelBtn = document.getElementById('clear-cancel-btn');
-    const clearOverlay = document.getElementById('clear-confirm-overlay');
-    if (clearConfirmBtn) {
-        clearConfirmBtn.addEventListener('click', function(){
-            const tokenMatch = document.cookie.match(/csrftoken=([^;]+)/);
-            const csrfToken = tokenMatch ? tokenMatch[1] : '';
-            fetch('{% url "clear_cart" %}', { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
-                .then(()=>{ if (clearOverlay) clearOverlay.style.display = 'none'; location.reload(); });
-        });
-    }
-    if (clearCancelBtn) {
-        clearCancelBtn.addEventListener('click', function(){ if (clearOverlay) clearOverlay.style.display = 'none'; });
-    }
-});
+function fIQD(v){var n=Math.round(Number(v)||0);return n.toLocaleString('en-US')+' د.ع'}
+function csrf(){var m=document.cookie.match(/csrftoken=([^;]+)/);return m?m[1]:''}
+function showToast(t){var a=document.getElementById('toast');if(!a)return;a.querySelector('.box').textContent=t;a.style.display='block';setTimeout(function(){a.style.display='none'},1500)}
+function reindex(){document.querySelectorAll('[data-index]').forEach(function(el,i){el.dataset.index=i})}
+function recalc(){var fee=parseFloat(document.getElementById('deliveryFee').dataset.fee||'0');var sum=0;document.querySelectorAll('.cart-card').forEach(function(c){var unit=parseFloat(c.dataset.unit||'0');var qty=parseInt(c.querySelector('.qty input').value||'1');var sub=unit*qty;sum+=sub;c.querySelector('.subtotal').textContent=fIQD(sub)});document.getElementById('sumProducts').textContent=fIQD(sum);document.querySelectorAll('.sumTotal').forEach(function(el){el.textContent=fIQD(sum+fee)})}
+function addQty(pid,vid,q){return fetch('/cart/add/'+pid+'/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify({variant_id:vid,quantity:q})}).then(function(r){return r.json().catch(function(){return {}})})}
+function removeAt(idx){return fetch('{% url "remove_from_cart" 0 %}'.replace('0',idx),{method:'POST',headers:{'X-CSRFToken':csrf()}}).then(function(){return {}})}
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.qty .inc').forEach(function(b){b.addEventListener('click',function(){var card=b.closest('.cart-card');var pid=card.dataset.pid;var vid=card.dataset.vid||null;var input=card.querySelector('input');var val=parseInt(input.value||'1')+1;b.disabled=true;addQty(pid,vid,1).then(function(){input.value=val;recalc();showToast('تم تحديث الكمية')}).catch(function(){showToast('تعذر التحديث')}).finally(function(){b.disabled=false})})});
+  document.querySelectorAll('.qty .dec').forEach(function(b){b.addEventListener('click',function(){var card=b.closest('.cart-card');var pid=card.dataset.pid;var vid=card.dataset.vid||null;var idx=parseInt(card.dataset.index);var input=card.querySelector('input');var val=Math.max(0,parseInt(input.value||'1')-1);if(val===0){b.disabled=true;removeAt(idx).then(function(){card.remove();reindex();recalc();showToast('تم حذف المنتج')}).catch(function(){showToast('تعذر التحديث')}).finally(function(){b.disabled=false});return}b.disabled=true;removeAt(idx).then(function(){return addQty(pid,vid,val)}).then(function(){input.value=val;recalc();showToast('تم تحديث الكمية')}).catch(function(){showToast('تعذر التحديث')}).finally(function(){b.disabled=false})})});
+  document.querySelectorAll('.del-btn').forEach(function(b){b.addEventListener('click',function(){var card=b.closest('.cart-card');var idx=parseInt(card.dataset.index);b.disabled=true;removeAt(idx).then(function(){card.remove();reindex();recalc();showToast('تم حذف المنتج')}).catch(function(){showToast('تعذر الحذف')}).finally(function(){b.disabled=false})})});
+  recalc()
+})
 </script>
-{% endblock %}
-
-{% block content %}
-<!-- Hero Section -->
-<section class="cart-hero py-4 mb-4" style="background: #fff;">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h1 class="display-4 fw-bold mb-3 animate-fade-in">
-                    سلة التسوق
-                </h1>
-                <p class="lead mb-4 animate-fade-in-delay">
-                    راجع منتجاتك المختارة قبل إتمام الطلب
-                </p>
-            </div>
-        </div>
-    </div>
-</section>
-<div id="delete-confirm-overlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:1050;">
-    <div class="bg-white rounded-4 shadow p-4" style="min-width:280px;">
-    <div class="mb-3">
-            هل تريد حذف هذا المنتج من السلة؟
-        </div>
-        <div class="d-flex gap-2 justify-content-end">
-            <button id="delete-cancel-btn" class="btn btn-secondary">إلغاء</button>
-            <button id="delete-confirm-btn" class="btn btn-danger">حذف</button>
-        </div>
-    </div>
-</div>
-<div id="clear-confirm-overlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:1050;">
-    <div class="bg-white rounded-4 shadow p-4" style="min-width:280px;">
-        <div class="mb-3">
-            هل تريد مسح جميع المنتجات من السلة؟
-        </div>
-        <div class="d-flex gap-2 justify-content-end">
-            <button id="clear-cancel-btn" class="btn btn-secondary">إلغاء</button>
-            <button id="clear-confirm-btn" class="btn btn-danger">مسح السلة</button>
-        </div>
-    </div>
-</div>
-
-<!-- Cart Content -->
-<section class="cart-section mb-5">
-    <div class="container">
-        {% if cart_items %}
-        <div class="row g-4">
-            <!-- Cart Items -->
-            <div class="col-lg-8">
-                <div class="cart-items-card p-4 bg-white rounded-4">
-                    <div class="section-header mb-4">
-                        <h4 class="fw-bold">
-                            <i class="bi bi-bag me-2"></i>
-                            منتجاتك ({{ cart_items|length }} عنصر)
-                        </h4>
-                        <button type="button" class="btn btn-outline-danger btn-sm-enhanced" onclick="clearCartServer()">
-                                <i class="bi bi-trash me-2"></i>
-                                مسح السلة
-                        </button>
-                    </div>
-                    
-                    <div class="cart-items">
-                        {% for item in cart_items %}
-                        <div class="cart-item p-4 mb-3 animate-fade-in-up" data-cart-item="{{ item.variant.id|default:'none' }}" onclick="window.location.href='{% url 'product_detail' item.product.id %}'">
-                            <div class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <div class="product-image">
-                                        {% if item.image_url %}
-                                        <img src="{{ item.image_url }}" alt="{{ item.product.name }}" class="img-fluid rounded-3" style="height: 180px; object-fit: cover;">
-                                        {% else %}
-                                        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="height: 180px;">
-                                            <i class="bi bi-image text-muted"></i>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-5">
-                                    <div class="product-info">
-                                        <h5 class="fw-bold mb-2">{{ item.product.name }}</h5>
-                                        {% if item.variant %}
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            <span class="size-chip"><i class="bi bi-rulers me-1"></i>{{ item.variant.size }}</span>
-                                            {% if item.variant.color %}
-                                            <span class="color-chip"><span class="color-dot" style="background-color: {{ item.variant.color_obj.code|default:'#999' }};"></span>{{ item.variant.color }}</span>
-                                            {% endif %}
-                                        </div>
-                                        {% if item.unavailable %}
-                                        <div class="text-danger small mt-2">غير متوفر حالياً</div>
-                                        {% endif %}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="quantity-control text-center">
-                                        <div class="input-group input-group-sm justify-content-center">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="event.stopPropagation(); updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'-1' }})"><i class="bi bi-dash"></i></button>
-                                            <input type="number" class="form-control text-center quantity-input" value="{{ item.quantity }}" min="1" max="{{ item.variant.stock_qty|default:'99' }}" data-variant-id="{{ item.variant.id|default:'none' }}" style="max-width: 70px;" onclick="event.stopPropagation()">
-                                            <button class="btn btn-outline-secondary" type="button" onclick="event.stopPropagation(); updateQuantity('{{ item.variant.id|default:'none' }}', {{ item.quantity|add:'1' }})"><i class="bi bi-plus"></i></button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="text-end">
-                                        <div class="price fw-bold mb-1" data-unit-price="{{ item.price }}">{{ item.price|iqd }}</div>
-                                        <div class="total fw-bold fs-5" data-price="{{ item.variant.id|default:'none' }}">{{ item.subtotal|iqd }}</div>
-                                        <button type="button" class="btn btn-link text-danger p-0" onclick="event.stopPropagation(); removeCartServer({{ forloop.counter0 }})"><i class="bi bi-trash"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="cart-actions mt-4">
-                        <a href="{% url 'store_list' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-arrow-left me-2"></i>
-                            مواصلة التسوق
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Order Summary -->
-            <div class="col-lg-4">
-                <div class="order-summary-card p-4 bg-white rounded-4 sticky-top">
-                    <div class="section-header mb-4">
-                        <h5 class="fw-bold">
-                            <i class="bi bi-receipt me-2"></i>
-                            ملخص الطلب
-                        </h5>
-                    </div>
-                    
-                    <div class="summary-details mb-4">
-                        <div class="summary-item d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3">
-                            <span>
-                                <i class="bi bi-bag me-2"></i>
-                                المنتجات ({{ cart_items|length }})
-                            </span>
-                            <span class="fw-semibold">{{ total|iqd }}</span>
-                        </div>
-                        
-                        <div class="summary-item d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-3">
-                            <span>
-                                <i class="bi bi-truck me-2"></i>
-                                رسوم التوصيل
-                            </span>
-                            <span class="fw-semibold">{{ delivery_fee|iqd }}</span>
-                        </div>
-                        
-                        <hr class="my-3">
-                        
-                        <div class="summary-total d-flex justify-content-between align-items-center p-3 rounded-3">
-                            <span class="h6 mb-0">
-                                <i class="bi bi-calculator me-2"></i>
-                                الإجمالي
-                            </span>
-                            <span class="h5 fw-bold mb-0">{{ grand_total|iqd }}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="checkout-action">
-                        <a href="{% url 'checkout' %}" class="btn btn-primary-checkout btn-lg w-100">
-                            <i class="bi bi-credit-card me-2"></i>
-                            إتمام الطلب
-                        </a>
-                    </div>
-                    
-                    
-                </div>
-            </div>
-        </div>
-        <div class="mobile-checkout-bar">
-            <div class="container">
-                <div class="summary">
-                    <div class="fw-semibold">الإجمالي: {{ grand_total|iqd }}</div>
-                    <a href="{% url 'checkout' %}" class="btn btn-primary-checkout btn-lg w-50">إتمام الطلب</a>
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <!-- Empty Cart -->
-        <div class="row">
-            <div class="col-12">
-                <div class="empty-cart-state text-center py-5">
-                    <div class="empty-icon mb-4">
-                        <i class="bi bi-cart-x display-1 text-muted opacity-50"></i>
-                    </div>
-                    <h3 class="text-muted mb-3">سلة التسوق فارغة</h3>
-                    <p class="text-muted mb-4 fs-5">
-                        ابدأ التسوق واضف منتجاتك المفضلة إلى السلة
-                    </p>
-                    <div class="empty-cart-actions">
-                        <a href="{% url 'store_list' %}" class="btn btn-gradient btn-lg">
-                            <i class="bi bi-shop me-2"></i>
-                            تصفح المتاجر
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-</section>
 {% endblock %}
