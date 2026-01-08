@@ -8,6 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
+import re
 import os
 import json
 import uuid
@@ -719,19 +720,32 @@ def checkout(request):
                     provider_place_id=(request.POST.get('provider_place_id') or ''),
                 )
         else:
-            guest_name = request.POST.get('guest_name')
-            guest_phone = request.POST.get('guest_phone')
+            guest_name = (request.POST.get('guest_name') or '').strip()
+            guest_phone = (request.POST.get('guest_phone') or '').strip()
             city = request.POST.get('city')
             area = request.POST.get('area')
             street = request.POST.get('street')
             details = request.POST.get('details', '')
             latitude = request.POST.get('latitude')
             longitude = request.POST.get('longitude')
-            if not all([guest_name, guest_phone, city, area, street]):
-                messages.error(request, 'يرجى ملء بيانات التوصيل كاملة!')
+            if not re.match(r'^07\d{9}$', guest_phone or ''):
+                messages.error(request, 'يرجى إدخال رقم عراقي صالح يبدأ بـ 07 ومكوّن من 11 رقم')
                 return render(request, 'orders/checkout.html', {
                     'addresses': [],
                     'guest_post': request.POST,
+                    'guest_errors': {'guest_phone': 'رقم عراقي صالح يبدأ بـ 07 ومكوّن من 11 رقم'},
+                })
+            if not all([guest_name, guest_phone, city, area, street]):
+                messages.error(request, 'يرجى ملء بيانات التوصيل كاملة!')
+                guest_errors = {}
+                if not guest_name:
+                    guest_errors['guest_name'] = 'يرجى إدخال الاسم'
+                if not re.match(r'^07\d{9}$', guest_phone or ''):
+                    guest_errors['guest_phone'] = 'رقم عراقي صالح يبدأ بـ 07 ومكوّن من 11 رقم'
+                return render(request, 'orders/checkout.html', {
+                    'addresses': [],
+                    'guest_post': request.POST,
+                    'guest_errors': guest_errors,
                 })
             checkout_user, _ = User.objects.get_or_create(
                 phone=guest_phone,

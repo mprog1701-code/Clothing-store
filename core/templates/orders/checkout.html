@@ -47,11 +47,14 @@
         <div class="guest-grid">
           <div class="field">
             <label>الاسم</label>
-            <input type="text" name="guest_name" id="guest_name" placeholder="الاسم الكامل">
+            <input type="text" name="guest_name" id="guest_name" placeholder="الاسم الكامل" required value="{{ guest_post.guest_name|default:'' }}">
+            <div class="error" id="guestNameError">{% if guest_errors %}{{ guest_errors.guest_name }}{% endif %}</div>
           </div>
           <div class="field">
             <label>رقم الهاتف</label>
-            <input type="tel" name="guest_phone" id="guest_phone" placeholder="07xxxxxxxx">
+            <input type="tel" name="guest_phone" id="guest_phone" placeholder="07xxxxxxxxxx" inputmode="numeric" maxlength="11" pattern="^07[0-9]{9}$" title="رقم عراقي صالح يبدأ بـ07 ويتكون من 11 رقم" required oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11)" value="{{ guest_post.guest_phone|default:'' }}">
+            <small class="hint">يجب أن يبدأ بـ 07 ومكوّن من 11 رقم</small>
+            <div class="error" id="guestPhoneError">{% if guest_errors %}{{ guest_errors.guest_phone }}{% endif %}</div>
           </div>
           <div class="actions" style="margin:6px 0 10px">
             <button type="button" class="secondary" id="openMapGuest">تحديد الموقع بالخريطة</button>
@@ -90,15 +93,15 @@
           <label class="opt-item">
             <input type="radio" name="delivery_opt" value="standard" checked>
             <div class="opt-body">
-              <div class="opt-title">عادي</div>
-              <div class="opt-sub">خلال 24–48 ساعة</div>
+              <div class="opt-title">التوصيل العادي <span class="pill mono">24–48 ساعة</span> <span class="pill">{{ delivery_fee|iqd }}</span></div>
+              <div class="opt-sub">توصيل متاح لكل العراق</div>
             </div>
           </label>
-          <label class="opt-item disabled">
+          <label class="opt-item disabled" data-soon="التوصيل السريع">
             <input type="radio" disabled>
             <div class="opt-body">
-              <div class="opt-title">سريع</div>
-              <div class="opt-sub">قريباً</div>
+              <div class="opt-title">التوصيل السريع <span class="pill soon">قريباً</span></div>
+              <div class="opt-sub">تسليم أسرع خلال ساعات</div>
             </div>
           </label>
         </div>
@@ -110,22 +113,22 @@
           <label class="opt-item">
             <input type="radio" name="payment_method" value="cod" checked>
             <div class="opt-body">
-              <div class="opt-title">عند الاستلام</div>
-              <div class="opt-sub">الدفع نقداً عند التسليم</div>
+              <div class="opt-title">الدفع عند الاستلام</div>
+              <div class="opt-sub">نقداً عند التسليم</div>
             </div>
           </label>
-          <label class="opt-item disabled">
+          <label class="opt-item disabled" data-soon="تحويل بنكي">
             <input type="radio" disabled>
             <div class="opt-body">
-              <div class="opt-title">تحويل بنكي</div>
-              <div class="opt-sub">قريباً</div>
+              <div class="opt-title">تحويل بنكي <span class="pill soon">قريباً</span></div>
+              <div class="opt-sub">دفع إلكتروني عبر التحويل</div>
             </div>
           </label>
-          <label class="opt-item disabled">
+          <label class="opt-item disabled" data-soon="بطاقة مصرفية">
             <input type="radio" disabled>
             <div class="opt-body">
-              <div class="opt-title">بطاقة</div>
-              <div class="opt-sub">قريباً</div>
+              <div class="opt-title">بطاقة مصرفية <span class="pill soon">قريباً</span></div>
+              <div class="opt-sub">Visa/Master لاحقاً</div>
             </div>
           </label>
         </div>
@@ -147,14 +150,17 @@
         <div class="box-head">
           <div>مراجعة نهائية</div>
         </div>
-        <div class="summary">
-          <div class="row"><span>المجموع</span><span>{{ cart_total|iqd }}</span></div>
-          <div class="row"><span>التوصيل</span><span>{{ delivery_fee|iqd }}</span></div>
-          <div class="row total"><span>الإجمالي</span><span>{{ grand_total|iqd }}</span></div>
+        <div class="summary" id="sumBox" data-cart="{{ cart_total }}" data-delivery="{{ delivery_fee }}" data-grand="{{ grand_total }}" data-discount="{{ discount|default:0 }}">
+          <div class="row"><span>المجموع</span><span class="sumCart">{{ cart_total|iqd }}</span></div>
+          <div class="row"><span>التوصيل</span><span class="sumDelivery">{{ delivery_fee|iqd }}</span></div>
+          {% if discount %}
+          <div class="row"><span>الخصم</span><span class="sumDiscount">− {{ discount|iqd }}</span></div>
+          {% endif %}
+          <div class="row total"><span>الإجمالي</span><span class="sumFinal">{{ grand_total|iqd }}</span></div>
         </div>
         <div class="actions">
           <button type="button" class="secondary" id="backTo2">رجوع</button>
-          <button type="submit" class="primary" id="confirmOrder">تأكيد الطلب</button>
+          <button type="submit" class="primary" id="confirmOrder"><span class="btn-label">تأكيد الطلب</span> <span class="btn-total">{{ grand_total|iqd }}</span></button>
         </div>
       </div>
     </div>
@@ -199,9 +205,13 @@
 .box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700}
 .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 .primary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+.primary .btn-total{display:inline-block;margin-inline-start:8px;background:#fff;color:#111;border-radius:8px;padding:2px 8px}
+.promo{margin-top:8px;border:1px dashed #ddd;border-radius:12px;padding:10px;background:#fcfcfc}
+.promo .pill{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:999px;padding:2px 8px;font-size:12px;color:#555}
 .secondary{background:#fff;color:#111;border:1px solid #ddd;border-radius:10px;padding:10px 14px;cursor:pointer}
 .field{display:flex;flex-direction:column;gap:6px;margin:6px 0}
 .field input,.field textarea{border:1px solid #ddd;border-radius:10px;padding:10px}
+.field .error{color:#b00020;font-size:13px}
 .guest-grid{display:grid;grid-template-columns:1fr;gap:8px}
 .addr-list{display:flex;flex-direction:column;gap:8px}
 .addr-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
@@ -212,10 +222,13 @@
 .empty-note{color:#777}
 .opt-list{display:grid;grid-template-columns:1fr;gap:8px}
 .opt-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
-.opt-item.disabled{opacity:.5}
+.opt-item.disabled{opacity:.6;cursor:not-allowed}
 .opt-body{display:flex;flex-direction:column;gap:2px}
 .opt-title{font-weight:700}
 .opt-sub{color:#777;font-size:13px}
+.pill{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:999px;padding:2px 8px;font-size:12px;color:#555;margin-inline-start:6px}
+.pill.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.pill.soon{background:#fff3cd;border-color:#ffe69c;color:#9a6700}
 .summary{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .summary .row{display:flex;justify-content:space-between}
 .summary .total{border-top:1px solid #eee;padding-top:8px;font-weight:700}
@@ -226,6 +239,8 @@
 .icon-btn{background:#fff;border:1px solid #ddd;border-radius:10px;padding:8px 12px;cursor:pointer}
 .modal-body{display:flex;flex-direction:column;gap:8px}
 .search{display:grid;grid-template-columns:1fr auto;gap:8px}
+.locate-control{border-radius:8px;overflow:hidden}
+.locate-control .locate-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid #ddd;cursor:pointer}
 #searchInput{border:1px solid #ddd;border-radius:10px;padding:10px}
 #list{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow:auto;border:1px solid #eee;border-radius:10px;padding:8px}
 #list .res{border:1px solid #eee;border-radius:10px;padding:8px;cursor:pointer}
@@ -244,10 +259,17 @@
 var IS_AUTH = {% if user.is_authenticated %}true{% else %}false{% endif %};
 var toastEl = document.getElementById('toast');
 var SEL = { city:'', area:'', street:'', display:'' };
+function fIQD(v){var n=Math.round(Number(v)||0);return n.toLocaleString('en-US')+' د.ع'}
 function showToast(msg){ var box = toastEl.querySelector('.toast-box'); if(box){ box.textContent = msg; } toastEl.classList.add('show'); setTimeout(function(){ toastEl.classList.remove('show'); }, 2500); }
 function getCsrf(){ var m = document.cookie.match(/csrftoken=([^;]+)/); return m ? m[1] : ''; }
 function goStep(idx){ ['s1','s2','s3'].forEach(function(s,i){ var el = document.querySelector('.step.'+s); if(el){ el.classList.toggle('active', i===idx); } }); ['p1','p2','p3'].forEach(function(pid,i){ var p = document.getElementById(pid); if(p){ p.classList.toggle('active', i===idx); } }); }
-document.getElementById('toStep2').addEventListener('click', function(){ if(IS_AUTH){ var sel = document.querySelector('input[name="address_id"]:checked'); if(!sel){ showToast('يرجى اختيار العنوان'); return; } } else { var n = document.getElementById('guest_name').value.trim(); var ph = document.getElementById('guest_phone').value.trim(); var c = document.getElementById('city').value.trim(); var a = document.getElementById('area').value.trim(); var s = document.getElementById('street').value.trim(); if(!n || !ph || !(c && a && s)){ showToast('أكمل بيانات التوصيل'); return; } } goStep(1); });
+document.getElementById('toStep2').addEventListener('click', function(){ if(IS_AUTH){ var sel = document.querySelector('input[name="address_id"]:checked'); if(!sel){ showToast('يرجى اختيار العنوان'); return; } } else { var nEl = document.getElementById('guest_name'); var n = nEl ? nEl.value.trim() : ''; var phEl = document.getElementById('guest_phone'); var ph = phEl ? phEl.value.trim() : ''; var c = document.getElementById('city').value.trim(); var a = document.getElementById('area').value.trim(); var s = document.getElementById('street').value.trim(); var nameErr = document.getElementById('guestNameError'); var phoneErr = document.getElementById('guestPhoneError'); if(!/^07\d{9}$/.test(ph)){ if(phoneErr){ phoneErr.textContent = 'أدخل رقم عراقي صالح يبدأ بـ 07 ومكوّن من 11 رقم'; } showToast('أدخل رقم عراقي صالح يبدأ بـ 07 ومكوّن من 11 رقم'); if(phEl){ phEl.focus(); } return; } else { if(phoneErr){ phoneErr.textContent = ''; } } if(!n){ if(nameErr){ nameErr.textContent = 'يرجى إدخال الاسم'; } showToast('أكمل بيانات التوصيل'); return; } else { if(nameErr){ nameErr.textContent = ''; } } if(!(c && a && s)){ showToast('أكمل بيانات التوصيل'); return; } } goStep(1); });
+var nameEl = document.getElementById('guest_name');
+var nameErrEl = document.getElementById('guestNameError');
+if(nameEl && nameErrEl){ nameEl.addEventListener('input', function(){ var v = nameEl.value.trim(); nameErrEl.textContent = v ? '' : 'يرجى إدخال الاسم'; }); }
+var phoneEl = document.getElementById('guest_phone');
+var phoneErrEl = document.getElementById('guestPhoneError');
+if(phoneEl && phoneErrEl){ phoneEl.addEventListener('input', function(){ var v = phoneEl.value.trim(); phoneErrEl.textContent = /^07\d{9}$/.test(v) ? '' : 'أدخل رقم عراقي صالح يبدأ بـ 07 ومكوّن من 11 رقم'; }); }
 document.getElementById('backTo1').addEventListener('click', function(){ goStep(0); });
 document.getElementById('toStep3').addEventListener('click', function(){ goStep(2); });
 document.getElementById('backTo2').addEventListener('click', function(){ goStep(1); });
@@ -264,7 +286,7 @@ if(openMapGuestBtn){ openMapGuestBtn.addEventListener('click', openMap); }
 closeMap.addEventListener('click', hideMap); cancelMap.addEventListener('click', hideMap);
 
 var map, marker;
-function initMap(){ if(map) return; map = L.map('map').setView([33.3152,44.3661], 13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19}).addTo(map); map.on('click', function(e){ setMarker(e.latlng.lat, e.latlng.lng); reverseGeocode(e.latlng.lat, e.latlng.lng); }); }
+function initMap(){ if(map) return; map = L.map('map', { attributionControl: false }).setView([33.3152,44.3661], 13); L.control.attribution({ prefix: false }).addTo(map); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap contributors'}).addTo(map); map.on('click', function(e){ setMarker(e.latlng.lat, e.latlng.lng); reverseGeocode(e.latlng.lat, e.latlng.lng); }); addLocateControl(); }
 function setMarker(lat,lng){ if(!marker){ marker = L.marker([lat,lng], {draggable:true}).addTo(map); marker.on('dragend', function(){ var ll = marker.getLatLng(); updateLatLng(ll.lat, ll.lng); reverseGeocode(ll.lat, ll.lng); }); } marker.setLatLng([lat,lng]); updateLatLng(lat,lng); }
 function updateLatLng(lat,lng){ document.getElementById('latitude').value = lat; document.getElementById('longitude').value = lng; }
 
@@ -275,13 +297,44 @@ var searchInput = document.getElementById('searchInput');
 var searchBtn = document.getElementById('searchBtn');
 function doSearch(){ var q = (searchInput.value||'').trim(); if(!q) return; fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=ar&q='+encodeURIComponent(q)).then(function(r){ return r.json(); }).then(function(items){ var list = document.getElementById('list'); list.innerHTML=''; items.slice(0,10).forEach(function(it){ var d = document.createElement('div'); d.className='res'; d.textContent = it.display_name; d.addEventListener('click', function(){ setMarker(parseFloat(it.lat), parseFloat(it.lon)); fillFromPlace(it); }); list.appendChild(d); }); }); }
 searchBtn.addEventListener('click', doSearch);
+function addLocateControl(){ var C = L.Control.extend({ options: { position: 'topright' }, onAdd: function(m){ var wrap = L.DomUtil.create('div','leaflet-bar locate-control'); var btn = L.DomUtil.create('button','locate-btn', wrap); btn.type='button'; btn.title='استخدم موقعي'; btn.textContent='📍'; L.DomEvent.on(btn,'click', function(){ if(!navigator.geolocation){ showToast('المتصفح لا يدعم GPS'); return; } btn.disabled=true; var old = btn.textContent; btn.textContent='⏳'; navigator.geolocation.getCurrentPosition(function(pos){ btn.disabled=false; btn.textContent=old; var lat=pos.coords.latitude, lng=pos.coords.longitude; setMarker(lat,lng); map.setView([lat,lng],16); reverseGeocode(lat,lng); showToast('تم تحديد موقعك'); }, function(){ btn.disabled=false; btn.textContent=old; showToast('تعذر تحديد الموقع'); }, { enableHighAccuracy:true, timeout:8000 }); }); return wrap; } }); map.addControl(new C()); }
 
 function fillFromPlace(place){ var addr = place.address || {}; var city = addr.city || addr.town || addr.village || addr.state || ''; var area = addr.suburb || addr.neighbourhood || addr.quarter || addr.district || addr.county || ''; var road = addr.road || ''; var house = addr.house_number || ''; var street = (road + (house?(' '+house):'')); document.getElementById('formatted_address').value = place.display_name || ''; document.getElementById('provider').value = 'nominatim'; document.getElementById('provider_place_id').value = place.place_id || ''; SEL.city = city; SEL.area = area; SEL.street = street; SEL.display = place.display_name || ''; var cEl = document.getElementById('city'); var aEl = document.getElementById('area'); var sEl = document.getElementById('street'); if(cEl) cEl.value = city; if(aEl) aEl.value = area; if(sEl) sEl.value = street; updatePreview(); }
 
 document.getElementById('confirmLocation').addEventListener('click', function(){ var lat = document.getElementById('latitude').value; var lng = document.getElementById('longitude').value; var fa = document.getElementById('formatted_address').value || SEL.display || ''; var cEl = document.getElementById('city'); var aEl = document.getElementById('area'); var sEl = document.getElementById('street'); var city = cEl ? (cEl.value || SEL.city) : SEL.city; var area = aEl ? (aEl.value || SEL.area) : SEL.area; var street = sEl ? (sEl.value || SEL.street) : SEL.street; if(!(lat && lng)){ showToast('اختر موقعاً على الخريطة'); return; } if(IS_AUTH){ var payload = { data: { lat: lat, lng: lng, formatted_address: fa, city: city, area: area, street: street, provider: 'nominatim', place_id: document.getElementById('provider_place_id').value||'' }, next: '{% url 'checkout' %}' }; fetch('{% url 'address_save_json' %}', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-CSRFToken': getCsrf() }, body: JSON.stringify(payload) }).then(function(r){ return r.json(); }).then(function(res){ if(res && res.success){ var id = res.id; var list = document.getElementById('addrList'); var wrap = document.createElement('label'); wrap.className='addr-item'; wrap.innerHTML = '<input type="radio" name="address_id" value="'+id+'" checked><div class="addr-body"><div class="addr-title">'+(city||'')+' - '+(area||'')+'</div><div class="addr-street">'+(street||'')+'</div><div class="addr-sub">'+(fa||'')+'</div></div>'; list.insertBefore(wrap, list.firstChild); hideMap(); showToast('تم حفظ العنوان'); } else { showToast('تعذر حفظ العنوان'); } }); } else { hideMap(); showToast('تم تحديد الموقع'); } });
 
 var confirmBtn = document.getElementById('confirmOrder');
-confirmBtn.addEventListener('click', function(e){ confirmBtn.disabled = true; confirmBtn.textContent = 'جاري التأكيد...'; setTimeout(function(){ confirmBtn.disabled = false; confirmBtn.textContent = 'تأكيد الطلب'; }, 6000); });
+var coForm = document.getElementById('coForm');
+if(coForm && confirmBtn){
+  coForm.addEventListener('submit', function(){
+    confirmBtn.disabled = true;
+    var lbl = confirmBtn.querySelector('.btn-label');
+    if(lbl){ lbl.textContent = 'جاري التأكيد...'; }
+  });
+}
+
+// Update final total (with discount if any) in summary and button
+document.addEventListener('DOMContentLoaded', function(){
+  var sb = document.getElementById('sumBox');
+  if(!sb) return;
+  var grand = parseFloat(sb.dataset.grand||'0');
+  var discount = parseFloat(sb.dataset.discount||'0');
+  var final = grand - (isNaN(discount)?0:discount);
+  var el = document.querySelector('.sumFinal'); if(el) el.textContent = fIQD(final);
+  var btn = document.querySelector('#confirmOrder .btn-total'); if(btn) btn.textContent = fIQD(final);
+  var discEl = document.querySelector('.sumDiscount'); if(discEl && !isNaN(discount) && discount>0){ discEl.textContent = '− ' + fIQD(discount); }
+  var label = sb.dataset.discountLabel || ''; var code = sb.dataset.discountCode || '';
+  if((!isNaN(discount) && discount>0) || label || code){
+    var promo = document.createElement('div'); promo.className='promo';
+    var html = '';
+    if(label){ html += '<div class="row"><span>تفاصيل الخصم</span><span class="pill">'+label+'</span></div>'; }
+    if(code){ html += '<div class="row small"><span>كود</span><span class="pill">'+code+'</span></div>'; }
+    html += '<div class="row"><span>الموفّر</span><span class="sumDiscount">'+(discount>0?('− '+fIQD(discount)):'0')+'</span></div>';
+    promo.innerHTML = html;
+    var sumBox = document.getElementById('sumBox'); if(sumBox){ sumBox.appendChild(promo); }
+  }
+  document.querySelectorAll('.opt-item.disabled').forEach(function(el){ el.addEventListener('click', function(e){ e.preventDefault(); showToast((el.dataset.soon||'الخيار')+' قريباً'); }); });
+});
 </script>
 {% endblock %}
 
