@@ -138,14 +138,7 @@
           <textarea id="order_notes" rows="2" placeholder="اختياري"></textarea>
         </div>
 
-        <div class="summary mini" id="sumBox2" data-cart="{{ cart_total }}" data-delivery="{{ delivery_fee }}" data-grand="{{ grand_total }}" data-discount="{{ discount|default:0 }}" style="margin-top:12px">
-          <div class="row"><span>المجموع</span><span class="sumCart2">{{ cart_total|iqd }}</span></div>
-          <div class="row"><span>التوصيل</span><span class="sumDelivery2">{{ delivery_fee|iqd }}</span></div>
-          {% if discount %}
-          <div class="row"><span>الخصم</span><span class="sumDiscount2">− {{ discount|iqd }}</span></div>
-          {% endif %}
-          <div class="row total"><span>الإجمالي</span><span class="sumFinal2">{{ grand_total|iqd }}</span></div>
-        </div>
+        
 
         <div class="actions">
           <button type="button" class="secondary" id="backTo1">رجوع</button>
@@ -160,11 +153,6 @@
           <div>مراجعة نهائية</div>
         </div>
         <div class="summary" id="sumBox" data-cart="{{ cart_total }}" data-delivery="{{ delivery_fee }}" data-grand="{{ grand_total }}" data-discount="{{ discount|default:0 }}" data-discount-label="{{ discount_label|default:'' }}" data-discount-code="{{ discount_code|default:'' }}">
-          <div class="row"><span>المجموع</span><span class="sumCart">{{ cart_total|iqd }}</span></div>
-          <div class="row"><span>التوصيل</span><span class="sumDelivery">{{ delivery_fee|iqd }}</span></div>
-          {% if discount %}
-          <div class="row"><span>الخصم</span><span class="sumDiscount">− {{ discount|iqd }}</span></div>
-          {% endif %}
           <div class="row total"><span>الإجمالي</span><span class="sumFinal">{{ grand_total|iqd }}</span></div>
         </div>
         <div class="coupon-box">
@@ -251,10 +239,9 @@
 .pill{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:999px;padding:2px 8px;font-size:12px;color:#555;margin-inline-start:6px}
 .pill.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
 .pill.soon{background:#fff3cd;border-color:#ffe69c;color:#9a6700}
-.summary{display:flex;flex-direction:column;gap:8px;margin-top:8px;color:#111}
+.summary{display:flex;flex-direction:column;gap:8px;margin-top:8px;color:#111;background:#fff;border:1px solid #eee;border-radius:12px;padding:10px}
 .summary .row span{color:#111}
-.summary.mini{background:#fcfcfc;border:1px solid #eee;border-radius:12px;padding:10px}
-.summary .row{display:flex;justify-content:space-between}
+.summary .row{display:flex;justify-content:space-between;align-items:center}
 .summary .total{border-top:1px solid #eee;padding-top:8px;font-weight:700}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:10px;z-index:1000}
 .modal.open{display:flex}
@@ -355,15 +342,6 @@ document.addEventListener('DOMContentLoaded', function(){
     html += '<div class="row"><span>الموفّر</span><span class="sumDiscount">'+(discount>0?('− '+fIQD(discount)):'0')+'</span></div>';
     promo.innerHTML = html;
     var sumBox = document.getElementById('sumBox'); if(sumBox){ sumBox.appendChild(promo); }
-  }
-  // Update summary in step 2
-  var sb2 = document.getElementById('sumBox2');
-  if(sb2){
-    var g2 = parseFloat(sb2.dataset.grand||'0');
-    var d2 = parseFloat(sb2.dataset.discount||'0');
-    var f2 = g2 - (isNaN(d2)?0:d2);
-    var el2 = document.querySelector('.sumFinal2'); if(el2) el2.textContent = fIQD(f2);
-    var dEl2 = document.querySelector('.sumDiscount2'); if(dEl2 && !isNaN(d2) && d2>0){ dEl2.textContent = '− ' + fIQD(d2); }
   }
   // Coupon handlers
   var applyBtn = document.getElementById('applyCoupon');
