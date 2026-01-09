@@ -264,8 +264,19 @@ def register(request):
 
 def user_login(request):
     if request.method == 'POST':
-        phone = request.POST.get('phone')
+        phone = (request.POST.get('phone') or '').strip()
         password = request.POST.get('password')
+        try:
+            import re
+            digits = re.sub(r'\D+', '', phone)
+            if digits.startswith('964'):
+                phone = '0' + digits[3:]
+            elif digits.startswith('7') and len(digits) == 10:
+                phone = '0' + digits
+            elif digits.startswith('07') and len(digits) == 11:
+                phone = digits
+        except Exception:
+            pass
         
         try:
             user = User.objects.get(phone=phone)
@@ -319,8 +330,19 @@ def user_login(request):
 
 def owner_login(request):
     if request.method == 'POST':
-        phone = request.POST.get('phone')
+        phone = (request.POST.get('phone') or '').strip()
         password = request.POST.get('password')
+        try:
+            import re
+            digits = re.sub(r'\D+', '', phone)
+            if digits.startswith('964'):
+                phone = '0' + digits[3:]
+            elif digits.startswith('7') and len(digits) == 10:
+                phone = '0' + digits
+            elif digits.startswith('07') and len(digits) == 11:
+                phone = digits
+        except Exception:
+            pass
         
         try:
             user = User.objects.get(phone=phone)
