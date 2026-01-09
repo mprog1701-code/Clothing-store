@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}حسابي{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-2 py-3 account-dashboard">
+  <section class="mb-3">
+    <div class="card bg-white text-dark shadow-sm">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avatar-circle bg-gradient-primary text-white d-flex align-items-center justify-content-center">
+            <i class="bi bi-person"></i>
+          </div>
+          <div>
+            <div class="fw-bold fs-5">حسابي</div>
+            {% if user.is_authenticated %}
+              <div class="text-muted small">{{ user.username }}{% if user.phone %} · {{ user.phone }}{% endif %}{% if user.email %} · {{ user.email }}{% endif %}</div>
+            {% else %}
+              <div class="text-muted small">غير مسجل</div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="btn btn-outline-secondary">تسجيل الخروج</a>
+          {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-primary">تسجيل دخول</a>
+            <a href="{% url 'register' %}" class="btn btn-primary">إنشاء حساب</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-3">
+    <div class="row g-2 quick-actions">
+      <div class="col-6">
+        <a href="{% url 'order_list' %}" class="qa btn btn-light w-100"><i class="bi bi-bag"></i><span>طلباتي</span></a>
+      </div>
+      <div class="col-6">
+        <a href="{% url 'address_list' %}" class="qa btn btn-light w-100"><i class="bi bi-geo-alt"></i><span>العناوين</span></a>
+      </div>
+      <div class="col-6">
+        <a href="#" class="qa btn btn-light w-100" data-action="favorite"><i class="bi bi-heart"></i><span>المفضلة</span></a>
+      </div>
+      <div class="col-6">
+        <a href="{% url 'notifications' %}" class="qa btn btn-light w-100"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
+      </div>
+      <div class="col-6">
+        <a href="#" class="qa btn btn-light w-100" data-action="payments"><i class="bi bi-credit-card"></i><span>طرق الدفع</span></a>
+      </div>
+      <div class="col-6">
+        <a href="{% url 'services' %}" class="qa btn btn-light w-100"><i class="bi bi-headset"></i><span>الدعم</span></a>
+      </div>
+    </div>
+  </section>
+
+  
+
+  <section class="mb-3">
+    <div class="card bg-white text-dark shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-gear"></i><span class="fw-bold">الإعدادات</span></div>
+        <div class="row g-2">
+          <div class="col-12">
+            <div class="list-group">
+              <a href="#" class="list-group-item d-flex align-items-center justify-content-between" id="langItem">
+                <div class="d-flex align-items-center gap-2"><i class="bi bi-translate"></i><span>اللغة</span></div>
+                <small id="currentLanguage">العربية</small>
+              </a>
+              <a href="#" class="list-group-item d-flex align-items-center justify-content-between" id="themeItem">
+                <div class="d-flex align-items-center gap-2"><i class="bi bi-brightness-high"></i><span>الثيم</span></div>
+                <small id="currentTheme">داكن</small>
+              </a>
+              <a href="#" class="list-group-item d-flex align-items-center justify-content-between" id="notifItem">
+                <div class="d-flex align-items-center gap-2"><i class="bi bi-bell"></i><span>الإشعارات</span></div>
+                <div class="form-check form-switch m-0">
+                  <input class="form-check-input" type="checkbox" id="notifToggle">
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card bg-white text-dark shadow-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-info-circle"></i><span class="fw-bold">عن التطبيق</span></div>
+        <div class="list-group">
+          <a href="{% url 'about' %}" class="list-group-item d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text"></i><span>عنّا</span></a>
+          <a href="{% url 'services' %}" class="list-group-item d-flex align-items-center gap-2"><i class="bi bi-shield-check"></i><span>الشروط والأحكام</span></a>
+          <a href="#" class="list-group-item d-flex align-items-center gap-2" data-action="rate"><i class="bi bi-star"></i><span>تقييم التطبيق</span></a>
+          <a href="#" class="list-group-item d-flex align-items-center gap-2" data-action="share"><i class="bi bi-share"></i><span>مشاركة التطبيق</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="toastHolder" class="position-fixed top-0 end-0 p-3" style="z-index: 1060;"></div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.account-dashboard .avatar-circle{width:48px;height:48px;border-radius:50%}
+.account-dashboard .quick-actions .qa{display:flex;align-items:center;gap:10px;min-height:56px;border-radius:14px}
+.account-dashboard .quick-actions .qa i{font-size:1.2rem}
+@media (max-width:600px){.account-dashboard .quick-actions .qa{min-height:54px}}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  function showToast(text,type){var holder=document.getElementById('toastHolder');if(!holder)return;var cls=type==='success'?'bg-success':'bg-secondary';var d=document.createElement('div');d.className='toast show';d.innerHTML='<div class="toast-header '+cls+' text-white"><strong class="me-auto">'+(type==='success'?'تم':'تنبيه')+'</strong><button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button></div><div class="toast-body">'+text+'</div>';holder.appendChild(d);setTimeout(function(){try{d.remove()}catch(e){}},3000)}
+  document.querySelectorAll('.quick-actions a.qa[data-action]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var act=this.getAttribute('data-action');if(act==='favorite'){showToast('المفضلة ستتوفر قريباً','secondary')}else if(act==='payments'){showToast('طرق الدفع Placeholder','secondary')}})});
+  function applyLanguageLabel(){var el=document.getElementById('currentLanguage');var lang='ar';try{var s=localStorage.getItem('siteLanguage');if(s&&window.i18n&&window.i18n[s])lang=s;else localStorage.setItem('siteLanguage','ar')}catch(e){lang='ar'};var dict=(window.i18n&&window.i18n[lang])?window.i18n[lang]:window.i18n['ar'];if(el){el.textContent=dict['language_'+lang]||dict.language_ar}}
+  function applyThemeLabel(){var el=document.getElementById('currentTheme');var t='system';try{t=localStorage.getItem('siteTheme')||'system'}catch(e){t='system'};var lang=localStorage.getItem('siteLanguage')||'ar';var dict=(window.i18n&&window.i18n[lang])?window.i18n[lang]:window.i18n['ar'];if(el){el.textContent=t==='dark'?(dict.theme_dark||'داكن'):(t==='light'?(dict.theme_light||'فاتح'):(dict.theme_system||'حسب النظام'))}if(window.applyThemeFromPreference)window.applyThemeFromPreference()}
+  applyLanguageLabel();applyThemeLabel();
+  var langItem=document.getElementById('langItem');if(langItem){langItem.addEventListener('click',function(e){e.preventDefault();var order=['ar','en','ku'];var cur='ar';try{var s=localStorage.getItem('siteLanguage');if(s)cur=s}catch(err){};var next=order[(order.indexOf(cur)+1)%order.length];try{localStorage.setItem('siteLanguage',next)}catch(err){};applyLanguageLabel();window.dispatchEvent(new CustomEvent('languageChange',{detail:{lang:next}}));showToast('تم تغيير اللغة','success')})}
+  var themeItem=document.getElementById('themeItem');if(themeItem){themeItem.addEventListener('click',function(e){e.preventDefault();var order=['system','light','dark'];var cur='system';try{var s=localStorage.getItem('siteTheme');if(s)cur=s}catch(err){};var next=order[(order.indexOf(cur)+1)%order.length];try{localStorage.setItem('siteTheme',next)}catch(err){};applyThemeLabel();showToast('تم تغيير الثيم','success')})}
+  var notifToggle=document.getElementById('notifToggle');if(notifToggle){try{notifToggle.checked=(localStorage.getItem('notificationsEnabled')||'0')==='1'}catch(e){};notifToggle.addEventListener('change',function(){try{localStorage.setItem('notificationsEnabled',this.checked?'1':'0')}catch(e){};showToast(this.checked?'تم تفعيل الإشعارات':'تم إيقاف الإشعارات','success')})}
+  document.querySelectorAll('[data-action="rate"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();showToast('نشكرك! قيّمنا لاحقاً','success')})});
+  document.querySelectorAll('[data-action="share"]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();try{navigator.share?navigator.share({title:document.title,text:'جرّب متجر الملابس',url:window.location.origin}):showToast('انسخ الرابط وشاركه','secondary')}catch(err){showToast('انسخ الرابط وشاركه','secondary')}})});
+})();
+</script>
+{% endblock %}

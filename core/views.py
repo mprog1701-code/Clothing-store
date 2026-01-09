@@ -1270,6 +1270,21 @@ def main_dashboard(request):
 def account_settings(request):
     return render(request, 'account/settings.html')
 
+def account_dashboard(request):
+    if request.user.is_authenticated:
+        orders = Order.objects.filter(user=request.user).order_by('-created_at')
+        addr = Address.objects.filter(user=request.user, is_default=True).first()
+        if not addr:
+            addr = Address.objects.filter(user=request.user).order_by('-id').first()
+    else:
+        orders = []
+        addr = None
+    context = {
+        'orders': orders,
+        'last_address': addr,
+    }
+    return render(request, 'account/dashboard.html', context)
+
 def notifications_page(request):
     return render(request, 'notifications.html')
 
