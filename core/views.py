@@ -1296,6 +1296,15 @@ def about_page(request):
 def services_page(request):
     return render(request, 'static/services.html')
 
+def privacy_page(request):
+    return render(request, 'static/privacy.html')
+
+def terms_page(request):
+    return render(request, 'static/terms.html')
+
+def contact_page(request):
+    return render(request, 'static/contact.html')
+
 
 # Store owner dashboard functions removed - simplified system
 

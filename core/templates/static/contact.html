@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}تواصل معنا{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card bg-white text-dark">
+    <div class="card-body">
+      <h1 class="fs-4 mb-3">تواصل معنا</h1>
+      <p>يسعدنا تواصلك معنا لأي استفسار أو ملاحظة.</p>
+      <div class="list-group">
+        <div class="list-group-item">الهاتف: {{ settings.contact_phone|default:"" }}</div>
+        <div class="list-group-item">البريد: {{ settings.contact_email|default:"" }}</div>
+        <div class="list-group-item">العنوان: {{ settings.contact_address|default:"" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
