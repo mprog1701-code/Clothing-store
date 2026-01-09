@@ -16,9 +16,10 @@
 .qty input{width:60px;text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px}
 .qty button{border:1px solid #ddd;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
 .price{justify-self:end;text-align:end}
-.summary{position:sticky;top:16px;background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;height:max-content}
+.summary{position:sticky;top:16px;background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;height:max-content;color:#111}
 .summary-row{display:flex;justify-content:space-between;margin:8px 0}
 .summary-total{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:10px;font-weight:700}
+.summary-row span,.summary-total span{color:#111}
 .primary{display:block;text-align:center;background:#111;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}
 .bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px}
 .bar .bar-content{display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -49,13 +50,12 @@
       {% endfor %}
     </div>
     <div class="summary">
+      <div class="summary-row"><span>عدد القطع</span><span id="sumItems">{{ items_count }}</span></div>
       <div class="summary-row"><span>المجموع</span><span id="sumProducts">{{ total|iqd }}</span></div>
-      <div class="summary-row" id="deliveryFee" data-fee="{{ delivery_fee }}"><span>التوصيل</span><span>{{ delivery_fee|iqd }}</span></div>
-      <div class="summary-total"><span>الإجمالي</span><span class="sumTotal">{{ grand_total|iqd }}</span></div>
       <a href="{% url 'checkout' %}" class="primary">متابعة لإتمام الطلب</a>
     </div>
   </div>
-  <div class="bar"><div class="container"><div class="bar-content"><div class="bar-total">الإجمالي: <span class="sumTotal">{{ grand_total|iqd }}</span></div><a href="{% url 'checkout' %}" class="primary" id="goCheckout">متابعة لإتمام الطلب <span class="btn-total">{{ grand_total|iqd }}</span></a></div></div></div>
+  <div class="bar"><div class="container"><div class="bar-content"><div class="bar-total">المجموع: <span class="sumTotal">{{ total|iqd }}</span></div><a href="{% url 'checkout' %}" class="primary" id="goCheckout">متابعة لإتمام الطلب <span class="btn-total">{{ total|iqd }}</span></a></div></div></div>
   {% else %}
   <div class="empty"><div style="font-size:22px;color:#777">سلة التسوق فارغة</div><a href="{% url 'store_list' %}" class="cta">ابدأ التسوق</a></div>
   {% endif %}
@@ -69,7 +69,7 @@ function fIQD(v){var n=Math.round(Number(v)||0);return n.toLocaleString('en-US')
 function csrf(){var m=document.cookie.match(/csrftoken=([^;]+)/);return m?m[1]:''}
 function showToast(t){var a=document.getElementById('toast');if(!a)return;a.querySelector('.box').textContent=t;a.style.display='block';setTimeout(function(){a.style.display='none'},1500)}
 function reindex(){document.querySelectorAll('[data-index]').forEach(function(el,i){el.dataset.index=i})}
-function recalc(){var fee=parseFloat(document.getElementById('deliveryFee').dataset.fee||'0');var sum=0;document.querySelectorAll('.cart-card').forEach(function(c){var unit=parseFloat(c.dataset.unit||'0');var qty=parseInt(c.querySelector('.qty input').value||'1');var sub=unit*qty;sum+=sub;c.querySelector('.subtotal').textContent=fIQD(sub)});var total=fIQD(sum+fee);document.getElementById('sumProducts').textContent=fIQD(sum);document.querySelectorAll('.sumTotal').forEach(function(el){el.textContent=total});var btn=document.querySelector('#goCheckout .btn-total');if(btn){btn.textContent=total}}
+function recalc(){var sum=0;var count=0;document.querySelectorAll('.cart-card').forEach(function(c){var unit=parseFloat(c.dataset.unit||'0');var qty=parseInt(c.querySelector('.qty input').value||'1');var sub=unit*qty;sum+=sub;count+=qty;c.querySelector('.subtotal').textContent=fIQD(sub)});document.getElementById('sumProducts').textContent=fIQD(sum);var cntEl=document.getElementById('sumItems');if(cntEl){cntEl.textContent=count}document.querySelectorAll('.sumTotal').forEach(function(el){el.textContent=fIQD(sum)});var btn=document.querySelector('#goCheckout .btn-total');if(btn){btn.textContent=fIQD(sum)}}
 function addQty(pid,vid,q){return fetch('/cart/add/'+pid+'/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify({variant_id:vid,quantity:q})}).then(function(r){return r.json().catch(function(){return {}})})}
 function removeAt(idx){return fetch('{% url "remove_from_cart" 0 %}'.replace('0',idx),{method:'POST',headers:{'X-CSRFToken':csrf()}}).then(function(){return {}})}
 document.addEventListener('DOMContentLoaded',function(){

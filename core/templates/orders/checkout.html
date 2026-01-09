@@ -24,7 +24,9 @@
       <div class="box">
         <div class="box-head">
           <div>عناوين التوصيل</div>
+          {% if user.is_authenticated %}
           <button type="button" class="secondary" id="openMap">إضافة عنوان جديد</button>
+          {% endif %}
         </div>
         {% if user.is_authenticated %}
         <div id="addrList" class="addr-list">
@@ -153,6 +155,7 @@
           <div>مراجعة نهائية</div>
         </div>
         <div class="summary" id="sumBox" data-cart="{{ cart_total }}" data-delivery="{{ delivery_fee }}" data-grand="{{ grand_total }}" data-discount="{{ discount|default:0 }}" data-discount-label="{{ discount_label|default:'' }}" data-discount-code="{{ discount_code|default:'' }}">
+          <div class="row"><span>التوصيل</span><span class="sumDelivery">{{ delivery_fee|iqd }}</span></div>
           <div class="row total"><span>الإجمالي</span><span class="sumFinal">{{ grand_total|iqd }}</span></div>
         </div>
         <div class="coupon-box">

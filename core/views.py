@@ -430,6 +430,7 @@ def cart_view(request):
     new_cart = []
     cart_items = []
     total = 0
+    items_count = 0
 
     for item in cart:
         raw_variant_id = item.get('variant_id')
@@ -464,6 +465,7 @@ def cart_view(request):
                 'unavailable': False,
             })
             total += subtotal
+            items_count += quantity
             new_cart.append({'product_id': product_id, 'variant_id': None, 'quantity': quantity})
             continue
         try:
@@ -496,16 +498,18 @@ def cart_view(request):
             if mimg:
                 image_url = mimg.get_image_url()
 
-        cart_items.append({
-            'product': product,
-            'variant': variant,
-            'quantity': quantity,
-            'price': price,
-            'subtotal': subtotal,
-            'image_url': image_url,
-            'unavailable': unavailable,
-        })
-        total += subtotal
+            cart_items.append({
+                'product': product,
+                'variant': variant,
+                'quantity': quantity,
+                'price': price,
+                'subtotal': subtotal,
+                'image_url': image_url,
+                'unavailable': unavailable,
+            })
+            total += subtotal
+            if not unavailable:
+                items_count += quantity
         new_cart.append({'product_id': variant.product_id, 'variant_id': variant_id, 'quantity': (0 if unavailable else quantity)})
 
     # persist revalidated cart
@@ -520,6 +524,7 @@ def cart_view(request):
         'total': total,
         'delivery_fee': settings.DELIVERY_FEE,
         'grand_total': total + settings.DELIVERY_FEE,
+        'items_count': items_count,
     }
     return render(request, 'cart/view.html', context)
 
