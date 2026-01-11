@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load math_filters %}
+
+{% block title %}التقارير{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <ul class="nav nav-pills">
+      <li class="nav-item"><a class="nav-link" href="{% url 'super_owner_dashboard' %}">لوحة الإدارة</a></li>
+      <li class="nav-item"><a class="nav-link active" href="{% url 'super_owner_reports' %}">التقارير</a></li>
+    </ul>
+    <div class="rounded-circle {% if system_status == 'Critical' %}bg-danger{% elif system_status == 'Warning' %}bg-warning{% else %}bg-success{% endif %}" style="width:24px;height:24px">
+      <span class="visually-hidden">{{ system_status }}</span>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <div class="row g-4">
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-success p-3 text-center">
+          <div class="fs-5">إجمالي الإيرادات</div>
+          <div class="fs-2 fw-bold">{{ bi.financial.gross.value|iqd }}</div>
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <span class="badge {% if bi.financial.gross.delta.day.dir == 'up' %}bg-success{% elif bi.financial.gross.delta.day.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}"><i class="bi {% if bi.financial.gross.delta.day.dir == 'up' %}bi-arrow-up{% elif bi.financial.gross.delta.day.dir == 'down' %}bi-arrow-down{% else %}bi-dash{% endif %}"></i> اليوم {{ bi.financial.gross.delta.day.pct }}%</span>
+            <span class="badge {% if bi.financial.gross.delta.week.dir == 'up' %}bg-success{% elif bi.financial.gross.delta.week.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الأسبوع {{ bi.financial.gross.delta.week.pct }}%</span>
+            <span class="badge {% if bi.financial.gross.delta.month.dir == 'up' %}bg-success{% elif bi.financial.gross.delta.month.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الشهر {{ bi.financial.gross.delta.month.pct }}%</span>
+          </div>
+          <canvas class="spark mt-3" height="40" data-values="{{ bi.financial.gross.spark|join:'|' }}"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-success p-3 text-center">
+          <div class="fs-5">صافي الإيرادات</div>
+          <div class="fs-2 fw-bold">{{ bi.financial.net.value|iqd }}</div>
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <span class="badge {% if bi.financial.net.delta.day.dir == 'up' %}bg-success{% elif bi.financial.net.delta.day.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">اليوم {{ bi.financial.net.delta.day.pct }}%</span>
+            <span class="badge {% if bi.financial.net.delta.week.dir == 'up' %}bg-success{% elif bi.financial.net.delta.week.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الأسبوع {{ bi.financial.net.delta.week.pct }}%</span>
+            <span class="badge {% if bi.financial.net.delta.month.dir == 'up' %}bg-success{% elif bi.financial.net.delta.month.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الشهر {{ bi.financial.net.delta.month.pct }}%</span>
+          </div>
+          <canvas class="spark mt-3" height="40" data-values="{{ bi.financial.net.spark|join:'|' }}"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-warning p-3 text-center">
+          <div class="fs-5">أرباح متوقعة</div>
+          <div class="fs-2 fw-bold">{{ bi.financial.forecast.value|iqd }}</div>
+          <canvas class="spark mt-3" height="40" data-values="{{ bi.financial.forecast.spark|join:'|' }}"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-success p-3 text-center">
+          <div class="fs-5">متوسط قيمة الطلب</div>
+          <div class="fs-2 fw-bold">{{ bi.financial.aov.value|iqd }}</div>
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <span class="badge {% if bi.financial.aov.delta.day.dir == 'up' %}bg-success{% elif bi.financial.aov.delta.day.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">اليوم {{ bi.financial.aov.delta.day.pct }}%</span>
+            <span class="badge {% if bi.financial.aov.delta.week.dir == 'up' %}bg-success{% elif bi.financial.aov.delta.week.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الأسبوع {{ bi.financial.aov.delta.week.pct }}%</span>
+            <span class="badge {% if bi.financial.aov.delta.month.dir == 'up' %}bg-success{% elif bi.financial.aov.delta.month.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الشهر {{ bi.financial.aov.delta.month.pct }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-lg-8">
+        <div class="card bg-dark p-3">
+          <div class="fs-6 mb-2">الإيرادات عبر الزمن</div>
+          <canvas id="revLine" height="160" data-labels="{{ charts.revenue_line.labels|join:'|' }}" data-values="{{ charts.revenue_line.data|join:'|' }}"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card bg-dark p-3">
+          <div class="fs-6 mb-2">حالات الطلبات</div>
+          <canvas id="statusDonut" height="160" data-labels="{{ charts.status_donut.labels|join:'|' }}" data-values="{{ charts.status_donut.data|join:'|' }}"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <div class="row g-4">
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-success p-3 text-center">
+          <div class="fs-5">عدد الطلبات</div>
+          <div class="fs-2 fw-bold">{{ bi.orders.total.value }}</div>
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <span class="badge {% if bi.orders.total.delta.day.dir == 'up' %}bg-success{% elif bi.orders.total.delta.day.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">اليوم {{ bi.orders.total.delta.day.pct }}%</span>
+            <span class="badge {% if bi.orders.total.delta.week.dir == 'up' %}bg-success{% elif bi.orders.total.delta.week.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الأسبوع {{ bi.orders.total.delta.week.pct }}%</span>
+            <span class="badge {% if bi.orders.total.delta.month.dir == 'up' %}bg-success{% elif bi.orders.total.delta.month.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الشهر {{ bi.orders.total.delta.month.pct }}%</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-success p-3 text-center">
+          <div class="fs-5">طلب مكتمل</div>
+          <div class="fs-2 fw-bold">{{ bi.orders.completed.value }}</div>
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <span class="badge {% if bi.orders.completed.delta.day.dir == 'up' %}bg-success{% elif bi.orders.completed.delta.day.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">اليوم {{ bi.orders.completed.delta.day.pct }}%</span>
+            <span class="badge {% if bi.orders.completed.delta.week.dir == 'up' %}bg-success{% elif bi.orders.completed.delta.week.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الأسبوع {{ bi.orders.completed.delta.week.pct }}%</span>
+            <span class="badge {% if bi.orders.completed.delta.month.dir == 'up' %}bg-success{% elif bi.orders.completed.delta.month.dir == 'down' %}bg-danger{% else %}bg-secondary{% endif %}">الشهر {{ bi.orders.completed.delta.month.pct }}%</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-warning p-3 text-center">
+          <div class="fs-5">معلّق/متأخر</div>
+          <div class="fs-2 fw-bold">{{ bi.orders.pending_late.value }}</div>
+          <canvas class="spark mt-3" height="40" data-values="{{ bi.orders.pending_late.spark|join:'|' }}"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-danger p-3 text-center">
+          <div class="fs-5">نسبة الإلغاء</div>
+          <div class="fs-2 fw-bold">{{ bi.orders.cancel_rate.value }}%</div>
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <span class="badge {% if bi.orders.cancel_rate.delta.day.dir == 'up' %}bg-danger{% elif bi.orders.cancel_rate.delta.day.dir == 'down' %}bg-success{% else %}bg-secondary{% endif %}">اليوم {{ bi.orders.cancel_rate.delta.day.pct }}%</span>
+            <span class="badge {% if bi.orders.cancel_rate.delta.week.dir == 'up' %}bg-danger{% elif bi.orders.cancel_rate.delta.week.dir == 'down' %}bg-success{% else %}bg-secondary{% endif %}">الأسبوع {{ bi.orders.cancel_rate.delta.week.pct }}%</span>
+            <span class="badge {% if bi.orders.cancel_rate.delta.month.dir == 'up' %}bg-danger{% elif bi.orders.cancel_rate.delta.month.dir == 'down' %}bg-success{% else %}bg-secondary{% endif %}">الشهر {{ bi.orders.cancel_rate.delta.month.pct }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-2">
+      <div class="col-12">
+        <div class="card bg-dark p-3">
+          <div class="fs-6 mb-2">الطلبات حسب المتاجر</div>
+          <canvas id="ordersBar" height="160" data-labels="{{ charts.orders_bar.labels|join:'|' }}" data-values="{{ charts.orders_bar.data|join:'|' }}"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <div class="row g-4">
+      <div class="col-lg-4 col-md-6">
+        <div class="card bg-dark text-success p-3 text-center">
+          <div class="fs-5">الزائرون</div>
+          <div class="fs-2 fw-bold">{{ bi.users.visitors.value }}</div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6">
+        <div class="card bg-dark text-success p-3 text-center">
+          <div class="fs-5">المستخدمون</div>
+          <div class="fs-2 fw-bold">{{ bi.users.registered.value }}</div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-6">
+        <div class="card bg-dark text-warning p-3 text-center">
+          <div class="fs-5">التحميلات</div>
+          <div class="fs-2 fw-bold">{{ bi.users.downloads.value }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="row g-4">
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-danger p-4 text-center">
+          <i class="bi bi-credit-card-2-front fs-2 mb-2"></i>
+          <div class="fs-2 fw-bold">{{ bi.health.payment_errors }}</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-warning p-4 text-center">
+          <i class="bi bi-x-circle fs-2 mb-2"></i>
+          <div class="fs-2 fw-bold">{{ bi.health.order_errors }}</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-warning p-4 text-center">
+          <i class="bi bi-exclamation-octagon fs-2 mb-2"></i>
+          <div class="fs-2 fw-bold">{{ bi.health.expired_products }}</div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6">
+        <div class="card bg-dark text-danger p-4 text-center">
+          <i class="bi bi-shop fs-2 mb-2"></i>
+          <div class="fs-2 fw-bold">{{ bi.health.inactive_stores }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  function cssVar(name){return getComputedStyle(document.documentElement).getPropertyValue(name) || '#00b894'}
+  function parseAttr(el,key){var v=(el.getAttribute(key)||'').trim();return v?v.split('|').map(function(x){var n=parseFloat(x);return isNaN(n)?0:n}):[]}
+  function parseLabels(el,key){var v=(el.getAttribute(key)||'').trim();return v?v.split('|'):[]}
+  function drawSpark(canvas,values){var ctx=canvas.getContext('2d');var w=canvas.width=canvas.offsetWidth;var h=canvas.height=canvas.height;var max=Math.max.apply(null,values.concat([1]));var min=Math.min.apply(null,values.concat([0]));var pad=4;ctx.clearRect(0,0,w,h);ctx.strokeStyle=cssVar('--success-color');ctx.lineWidth=2;ctx.beginPath();values.forEach(function(val,i){var x=pad+(i*(w-2*pad)/(Math.max(values.length-1,1)));var y=h-pad-((val-min)/(max-min||1))*(h-2*pad);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke()}
+  function drawLine(canvas,labels,values){var ctx=canvas.getContext('2d');var w=canvas.width=canvas.offsetWidth;var h=canvas.height=canvas.height;var max=Math.max.apply(null,values.concat([1]));var min=Math.min.apply(null,values.concat([0]));var pad=20;ctx.clearRect(0,0,w,h);ctx.strokeStyle=cssVar('--success-color');ctx.lineWidth=2;ctx.beginPath();values.forEach(function(val,i){var x=pad+(i*(w-2*pad)/(Math.max(values.length-1,1)));var y=h-pad-((val-min)/(max-min||1))*(h-2*pad);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});ctx.stroke();ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(pad,h-pad,w-2*pad,1)}
+  function drawBars(canvas,labels,values){var ctx=canvas.getContext('2d');var w=canvas.width=canvas.offsetWidth;var h=canvas.height=canvas.height;var pad=20;var bw=(w-2*pad)/(values.length||1)-8;ctx.clearRect(0,0,w,h);var max=Math.max.apply(null,values.concat([1]));values.forEach(function(val,i){var x=pad+i*((w-2*pad)/(values.length||1));var bh=((val)/(max||1))*(h-2*pad);ctx.fillStyle=cssVar('--warning-color');ctx.fillRect(x,h-pad-bh,bw,bh)})}
+  function drawDonut(canvas,labels,values){var ctx=canvas.getContext('2d');var w=canvas.width=canvas.offsetWidth;var h=canvas.height=canvas.height;var cx=w/2;var cy=h/2;var r=Math.min(w,h)/2-10;var total=values.reduce(function(a,b){return a+b},0)||1;var colors=[cssVar('--success-color'),cssVar('--warning-color'),'#a29bfe','#74b9ff','#ffeaa7',cssVar('--danger-color')];var start=0;ctx.clearRect(0,0,w,h);values.forEach(function(val,i){var ang=(val/total)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,start+ang,false);ctx.closePath();ctx.fillStyle=colors[i%colors.length];ctx.fill();start+=ang});ctx.fillStyle='#1a1a1a';ctx.beginPath();ctx.arc(cx,cy,r*0.55,0,Math.PI*2);ctx.fill()}
+  document.querySelectorAll('canvas.spark').forEach(function(c){var v=parseAttr(c,'data-values');if(v.length)drawSpark(c,v)});
+  var rl=document.getElementById('revLine');if(rl){drawLine(rl,parseLabels(rl,'data-labels'),parseAttr(rl,'data-values'))}
+  var ob=document.getElementById('ordersBar');if(ob){drawBars(ob,parseLabels(ob,'data-labels'),parseAttr(ob,'data-values'))}
+  var sd=document.getElementById('statusDonut');if(sd){drawDonut(sd,parseLabels(sd,'data-labels'),parseAttr(sd,'data-values'))}
+  window.addEventListener('resize',function(){if(rl)drawLine(rl,parseLabels(rl,'data-labels'),parseAttr(rl,'data-values'));if(ob)drawBars(ob,parseLabels(ob,'data-labels'),parseAttr(ob,'data-values'));document.querySelectorAll('canvas.spark').forEach(function(c){var v=parseAttr(c,'data-values');if(v.length)drawSpark(c,v)});if(sd)drawDonut(sd,parseLabels(sd,'data-labels'),parseAttr(sd,'data-values'))})
+})();
+</script>
+{% endblock %}
+

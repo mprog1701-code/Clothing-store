@@ -71,6 +71,7 @@ urlpatterns = [
     path('dashboard/super-owner/orders/', views.super_owner_orders, name='super_owner_orders'),
     path('dashboard/super-owner/settings/', views.super_owner_settings, name='super_owner_settings'),
     path('dashboard/super-owner/announcements/', views.super_owner_announcements, name='super_owner_announcements'),
+    path('dashboard/super-owner/reports/', views.super_owner_reports, name='super_owner_reports'),
     path('dashboard/footer-settings/', views.footer_settings, name='footer_settings'),
     
     path('featured-products/', views.featured_products, name='featured_products'),

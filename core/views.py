@@ -1510,6 +1510,27 @@ def super_owner_dashboard(request):
     elif status_score >= 2:
         system_status = 'Warning'
 
+    context = {
+        'snapshot': snapshot,
+        'critical_alerts': critical_alerts,
+        'alert_count': len(critical_alerts),
+        'owner_actions': quick_actions,
+        'health': {
+            'completion_rate': completion_rate,
+            'cancel_rate': cancel_rate,
+            'best_store': best_store,
+            'worst_store': worst_store,
+        },
+        'system_status': system_status,
+    }
+    return render(request, 'dashboard/super_owner/dashboard.html', context)
+
+@login_required
+def super_owner_reports(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+
     now = timezone.now()
     today = now.date()
     yesterday = today - timedelta(days=1)
@@ -1621,6 +1642,9 @@ def super_owner_dashboard(request):
     registered_total = User.objects.count()
     downloads_total = 0
 
+    inactive_stores_count = Store.objects.filter(is_active=False).count()
+    canceled_recent = Order.objects.filter(created_at__gte=timezone.now()-timedelta(days=30), status='canceled').count()
+
     bi = {
         'financial': {
             'gross': {
@@ -1713,20 +1737,11 @@ def super_owner_dashboard(request):
     }
 
     context = {
-        'snapshot': snapshot,
-        'critical_alerts': critical_alerts,
-        'owner_actions': quick_actions,
-        'health': {
-            'completion_rate': completion_rate,
-            'cancel_rate': cancel_rate,
-            'best_store': best_store,
-            'worst_store': worst_store,
-        },
-        'system_status': system_status,
         'bi': bi,
         'charts': charts,
+        'system_status': 'Healthy',
     }
-    return render(request, 'dashboard/super_owner/dashboard.html', context)
+    return render(request, 'dashboard/super_owner/reports.html', context)
 
 
 @login_required
