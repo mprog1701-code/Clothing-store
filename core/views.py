@@ -2311,7 +2311,8 @@ def super_owner_create_store(request):
         elif step == '4':
             delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
             free_threshold_raw = (request.POST.get('free_delivery_threshold') or '').strip()
-            delivery_time = (request.POST.get('delivery_time') or '').strip()
+            dt_value_raw = (request.POST.get('delivery_time_value') or '').strip()
+            dt_unit = (request.POST.get('delivery_time_unit') or '').strip()
             try:
                 delivery_fee = float(delivery_fee_raw)
             except Exception:
@@ -2323,8 +2324,28 @@ def super_owner_create_store(request):
                     free_threshold = float(free_threshold_raw)
                 except Exception:
                     errors['free_delivery_threshold'] = 'قيمة غير صالحة'
+            dt_value = None
+            try:
+                dt_value = int(dt_value_raw) if dt_value_raw != '' else None
+                if dt_value is not None and dt_value < 0:
+                    raise ValueError('negative')
+            except Exception:
+                errors['delivery_time_value'] = 'يرجى إدخال قيمة زمن التوصيل'
+            if dt_unit not in ['hour', 'day']:
+                errors['delivery_time_unit'] = 'يرجى اختيار وحدة صحيحة'
             if not errors:
-                wizard.update({'delivery_fee': delivery_fee, 'free_delivery_threshold': free_threshold, 'delivery_time': delivery_time})
+                if dt_value is None:
+                    dt_value = 24
+                if not dt_unit:
+                    dt_unit = 'hour'
+                delivery_time_text = f"{dt_value} ساعة" if dt_unit == 'hour' else f"{dt_value} يوم"
+                wizard.update({
+                    'delivery_fee': delivery_fee,
+                    'free_delivery_threshold': free_threshold,
+                    'delivery_time_value': dt_value,
+                    'delivery_time_unit': dt_unit,
+                    'delivery_time': delivery_time_text,
+                })
                 request.session['create_store_wizard'] = wizard
                 step = '5'
         elif step == '5':
@@ -2343,7 +2364,23 @@ def super_owner_create_store(request):
                     try:
                         with transaction.atomic():
                             owner = User.objects.get(id=int(wizard['owner_id']))
-                            draft = Store.objects.create(name=wizard.get('name',''), city=wizard.get('city',''), address=wizard.get('address',''), description='', owner=owner, category=wizard.get('category') or 'clothing', delivery_time=wizard.get('delivery_time') or '30-45 دقيقة', delivery_fee=wizard.get('delivery_fee') or 0.0, is_active=False, status='DRAFT', primary_color=wizard.get('primary_color') or '', secondary_color=wizard.get('secondary_color') or '', free_delivery_threshold=wizard.get('free_delivery_threshold'))
+                            draft = Store.objects.create(
+                                name=wizard.get('name',''),
+                                city=wizard.get('city',''),
+                                address=wizard.get('address',''),
+                                description='',
+                                owner=owner,
+                                category=wizard.get('category') or 'clothing',
+                                delivery_time=wizard.get('delivery_time') or '30-45 دقيقة',
+                                delivery_time_value=wizard.get('delivery_time_value') or 0,
+                                delivery_time_unit=wizard.get('delivery_time_unit') or '',
+                                delivery_fee=wizard.get('delivery_fee') or 0.0,
+                                is_active=False,
+                                status='DRAFT',
+                                primary_color=wizard.get('primary_color') or '',
+                                secondary_color=wizard.get('secondary_color') or '',
+                                free_delivery_threshold=wizard.get('free_delivery_threshold')
+                            )
                             request.session['draft_store_id'] = draft.id
                             from .models import AdminAuditLog
                             AdminAuditLog.objects.create(admin_user=request.user, action='create', model='Store', object_id=str(draft.id), before='', after=json.dumps({'name': draft.name}, ensure_ascii=False), ip=request.META.get('REMOTE_ADDR') or '')
@@ -2357,7 +2394,23 @@ def super_owner_create_store(request):
                         owner = User.objects.get(id=int(wizard['owner_id']))
                         status_choice = wizard.get('status') or 'ACTIVE'
                         is_active = True if status_choice == 'ACTIVE' else False
-                        s = Store.objects.create(name=wizard.get('name',''), city=wizard.get('city',''), address=wizard.get('address',''), description='', owner=owner, category=wizard.get('category') or 'clothing', delivery_time=wizard.get('delivery_time') or '30-45 دقيقة', delivery_fee=wizard.get('delivery_fee') or 0.0, is_active=is_active, status=status_choice, primary_color=wizard.get('primary_color') or '', secondary_color=wizard.get('secondary_color') or '', free_delivery_threshold=wizard.get('free_delivery_threshold'))
+                        s = Store.objects.create(
+                            name=wizard.get('name',''),
+                            city=wizard.get('city',''),
+                            address=wizard.get('address',''),
+                            description='',
+                            owner=owner,
+                            category=wizard.get('category') or 'clothing',
+                            delivery_time=wizard.get('delivery_time') or '30-45 دقيقة',
+                            delivery_time_value=wizard.get('delivery_time_value') or 0,
+                            delivery_time_unit=wizard.get('delivery_time_unit') or '',
+                            delivery_fee=wizard.get('delivery_fee') or 0.0,
+                            is_active=is_active,
+                            status=status_choice,
+                            primary_color=wizard.get('primary_color') or '',
+                            secondary_color=wizard.get('secondary_color') or '',
+                            free_delivery_threshold=wizard.get('free_delivery_threshold')
+                        )
                         logo_file = request.FILES.get('logo')
                         if logo_file:
                             s.logo = logo_file
@@ -2374,6 +2427,8 @@ def super_owner_create_store(request):
                                 s.delivery_fee = src_store.delivery_fee
                                 s.free_delivery_threshold = src_store.free_delivery_threshold
                                 s.delivery_time = src_store.delivery_time
+                                s.delivery_time_value = getattr(src_store, 'delivery_time_value', 0)
+                                s.delivery_time_unit = getattr(src_store, 'delivery_time_unit', '')
                             if wizard.get('copy_categories'):
                                 s.category = src_store.category
                             if wizard.get('copy_policies'):
@@ -2409,7 +2464,8 @@ def super_owner_edit_store(request, store_id):
         is_active = request.POST.get('is_active') == 'on'
         logo = request.FILES.get('logo')
         category = (request.POST.get('category') or '').strip()
-        delivery_time = (request.POST.get('delivery_time') or '').strip()
+        dt_value_raw = (request.POST.get('delivery_time_value') or '').strip()
+        dt_unit = (request.POST.get('delivery_time_unit') or '').strip()
         delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
         
         # Validate required fields
@@ -2428,8 +2484,19 @@ def super_owner_edit_store(request, store_id):
             store.is_active = is_active
             if category in [c[0] for c in Store.CATEGORY_CHOICES]:
                 store.category = category
-            if delivery_time:
-                store.delivery_time = delivery_time
+            dt_value = None
+            try:
+                dt_value = int(dt_value_raw) if dt_value_raw != '' else None
+                if dt_value is not None and dt_value < 0:
+                    dt_value = None
+            except Exception:
+                dt_value = None
+            if dt_unit not in ['hour','day']:
+                dt_unit = store.delivery_time_unit or 'hour'
+            if dt_value is not None:
+                store.delivery_time_value = dt_value
+                store.delivery_time_unit = dt_unit
+                store.delivery_time = f"{dt_value} ساعة" if dt_unit == 'hour' else f"{dt_value} يوم"
             try:
                 if delivery_fee_raw:
                     store.delivery_fee = float(delivery_fee_raw)

@@ -116,6 +116,9 @@ class Store(models.Model):
     primary_color = models.CharField(max_length=7, blank=True, default='')
     secondary_color = models.CharField(max_length=7, blank=True, default='')
     free_delivery_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=10, default='IQD')
+    delivery_time_value = models.PositiveIntegerField(default=0)
+    delivery_time_unit = models.CharField(max_length=10, choices=[('hour','ساعة'),('day','يوم')], blank=True, default='')
     
     def __str__(self):
         return self.name

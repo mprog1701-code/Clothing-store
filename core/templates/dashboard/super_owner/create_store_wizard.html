@@ -118,9 +118,37 @@
       <input type="hidden" name="step" value="4">
       <div class="card-header">إعدادات التوصيل الأساسية</div>
       <div class="card-body row g-3">
-        <div class="col-md-4"><label class="form-label">رسوم التوصيل *</label><input type="number" step="0.01" class="form-control" name="delivery_fee" value="{{ wizard.delivery_fee|default:'' }}">{% if errors.delivery_fee %}<div class="text-danger small mt-1">{{ errors.delivery_fee }}</div>{% endif %}</div>
-        <div class="col-md-4"><label class="form-label">حد مجاني للتوصيل</label><input type="number" step="0.01" class="form-control" name="free_delivery_threshold" value="{{ wizard.free_delivery_threshold|default:'' }}">{% if errors.free_delivery_threshold %}<div class="text-danger small mt-1">{{ errors.free_delivery_threshold }}</div>{% endif %}</div>
-        <div class="col-md-4"><label class="form-label">وقت التوصيل المتوقع</label><input type="text" class="form-control" name="delivery_time" value="{{ wizard.delivery_time|default:'' }}"></div>
+        <div class="col-md-4">
+          <label class="form-label">رسوم التوصيل *</label>
+          <div class="input-group">
+            <input type="number" step="0.01" class="form-control" name="delivery_fee" value="{{ wizard.delivery_fee|default:'' }}">
+            <span class="input-group-text">IQD</span>
+          </div>
+          {% if errors.delivery_fee %}<div class="text-danger small mt-1">{{ errors.delivery_fee }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">حد مجاني للتوصيل</label>
+          <div class="input-group">
+            <input type="number" step="0.01" class="form-control" name="free_delivery_threshold" value="{{ wizard.free_delivery_threshold|default:'' }}">
+            <span class="input-group-text">IQD</span>
+          </div>
+          {% if errors.free_delivery_threshold %}<div class="text-danger small mt-1">{{ errors.free_delivery_threshold }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">وقت التوصيل المتوقع</label>
+          <div class="row g-2">
+            <div class="col-6">
+              <input type="number" min="0" class="form-control" name="delivery_time_value" value="{{ wizard.delivery_time_value|default:24 }}">
+            </div>
+            <div class="col-6">
+              <select class="form-select" name="delivery_time_unit">
+                <option value="hour" {% if wizard.delivery_time_unit == 'hour' or not wizard.delivery_time_unit %}selected{% endif %}>ساعة</option>
+                <option value="day" {% if wizard.delivery_time_unit == 'day' %}selected{% endif %}>يوم</option>
+              </select>
+            </div>
+          </div>
+          {% if errors.delivery_time_value or errors.delivery_time_unit %}<div class="text-danger small mt-1">يرجى إدخال زمن التوصيل وقيمته</div>{% endif %}
+        </div>
       </div>
       <div class="card-footer d-flex justify-content-between">
         <a class="btn btn-secondary" href="{% url 'super_owner_create_store' %}?step=3">السابق</a>
