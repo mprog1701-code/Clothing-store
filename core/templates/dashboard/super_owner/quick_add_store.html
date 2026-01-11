@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}الإضافة السريعة لمتجر{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>
+                            الإضافة السريعة لمتجر
+                        </h4>
+                        <a href="{% url 'super_owner_stores' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>
+                            العودة للمتاجر
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">اسم المتجر *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                    <small class="text-muted">اختر اسم فريد للمتجر</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="city" class="form-label">المدينة *</label>
+                                    <input type="text" class="form-control" id="city" name="city" value="{{ default_city|default:'' }}" required>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="store_template" class="form-label">قالب متجر جاهز</label>
+                                    <select class="form-select" id="store_template" name="store_template">
+                                        <option value="">بدون قالب (افتراضي)</option>
+                                        <option value="clothing">ملابس عامة</option>
+                                        <option value="electronics">إلكترونيات</option>
+                                        <option value="food">مطاعم</option>
+                                    </select>
+                                    <small class="text-muted">اختيار قالب يحدد التصنيف وإعدادات التوصيل تلقائياً</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="copy_store_id" class="form-label">نسخ إعدادات متجر سابق</label>
+                                    <select class="form-select" id="copy_store_id" name="copy_store_id">
+                                        <option value="">لا يوجد</option>
+                                        {% for s in stores_all %}
+                                            <option value="{{ s.id }}">{{ s.name }} ({{ s.city }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">ينسخ التصنيف وإعدادات التوصيل والوصف</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="owner" class="form-label">اختر مالك المتجر</label>
+                                    <select class="form-select" id="owner" name="owner">
+                                        <option value="">بدون مالك (سيتم تعيينك تلقائياً)</option>
+                                        {% for owner in store_owners %}
+                                            <option value="{{ owner.id }}">
+                                                {{ owner.get_full_name|default:owner.username }} ({{ owner.username }})
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">اختياري: يمكنك إنشاء مالك جديد أدناه</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="create_new_owner" name="create_new_owner">
+                                        <label class="form-check-label" for="create_new_owner">إنشاء مالك متجر جديد</label>
+                                    </div>
+                                    <small class="text-muted d-block mt-2">عند التفعيل سيتم إنشاء مستخدم جديد بدور مدير وربطه كمالك لهذا المتجر.</small>
+                                </div>
+                                
+                                <div id="new_owner_fields" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="new_owner_username" class="form-label">اسم المستخدم</label>
+                                        <input type="text" class="form-control" id="new_owner_username" name="new_owner_username" placeholder="مثال: store_ali">
+                                        <small class="text-muted">يجب أن يكون فريداً ولا يحتوي مسافات.</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new_owner_email" class="form-label">البريد الإلكتروني</label>
+                                        <input type="email" class="form-control" id="new_owner_email" name="new_owner_email" placeholder="اختياري: بريد المالك">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new_owner_phone" class="form-label">رقم الهاتف</label>
+                                        <input type="tel" class="form-control" id="new_owner_phone" name="new_owner_phone" placeholder="07xxxxxxxxx" pattern="07[0-9]{9}" title="أدخل رقم يبدأ بـ 07 مكون من 11 رقماً">
+                                        <small class="text-muted">أدخل رقم الجوال بدون كود الدولة.</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="new_owner_password" class="form-label">كلمة المرور</label>
+                                        <input type="password" class="form-control" id="new_owner_password" name="new_owner_password" placeholder="8 أحرف على الأقل" minlength="8">
+                                        <small class="text-muted">اختر كلمة مرور قوية.</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="is_active">
+                                            تفعيل المتجر فوراً
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-plus me-2"></i>
+                                        إنشاء المتجر
+                                    </button>
+                                    <a href="{% url 'super_owner_stores' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>
+                                        إلغاء
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const createNewOwnerCheckbox = document.getElementById('create_new_owner');
+    const newOwnerFields = document.getElementById('new_owner_fields');
+    const ownerSelect = document.getElementById('owner');
+    const requiredIds = ['new_owner_username','new_owner_phone','new_owner_password'];
+    function setRequired(on){
+        requiredIds.forEach(function(id){
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (on) { el.setAttribute('required','required'); }
+            else { el.removeAttribute('required'); }
+        });
+    }
+    createNewOwnerCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            newOwnerFields.style.display = 'block';
+            setRequired(true);
+            ownerSelect.removeAttribute('required');
+            ownerSelect.value = '';
+        } else {
+            newOwnerFields.style.display = 'none';
+            setRequired(false);
+            ownerSelect.setAttribute('required', 'required');
+        }
+    });
+});
+</script>
+
+<style>
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    padding: 10px 30px;
+}
+
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+}
+</style>
+{% endblock %}
