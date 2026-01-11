@@ -1,38 +1,81 @@
 {% extends 'base.html' %}
 {% load math_filters %}
 
-{% block title %}لوحة المالك — نظرة تنفيذية{% endblock %}
+{% block title %}لوحة تحكم المالك{% endblock %}
 
 {% block content %}
 <div class="container py-3">
-  <h2>تنبيهات حرجة</h2>
-  {% if critical_alerts %}
-    <ul>
-      {% for item in critical_alerts %}
-        <li>
-          {% if item.type == 'pending_orders_over_24h' %}🟡{% elif item.type == 'inactive_stores' %}🔴{% elif item.type == 'delivery_failure' %}🔴{% elif item.type == 'canceled_today' %}🟠{% else %}🟠{% endif %}
-          <strong>{{ item.count }}</strong> — <a href="{% url item.url %}">{{ item.label }}</a>
-        </li>
-      {% endfor %}
-    </ul>
-  {% else %}
-    <p>لا توجد تنبيهات حرجة الآن.</p>
-  {% endif %}
+  <!-- Top Bar -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="m-0">لوحة تحكم المالك</h1>
+    <div class="rounded-circle {% if system_status == 'Critical' %}bg-danger{% elif system_status == 'Warning' %}bg-warning{% else %}bg-success{% endif %}" style="width:24px;height:24px">
+      <span class="visually-hidden">{{ system_status }}</span>
+    </div>
+  </div>
 
-  <h2>نبض الأعمال</h2>
-  <ul>
-    <li>طلبات اليوم: <strong>{{ snapshot.orders_today }}</strong></li>
-    <li>إيرادات اليوم: <strong>{{ snapshot.revenue_today|iqd }}</strong></li>
-    <li>إيرادات الشهر: <strong>{{ snapshot.revenue_month|iqd }}</strong></li>
-    <li>نسبة اكتمال الطلبات: <strong>{{ health.completion_rate }}%</strong></li>
-    <li>الحالة العامة للنظام: <strong>{{ system_status }}</strong></li>
-  </ul>
+  <!-- KPIs: 4 Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-3 col-md-6">
+      <div class="card bg-dark text-success p-4 text-center">
+        <i class="bi bi-bag fs-2 mb-2"></i>
+        <div class="fs-2 fw-bold">{{ snapshot.orders_today }}</div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+      <div class="card bg-dark text-warning p-4 text-center">
+        <i class="bi bi-clock fs-2 mb-2"></i>
+        <div class="fs-2 fw-bold">{{ snapshot.pending_orders }}</div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+      <div class="card bg-dark text-success p-4 text-center">
+        <i class="bi bi-currency-dollar fs-2 mb-2"></i>
+        <div class="fs-2 fw-bold">{{ snapshot.revenue_today|iqd }}</div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+      <div class="card bg-dark text-danger p-4 text-center">
+        <i class="bi bi-shop-slash fs-2 mb-2"></i>
+        <div class="fs-2 fw-bold">{{ snapshot.inactive_stores }}</div>
+      </div>
+    </div>
+  </div>
 
-  <h2>إجراءات المالك</h2>
-  <ul>
-    {% for action in owner_actions %}
-      <li><a href="{% url action.url %}">{{ action.label }}</a></li>
-    {% endfor %}
-  </ul>
+  <!-- Attention Zone: 2 Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-6">
+      <div class="card bg-dark text-warning p-4 text-center">
+        <i class="bi bi-exclamation-triangle fs-2 mb-2"></i>
+        <div class="fs-2 fw-bold">{{ critical_alerts|length }}</div>
+        <a href="{% url 'super_owner_orders' %}" class="btn btn-warning mt-3">عرض المشاكل</a>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card bg-dark text-danger p-4 text-center">
+        <i class="bi bi-hourglass-split fs-2 mb-2"></i>
+        <div class="fs-2 fw-bold">{{ snapshot.pending_orders }}</div>
+        <a href="{% url 'super_owner_orders' %}" class="btn btn-danger mt-3">إدارة الطلبات</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions: 5 Buttons -->
+  <div class="row g-3">
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <a href="{% url 'super_owner_orders' %}" class="btn btn-primary w-100 py-3">إدارة الطلبات</a>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <a href="{% url 'super_owner_stores' %}" class="btn btn-primary w-100 py-3">إدارة المتاجر</a>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <a href="{% url 'super_owner_products' %}" class="btn btn-primary w-100 py-3">إدارة المنتجات</a>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <a href="{% url 'super_owner_announcements' %}" class="btn btn-primary w-100 py-3">إدارة الإعلانات</a>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <a href="{% url 'super_owner_settings' %}" class="btn btn-primary w-100 py-3">إعدادات النظام</a>
+    </div>
+  </div>
 </div>
 {% endblock %}
