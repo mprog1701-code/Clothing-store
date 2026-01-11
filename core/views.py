@@ -2221,124 +2221,174 @@ def super_owner_add_store(request):
 
 @login_required
 def super_owner_quick_add_store(request):
+    return redirect('super_owner_create_store')
+
+@login_required
+def super_owner_owner_search_json(request):
+    if request.user.username != 'super_owner':
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    q = (request.GET.get('q') or '').strip()
+    owners = User.objects.filter(role='admin')
+    if q:
+        owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q))
+    owners = owners.order_by('username')[:20]
+    data = [{'id': o.id, 'name': o.get_full_name() or o.username, 'phone': o.phone or ''} for o in owners]
+    return JsonResponse({'results': data})
+
+@login_required
+def super_owner_create_owner_json(request):
+    if request.user.username != 'super_owner':
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'method_not_allowed'}, status=405)
+    full_name = (request.POST.get('full_name') or '').strip()
+    phone = (request.POST.get('phone') or '').strip()
+    email = (request.POST.get('email') or '').strip()
+    if not full_name or not phone:
+        return JsonResponse({'error': 'missing_required'}, status=400)
+    import re
+    if not re.fullmatch(r'07\d{9}', phone):
+        return JsonResponse({'error': 'invalid_phone'}, status=400)
+    first, last = '', ''
+    parts = full_name.split()
+    if parts:
+        first = parts[0]
+        last = ' '.join(parts[1:])
+    try:
+        username = f"owner_{uuid.uuid4().hex[:8]}"
+        owner = User.objects.create(username=username, first_name=first, last_name=last, role='admin', phone=phone, email=email)
+        owner.is_staff = True
+        owner.set_password(uuid.uuid4().hex)
+        owner.save()
+        return JsonResponse({'id': owner.id, 'name': owner.get_full_name() or owner.username, 'phone': owner.phone or ''})
+    except Exception:
+        return JsonResponse({'error': 'create_failed'}, status=500)
+
+@login_required
+def super_owner_create_store(request):
     if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
-
+    step = (request.POST.get('step') or request.GET.get('step') or '1').strip()
+    wizard = request.session.get('create_store_wizard') or {}
+    errors = {}
+    owners = User.objects.filter(role='admin').order_by('username')
+    categories = Store.CATEGORY_CHOICES
     if request.method == 'POST':
-        name = (request.POST.get('name') or '').strip()
-        city = (request.POST.get('city') or '').strip()
-        owner_id = request.POST.get('owner')
-        create_new_owner = request.POST.get('create_new_owner') == 'on'
-        is_active = request.POST.get('is_active') == 'on'
-        store_template = (request.POST.get('store_template') or '').strip()
-        copy_store_id = (request.POST.get('copy_store_id') or '').strip()
-
-        owner = None
-
-        if not all([name, city]):
-            messages.error(request, 'يرجى إدخال اسم المتجر والمدينة')
-            return redirect('super_owner_quick_add_store')
-
-        if create_new_owner:
-            new_owner_username = (request.POST.get('new_owner_username') or '').strip()
-            new_owner_email = (request.POST.get('new_owner_email') or '').strip()
-            new_owner_phone = (request.POST.get('new_owner_phone') or '').strip()
-            new_owner_password = (request.POST.get('new_owner_password') or '').strip()
-            if not all([new_owner_username, new_owner_phone, new_owner_password]):
-                messages.error(request, 'يرجى إدخال بيانات المالك الجديد الأساسية')
-                return redirect('super_owner_quick_add_store')
-            try:
-                owner = User.objects.create(
-                    username=new_owner_username,
-                    first_name='',
-                    last_name='',
-                    role='admin',
-                    phone=new_owner_phone,
-                    city=city,
-                    email=new_owner_email or ''
-                )
-                owner.is_staff = True
-                owner.set_password(new_owner_password)
-                owner.save()
-                messages.success(request, 'تم إنشاء مالك متجر جديد وربطه بالمتجر')
-            except Exception as e:
-                messages.error(request, f'خطأ في إنشاء مالك المتجر: {str(e)}')
-                return redirect('super_owner_quick_add_store')
-        else:
-            if owner_id:
-                try:
-                    owner = User.objects.get(id=owner_id)
-                except User.DoesNotExist:
-                    messages.error(request, 'المالك المحدد غير موجود')
-                    return redirect('super_owner_quick_add_store')
+        action = (request.POST.get('action') or '').strip()
+        if step == '1':
+            name = (request.POST.get('name') or '').strip()
+            city = (request.POST.get('city') or '').strip()
+            address = (request.POST.get('address') or '').strip()
+            status_choice = (request.POST.get('status') or 'ACTIVE').strip()
+            if not name:
+                errors['name'] = 'يرجى إدخال اسم المتجر'
+            if not city:
+                errors['city'] = 'يرجى إدخال المدينة'
+            if status_choice not in ['ACTIVE','DISABLED']:
+                status_choice = 'ACTIVE'
+            if not errors:
+                wizard.update({'name': name, 'city': city, 'address': address, 'status': status_choice})
+                request.session['create_store_wizard'] = wizard
+                step = '2'
+        elif step == '2':
+            owner_id = (request.POST.get('owner_id') or '').strip()
+            if not owner_id or not owner_id.isdigit():
+                errors['owner_id'] = 'يرجى اختيار مالك المتجر'
             else:
-                owner = request.user
-
-        base_category = 'clothing'
-        base_delivery_time = '30-45 دقيقة'
-        base_delivery_fee = 1000.00
-        base_description = ''
-        address_placeholder = '—'
-
-        last_store = Store.objects.order_by('-created_at').first()
-        if last_store:
-            base_category = last_store.category
-            base_delivery_time = last_store.delivery_time
-            base_delivery_fee = float(last_store.delivery_fee)
-            base_description = last_store.description or ''
-
-        if copy_store_id:
+                wizard['owner_id'] = int(owner_id)
+                request.session['create_store_wizard'] = wizard
+                step = '3'
+        elif step == '3':
+            category = (request.POST.get('category') or '').strip()
+            primary_color = (request.POST.get('primary_color') or '').strip()
+            secondary_color = (request.POST.get('secondary_color') or '').strip()
+            logo = request.FILES.get('logo')
+            wizard.update({'category': category, 'primary_color': primary_color, 'secondary_color': secondary_color})
+            request.session['create_store_wizard'] = wizard
+            request.session['create_store_wizard_logo'] = bool(logo)
+            step = '4'
+        elif step == '4':
+            delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
+            free_threshold_raw = (request.POST.get('free_delivery_threshold') or '').strip()
+            delivery_time = (request.POST.get('delivery_time') or '').strip()
             try:
-                src = Store.objects.get(id=int(copy_store_id))
-                base_category = src.category
-                base_delivery_time = src.delivery_time
-                base_delivery_fee = float(src.delivery_fee)
-                base_description = src.description or ''
-            except (Store.DoesNotExist, ValueError):
-                pass
-        elif store_template in ['clothing','electronics','food']:
-            if store_template == 'clothing':
-                base_category = 'clothing'
-                base_delivery_time = '30-45 دقيقة'
-                base_delivery_fee = 1000.00
-            elif store_template == 'electronics':
-                base_category = 'electronics'
-                base_delivery_time = '60-90 دقيقة'
-                base_delivery_fee = 3000.00
-            elif store_template == 'food':
-                base_category = 'food'
-                base_delivery_time = '20-30 دقيقة'
-                base_delivery_fee = 2000.00
-
-        try:
-            store = Store.objects.create(
-                name=name,
-                city=city,
-                address=address_placeholder,
-                description=base_description,
-                owner=owner,
-                category=base_category,
-                delivery_time=base_delivery_time,
-                delivery_fee=base_delivery_fee,
-                is_active=is_active
-            )
-            messages.success(request, f'تم إنشاء المتجر "{store.name}" بنجاح!')
-            return redirect('super_owner_store_center', store_id=store.id)
-
-        except Exception as e:
-            messages.error(request, f'خطأ في إنشاء المتجر: {str(e)}')
-            return redirect('super_owner_quick_add_store')
-
-    store_owners = User.objects.filter(role='admin').order_by('username')
-    stores_all = Store.objects.all().order_by('name')
-    last_store = Store.objects.order_by('-created_at').first()
-    context = {
-        'store_owners': store_owners,
-        'stores_all': stores_all,
-        'default_city': last_store.city if last_store else '',
-    }
-    return render(request, 'dashboard/super_owner/quick_add_store.html', context)
+                delivery_fee = float(delivery_fee_raw)
+            except Exception:
+                errors['delivery_fee'] = 'يرجى إدخال رسوم توصيل صحيحة'
+                delivery_fee = None
+            free_threshold = None
+            if free_threshold_raw:
+                try:
+                    free_threshold = float(free_threshold_raw)
+                except Exception:
+                    errors['free_delivery_threshold'] = 'قيمة غير صالحة'
+            if not errors:
+                wizard.update({'delivery_fee': delivery_fee, 'free_delivery_threshold': free_threshold, 'delivery_time': delivery_time})
+                request.session['create_store_wizard'] = wizard
+                step = '5'
+        elif step == '5':
+            src_id = (request.POST.get('source_store_id') or '').strip()
+            copy_template_colors = request.POST.get('copy_template_colors') == 'on'
+            copy_delivery_settings = request.POST.get('copy_delivery_settings') == 'on'
+            copy_categories = request.POST.get('copy_categories') == 'on'
+            copy_policies = request.POST.get('copy_policies') == 'on'
+            copy_pages = request.POST.get('copy_pages') == 'on'
+            wizard.update({'src_id': src_id, 'copy_template_colors': copy_template_colors, 'copy_delivery_settings': copy_delivery_settings, 'copy_categories': copy_categories, 'copy_policies': copy_policies, 'copy_pages': copy_pages})
+            request.session['create_store_wizard'] = wizard
+            if action == 'save_draft':
+                if not wizard.get('owner_id'):
+                    errors['owner_id'] = 'يرجى اختيار مالك قبل حفظ المسودة'
+                else:
+                    try:
+                        with transaction.atomic():
+                            owner = User.objects.get(id=int(wizard['owner_id']))
+                            draft = Store.objects.create(name=wizard.get('name',''), city=wizard.get('city',''), address=wizard.get('address',''), description='', owner=owner, category=wizard.get('category') or 'clothing', delivery_time=wizard.get('delivery_time') or '30-45 دقيقة', delivery_fee=wizard.get('delivery_fee') or 0.0, is_active=False, status='DRAFT', primary_color=wizard.get('primary_color') or '', secondary_color=wizard.get('secondary_color') or '', free_delivery_threshold=wizard.get('free_delivery_threshold'))
+                            request.session['draft_store_id'] = draft.id
+                            from .models import AdminAuditLog
+                            AdminAuditLog.objects.create(admin_user=request.user, action='create', model='Store', object_id=str(draft.id), before='', after=json.dumps({'name': draft.name}, ensure_ascii=False), ip=request.META.get('REMOTE_ADDR') or '')
+                        messages.success(request, 'تم حفظ المسودة')
+                        return redirect('super_owner_create_store')
+                    except Exception:
+                        errors['general'] = 'فشل حفظ المسودة'
+            elif action == 'publish':
+                try:
+                    with transaction.atomic():
+                        owner = User.objects.get(id=int(wizard['owner_id']))
+                        status_choice = wizard.get('status') or 'ACTIVE'
+                        is_active = True if status_choice == 'ACTIVE' else False
+                        s = Store.objects.create(name=wizard.get('name',''), city=wizard.get('city',''), address=wizard.get('address',''), description='', owner=owner, category=wizard.get('category') or 'clothing', delivery_time=wizard.get('delivery_time') or '30-45 دقيقة', delivery_fee=wizard.get('delivery_fee') or 0.0, is_active=is_active, status=status_choice, primary_color=wizard.get('primary_color') or '', secondary_color=wizard.get('secondary_color') or '', free_delivery_threshold=wizard.get('free_delivery_threshold'))
+                        logo_file = request.FILES.get('logo')
+                        if logo_file:
+                            s.logo = logo_file
+                            s.save()
+                        src_store = None
+                        if wizard.get('src_id') and str(wizard.get('src_id')).isdigit():
+                            src_store = Store.objects.filter(id=int(wizard['src_id'])).first()
+                        if src_store:
+                            if wizard.get('copy_template_colors'):
+                                s.category = src_store.category
+                                s.primary_color = src_store.primary_color
+                                s.secondary_color = src_store.secondary_color
+                            if wizard.get('copy_delivery_settings'):
+                                s.delivery_fee = src_store.delivery_fee
+                                s.free_delivery_threshold = src_store.free_delivery_threshold
+                                s.delivery_time = src_store.delivery_time
+                            if wizard.get('copy_categories'):
+                                s.category = src_store.category
+                            if wizard.get('copy_policies'):
+                                s.description = src_store.description
+                            s.save()
+                        from .models import AdminAuditLog
+                        AdminAuditLog.objects.create(admin_user=request.user, action='create', model='Store', object_id=str(s.id), before='', after=json.dumps({'name': s.name}, ensure_ascii=False), ip=request.META.get('REMOTE_ADDR') or '')
+                    request.session.pop('create_store_wizard', None)
+                    request.session.pop('draft_store_id', None)
+                    messages.success(request, 'تم إنشاء المتجر ونشره')
+                    return redirect('super_owner_store_center', store_id=s.id)
+                except Exception:
+                    errors['general'] = 'فشل الإنشاء'
+    context = {'step': step, 'errors': errors, 'owners': owners, 'categories': categories, 'wizard': wizard, 'stores_all': Store.objects.all().order_by('name')}
+    return render(request, 'dashboard/super_owner/create_store_wizard.html', context)
 
 
 @login_required

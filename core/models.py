@@ -112,6 +112,10 @@ class Store(models.Model):
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     delivery_time = models.CharField(max_length=50, default='30-45 دقيقة')
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=1000.00)
+    status = models.CharField(max_length=10, choices=[('DRAFT','مسودة'),('ACTIVE','نشط'),('DISABLED','غير نشط')], default='ACTIVE')
+    primary_color = models.CharField(max_length=7, blank=True, default='')
+    secondary_color = models.CharField(max_length=7, blank=True, default='')
+    free_delivery_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     def __str__(self):
         return self.name

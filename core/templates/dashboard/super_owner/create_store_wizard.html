@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% block title %}إنشاء متجر جديد{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-primary">الخطوة {{ step }}</span>
+        <span>معالج إنشاء متجر جديد</span>
+      </div>
+      <a href="{% url 'super_owner_stores' %}" class="btn btn-outline-secondary">عودة للمتاجر</a>
+    </div>
+  </div>
+
+  {% if errors.general %}
+    <div class="alert alert-danger">{{ errors.general }}</div>
+  {% endif %}
+
+  {% if step == '1' %}
+    <form method="post" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="1">
+      <div class="card-header">بيانات المتجر الأساسية</div>
+      <div class="card-body row g-3">
+        <div class="col-md-6">
+          <label class="form-label">اسم المتجر *</label>
+          <input type="text" class="form-control" name="name" value="{{ wizard.name|default:'' }}">
+          {% if errors.name %}<div class="text-danger small mt-1">{{ errors.name }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">المدينة *</label>
+          <input type="text" class="form-control" name="city" value="{{ wizard.city|default:'' }}">
+          {% if errors.city %}<div class="text-danger small mt-1">{{ errors.city }}</div>{% endif %}
+        </div>
+        <div class="col-12">
+          <label class="form-label">العنوان التفصيلي</label>
+          <input type="text" class="form-control" name="address" value="{{ wizard.address|default:'' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">حالة المتجر</label>
+          <select class="form-select" name="status">
+            <option value="ACTIVE" {% if wizard.status == 'ACTIVE' %}selected{% endif %}>نشط</option>
+            <option value="DISABLED" {% if wizard.status == 'DISABLED' %}selected{% endif %}>غير نشط</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <span></span>
+        <button class="btn btn-primary" name="action" value="next">التالي</button>
+      </div>
+    </form>
+  {% elif step == '2' %}
+    <form method="post" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="2">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>المالك</span>
+        <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#createOwnerModal">إنشاء مالك جديد</button>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">اختيار مالك *</label>
+          <input type="text" class="form-control mb-2" id="owner_search" placeholder="بحث بالاسم/الهاتف">
+          <select class="form-select" name="owner_id" id="owner_list">
+            <option value="">اختر المالك</option>
+            {% for o in owners %}
+              <option value="{{ o.id }}">{{ o.get_full_name|default:o.username }}{% if o.phone %} - {{ o.phone }}{% endif %}</option>
+            {% endfor %}
+          </select>
+          {% if errors.owner_id %}<div class="text-danger small mt-1">{{ errors.owner_id }}</div>{% endif %}
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <a class="btn btn-secondary" href="{% url 'super_owner_create_store' %}?step=1">السابق</a>
+        <button class="btn btn-primary" name="action" value="next">التالي</button>
+      </div>
+    </form>
+
+    <div class="modal fade" id="createOwnerModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">إنشاء مالك جديد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body">
+            <div class="mb-3"><label class="form-label">الاسم الكامل *</label><input type="text" class="form-control" id="new_owner_full_name"></div>
+            <div class="mb-3"><label class="form-label">رقم الهاتف *</label><input type="tel" class="form-control" id="new_owner_phone" placeholder="07xxxxxxxxx"></div>
+            <div class="mb-3"><label class="form-label">البريد الإلكتروني</label><input type="email" class="form-control" id="new_owner_email"></div>
+            <div id="new_owner_error" class="text-danger small"></div>
+          </div>
+          <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button><button class="btn btn-success" id="submitCreateOwner">إنشاء</button></div>
+        </div>
+      </div>
+    </div>
+  {% elif step == '3' %}
+    <form method="post" enctype="multipart/form-data" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="3">
+      <div class="card-header">الهوية والمظهر</div>
+      <div class="card-body row g-3">
+        <div class="col-md-6"><label class="form-label">شعار المتجر</label><input type="file" class="form-control" name="logo" accept="image/*"></div>
+        <div class="col-md-6">
+          <label class="form-label">القالب/الفئة</label>
+          <select class="form-select" name="category">
+            <option value="">بدون</option>
+            {% for v,l in categories %}<option value="{{ v }}" {% if wizard.category == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6"><label class="form-label">اللون الأساسي</label><input type="text" class="form-control" name="primary_color" value="{{ wizard.primary_color|default:'' }}" placeholder="#667eea"></div>
+        <div class="col-md-6"><label class="form-label">اللون الثانوي</label><input type="text" class="form-control" name="secondary_color" value="{{ wizard.secondary_color|default:'' }}" placeholder="#764ba2"></div>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <a class="btn btn-secondary" href="{% url 'super_owner_create_store' %}?step=2">السابق</a>
+        <button class="btn btn-primary" name="action" value="next">التالي</button>
+      </div>
+    </form>
+  {% elif step == '4' %}
+    <form method="post" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="4">
+      <div class="card-header">إعدادات التوصيل الأساسية</div>
+      <div class="card-body row g-3">
+        <div class="col-md-4"><label class="form-label">رسوم التوصيل *</label><input type="number" step="0.01" class="form-control" name="delivery_fee" value="{{ wizard.delivery_fee|default:'' }}">{% if errors.delivery_fee %}<div class="text-danger small mt-1">{{ errors.delivery_fee }}</div>{% endif %}</div>
+        <div class="col-md-4"><label class="form-label">حد مجاني للتوصيل</label><input type="number" step="0.01" class="form-control" name="free_delivery_threshold" value="{{ wizard.free_delivery_threshold|default:'' }}">{% if errors.free_delivery_threshold %}<div class="text-danger small mt-1">{{ errors.free_delivery_threshold }}</div>{% endif %}</div>
+        <div class="col-md-4"><label class="form-label">وقت التوصيل المتوقع</label><input type="text" class="form-control" name="delivery_time" value="{{ wizard.delivery_time|default:'' }}"></div>
+      </div>
+      <div class="card-footer d-flex justify-content-between">
+        <a class="btn btn-secondary" href="{% url 'super_owner_create_store' %}?step=3">السابق</a>
+        <button class="btn btn-primary" name="action" value="next">التالي</button>
+      </div>
+    </form>
+  {% elif step == '5' %}
+    <form method="post" class="card">
+      {% csrf_token %}
+      <input type="hidden" name="step" value="5">
+      <div class="card-header">النسخ من متجر سابق</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">متجر المصدر</label>
+            <select class="form-select" name="source_store_id">
+              <option value="">بدون</option>
+              {% for s in stores_all %}
+                <option value="{{ s.id }}">{{ s.name }} - {{ s.city }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 d-flex flex-wrap gap-3 mt-2">
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="copy_template_colors" id="copy_template_colors"><label class="form-check-label" for="copy_template_colors">القالب/الألوان</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="copy_delivery_settings" id="copy_delivery_settings"><label class="form-check-label" for="copy_delivery_settings">إعدادات التوصيل</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="copy_categories" id="copy_categories"><label class="form-check-label" for="copy_categories">التصنيفات</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="copy_policies" id="copy_policies"><label class="form-check-label" for="copy_policies">السياسات والنصوص</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="copy_pages" id="copy_pages"><label class="form-check-label" for="copy_pages">صفحات المتجر</label></div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer d-flex flex-wrap gap-2 justify-content-between">
+        <div>
+          <a class="btn btn-secondary" href="{% url 'super_owner_create_store' %}?step=4">السابق</a>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary" name="action" value="save_draft">حفظ كمسودة</button>
+          <input type="file" class="form-control" name="logo" accept="image/*" style="max-width:250px">
+          <button class="btn btn-success" name="action" value="publish">إنشاء ونشر</button>
+        </div>
+      </div>
+    </form>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const s = document.getElementById('owner_search');
+  const list = document.getElementById('owner_list');
+  if(s && list){
+    s.addEventListener('input', function(){
+      const q = s.value.trim();
+      fetch('{% url "super_owner_owner_search_json" %}?q='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{
+        list.innerHTML = '<option value="">اختر المالك</option>';
+        (d.results||[]).forEach(function(o){
+          const opt = document.createElement('option'); opt.value=o.id; opt.textContent = o.name + (o.phone?(' - '+o.phone):''); list.appendChild(opt);
+        });
+      }).catch(()=>{});
+    });
+  }
+  const submitCreate = document.getElementById('submitCreateOwner');
+  if(submitCreate){
+    submitCreate.addEventListener('click', function(){
+      const full = document.getElementById('new_owner_full_name').value.trim();
+      const phone = document.getElementById('new_owner_phone').value.trim();
+      const email = document.getElementById('new_owner_email').value.trim();
+      const err = document.getElementById('new_owner_error'); err.textContent='';
+      const fd = new FormData(); fd.append('full_name', full); fd.append('phone', phone); fd.append('email', email);
+      fetch('{% url "super_owner_create_owner_json" %}', { method:'POST', body: fd }).then(r=>r.json().then(j=>({ok:r.ok, data:j}))).then(r=>{
+        if(!r.ok){ err.textContent = 'فشل إنشاء المالك'; return; }
+        const opt = document.createElement('option'); opt.value = r.data.id; opt.textContent = r.data.name + (r.data.phone?(' - '+r.data.phone):''); opt.selected = true; list.appendChild(opt);
+        const modalEl = document.getElementById('createOwnerModal'); const modal = bootstrap.Modal.getInstance(modalEl); modal && modal.hide();
+      }).catch(()=>{ err.textContent='خطأ في الاتصال'; });
+    });
+  }
+});
+</script>
+{% endblock %}
