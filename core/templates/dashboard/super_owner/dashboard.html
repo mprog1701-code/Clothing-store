@@ -43,41 +43,53 @@
     </div>
   </div>
 
+  {% if alert_count > 0 %}
+  <div class="mb-4">
+    <div class="card bg-dark p-4 d-flex flex-wrap align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-exclamation-triangle text-danger fs-2"></i>
+        <div>
+          <div class="fw-bold">يوجد {{ alert_count }} مشكلة تتطلب التدخل</div>
+          <div class="text-light-75 small">تنبيهات تشغيلية</div>
+        </div>
+      </div>
+      <div>
+        <a href="{% url 'super_owner_issues' %}" class="btn btn-danger">عرض التفاصيل</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <div class="row g-3 mb-4 dashboard-quick-actions">
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_orders' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' or snapshot.pending_orders > 0 %}btn-warning{% else %}btn-success{% endif %} w-100">
+      <a href="{% url 'super_owner_orders' %}" class="qa btn btn-light w-100">
         <i class="bi bi-clipboard-check"></i><span>إدارة الطلبات</span>
       </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_reports' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
-        <i class="bi bi-exclamation-triangle"></i><span>عرض المشاكل</span>
-      </a>
-    </div>
-    <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_stores' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+      <a href="{% url 'super_owner_stores' %}" class="qa btn btn-light w-100">
         <i class="bi bi-shop"></i><span>إدارة المتاجر</span>
       </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_products' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+      <a href="{% url 'super_owner_products' %}" class="qa btn btn-light w-100">
         <i class="bi bi-box-seam"></i><span>إدارة المنتجات</span>
       </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_announcements' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+      <a href="{% url 'super_owner_announcements' %}" class="qa btn btn-light w-100">
         <i class="bi bi-megaphone"></i><span>إدارة الإعلانات</span>
       </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_settings' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+      <a href="{% url 'super_owner_settings' %}" class="qa btn btn-light w-100">
         <i class="bi bi-gear"></i><span>إعدادات النظام</span>
       </a>
     </div>
   </div>
 
   <div class="text-center">
-    <a href="{% url 'super_owner_reports' %}" class="btn btn-secondary">عرض التقارير التفصيلية</a>
+    <a href="{% url 'super_owner_reports' %}" class="btn btn-secondary">عرض التقارير</a>
   </div>
 </div>
 {% endblock %}

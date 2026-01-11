@@ -1745,6 +1745,56 @@ def super_owner_reports(request):
 
 
 @login_required
+def super_owner_issues(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+
+    twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
+    two_hours_ago = timezone.now() - timedelta(hours=2)
+
+    orders_today = Order.objects.filter(created_at__date=timezone.now().date())
+    pending_over_24h = Order.objects.filter(status='pending', created_at__lt=twenty_four_hours_ago)
+    inactive_stores = Store.objects.filter(is_active=False)
+    canceled_today = orders_today.filter(status='canceled').count()
+    on_the_way_stale = Order.objects.filter(status='on_the_way', updated_at__lt=two_hours_ago).count()
+
+    critical_alerts = []
+    if pending_over_24h.exists():
+        critical_alerts.append({'type': 'pending_orders_over_24h', 'count': pending_over_24h.count(), 'url': 'super_owner_orders', 'label': 'طلبات متأخرة > 24 ساعة'})
+    if inactive_stores.exists():
+        critical_alerts.append({'type': 'inactive_stores', 'count': inactive_stores.count(), 'url': 'super_owner_stores', 'label': 'متاجر غير نشطة'})
+    if canceled_today > 0:
+        critical_alerts.append({'type': 'canceled_today', 'count': canceled_today, 'url': 'super_owner_orders', 'label': 'طلبات ملغاة اليوم'})
+    if on_the_way_stale > 0:
+        critical_alerts.append({'type': 'delivery_failure', 'count': on_the_way_stale, 'url': 'super_owner_orders', 'label': 'فشل/تأخر توصيل'})
+
+    last_30 = timezone.now() - timedelta(days=30)
+    total_recent = Order.objects.filter(created_at__gte=last_30).count() or 1
+    canceled_recent = Order.objects.filter(created_at__gte=last_30, status='canceled').count()
+    status_score = 0
+    if pending_over_24h.count() > 0:
+        status_score += 2
+    if inactive_stores.count() > 0:
+        status_score += 1
+    if canceled_recent > max(3, int(0.1 * total_recent)):
+        status_score += 2
+    if on_the_way_stale > 0:
+        status_score += 2
+    system_status = 'Healthy'
+    if status_score >= 4:
+        system_status = 'Critical'
+    elif status_score >= 2:
+        system_status = 'Warning'
+
+    context = {
+        'critical_alerts': critical_alerts,
+        'alert_count': len(critical_alerts),
+        'system_status': system_status,
+    }
+    return render(request, 'dashboard/super_owner/issues.html', context)
+
+@login_required
 def super_owner_announcements(request):
     if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
