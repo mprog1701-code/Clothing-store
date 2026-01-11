@@ -1,426 +1,47 @@
 {% extends 'base.html' %}
 {% load math_filters %}
 
-{% block title %}لوحة تحكم المالك الرئيسي - متجر الملابس{% endblock %}
-
-{% block extra_css %}
-<style>
-.super-owner-dashboard {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    min-height: 100vh;
-}
-
-.dashboard-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: none;
-    border-radius: 20px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.dashboard-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
-}
-
-.dashboard-stat {
-    text-align: center;
-    padding: 30px 20px;
-    border-radius: 15px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    color: white;
-    transition: transform 0.3s ease;
-}
-
-.dashboard-stat:hover {
-    transform: scale(1.05);
-}
-
-.dashboard-icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
-    opacity: 0.9;
-}
-
-.dashboard-number {
-    font-size: 2.5rem;
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-.dashboard-label {
-    font-size: 1.1rem;
-    opacity: 0.9;
-}
-
-.management-card {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border-left: 5px solid var(--primary-color);
-}
-
-.management-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-}
-
-.management-icon {
-    font-size: 2.5rem;
-    color: var(--primary-color);
-    margin-bottom: 15px;
-}
-
-.btn-management {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    border: none;
-    border-radius: 25px;
-    padding: 15px 35px;
-    color: white;
-    transition: all 0.3s ease;
-    font-size: 1.1rem;
-    font-weight: 600;
-    min-width: 140px;
-    min-height: 50px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-management:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 30px rgba(184, 115, 51, 0.3);
-    color: white;
-    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
-}
-
-.btn-management:active {
-    transform: translateY(-1px) scale(0.98);
-}
-
-.recent-activity {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.activity-item {
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    background: #f8f9fa;
-    border-left: 4px solid var(--primary-color);
-}
-
-.quick-actions {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-
-.quick-action-btn {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    border: none;
-    border-radius: 15px;
-    padding: 18px 25px;
-    color: white;
-    text-align: center;
-    transition: all 0.3s ease;
-    margin-bottom: 15px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    min-height: 55px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.quick-action-btn:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 30px rgba(184, 115, 51, 0.3);
-    color: white;
-    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
-}
-
-.quick-action-btn:active {
-    transform: translateY(-1px) scale(0.98);
-}
-</style>
-{% endblock %}
+{% block title %}لوحة المالك — نظرة تنفيذية{% endblock %}
 
 {% block content %}
-<div class="super-owner-dashboard py-5">
-    <div class="container">
-        <!-- Header -->
-        <div class="text-center mb-5">
-            <h1 class="display-4 fw-bold text-white mb-3">
-                <i class="bi bi-crown me-3"></i>
-                لوحة تحكم المالك الرئيسي
-            </h1>
-            <p class="lead text-white-75">
-                إدارة كاملة لجميع المتاجر والمنتجات والطلبات
-            </p>
-        </div>
+<div class="container py-3">
+  <h2>Executive Snapshot</h2>
+  <ul>
+    <li>🟢 إجمالي الطلبات (اليوم): {{ snapshot.orders_today }}</li>
+    <li>🟢 الإيرادات (اليوم): {{ snapshot.revenue_today|iqd }}</li>
+    <li>🟢 الإيرادات (الشهر): {{ snapshot.revenue_month|iqd }}</li>
+    <li>{% if snapshot.pending_orders > 0 %}🟡{% else %}🟢{% endif %} الطلبات المعلقة: {{ snapshot.pending_orders }}</li>
+    <li>{% if snapshot.inactive_stores > 0 %}🔴{% else %}🟢{% endif %} المتاجر غير النشطة: {{ snapshot.inactive_stores }}</li>
+  </ul>
 
-        <!-- Statistics Cards -->
-        <div class="row mb-5">
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="dashboard-stat">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-shop"></i>
-                    </div>
-                    <div class="dashboard-number">{{ total_stores|default:"0" }}</div>
-                    <div class="dashboard-label">متجر</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="dashboard-stat">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-bag"></i>
-                    </div>
-                    <div class="dashboard-number">{{ total_products|default:"0" }}</div>
-                    <div class="dashboard-label">منتج</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="dashboard-stat">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-people"></i>
-                    </div>
-                    <div class="dashboard-number">{{ total_users|default:"0" }}</div>
-                    <div class="dashboard-label">مسجلين بالتطبيق</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="dashboard-stat">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-cart-check"></i>
-                    </div>
-                    <div class="dashboard-number">{{ total_orders|default:"0" }}</div>
-                    <div class="dashboard-label">طلب</div>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-4">
-                <div class="dashboard-stat">
-                    <div class="dashboard-icon">
-                        <i class="bi bi-eye"></i>
-                    </div>
-                    <div class="dashboard-number">{{ visitor_count|default:"0" }}</div>
-                    <div class="dashboard-label">زائرين عبر المتصفح</div>
-                </div>
-            </div>
-        </div>
+  <h2>Attention Required</h2>
+  {% if attention_cards %}
+    <ul>
+      {% for item in attention_cards %}
+        <li>
+          {% if item.type == 'pending_orders_over_24h' %}🟡{% elif item.type == 'inactive_stores' %}🔴{% elif item.type == 'campaigns_ending_soon' %}🟠{% else %}🔴{% endif %}
+          <a href="{% url item.link %}">{{ item.label }}</a> ({{ item.count }})
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>لا توجد عناصر تحتاج تدخل الآن.</p>
+  {% endif %}
 
-        <!-- Detailed Statistics -->
-        <div class="row mb-5">
-            <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">
-                            <i class="bi bi-bar-chart me-2"></i>
-                            إحصائيات مفصلة
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <i class="fas fa-store text-success fa-2x mb-2"></i>
-                                    <h4 class="text-success">{{ active_stores|default:"0" }}</h4>
-                                    <p class="text-muted mb-0">متجر نشط</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <i class="fas fa-store-slash text-warning fa-2x mb-2"></i>
-                                    <h4 class="text-warning">{{ pending_stores|default:"0" }}</h4>
-                                    <p class="text-muted mb-0">متجر غير نشط</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <i class="fas fa-star text-warning fa-2x mb-2"></i>
-                                    <h4 class="text-warning">{{ featured_products|default:"0" }}</h4>
-                                    <p class="text-muted mb-0">منتج مميز</p>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
-                                    <h4 class="text-success">{{ completed_orders|default:"0" }}</h4>
-                                    <p class="text-muted mb-0">طلب مكتمل</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mt-4">
-                            <div class="col-md-6">
-                                <div class="text-center p-3 bg-gradient-success text-white rounded">
-                                    <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
-                                    <h3>{{ total_revenue|iqd }}</h3>
-                                    <p class="mb-0">إجمالي الإيرادات</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-center p-3 bg-gradient-info text-white rounded">
-                                    <i class="fas fa-percentage fa-2x mb-2"></i>
-                                    <h3>{{ completed_orders|floatformat:0|default:"0" }}%</h3>
-                                    <p class="mb-0">نسبة الطلبات المكتملة</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <h2>Owner Quick Actions</h2>
+  <ul>
+    {% for qa in quick_actions %}
+      <li><a href="{% url qa.url %}">{{ qa.label }}</a></li>
+    {% endfor %}
+  </ul>
 
-        <div class="row">
-            <!-- Management Sections -->
-            <div class="col-lg-8">
-                <div class="row">
-                    <!-- Stores Management -->
-                    <div class="col-md-6 mb-4">
-                        <div class="management-card text-center">
-                            <div class="management-icon">
-                                <i class="bi bi-shop-window"></i>
-                            </div>
-                            <h5 class="fw-bold mb-3">إدارة المتاجر</h5>
-                            <p class="text-muted mb-4">إدارة جميع المتاجر، تفعيل/تعطيل، تعديل البيانات</p>
-                            <a href="{% url 'super_owner_stores' %}" class="btn btn-management">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                إدارة المتاجر
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Products Management -->
-                    <div class="col-md-6 mb-4">
-                        <div class="management-card text-center">
-                            <div class="management-icon">
-                                <i class="bi bi-bag-heart"></i>
-                            </div>
-                            <h5 class="fw-bold mb-3">إدارة المنتجات</h5>
-                            <p class="text-muted mb-4">إدارة جميع المنتجات في جميع المتاجر</p>
-                            <a href="{% url 'super_owner_products' %}" class="btn btn-management">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                إدارة المنتجات
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Orders Management -->
-                    <div class="col-md-6 mb-4">
-                        <div class="management-card text-center">
-                            <div class="management-icon">
-                                <i class="bi bi-cart4"></i>
-                            </div>
-                            <h5 class="fw-bold mb-3">إدارة الطلبات</h5>
-                            <p class="text-muted mb-4">متابعة جميع الطلبات، تحديث الحالات</p>
-                            <a href="{% url 'super_owner_orders' %}" class="btn btn-management">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                إدارة الطلبات
-                            </a>
-                        </div>
-                    </div>
-
-
-                    <!-- Site Settings -->
-                    <div class="col-md-6 mb-4">
-                        <div class="management-card text-center">
-                            <div class="management-icon">
-                                <i class="bi bi-gear-fill"></i>
-                            </div>
-                            <h5 class="fw-bold mb-3">إعدادات الموقع</h5>
-                            <p class="text-muted mb-4">تخصيص الموقع، الألوان، والمعلومات العامة</p>
-                            <a href="{% url 'super_owner_settings' %}" class="btn btn-management">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                إعدادات الموقع
-                            </a>
-                        </div>
-                    </div>
-                    <!-- Announcements Management -->
-                    <div class="col-md-6 mb-4">
-                        <div class="management-card text-center">
-                            <div class="management-icon">
-                                <i class="bi bi-megaphone"></i>
-                            </div>
-                            <h5 class="fw-bold mb-3">إدارة العروض والإعلانات</h5>
-                            <p class="text-muted mb-4">تحكم بقائمة الإعلانات الظاهرة في راية الصفحة الرئيسية</p>
-                            <a href="{% url 'super_owner_announcements' %}" class="btn btn-management">
-                                <i class="bi bi-arrow-left me-2"></i>
-                                إدارة العروض والإعلانات
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Actions & Recent Activity -->
-            <div class="col-lg-4">
-                <!-- Quick Actions -->
-                <div class="quick-actions mb-4">
-                    <h5 class="fw-bold mb-4">
-                        <i class="bi bi-lightning me-2"></i>
-                        إجراءات سريعة
-                    </h5>
-                    
-                    <a href="{% url 'super_owner_add_store' %}" class="btn btn-primary w-100 quick-action-btn mb-2">
-                        <i class="bi bi-plus-circle me-2"></i>
-                        إضافة متجر جديد
-                    </a>
-                    
-                    <a href="{% url 'super_owner_products' %}" class="btn btn-success w-100 quick-action-btn mb-2">
-                        <i class="bi bi-bag-plus me-2"></i>
-                        إدارة المنتجات
-                    </a>
-                    
-                    <a href="{% url 'super_owner_orders' %}" class="btn btn-info w-100 quick-action-btn mb-2">
-                        <i class="bi bi-graph-up me-2"></i>
-                        متابعة الطلبات
-                    </a>
-
-                    <a href="{% url 'super_owner_settings' %}" class="btn btn-dark w-100 quick-action-btn">
-                        <i class="bi bi-gear me-2"></i>
-                        إعدادات الموقع
-                    </a>
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="recent-activity">
-                    <h5 class="fw-bold mb-4">
-                        <i class="bi bi-clock-history me-2"></i>
-                        النشاطات الأخيرة
-                    </h5>
-                    
-                    {% if recent_orders %}
-                        {% for order in recent_orders %}
-                        <div class="activity-item">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-bag-check text-success me-3"></i>
-                                <div>
-                                    <strong>طلب جديد</strong>
-                                    <p class="mb-0 text-muted small">
-                                        من {{ order.user.get_full_name|default:order.user.username }}
-                                        - {{ order.total_amount|iqd }}
-                                    </p>
-                                    <small class="text-muted">{{ order.created_at|timesince }} مضت</small>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center text-muted py-4">
-                            <i class="bi bi-inbox display-4 mb-3 opacity-50"></i>
-                            <p>لا توجد نشاطات حديثة</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+  <h2>System Health Overview</h2>
+  <ul>
+    <li>نسبة الطلبات المكتملة: {{ health.completion_rate }}%</li>
+    <li>نسبة الإلغاء: {{ health.cancel_rate }}%</li>
+    <li>أفضل متجر أداءً: {% if health.best_store %}{{ health.best_store.name }}{% else %}—{% endif %}</li>
+    <li>أضعف متجر أداءً: {% if health.worst_store %}{{ health.worst_store.name }}{% else %}—{% endif %}</li>
+  </ul>
 </div>
 {% endblock %}
+

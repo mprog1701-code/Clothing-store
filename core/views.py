@@ -1398,40 +1398,124 @@ def super_owner_dashboard(request):
     if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
-    
-    # Get comprehensive statistics
-    total_stores = Store.objects.count()
-    total_products = Product.objects.count()
-    total_users = User.objects.count()
-    total_orders = Order.objects.count()
-    
-    active_stores = Store.objects.filter(is_active=True).count()
-    pending_stores = Store.objects.filter(is_active=False).count()
-    featured_products = Product.objects.filter(is_featured=True).count()
-    completed_orders = Order.objects.filter(status='delivered').count()
-    
-    recent_orders = Order.objects.order_by('-created_at')[:5]
-    recent_stores = Store.objects.order_by('-created_at')[:5]
-    recent_users = User.objects.order_by('-date_joined')[:5]
-    
-    # Calculate revenue (assuming delivered orders are paid)
-    total_revenue = sum(order.total_amount for order in Order.objects.filter(status='delivered'))
-    
-    settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
+
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    orders_today = Order.objects.filter(created_at__date=today)
+    delivered_today = orders_today.filter(status='delivered')
+    revenue_today = delivered_today.aggregate(total=Sum('total_amount'))['total'] or 0
+    orders_month = Order.objects.filter(created_at__date__gte=month_start)
+    delivered_month = orders_month.filter(status='delivered')
+    revenue_month = delivered_month.aggregate(total=Sum('total_amount'))['total'] or 0
+    pending_count = Order.objects.filter(status='pending').count()
+    inactive_stores_count = Store.objects.filter(is_active=False).count()
+
+    snapshot = {
+        'orders_today': orders_today.count(),
+        'revenue_today': float(revenue_today),
+        'revenue_month': float(revenue_month),
+        'pending_orders': pending_count,
+        'inactive_stores': inactive_stores_count,
+    }
+
+    twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
+    attention_cards = []
+    pending_over_24h = Order.objects.filter(status='pending', created_at__lt=twenty_four_hours_ago).order_by('-created_at')[:10]
+    if pending_over_24h.exists():
+        attention_cards.append({
+            'type': 'pending_orders_over_24h',
+            'count': pending_over_24h.count(),
+            'link': 'super_owner_orders',
+            'label': 'طلبات قيد الانتظار منذ أكثر من 24 ساعة'
+        })
+    inactive_stores = Store.objects.filter(is_active=False)[:10]
+    if inactive_stores.exists():
+        attention_cards.append({
+            'type': 'inactive_stores',
+            'count': inactive_stores.count(),
+            'link': 'super_owner_stores',
+            'label': 'متاجر غير نشطة'
+        })
+    campaigns_ending_soon = []
+    try:
+        campaigns_ending_soon = list(Campaign.objects.filter(is_active=True, end_date__lte=timezone.now() + timedelta(days=3)).order_by('end_date')[:10])
+    except Exception:
+        campaigns_ending_soon = []
+    if campaigns_ending_soon:
+        attention_cards.append({
+            'type': 'campaigns_ending_soon',
+            'count': len(campaigns_ending_soon),
+            'link': 'super_owner_announcements',
+            'label': 'إعلانات منتهية أو على وشك الانتهاء'
+        })
+    products_without_images = Product.objects.filter(is_active=True).exclude(images__isnull=False).count()
+    if products_without_images > 0:
+        attention_cards.append({
+            'type': 'products_without_images',
+            'count': products_without_images,
+            'link': 'super_owner_products',
+            'label': 'منتجات بدون صور'
+        })
+    zero_price_products = Product.objects.filter(is_active=True, base_price__lte=0).count()
+    if zero_price_products > 0:
+        attention_cards.append({
+            'type': 'zero_price_products',
+            'count': zero_price_products,
+            'link': 'super_owner_products',
+            'label': 'منتجات بسعر صفري'
+        })
+
+    quick_actions = [
+        {'label': 'إضافة متجر', 'url': 'super_owner_add_store'},
+        {'label': 'إضافة منتج', 'url': 'super_owner_add_product'},
+        {'label': 'إنشاء إعلان', 'url': 'super_owner_announcements'},
+        {'label': 'إعدادات النظام', 'url': 'super_owner_settings'},
+    ]
+
+    last_30 = timezone.now() - timedelta(days=30)
+    recent_orders = Order.objects.filter(created_at__gte=last_30)
+    total_recent = recent_orders.count() or 1
+    delivered_recent = recent_orders.filter(status='delivered').count()
+    canceled_recent = recent_orders.filter(status='canceled').count()
+    completion_rate = round((delivered_recent / total_recent) * 100, 1)
+    cancel_rate = round((canceled_recent / total_recent) * 100, 1)
+
+    best_store = None
+    worst_store = None
+    try:
+        perf = list(
+            Order.objects.filter(created_at__gte=last_30)
+            .values('store_id')
+            .annotate(delivered=Sum(models.Case(
+                models.When(status='delivered', then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )), revenue=Sum(models.Case(
+                models.When(status='delivered', then='total_amount'),
+                default=0,
+                output_field=models.DecimalField(max_digits=10, decimal_places=2)
+            )))
+        )
+        if perf:
+            perf_sorted = sorted(perf, key=lambda x: (float(x['delivered']), float(x['revenue'] or 0)), reverse=True)
+            best_id = perf_sorted[0]['store_id']
+            worst_id = perf_sorted[-1]['store_id']
+            best_store = Store.objects.filter(id=best_id).first()
+            worst_store = Store.objects.filter(id=worst_id).first()
+    except Exception:
+        best_store = None
+        worst_store = None
+
     context = {
-        'total_stores': total_stores,
-        'total_products': total_products,
-        'total_users': total_users,
-        'total_orders': total_orders,
-        'active_stores': active_stores,
-        'pending_stores': pending_stores,
-        'featured_products': featured_products,
-        'completed_orders': completed_orders,
-        'total_revenue': total_revenue,
-        'recent_orders': recent_orders,
-        'recent_stores': recent_stores,
-        'recent_users': recent_users,
-        'visitor_count': settings_obj.visitor_count,
+        'snapshot': snapshot,
+        'attention_cards': attention_cards,
+        'quick_actions': quick_actions,
+        'health': {
+            'completion_rate': completion_rate,
+            'cancel_rate': cancel_rate,
+            'best_store': best_store,
+            'worst_store': worst_store,
+        },
     }
     return render(request, 'dashboard/super_owner/dashboard.html', context)
 
