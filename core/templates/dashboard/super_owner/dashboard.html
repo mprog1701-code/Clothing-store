@@ -7,7 +7,7 @@
 <div class="container py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>لوحة الإدارة</h1>
-    <div class="rounded-circle {% if system_status == 'Critical' %}bg-danger{% elif system_status == 'Warning' %}bg-warning{% else %}bg-success{% endif %}" style="width:24px;height:24px">
+    <div class="rounded-circle {% if system_status == 'Critical' %}bg-danger{% elif system_status == 'Warning' %}bg-warning{% else %}bg-success{% endif %} status-dot" style="width:24px;height:24px" data-bs-toggle="tooltip" data-bs-placement="left" title="{% if system_status == 'Critical' %}يحتاج تدخل{% elif system_status == 'Warning' %}تحذير{% else %}مستقر{% endif %}">
       <span class="visually-hidden">{{ system_status }}</span>
     </div>
   </div>
@@ -43,21 +43,36 @@
     </div>
   </div>
 
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4 dashboard-quick-actions">
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_stores' %}" class="btn btn-primary w-100 py-3">إدارة المتاجر</a>
+      <a href="{% url 'super_owner_orders' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' or snapshot.pending_orders > 0 %}btn-warning{% else %}btn-success{% endif %} w-100">
+        <i class="bi bi-clipboard-check"></i><span>إدارة الطلبات</span>
+      </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_products' %}" class="btn btn-primary w-100 py-3">إدارة المنتجات</a>
+      <a href="{% url 'super_owner_reports' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+        <i class="bi bi-exclamation-triangle"></i><span>عرض المشاكل</span>
+      </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_orders' %}" class="btn btn-primary w-100 py-3">إدارة الطلبات</a>
+      <a href="{% url 'super_owner_stores' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+        <i class="bi bi-shop"></i><span>إدارة المتاجر</span>
+      </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_announcements' %}" class="btn btn-primary w-100 py-3">إدارة الإعلانات</a>
+      <a href="{% url 'super_owner_products' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+        <i class="bi bi-box-seam"></i><span>إدارة المنتجات</span>
+      </a>
     </div>
     <div class="col-lg-2 col-md-4 col-sm-6">
-      <a href="{% url 'super_owner_settings' %}" class="btn btn-primary w-100 py-3">إعدادات النظام</a>
+      <a href="{% url 'super_owner_announcements' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+        <i class="bi bi-megaphone"></i><span>إدارة الإعلانات</span>
+      </a>
+    </div>
+    <div class="col-lg-2 col-md-4 col-sm-6">
+      <a href="{% url 'super_owner_settings' %}" class="qa btn {% if system_status == 'Critical' %}btn-danger{% elif system_status == 'Warning' %}btn-warning{% else %}btn-success{% endif %} w-100">
+        <i class="bi bi-gear"></i><span>إعدادات النظام</span>
+      </a>
     </div>
   </div>
 
@@ -65,4 +80,20 @@
     <a href="{% url 'super_owner_reports' %}" class="btn btn-secondary">عرض التقارير التفصيلية</a>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-quick-actions .qa{display:flex;align-items:center;gap:10px;min-height:56px;border-radius:14px}
+.dashboard-quick-actions .qa i{font-size:1.2rem}
+@media (max-width:600px){.dashboard-quick-actions .qa{min-height:54px}}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  try{ document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el){ new bootstrap.Tooltip(el); }); }catch(e){}
+})();
+</script>
 {% endblock %}
