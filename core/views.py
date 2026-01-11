@@ -1975,8 +1975,11 @@ def super_owner_stores(request):
                             s = Store.objects.get(id=sid)
                             if copy_delivery_fee:
                                 s.delivery_fee = src.delivery_fee
+                                s.free_delivery_threshold = src.free_delivery_threshold
                             if copy_delivery_time:
                                 s.delivery_time = src.delivery_time
+                                s.delivery_time_value = getattr(src, 'delivery_time_value', 0)
+                                s.delivery_time_unit = getattr(src, 'delivery_time_unit', '')
                             if copy_category:
                                 s.category = src.category
                             if copy_description:
@@ -2001,8 +2004,11 @@ def super_owner_stores(request):
                         with transaction.atomic():
                             if copy_delivery_fee:
                                 store.delivery_fee = src.delivery_fee
+                                store.free_delivery_threshold = src.free_delivery_threshold
                             if copy_delivery_time:
                                 store.delivery_time = src.delivery_time
+                                store.delivery_time_value = getattr(src, 'delivery_time_value', 0)
+                                store.delivery_time_unit = getattr(src, 'delivery_time_unit', '')
                             if copy_category:
                                 store.category = src.category
                             if copy_description:
@@ -2245,10 +2251,16 @@ def super_owner_create_owner_json(request):
     phone = (request.POST.get('phone') or '').strip()
     email = (request.POST.get('email') or '').strip()
     if not full_name or not phone:
-        return JsonResponse({'error': 'missing_required'}, status=400)
+        return JsonResponse({'error': 'missing_required', 'message': 'الاسم الكامل ورقم الهاتف مطلوبان'}, status=400)
     import re
     if not re.fullmatch(r'07\d{9}', phone):
-        return JsonResponse({'error': 'invalid_phone'}, status=400)
+        return JsonResponse({'error': 'invalid_phone', 'message': 'رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'}, status=400)
+    # Prevent duplicate phone
+    try:
+        if User.objects.filter(phone__iexact=phone).exists():
+            return JsonResponse({'error': 'duplicate_phone', 'message': 'رقم الهاتف مستخدم مسبقاً'}, status=409)
+    except Exception:
+        pass
     first, last = '', ''
     parts = full_name.split()
     if parts:
@@ -2262,7 +2274,7 @@ def super_owner_create_owner_json(request):
         owner.save()
         return JsonResponse({'id': owner.id, 'name': owner.get_full_name() or owner.username, 'phone': owner.phone or ''})
     except Exception:
-        return JsonResponse({'error': 'create_failed'}, status=500)
+        return JsonResponse({'error': 'create_failed', 'message': 'فشل إنشاء المالك'}, status=500)
 
 @login_required
 def super_owner_create_store(request):
@@ -2274,23 +2286,20 @@ def super_owner_create_store(request):
     errors = {}
     owners = User.objects.filter(role='admin').order_by('username')
     categories = Store.CATEGORY_CHOICES
+    status_code = 200
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
         if step == '1':
             name = (request.POST.get('name') or '').strip()
-            city = (request.POST.get('city') or '').strip()
             address = (request.POST.get('address') or '').strip()
-            status_choice = (request.POST.get('status') or 'ACTIVE').strip()
             if not name:
                 errors['name'] = 'يرجى إدخال اسم المتجر'
-            if not city:
-                errors['city'] = 'يرجى إدخال المدينة'
-            if status_choice not in ['ACTIVE','DISABLED']:
-                status_choice = 'ACTIVE'
             if not errors:
-                wizard.update({'name': name, 'city': city, 'address': address, 'status': status_choice})
+                wizard.update({'name': name, 'address': address})
                 request.session['create_store_wizard'] = wizard
                 step = '2'
+            else:
+                status_code = 400
         elif step == '2':
             owner_id = (request.POST.get('owner_id') or '').strip()
             if not owner_id or not owner_id.isdigit():
@@ -2301,13 +2310,18 @@ def super_owner_create_store(request):
                 step = '3'
         elif step == '3':
             category = (request.POST.get('category') or '').strip()
-            primary_color = (request.POST.get('primary_color') or '').strip()
-            secondary_color = (request.POST.get('secondary_color') or '').strip()
-            logo = request.FILES.get('logo')
-            wizard.update({'category': category, 'primary_color': primary_color, 'secondary_color': secondary_color})
+            city = (request.POST.get('city') or '').strip()
+            status_choice = (request.POST.get('status') or 'ACTIVE').strip()
+            if not city:
+                errors['city'] = 'يرجى إدخال المدينة'
+            if status_choice not in ['ACTIVE','DISABLED']:
+                status_choice = 'ACTIVE'
+            wizard.update({'category': category, 'city': city, 'status': status_choice})
             request.session['create_store_wizard'] = wizard
-            request.session['create_store_wizard_logo'] = bool(logo)
-            step = '4'
+            if not errors:
+                step = '4'
+            else:
+                status_code = 400
         elif step == '4':
             delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
             free_threshold_raw = (request.POST.get('free_delivery_threshold') or '').strip()
@@ -2348,14 +2362,18 @@ def super_owner_create_store(request):
                 })
                 request.session['create_store_wizard'] = wizard
                 step = '5'
+            else:
+                status_code = 400
         elif step == '5':
             src_id = (request.POST.get('source_store_id') or '').strip()
+            primary_color = (request.POST.get('primary_color') or '').strip()
+            secondary_color = (request.POST.get('secondary_color') or '').strip()
             copy_template_colors = request.POST.get('copy_template_colors') == 'on'
             copy_delivery_settings = request.POST.get('copy_delivery_settings') == 'on'
             copy_categories = request.POST.get('copy_categories') == 'on'
             copy_policies = request.POST.get('copy_policies') == 'on'
             copy_pages = request.POST.get('copy_pages') == 'on'
-            wizard.update({'src_id': src_id, 'copy_template_colors': copy_template_colors, 'copy_delivery_settings': copy_delivery_settings, 'copy_categories': copy_categories, 'copy_policies': copy_policies, 'copy_pages': copy_pages})
+            wizard.update({'src_id': src_id, 'copy_template_colors': copy_template_colors, 'copy_delivery_settings': copy_delivery_settings, 'copy_categories': copy_categories, 'copy_policies': copy_policies, 'copy_pages': copy_pages, 'primary_color': primary_color, 'secondary_color': secondary_color})
             request.session['create_store_wizard'] = wizard
             if action == 'save_draft':
                 if not wizard.get('owner_id'):
@@ -2388,6 +2406,7 @@ def super_owner_create_store(request):
                         return redirect('super_owner_create_store')
                     except Exception:
                         errors['general'] = 'فشل حفظ المسودة'
+                        status_code = 500
             elif action == 'publish':
                 try:
                     with transaction.atomic():
@@ -2442,8 +2461,9 @@ def super_owner_create_store(request):
                     return redirect('super_owner_store_center', store_id=s.id)
                 except Exception:
                     errors['general'] = 'فشل الإنشاء'
+                    status_code = 500
     context = {'step': step, 'errors': errors, 'owners': owners, 'categories': categories, 'wizard': wizard, 'stores_all': Store.objects.all().order_by('name')}
-    return render(request, 'dashboard/super_owner/create_store_wizard.html', context)
+    return render(request, 'dashboard/super_owner/create_store_wizard.html', context, status=status_code)
 
 
 @login_required
@@ -2467,6 +2487,7 @@ def super_owner_edit_store(request, store_id):
         dt_value_raw = (request.POST.get('delivery_time_value') or '').strip()
         dt_unit = (request.POST.get('delivery_time_unit') or '').strip()
         delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
+        free_threshold_raw = (request.POST.get('free_delivery_threshold') or '').strip()
         
         # Validate required fields
         if not all([name, city, address, owner_id]):
@@ -2500,6 +2521,11 @@ def super_owner_edit_store(request, store_id):
             try:
                 if delivery_fee_raw:
                     store.delivery_fee = float(delivery_fee_raw)
+            except Exception:
+                pass
+            try:
+                if free_threshold_raw != '':
+                    store.free_delivery_threshold = float(free_threshold_raw)
             except Exception:
                 pass
             

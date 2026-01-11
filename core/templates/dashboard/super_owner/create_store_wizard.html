@@ -3,12 +3,17 @@
 {% block content %}
 <div class="container py-4">
   <div class="card mb-3">
-    <div class="card-body d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge bg-primary">الخطوة {{ step }}</span>
-        <span>معالج إنشاء متجر جديد</span>
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary">الخطوة {{ step }}</span>
+          <span>معالج إنشاء متجر جديد</span>
+        </div>
+        <a href="{% url 'super_owner_stores' %}" class="btn btn-outline-secondary">عودة للمتاجر</a>
       </div>
-      <a href="{% url 'super_owner_stores' %}" class="btn btn-outline-secondary">عودة للمتاجر</a>
+      <div class="progress" style="height: 8px;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: {% if step == '1' %}20{% elif step == '2' %}40{% elif step == '3' %}60{% elif step == '4' %}80{% else %}100{% endif %}%" aria-valuenow="{% if step == '1' %}20{% elif step == '2' %}40{% elif step == '3' %}60{% elif step == '4' %}80{% else %}100{% endif %}" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
     </div>
   </div>
 
@@ -24,24 +29,12 @@
       <div class="card-body row g-3">
         <div class="col-md-6">
           <label class="form-label">اسم المتجر *</label>
-          <input type="text" class="form-control" name="name" value="{{ wizard.name|default:'' }}">
+          <input type="text" class="form-control" name="name" value="{{ wizard.name|default:'' }}" placeholder="أدخل اسم المتجر">
           {% if errors.name %}<div class="text-danger small mt-1">{{ errors.name }}</div>{% endif %}
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">المدينة *</label>
-          <input type="text" class="form-control" name="city" value="{{ wizard.city|default:'' }}">
-          {% if errors.city %}<div class="text-danger small mt-1">{{ errors.city }}</div>{% endif %}
         </div>
         <div class="col-12">
           <label class="form-label">العنوان التفصيلي</label>
-          <input type="text" class="form-control" name="address" value="{{ wizard.address|default:'' }}">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label">حالة المتجر</label>
-          <select class="form-select" name="status">
-            <option value="ACTIVE" {% if wizard.status == 'ACTIVE' %}selected{% endif %}>نشط</option>
-            <option value="DISABLED" {% if wizard.status == 'DISABLED' %}selected{% endif %}>غير نشط</option>
-          </select>
+          <input type="text" class="form-control" name="address" value="{{ wizard.address|default:'' }}" placeholder="المدينة/المنطقة/الشارع">
         </div>
       </div>
       <div class="card-footer d-flex justify-content-between">
@@ -91,21 +84,30 @@
       </div>
     </div>
   {% elif step == '3' %}
-    <form method="post" enctype="multipart/form-data" class="card">
+    <form method="post" class="card">
       {% csrf_token %}
       <input type="hidden" name="step" value="3">
-      <div class="card-header">الهوية والمظهر</div>
+      <div class="card-header">التصنيف / المدينة / الحالة</div>
       <div class="card-body row g-3">
-        <div class="col-md-6"><label class="form-label">شعار المتجر</label><input type="file" class="form-control" name="logo" accept="image/*"></div>
-        <div class="col-md-6">
+        <div class="col-md-4">
           <label class="form-label">القالب/الفئة</label>
           <select class="form-select" name="category">
             <option value="">بدون</option>
             {% for v,l in categories %}<option value="{{ v }}" {% if wizard.category == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
           </select>
         </div>
-        <div class="col-md-6"><label class="form-label">اللون الأساسي</label><input type="text" class="form-control" name="primary_color" value="{{ wizard.primary_color|default:'' }}" placeholder="#667eea"></div>
-        <div class="col-md-6"><label class="form-label">اللون الثانوي</label><input type="text" class="form-control" name="secondary_color" value="{{ wizard.secondary_color|default:'' }}" placeholder="#764ba2"></div>
+        <div class="col-md-4">
+          <label class="form-label">المدينة *</label>
+          <input type="text" class="form-control" name="city" value="{{ wizard.city|default:'' }}" placeholder="مثال: بغداد">
+          {% if errors.city %}<div class="text-danger small mt-1">{{ errors.city }}</div>{% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">حالة المتجر</label>
+          <select class="form-select" name="status">
+            <option value="ACTIVE" {% if wizard.status == 'ACTIVE' %}selected{% endif %}>نشط</option>
+            <option value="DISABLED" {% if wizard.status == 'DISABLED' %}selected{% endif %}>غير نشط</option>
+          </select>
+        </div>
       </div>
       <div class="card-footer d-flex justify-content-between">
         <a class="btn btn-secondary" href="{% url 'super_owner_create_store' %}?step=2">السابق</a>
@@ -156,12 +158,24 @@
       </div>
     </form>
   {% elif step == '5' %}
-    <form method="post" class="card">
+    <form method="post" enctype="multipart/form-data" class="card">
       {% csrf_token %}
       <input type="hidden" name="step" value="5">
-      <div class="card-header">النسخ من متجر سابق</div>
+      <div class="card-header">المظهر + خيارات النسخ (اختياري)</div>
       <div class="card-body">
         <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">شعار المتجر</label>
+            <input type="file" class="form-control" name="logo" accept="image/*">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">اللون الأساسي</label>
+            <input type="text" class="form-control" name="primary_color" value="{{ wizard.primary_color|default:'' }}" placeholder="#667eea">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">اللون الثانوي</label>
+            <input type="text" class="form-control" name="secondary_color" value="{{ wizard.secondary_color|default:'' }}" placeholder="#764ba2">
+          </div>
           <div class="col-md-6">
             <label class="form-label">متجر المصدر</label>
             <select class="form-select" name="source_store_id">
@@ -186,7 +200,6 @@
         </div>
         <div class="d-flex gap-2 align-items-center">
           <button class="btn btn-outline-secondary" name="action" value="save_draft">حفظ كمسودة</button>
-          <input type="file" class="form-control" name="logo" accept="image/*" style="max-width:250px">
           <button class="btn btn-success" name="action" value="publish">إنشاء ونشر</button>
         </div>
       </div>
@@ -217,8 +230,24 @@ document.addEventListener('DOMContentLoaded', function(){
       const email = document.getElementById('new_owner_email').value.trim();
       const err = document.getElementById('new_owner_error'); err.textContent='';
       const fd = new FormData(); fd.append('full_name', full); fd.append('phone', phone); fd.append('email', email);
-      fetch('{% url "super_owner_create_owner_json" %}', { method:'POST', body: fd }).then(r=>r.json().then(j=>({ok:r.ok, data:j}))).then(r=>{
-        if(!r.ok){ err.textContent = 'فشل إنشاء المالك'; return; }
+      // CSRF token
+      function getCookie(name){ const value = `; ${document.cookie}`; const parts = value.split(`; ${name}=`); if (parts.length === 2) return parts.pop().split(';').shift(); }
+      const csrf = getCookie('csrftoken');
+      submitCreate.disabled = true; submitCreate.textContent = 'جارٍ الإنشاء...';
+      fetch('{% url "super_owner_create_owner_json" %}', { method:'POST', body: fd, headers: csrf ? { 'X-CSRFToken': csrf } : {} }).then(r=>r.json().then(j=>({ok:r.ok, status:r.status, data:j}))).then(r=>{
+        submitCreate.disabled = false; submitCreate.textContent = 'إنشاء';
+        if(!r.ok){
+          let msg = 'فشل إنشاء المالك';
+          if(r.status === 403){ msg = 'ليس لديك صلاحية الوصول'; }
+          else if(r.status === 405){ msg = 'طريقة غير مدعومة'; }
+          else if(r.status === 409 && r.data && r.data.error === 'duplicate_phone'){ msg = 'رقم الهاتف مستخدم مسبقاً'; }
+          else if(r.status === 400){
+            if(r.data && r.data.error === 'missing_required'){ msg = 'الاسم الكامل ورقم الهاتف مطلوبان'; }
+            else if(r.data && r.data.error === 'invalid_phone'){ msg = 'رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'; }
+          }
+          else if(r.status >= 500){ msg = 'خطأ في الخادم أثناء إنشاء المالك'; }
+          err.textContent = msg; return;
+        }
         const opt = document.createElement('option'); opt.value = r.data.id; opt.textContent = r.data.name + (r.data.phone?(' - '+r.data.phone):''); opt.selected = true; list.appendChild(opt);
         const modalEl = document.getElementById('createOwnerModal'); const modal = bootstrap.Modal.getInstance(modalEl); modal && modal.hide();
       }).catch(()=>{ err.textContent='خطأ في الاتصال'; });

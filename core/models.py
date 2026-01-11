@@ -91,13 +91,6 @@ class Store(models.Model):
         ('watches', 'ساعات'),
         ('shoes', 'أحذية'),
         ('clothing', 'ملابس عامة'),
-        ('electronics', 'إلكترونيات'),
-        ('food', 'مطاعم'),
-        ('home', 'منزل'),
-        ('beauty', 'جمال'),
-        ('sports', 'رياضة'),
-        ('books', 'كتب'),
-        ('toys', 'ألعاب'),
     ]
     
     owner = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'admin'})
@@ -154,8 +147,6 @@ class Product(models.Model):
         ('accessories', 'إكسسوارات'),
         ('watches', 'ساعات'),
         ('shoes', 'أحذية'),
-        ('electronics', 'إلكترونيات'),
-        ('beauty', 'جمال'),
     ]
     
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
