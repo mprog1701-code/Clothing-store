@@ -43,18 +43,30 @@
                                 
                                 <div class="mb-3">
                                     <label for="city" class="form-label">المدينة *</label>
-                                    <input type="text" class="form-control" id="city" name="city" required>
+                                    <input type="text" class="form-control" id="city" name="city" value="{{ default_city|default:'' }}" required>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <label for="address" class="form-label">العنوان التفصيلي *</label>
-                                    <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
-                                </div>
                                 
                                 <div class="mb-3">
-                                    <label for="description" class="form-label">وصف المتجر</label>
-                                    <textarea class="form-control" id="description" name="description" rows="4" 
-                                              placeholder="صف متجرك، المنتجات التي تبيعها، إلخ..."></textarea>
+                                    <label for="store_template" class="form-label">قالب متجر جاهز</label>
+                                    <select class="form-select" id="store_template" name="store_template">
+                                        <option value="">بدون قالب (افتراضي)</option>
+                                        <option value="clothing">ملابس عامة</option>
+                                        <option value="electronics">إلكترونيات</option>
+                                        <option value="food">مطاعم</option>
+                                    </select>
+                                    <small class="text-muted">اختيار قالب يحدد التصنيف وإعدادات التوصيل تلقائياً</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="copy_store_id" class="form-label">نسخ إعدادات متجر سابق</label>
+                                    <select class="form-select" id="copy_store_id" name="copy_store_id">
+                                        <option value="">لا يوجد</option>
+                                        {% for s in stores_all %}
+                                            <option value="{{ s.id }}">{{ s.name }} ({{ s.city }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">ينسخ التصنيف وإعدادات التوصيل والوصف</small>
                                 </div>
                             </div>
                             
@@ -90,20 +102,6 @@
                                         <label for="new_owner_email" class="form-label">البريد الإلكتروني</label>
                                         <input type="email" class="form-control" id="new_owner_email" name="new_owner_email" placeholder="اختياري: بريد المالك">
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="new_owner_first_name" class="form-label">الاسم الأول</label>
-                                                <input type="text" class="form-control" id="new_owner_first_name" name="new_owner_first_name" placeholder="مثال: محمد">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="new_owner_last_name" class="form-label">الاسم الأخير</label>
-                                                <input type="text" class="form-control" id="new_owner_last_name" name="new_owner_last_name" placeholder="مثال: الملا">
-                                            </div>
-                                        </div>
-                                    </div>
                                     <div class="mb-3">
                                         <label for="new_owner_phone" class="form-label">رقم الهاتف</label>
                                         <input type="tel" class="form-control" id="new_owner_phone" name="new_owner_phone" placeholder="07xxxxxxxxx" pattern="07[0-9]{9}" title="أدخل رقم يبدأ بـ 07 مكون من 11 رقماً">
@@ -114,12 +112,6 @@
                                         <input type="password" class="form-control" id="new_owner_password" name="new_owner_password" placeholder="8 أحرف على الأقل" minlength="8">
                                         <small class="text-muted">اختر كلمة مرور قوية.</small>
                                     </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="logo" class="form-label">شعار المتجر</label>
-                                    <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
-                                    <small class="text-muted">اختر صورة بحجم مناسب (اختياري)</small>
                                 </div>
                                 
                                 <div class="mb-3">
@@ -165,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const createNewOwnerCheckbox = document.getElementById('create_new_owner');
     const newOwnerFields = document.getElementById('new_owner_fields');
     const ownerSelect = document.getElementById('owner');
-    const requiredIds = ['new_owner_username','new_owner_first_name','new_owner_last_name','new_owner_phone','new_owner_password'];
+    const requiredIds = ['new_owner_username','new_owner_phone','new_owner_password'];
     function setRequired(on){
         requiredIds.forEach(function(id){
             const el = document.getElementById(id);

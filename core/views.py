@@ -1893,9 +1893,36 @@ def super_owner_stores(request):
             store_name = store.name
             store.delete()
             messages.success(request, f'تم حذف المتجر {store_name}!')
+        elif action == 'copy':
+            try:
+                new_store = Store.objects.create(
+                    name=f"{store.name} (نسخة)",
+                    city=store.city,
+                    address=store.address,
+                    description=store.description,
+                    owner=store.owner,
+                    category=store.category,
+                    delivery_time=store.delivery_time,
+                    delivery_fee=store.delivery_fee,
+                    is_active=False,
+                    logo=store.logo
+                )
+                messages.success(request, f'تم نسخ المتجر {store.name}!')
+                return redirect('super_owner_edit_store', store_id=new_store.id)
+            except Exception:
+                messages.error(request, 'فشل نسخ المتجر')
+                return redirect('super_owner_stores')
         
         return redirect('super_owner_stores')
     
+    for s in stores:
+        try:
+            from .models import Product, Order
+            s.products_count = Product.objects.filter(store=s).count()
+            s.orders_count = Order.objects.filter(store=s).count()
+        except Exception:
+            s.products_count = 0
+            s.orders_count = 0
     context = {
         'stores': stores,
     }
@@ -1909,37 +1936,33 @@ def super_owner_add_store(request):
         return redirect('home')
     
     if request.method == 'POST':
-        name = request.POST.get('name')
-        city = request.POST.get('city')
-        address = request.POST.get('address')
-        description = request.POST.get('description')
+        name = (request.POST.get('name') or '').strip()
+        city = (request.POST.get('city') or '').strip()
         owner_id = request.POST.get('owner')
         create_new_owner = request.POST.get('create_new_owner') == 'on'
         is_active = request.POST.get('is_active') == 'on'
-        logo = request.FILES.get('logo')
-        
+        store_template = (request.POST.get('store_template') or '').strip()
+        copy_store_id = (request.POST.get('copy_store_id') or '').strip()
+
         owner = None
-        
-        # Validate required fields
-        if not all([name, city, address]):
-            messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
+
+        if not all([name, city]):
+            messages.error(request, 'يرجى إدخال اسم المتجر والمدينة')
             return redirect('super_owner_add_store')
-        
+
         if create_new_owner:
-            new_owner_username = request.POST.get('new_owner_username')
-            new_owner_email = request.POST.get('new_owner_email')
-            new_owner_first_name = request.POST.get('new_owner_first_name')
-            new_owner_last_name = request.POST.get('new_owner_last_name')
-            new_owner_phone = request.POST.get('new_owner_phone')
-            new_owner_password = request.POST.get('new_owner_password')
-            if not all([new_owner_username, new_owner_first_name, new_owner_last_name, new_owner_phone, new_owner_password]):
-                messages.error(request, 'يرجى ملء حقول مالك المتجر الجديدة بالكامل!')
+            new_owner_username = (request.POST.get('new_owner_username') or '').strip()
+            new_owner_email = (request.POST.get('new_owner_email') or '').strip()
+            new_owner_phone = (request.POST.get('new_owner_phone') or '').strip()
+            new_owner_password = (request.POST.get('new_owner_password') or '').strip()
+            if not all([new_owner_username, new_owner_phone, new_owner_password]):
+                messages.error(request, 'يرجى إدخال بيانات المالك الجديد الأساسية')
                 return redirect('super_owner_add_store')
             try:
                 owner = User.objects.create(
                     username=new_owner_username,
-                    first_name=new_owner_first_name,
-                    last_name=new_owner_last_name,
+                    first_name='',
+                    last_name='',
                     role='admin',
                     phone=new_owner_phone,
                     city=city,
@@ -1961,31 +1984,69 @@ def super_owner_add_store(request):
                     return redirect('super_owner_add_store')
             else:
                 owner = request.user
-        
+
+        base_category = 'clothing'
+        base_delivery_time = '30-45 دقيقة'
+        base_delivery_fee = 1000.00
+        base_description = ''
+        address_placeholder = '—'
+
+        last_store = Store.objects.order_by('-created_at').first()
+        if last_store:
+            base_category = last_store.category
+            base_delivery_time = last_store.delivery_time
+            base_delivery_fee = float(last_store.delivery_fee)
+            base_description = last_store.description or ''
+
+        if copy_store_id:
+            try:
+                src = Store.objects.get(id=int(copy_store_id))
+                base_category = src.category
+                base_delivery_time = src.delivery_time
+                base_delivery_fee = float(src.delivery_fee)
+                base_description = src.description or ''
+            except (Store.DoesNotExist, ValueError):
+                pass
+        elif store_template in ['clothing','electronics','food']:
+            if store_template == 'clothing':
+                base_category = 'clothing'
+                base_delivery_time = '30-45 دقيقة'
+                base_delivery_fee = 1000.00
+            elif store_template == 'electronics':
+                base_category = 'electronics'
+                base_delivery_time = '60-90 دقيقة'
+                base_delivery_fee = 3000.00
+            elif store_template == 'food':
+                base_category = 'food'
+                base_delivery_time = '20-30 دقيقة'
+                base_delivery_fee = 2000.00
+
         try:
             store = Store.objects.create(
                 name=name,
                 city=city,
-                address=address,
-                description=description,
+                address=address_placeholder,
+                description=base_description,
                 owner=owner,
+                category=base_category,
+                delivery_time=base_delivery_time,
+                delivery_fee=base_delivery_fee,
                 is_active=is_active
             )
-            
-            if logo:
-                store.logo = logo
-                store.save()
-            
             messages.success(request, f'تم إنشاء المتجر "{store.name}" بنجاح!')
-            return redirect('super_owner_stores')
-            
+            return redirect('super_owner_edit_store', store_id=store.id)
+
         except Exception as e:
             messages.error(request, f'خطأ في إنشاء المتجر: {str(e)}')
             return redirect('super_owner_add_store')
-    
+
     store_owners = User.objects.filter(role='admin').order_by('username')
+    stores_all = Store.objects.all().order_by('name')
+    last_store = Store.objects.order_by('-created_at').first()
     context = {
         'store_owners': store_owners,
+        'stores_all': stores_all,
+        'default_city': last_store.city if last_store else '',
     }
     return render(request, 'dashboard/super_owner/add_store.html', context)
 
@@ -2007,6 +2068,9 @@ def super_owner_edit_store(request, store_id):
         owner_id = request.POST.get('owner')
         is_active = request.POST.get('is_active') == 'on'
         logo = request.FILES.get('logo')
+        category = (request.POST.get('category') or '').strip()
+        delivery_time = (request.POST.get('delivery_time') or '').strip()
+        delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
         
         # Validate required fields
         if not all([name, city, address, owner_id]):
@@ -2022,6 +2086,15 @@ def super_owner_edit_store(request, store_id):
             store.description = description
             store.owner = owner
             store.is_active = is_active
+            if category in [c[0] for c in Store.CATEGORY_CHOICES]:
+                store.category = category
+            if delivery_time:
+                store.delivery_time = delivery_time
+            try:
+                if delivery_fee_raw:
+                    store.delivery_fee = float(delivery_fee_raw)
+            except Exception:
+                pass
             
             if logo:
                 store.logo = logo
@@ -2039,6 +2112,7 @@ def super_owner_edit_store(request, store_id):
     context = {
         'store': store,
         'store_owners': store_owners,
+        'store_categories': Store.CATEGORY_CHOICES,
     }
     return render(request, 'dashboard/super_owner/edit_store.html', context)
 

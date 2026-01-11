@@ -46,6 +46,8 @@
                                     <th>اسم المتجر</th>
                                     <th>المالك</th>
                                     <th>المدينة</th>
+                                    <th>المنتجات</th>
+                                    <th>الطلبات</th>
                                     <th>الحالة</th>
                                     <th>تاريخ الإنشاء</th>
                                     <th>الإجراءات</th>
@@ -84,6 +86,8 @@
                                         </div>
                                     </td>
                                     <td>{{ store.city }}</td>
+                                    <td>{{ store.products_count }}</td>
+                                    <td>{{ store.orders_count }}</td>
                                     <td>
                                         {% if store.is_active %}
                                             <span class="badge bg-success">
@@ -124,6 +128,15 @@
                                                 </form>
                                             {% endif %}
                                             
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="store_id" value="{{ store.id }}">
+                                                <input type="hidden" name="action" value="copy">
+                                                <button type="submit" class="btn btn-info btn-sm" title="نسخ متجر">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </form>
+
                                             <form method="post" class="d-inline">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="store_id" value="{{ store.id }}">
