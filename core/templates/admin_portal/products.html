@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>منتجات الإدارة</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="container" style="max-width:1200px;margin:20px auto;">
+    <h2>المنتجات</h2>
+    <nav>
+      <a href="/admin-portal/dashboard/">لوحة التحكم</a> |
+      <a href="/admin-portal/orders/">الطلبات</a> |
+      <a href="/admin-portal/products/">المنتجات</a> |
+      <a href="/admin-portal/stores/">المتاجر</a> |
+      <a href="/admin-portal/customers/">العملاء</a> |
+      <a href="/admin-portal/settings/">الإعدادات</a>
+    </nav>
+    <hr>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="card" style="padding:16px;margin-bottom:16px;">
+      <h4>إضافة منتج</h4>
+      <form method="post" class="row" style="gap:8px;align-items:flex-end;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="col">
+          <label>الاسم</label>
+          <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="col">
+          <label>المتجر</label>
+          <select name="store_id" class="form-select" required>
+            {% for s in stores %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col">
+          <label>السعر</label>
+          <input type="number" step="0.01" name="base_price" class="form-control" required>
+        </div>
+        <div class="col">
+          <label>الفئة</label>
+          <select name="category" class="form-select" required>
+            {% for c in categories %}
+              <option value="{{ c.0 }}">{{ c.1 }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col">
+          <button type="submit" class="btn btn-success">إضافة</button>
+        </div>
+      </form>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الاسم</th>
+          <th>المتجر</th>
+          <th>السعر</th>
+          <th>الفئة</th>
+          <th>تاريخ الإنشاء</th>
+          <th>تحديث السعر</th>
+          <th>إضافة صورة (URL)</th>
+          <th>تحديث المخزون</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.name }}</td>
+          <td>{{ p.store.name }}</td>
+          <td>{{ p.base_price }}</td>
+          <td>{{ p.category }}</td>
+          <td>{{ p.created_at }}</td>
+          <td>
+            <form method="post" style="display:flex;gap:8px;align-items:center;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_price">
+              <input type="hidden" name="product_id" value="{{ p.id }}">
+              <input type="number" step="0.01" name="base_price" class="form-control" placeholder="سعر جديد" required>
+              <button type="submit" class="btn btn-sm btn-primary">تحديث</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" style="display:flex;gap:8px;align-items:center;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="add_image_url">
+              <input type="hidden" name="product_id" value="{{ p.id }}">
+              <input type="url" name="image_url" class="form-control" placeholder="رابط الصورة" required>
+              <button type="submit" class="btn btn-sm btn-secondary">إضافة</button>
+            </form>
+          </td>
+          <td>
+            <form method="post" style="display:flex;gap:8px;align-items:center;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="set_stock">
+              <input type="hidden" name="product_id" value="{{ p.id }}">
+              <input type="text" name="size" class="form-control" placeholder="المقاس" value="ONE" required>
+              <input type="number" name="stock_qty" class="form-control" placeholder="الكمية" min="0" required>
+              <button type="submit" class="btn btn-sm btn-warning">حفظ</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align:center;">لا توجد منتجات</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+ </body>
+</html>
+

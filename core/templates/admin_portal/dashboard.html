@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة الإدارة</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="container" style="max-width:960px;margin:20px auto;">
+    <h2>لوحة الإدارة</h2>
+    <nav>
+      <a href="/admin-portal/dashboard/">لوحة التحكم</a> |
+      <a href="/admin-portal/orders/">الطلبات</a> |
+      <a href="/admin-portal/products/">المنتجات</a> |
+      <a href="/admin-portal/stores/">المتاجر</a> |
+      <a href="/admin-portal/customers/">العملاء</a> |
+      <a href="/admin-portal/settings/">الإعدادات</a>
+    </nav>
+    <hr>
+    <div class="row">
+      <div class="col">
+        <h4>إحصائيات اليوم</h4>
+        <ul>
+          <li>طلبات اليوم: {{ orders_today }}</li>
+          <li>إجمالي المستخدمين: {{ users_total }}</li>
+          <li>إجمالي المتاجر: {{ stores_total }}</li>
+          <li>إجمالي المنتجات: {{ products_total }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

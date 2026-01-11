@@ -68,6 +68,13 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, unique=True)
     city = models.CharField(max_length=100)
     owner_key = models.CharField(max_length=50, blank=True, help_text='مفتاح خاص للمالك فقط')
+    ADMIN_ROLE_CHOICES = [
+        ('SUPER_ADMIN', 'مشرف عام'),
+        ('OWNER', 'مالك'),
+        ('SUPPORT', 'دعم'),
+        ('DELIVERY', 'توصيل'),
+    ]
+    admin_role = models.CharField(max_length=20, choices=ADMIN_ROLE_CHOICES, blank=True, default='')
     
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
@@ -350,3 +357,28 @@ class Campaign(models.Model):
         from django.utils import timezone
         now = timezone.now()
         return self.is_active and self.start_date <= now <= self.end_date
+
+
+class AdminAuditLog(models.Model):
+    admin_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    action = models.CharField(max_length=100)
+    model = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=100)
+    before = models.TextField(blank=True)
+    after = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip = models.CharField(max_length=45, blank=True)
+
+    def __str__(self):
+        return f"{self.admin_user.username} - {self.action} - {self.model}:{self.object_id}"
+
+
+class AdminLoginAttempt(models.Model):
+    username_or_email = models.CharField(max_length=150)
+    success = models.BooleanField(default=False)
+    reason = models.CharField(max_length=200, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip = models.CharField(max_length=45, blank=True)
+
+    def __str__(self):
+        return f"{self.username_or_email} - {'success' if self.success else 'fail'}"

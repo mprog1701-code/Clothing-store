@@ -14,6 +14,13 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='login'),
     path('owner-login/', views.user_login, name='owner_login'),
+    path('admin-portal/login/', views.admin_portal_login, name='admin_portal_login'),
+    path('admin-portal/dashboard/', views.admin_portal_dashboard, name='admin_portal_dashboard'),
+    path('admin-portal/orders/', views.admin_portal_orders, name='admin_portal_orders'),
+    path('admin-portal/products/', views.admin_portal_products, name='admin_portal_products'),
+    path('admin-portal/stores/', views.admin_portal_stores, name='admin_portal_stores'),
+    path('admin-portal/customers/', views.admin_portal_customers, name='admin_portal_customers'),
+    path('admin-portal/settings/', views.admin_portal_settings, name='admin_portal_settings'),
     path('owner-password-reset/', views.owner_password_reset, name='owner_password_reset'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     
@@ -68,6 +75,7 @@ urlpatterns = [
     
     path('featured-products/', views.featured_products, name='featured_products'),
     path('products/most-sold/', views.most_sold_products, name='most_sold_products'),
+    path('healthz/', views.healthz, name='healthz'),
     
     # Debug URLs for testing
     path('debug-owner-login/', views.debug_owner_login, name='debug_owner_login'),

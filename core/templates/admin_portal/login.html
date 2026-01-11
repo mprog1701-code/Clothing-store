@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تسجيل دخول الإدارة</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="container" style="max-width:480px;margin:40px auto;">
+    <h2 style="text-align:center;">لوحة الإدارة</h2>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label>البريد/اسم المستخدم</label>
+        <input type="text" name="identifier" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label>كلمة المرور</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">دخول</button>
+    </form>
+  </div>
+</body>
+</html>

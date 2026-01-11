@@ -38,11 +38,11 @@
                                        id="phone" 
                                        name="phone" 
                                        required 
-                                       placeholder="07700000000 للمالك أو رقمك كمدير"
-                                       pattern="07[0-9]{9}"
-                                       title="أدخل رقم جوال صحيح يبدأ بـ 07">
+                                       placeholder="07700000000 أو +9647xxxxxxxxx"
+                                       pattern="^(?:07[0-9]{9}|7[0-9]{9}|9647[0-9]{9}|\+9647[0-9]{9})$"
+                                       title="أدخل رقم صحيح: 07xxxxxxxxx أو 7xxxxxxxxx أو 9647xxxxxxxxx أو +9647xxxxxxxxx">
                                 <div class="invalid-feedback">
-                                    يرجى إدخال رقم جوال صحيح يبدأ بـ 07
+                                    يرجى إدخال رقم صحيح: 07 أو 964 أو +964
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>متاجر الإدارة</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="container" style="max-width:1200px;margin:20px auto;">
+    <h2>المتاجر</h2>
+    <nav>
+      <a href="/admin-portal/dashboard/">لوحة التحكم</a> |
+      <a href="/admin-portal/orders/">الطلبات</a> |
+      <a href="/admin-portal/products/">المنتجات</a> |
+      <a href="/admin-portal/stores/">المتاجر</a> |
+      <a href="/admin-portal/customers/">العملاء</a> |
+      <a href="/admin-portal/settings/">الإعدادات</a>
+    </nav>
+    <hr>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>الاسم</th>
+          <th>المدينة</th>
+          <th>الحالة</th>
+          <th>تعديل الحالة</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in stores %}
+        <tr>
+          <td>{{ s.id }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.city }}</td>
+          <td>
+            {% if s.is_active %}
+              نشط
+            {% else %}
+              موقوف
+            {% endif %}
+          </td>
+          <td>
+            <form method="post" style="display:inline-block;">
+              {% csrf_token %}
+              <input type="hidden" name="store_id" value="{{ s.id }}">
+              <input type="hidden" name="action" value="activate">
+              <button type="submit" class="btn btn-sm btn-success">تفعيل</button>
+            </form>
+            <form method="post" style="display:inline-block;margin-inline-start:8px;">
+              {% csrf_token %}
+              <input type="hidden" name="store_id" value="{{ s.id }}">
+              <input type="hidden" name="action" value="deactivate">
+              <button type="submit" class="btn btn-sm btn-danger">إيقاف</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center;">لا توجد متاجر</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+ </body>
+</html>
+

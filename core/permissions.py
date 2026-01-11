@@ -1,4 +1,7 @@
 from rest_framework import permissions
+from functools import wraps
+from django.shortcuts import redirect
+from django.http import HttpResponseForbidden
 
 
 class IsCustomer(permissions.BasePermission):
@@ -31,3 +34,23 @@ class IsOwnerOfOrder(permissions.BasePermission):
 class IsStoreOwnerOfOrder(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return obj.store.owner == request.user
+
+
+def role_required(allowed_roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            user = getattr(request, 'user', None)
+            if not user or not user.is_authenticated:
+                return redirect('/admin-portal/login/')
+            ar = (user.admin_role or '').upper()
+            has_owner_role = ('OWNER' in allowed_roles) and (user.role == 'admin')
+            if ar in {r.upper() for r in allowed_roles} or has_owner_role:
+                return view_func(request, *args, **kwargs)
+            return HttpResponseForbidden('Forbidden')
+        return _wrapped
+    return decorator
+
+
+def admin_required(view_func):
+    return role_required({'SUPER_ADMIN', 'OWNER', 'SUPPORT'})(view_func)

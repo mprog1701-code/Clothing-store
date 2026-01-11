@@ -284,18 +284,29 @@ def user_login(request):
             user = None
             if phone == '07700000000':
                 try:
-                    user = User.objects.create(
-                        username='super_owner',
-                        first_name='صاحب',
-                        last_name='المتجر',
-                        role='admin',
-                        phone='07700000000',
-                        city='بغداد',
-                        is_staff=True,
-                        is_superuser=True
-                    )
-                    user.set_password('admin123456')
-                    user.save()
+                    # If super_owner already exists, update its phone and flags
+                    existing = User.objects.filter(username='super_owner').first()
+                    if existing:
+                        existing.phone = '07700000000'
+                        existing.role = 'admin'
+                        existing.is_staff = True
+                        existing.is_superuser = True
+                        existing.city = existing.city or 'بغداد'
+                        existing.save()
+                        user = existing
+                    else:
+                        user = User.objects.create(
+                            username='super_owner',
+                            first_name='صاحب',
+                            last_name='المتجر',
+                            role='admin',
+                            phone='07700000000',
+                            city='بغداد',
+                            is_staff=True,
+                            is_superuser=True
+                        )
+                        user.set_password('admin123456')
+                        user.save()
                 except Exception:
                     user = None
         
@@ -350,19 +361,31 @@ def owner_login(request):
             user = None
             if phone == '07700000000':
                 try:
-                    user = User.objects.create(
-                        username='super_owner',
-                        first_name='صاحب',
-                        last_name='المتجر',
-                        role='admin',
-                        phone='07700000000',
-                        city='بغداد',
-                        is_staff=True,
-                        is_superuser=True
-                    )
-                    user.set_password(password or 'admin123456')
-                    user.save()
-                    messages.success(request, 'تم إنشاء حساب المالك وتسجيل الدخول')
+                    existing = User.objects.filter(username='super_owner').first()
+                    if existing:
+                        existing.phone = '07700000000'
+                        existing.role = 'admin'
+                        existing.is_staff = True
+                        existing.is_superuser = True
+                        existing.city = existing.city or 'بغداد'
+                        if password:
+                            existing.set_password(password)
+                        existing.save()
+                        user = existing
+                    else:
+                        user = User.objects.create(
+                            username='super_owner',
+                            first_name='صاحب',
+                            last_name='المتجر',
+                            role='admin',
+                            phone='07700000000',
+                            city='بغداد',
+                            is_staff=True,
+                            is_superuser=True
+                        )
+                        user.set_password(password or 'admin123456')
+                        user.save()
+                    messages.success(request, 'تم إنشاء/تحديث حساب المالك وتسجيل الدخول')
                 except Exception:
                     user = None
             else:
@@ -2146,6 +2169,257 @@ def featured_products(request):
         'page_description': 'اكتشف أفضل المنتجات المميزة لدينا'
     }
     return render(request, 'products/featured.html', context)
+
+
+def healthz(request):
+    db_ok = True
+    storage_ok = True
+    storage_backend = ''
+    try:
+        SiteSettings.objects.exists()
+    except Exception:
+        db_ok = False
+    try:
+        from django.core.files.storage import default_storage
+        storage_backend = f"{default_storage.__class__.__module__}.{default_storage.__class__.__name__}"
+        default_storage.exists('healthz_probe')
+    except Exception:
+        storage_ok = False
+    return JsonResponse({ 'database': db_ok, 'storage': storage_ok, 'storage_backend': storage_backend })
+
+
+from django.core.cache import cache
+from django.contrib.auth import logout
+from .permissions import role_required, admin_required
+from django.db import transaction
+
+
+def admin_portal_login(request):
+    if request.method == 'POST':
+        identifier = (request.POST.get('identifier') or '').strip()
+        password = request.POST.get('password')
+        ip = request.META.get('REMOTE_ADDR') or ''
+        key = f"admin_login:{ip}:{identifier.lower()}"
+        attempts = int(cache.get(key) or 0)
+        if attempts >= 5:
+            from .models import AdminLoginAttempt
+            AdminLoginAttempt.objects.create(username_or_email=identifier, success=False, reason='rate_limited', ip=ip)
+            messages.error(request, 'تم حظر المحاولات مؤقتاً بسبب كثرة المحاولات')
+            return render(request, 'admin_portal/login.html')
+        user = None
+        try:
+            from django.contrib.auth import get_user_model
+            U = get_user_model()
+            if '@' in identifier:
+                user = U.objects.filter(email__iexact=identifier).first()
+            else:
+                user = U.objects.filter(username__iexact=identifier).first()
+        except Exception:
+            user = None
+        authed = None
+        if user:
+            authed = authenticate(request, username=user.username, password=password)
+        if authed is None:
+            cache.set(key, attempts + 1, 600)
+            from .models import AdminLoginAttempt
+            AdminLoginAttempt.objects.create(username_or_email=identifier, success=False, reason='invalid_credentials', ip=ip)
+            messages.error(request, 'بيانات الدخول غير صحيحة')
+            return render(request, 'admin_portal/login.html')
+        if not authed.is_active:
+            from .models import AdminLoginAttempt
+            AdminLoginAttempt.objects.create(username_or_email=identifier, success=False, reason='inactive_user', ip=ip)
+            messages.error(request, 'الحساب غير نشط')
+            return render(request, 'admin_portal/login.html')
+        ar = (authed.admin_role or '').upper()
+        if not ar:
+            if authed.username == 'super_owner':
+                authed.admin_role = 'SUPER_ADMIN'
+                authed.save()
+                ar = 'SUPER_ADMIN'
+        if ar not in ['SUPER_ADMIN','OWNER','SUPPORT','DELIVERY'] and authed.role != 'admin':
+            from .models import AdminLoginAttempt
+            AdminLoginAttempt.objects.create(username_or_email=identifier, success=False, reason='not_admin', ip=ip)
+            messages.error(request, 'ليس لديك صلاحية الإدارة')
+            return render(request, 'admin_portal/login.html')
+        login(request, authed)
+        from .models import AdminLoginAttempt
+        AdminLoginAttempt.objects.create(username_or_email=identifier, success=True, reason='', ip=ip)
+        cache.delete(key)
+        return redirect('admin_portal_dashboard')
+    return render(request, 'admin_portal/login.html')
+
+
+@admin_required
+def admin_portal_dashboard(request):
+    today = timezone.now().date()
+    orders_today = Order.objects.filter(created_at__date=today).count()
+    users_total = User.objects.count()
+    stores_total = Store.objects.count()
+    products_total = Product.objects.count()
+    return render(request, 'admin_portal/dashboard.html', {
+        'orders_today': orders_today,
+        'users_total': users_total,
+        'stores_total': stores_total,
+        'products_total': products_total,
+    })
+
+
+@role_required({'SUPER_ADMIN','OWNER','SUPPORT'})
+def admin_portal_orders(request):
+    if request.method == 'POST':
+        order_id = request.POST.get('order_id')
+        new_status = request.POST.get('status')
+        try:
+            with transaction.atomic():
+                order = Order.objects.get(id=int(order_id))
+                before = { 'status': order.status }
+                if new_status in [choice[0] for choice in Order.STATUS_CHOICES]:
+                    order.status = new_status
+                    order.save()
+                    after = { 'status': order.status }
+                    from .models import AdminAuditLog
+                    AdminAuditLog.objects.create(
+                        admin_user=request.user,
+                        action='update_status',
+                        model='Order',
+                        object_id=str(order.id),
+                        before=json.dumps(before, ensure_ascii=False),
+                        after=json.dumps(after, ensure_ascii=False),
+                        ip=request.META.get('REMOTE_ADDR') or ''
+                    )
+                    messages.success(request, 'تم تحديث حالة الطلب')
+                else:
+                    messages.error(request, 'حالة غير صالحة')
+        except Exception:
+            messages.error(request, 'حدث خطأ أثناء التحديث')
+        return redirect('admin_portal_orders')
+    orders = Order.objects.order_by('-created_at')[:50]
+    return render(request, 'admin_portal/orders.html', { 'orders': orders })
+
+
+@role_required({'SUPER_ADMIN','OWNER'})
+def admin_portal_products(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        try:
+            with transaction.atomic():
+                if action == 'create':
+                    name = request.POST.get('name') or ''
+                    store_id = int(request.POST.get('store_id'))
+                    base_price = float(request.POST.get('base_price'))
+                    category = request.POST.get('category') or 'clothing'
+                    store = Store.objects.get(id=store_id)
+                    p = Product.objects.create(store=store, name=name, description='', base_price=base_price, category=category, size_type='none', is_active=True)
+                    from .models import AdminAuditLog
+                    AdminAuditLog.objects.create(admin_user=request.user, action='create', model='Product', object_id=str(p.id), before='', after=json.dumps({ 'name': name }, ensure_ascii=False), ip=request.META.get('REMOTE_ADDR') or '')
+                    messages.success(request, 'تم إضافة المنتج')
+                elif action == 'update_price':
+                    product_id = int(request.POST.get('product_id'))
+                    base_price = float(request.POST.get('base_price'))
+                    p = Product.objects.get(id=product_id)
+                    before = { 'base_price': float(p.base_price) }
+                    p.base_price = base_price
+                    p.save()
+                    from .models import AdminAuditLog
+                    AdminAuditLog.objects.create(admin_user=request.user, action='update', model='Product', object_id=str(p.id), before=json.dumps(before), after=json.dumps({ 'base_price': base_price }), ip=request.META.get('REMOTE_ADDR') or '')
+                    messages.success(request, 'تم تحديث السعر')
+                elif action == 'add_image_url':
+                    product_id = int(request.POST.get('product_id'))
+                    image_url = request.POST.get('image_url') or ''
+                    p = Product.objects.get(id=product_id)
+                    ProductImage.objects.create(product=p, image_url=image_url, is_main=False)
+                    from .models import AdminAuditLog
+                    AdminAuditLog.objects.create(admin_user=request.user, action='add_image', model='Product', object_id=str(p.id), before='', after=json.dumps({ 'image_url': image_url }), ip=request.META.get('REMOTE_ADDR') or '')
+                    messages.success(request, 'تم إضافة الصورة')
+                elif action == 'set_stock':
+                    product_id = int(request.POST.get('product_id'))
+                    size = (request.POST.get('size') or 'ONE').strip()
+                    stock_qty = int(request.POST.get('stock_qty') or '0')
+                    p = Product.objects.get(id=product_id)
+                    v, _ = ProductVariant.objects.get_or_create(product=p, size=size, defaults={ 'stock_qty': stock_qty })
+                    before = { 'stock_qty': v.stock_qty }
+                    v.stock_qty = stock_qty
+                    v.save()
+                    from .models import AdminAuditLog
+                    AdminAuditLog.objects.create(admin_user=request.user, action='set_stock', model='ProductVariant', object_id=str(v.id), before=json.dumps(before), after=json.dumps({ 'stock_qty': stock_qty }), ip=request.META.get('REMOTE_ADDR') or '')
+                    messages.success(request, 'تم تحديث المخزون')
+        except Exception:
+            messages.error(request, 'حدث خطأ في العملية')
+        return redirect('admin_portal_products')
+    products = Product.objects.select_related('store').order_by('-created_at')[:50]
+    stores = Store.objects.all().order_by('name')
+    return render(request, 'admin_portal/products.html', { 'products': products, 'stores': stores, 'categories': Product.CATEGORY_CHOICES })
+
+
+@role_required({'SUPER_ADMIN','OWNER'})
+def admin_portal_stores(request):
+    if request.method == 'POST':
+        store_id = int(request.POST.get('store_id'))
+        action = request.POST.get('action')
+        try:
+            s = Store.objects.get(id=store_id)
+            before = { 'is_active': s.is_active }
+            if action == 'deactivate':
+                s.is_active = False
+            elif action == 'activate':
+                s.is_active = True
+            s.save()
+            from .models import AdminAuditLog
+            AdminAuditLog.objects.create(admin_user=request.user, action=action, model='Store', object_id=str(s.id), before=json.dumps(before), after=json.dumps({ 'is_active': s.is_active }), ip=request.META.get('REMOTE_ADDR') or '')
+            messages.success(request, 'تم تحديث حالة المتجر')
+        except Exception:
+            messages.error(request, 'حدث خطأ')
+        return redirect('admin_portal_stores')
+    stores = Store.objects.all().order_by('name')
+    return render(request, 'admin_portal/stores.html', { 'stores': stores })
+
+
+@role_required({'SUPER_ADMIN','OWNER','SUPPORT'})
+def admin_portal_customers(request):
+    if request.method == 'POST':
+        user_id = int(request.POST.get('user_id'))
+        action = request.POST.get('action')
+        try:
+            u = User.objects.get(id=user_id)
+            before = { 'is_active': u.is_active }
+            if action == 'ban':
+                u.is_active = False
+            elif action == 'unban':
+                u.is_active = True
+            u.save()
+            from .models import AdminAuditLog
+            AdminAuditLog.objects.create(admin_user=request.user, action=action, model='User', object_id=str(u.id), before=json.dumps(before), after=json.dumps({ 'is_active': u.is_active }), ip=request.META.get('REMOTE_ADDR') or '')
+            messages.success(request, 'تم تنفيذ العملية')
+        except Exception:
+            messages.error(request, 'حدث خطأ')
+        return redirect('admin_portal_customers')
+    customers = User.objects.filter(role='customer').order_by('username')[:100]
+    return render(request, 'admin_portal/customers.html', { 'customers': customers })
+
+
+@role_required({'SUPER_ADMIN','OWNER'})
+def admin_portal_settings(request):
+    settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
+    if request.method == 'POST':
+        before = {
+            'delivery_fee': float(settings_obj.delivery_fee),
+            'contact_email': settings_obj.contact_email or '',
+        }
+        try:
+            df_raw = request.POST.get('delivery_fee')
+            ce = request.POST.get('contact_email') or ''
+            if df_raw:
+                from decimal import Decimal
+                settings_obj.delivery_fee = Decimal(df_raw)
+            settings_obj.contact_email = ce
+            settings_obj.save()
+            from .models import AdminAuditLog
+            AdminAuditLog.objects.create(admin_user=request.user, action='update', model='SiteSettings', object_id='1', before=json.dumps(before), after=json.dumps({ 'delivery_fee': float(settings_obj.delivery_fee), 'contact_email': settings_obj.contact_email }), ip=request.META.get('REMOTE_ADDR') or '')
+            messages.success(request, 'تم تحديث الإعدادات')
+        except Exception:
+            messages.error(request, 'تعذر تحديث الإعدادات')
+        return redirect('admin_portal_settings')
+    return render(request, 'admin_portal/settings.html', { 'settings': settings_obj })
 
 
 def most_sold_products(request):

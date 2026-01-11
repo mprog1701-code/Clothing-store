@@ -15,8 +15,10 @@
                     <div class="mb-3">
                         <label for="phone" class="form-label">رقم الجوال</label>
                         <input type="tel" class="form-control" id="phone" name="phone" required 
-                               placeholder="07xxxxxxxxx" pattern="07[0-9]{9}" title="أدخل رقم جوال صحيح يبدأ بـ 07">
-                        <div class="form-text">أدخل رقم الجوال بدون كود الدولة</div>
+                               placeholder="07xxxxxxxxx أو +9647xxxxxxxxx"
+                               pattern="^(?:07[0-9]{9}|7[0-9]{9}|9647[0-9]{9}|\+9647[0-9]{9})$"
+                               title="أدخل رقم صحيح: 07xxxxxxxxx أو 7xxxxxxxxx أو 9647xxxxxxxxx أو +9647xxxxxxxxx">
+                        <div class="form-text">يمكنك إدخال الرقم بصيغة 07 أو 964 أو +964</div>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">كلمة المرور</label>
