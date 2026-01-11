@@ -45,7 +45,7 @@
                                     <select class="form-select" id="store" name="store" required>
                                         <option value="">اختر المتجر</option>
                                         {% for store in stores %}
-                                            <option value="{{ store.id }}">{{ store.name }}</option>
+                                            <option value="{{ store.id }}" {% if selected_store_id == store.id %}selected{% endif %}>{{ store.name }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>

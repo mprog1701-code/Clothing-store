@@ -1873,60 +1873,228 @@ def super_owner_stores(request):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
+    q = (request.GET.get('q') or '').strip()
+    city = (request.GET.get('city') or '').strip()
+    owner_id = (request.GET.get('owner') or '').strip()
+    category = (request.GET.get('category') or '').strip()
+    is_active = (request.GET.get('active') or '').strip()
+
     stores = Store.objects.all().order_by('-created_at')
+    if q:
+        from django.db.models import Q
+        stores = stores.filter(
+            Q(name__icontains=q) | Q(city__icontains=q) | Q(owner__username__icontains=q) | Q(owner__first_name__icontains=q) | Q(owner__last_name__icontains=q)
+        )
+    if city:
+        stores = stores.filter(city__iexact=city)
+    if owner_id:
+        try:
+            stores = stores.filter(owner_id=int(owner_id))
+        except ValueError:
+            pass
+    if category:
+        stores = stores.filter(category=category)
+    if is_active == 'active':
+        stores = stores.filter(is_active=True)
+    elif is_active == 'inactive':
+        stores = stores.filter(is_active=False)
     
     if request.method == 'POST':
-        store_id = request.POST.get('store_id')
-        action = request.POST.get('action')
-        
-        store = get_object_or_404(Store, id=store_id)
-        
-        if action == 'activate':
-            store.is_active = True
-            store.save()
-            messages.success(request, f'تم تفعيل المتجر {store.name}!')
-        elif action == 'deactivate':
-            store.is_active = False
-            store.save()
-            messages.success(request, f'تم تعطيل المتجر {store.name}!')
-        elif action == 'delete':
-            store_name = store.name
-            store.delete()
-            messages.success(request, f'تم حذف المتجر {store_name}!')
-        elif action == 'copy':
-            try:
+        action = (request.POST.get('action') or '').strip()
+        try:
+            if action in ['activate','deactivate','delete']:
+                store_id = int(request.POST.get('store_id'))
+                store = get_object_or_404(Store, id=store_id)
+                if action == 'activate':
+                    store.is_active = True
+                    store.save()
+                    messages.success(request, f'تم تفعيل المتجر {store.name}!')
+                elif action == 'deactivate':
+                    store.is_active = False
+                    store.save()
+                    messages.success(request, f'تم تعطيل المتجر {store.name}!')
+                elif action == 'delete':
+                    store_name = store.name
+                    store.delete()
+                    messages.success(request, f'تم حذف المتجر {store_name}!')
+            elif action == 'copy':
+                store_id = int(request.POST.get('store_id'))
+                store = get_object_or_404(Store, id=store_id)
                 new_store = Store.objects.create(
-                    name=f"{store.name} (نسخة)",
-                    city=store.city,
-                    address=store.address,
-                    description=store.description,
-                    owner=store.owner,
-                    category=store.category,
-                    delivery_time=store.delivery_time,
-                    delivery_fee=store.delivery_fee,
-                    is_active=False,
-                    logo=store.logo
+                    name=f"{store.name} (نسخة)", city=store.city, address=store.address,
+                    description=store.description, owner=store.owner, category=store.category,
+                    delivery_time=store.delivery_time, delivery_fee=store.delivery_fee,
+                    is_active=False, logo=store.logo
                 )
                 messages.success(request, f'تم نسخ المتجر {store.name}!')
-                return redirect('super_owner_edit_store', store_id=new_store.id)
-            except Exception:
-                messages.error(request, 'فشل نسخ المتجر')
-                return redirect('super_owner_stores')
-        
-        return redirect('super_owner_stores')
+                return redirect('super_owner_store_center', store_id=new_store.id)
+            elif action.startswith('bulk_'):
+                selected_ids = request.POST.getlist('selected_ids')
+                ids = [int(i) for i in selected_ids if str(i).isdigit()]
+                if not ids:
+                    messages.error(request, 'يرجى اختيار متاجر للتنفيذ')
+                    return redirect('super_owner_stores')
+                with transaction.atomic():
+                    if action == 'bulk_activate':
+                        Store.objects.filter(id__in=ids).update(is_active=True)
+                        messages.success(request, 'تم تفعيل المتاجر المحددة')
+                    elif action == 'bulk_deactivate':
+                        Store.objects.filter(id__in=ids).update(is_active=False)
+                        messages.success(request, 'تم تعطيل المتاجر المحددة')
+                    elif action == 'bulk_set_delivery_fee':
+                        fee_raw = request.POST.get('delivery_fee')
+                        try:
+                            fee = float(fee_raw)
+                            for sid in ids:
+                                s = Store.objects.get(id=sid)
+                                s.delivery_fee = fee
+                                s.save()
+                            messages.success(request, 'تم تحديث رسوم التوصيل')
+                        except Exception:
+                            messages.error(request, 'رسوم توصيل غير صالحة')
+                    elif action == 'bulk_set_category':
+                        cat = (request.POST.get('category') or '').strip()
+                        valid = [c[0] for c in Store.CATEGORY_CHOICES]
+                        if cat in valid:
+                            Store.objects.filter(id__in=ids).update(category=cat)
+                            messages.success(request, 'تم تطبيق القالب/الفئة للمتاجر المحددة')
+                        else:
+                            messages.error(request, 'قالب/فئة غير صالح')
+                    elif action == 'bulk_copy_settings':
+                        src_id = int(request.POST.get('source_store_id'))
+                        src = get_object_or_404(Store, id=src_id)
+                        copy_delivery_fee = request.POST.get('copy_delivery_fee') == 'on'
+                        copy_delivery_time = request.POST.get('copy_delivery_time') == 'on'
+                        copy_category = request.POST.get('copy_category') == 'on'
+                        copy_description = request.POST.get('copy_description') == 'on'
+                        copy_logo = request.POST.get('copy_logo') == 'on'
+                        copy_address = request.POST.get('copy_address') == 'on'
+                        for sid in ids:
+                            if sid == src.id:
+                                continue
+                            s = Store.objects.get(id=sid)
+                            if copy_delivery_fee:
+                                s.delivery_fee = src.delivery_fee
+                            if copy_delivery_time:
+                                s.delivery_time = src.delivery_time
+                            if copy_category:
+                                s.category = src.category
+                            if copy_description:
+                                s.description = src.description
+                            if copy_logo:
+                                s.logo = src.logo
+                            if copy_address:
+                                s.address = src.address
+                            s.save()
+                        messages.success(request, 'تم نسخ الإعدادات المحددة')
+                    elif action == 'smart_clone_inline':
+                        store_id = int(request.POST.get('store_id'))
+                        store = get_object_or_404(Store, id=store_id)
+                        src_id = int(request.POST.get('source_store_id'))
+                        src = get_object_or_404(Store, id=src_id)
+                        copy_delivery_fee = request.POST.get('copy_delivery_fee') == 'on'
+                        copy_delivery_time = request.POST.get('copy_delivery_time') == 'on'
+                        copy_category = request.POST.get('copy_category') == 'on'
+                        copy_description = request.POST.get('copy_description') == 'on'
+                        copy_logo = request.POST.get('copy_logo') == 'on'
+                        copy_address = request.POST.get('copy_address') == 'on'
+                        with transaction.atomic():
+                            if copy_delivery_fee:
+                                store.delivery_fee = src.delivery_fee
+                            if copy_delivery_time:
+                                store.delivery_time = src.delivery_time
+                            if copy_category:
+                                store.category = src.category
+                            if copy_description:
+                                store.description = src.description
+                            if copy_logo:
+                                store.logo = src.logo
+                            if copy_address:
+                                store.address = src.address
+                            store.save()
+                        messages.success(request, 'تم نسخ الإعدادات المحددة')
+            return redirect('super_owner_stores')
+        except Exception:
+            messages.error(request, 'حدث خطأ أثناء تنفيذ العملية')
+            return redirect('super_owner_stores')
     
+    owners = User.objects.filter(role='admin').order_by('username')
+    cities = list(Store.objects.values_list('city', flat=True).distinct())
     for s in stores:
         try:
             from .models import Product, Order
             s.products_count = Product.objects.filter(store=s).count()
-            s.orders_count = Order.objects.filter(store=s).count()
+            s.orders_today = Order.objects.filter(store=s, created_at__date=timezone.now().date()).count()
         except Exception:
             s.products_count = 0
-            s.orders_count = 0
+            s.orders_today = 0
     context = {
         'stores': stores,
+        'owners': owners,
+        'cities': cities,
+        'categories': Store.CATEGORY_CHOICES,
+        'filters': { 'q': q, 'city': city, 'owner': owner_id, 'category': category, 'active': is_active },
     }
-    return render(request, 'dashboard/super_owner/stores.html', context)
+    return render(request, 'dashboard/super_owner/stores_operational.html', context)
+
+
+@login_required
+def super_owner_store_center(request, store_id):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+    store = get_object_or_404(Store, id=store_id)
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        try:
+            if action == 'activate':
+                store.is_active = True
+                store.save()
+                messages.success(request, 'تم تفعيل المتجر')
+            elif action == 'deactivate':
+                store.is_active = False
+                store.save()
+                messages.success(request, 'تم تعطيل المتجر')
+            elif action == 'smart_clone':
+                src_id = int(request.POST.get('source_store_id'))
+                src = get_object_or_404(Store, id=src_id)
+                copy_delivery_fee = request.POST.get('copy_delivery_fee') == 'on'
+                copy_delivery_time = request.POST.get('copy_delivery_time') == 'on'
+                copy_category = request.POST.get('copy_category') == 'on'
+                copy_description = request.POST.get('copy_description') == 'on'
+                copy_logo = request.POST.get('copy_logo') == 'on'
+                copy_address = request.POST.get('copy_address') == 'on'
+                with transaction.atomic():
+                    if copy_delivery_fee:
+                        store.delivery_fee = src.delivery_fee
+                    if copy_delivery_time:
+                        store.delivery_time = src.delivery_time
+                    if copy_category:
+                        store.category = src.category
+                    if copy_description:
+                        store.description = src.description
+                    if copy_logo:
+                        store.logo = src.logo
+                    if copy_address:
+                        store.address = src.address
+                    store.save()
+                messages.success(request, 'تم نسخ الإعدادات المحددة')
+        except Exception:
+            messages.error(request, 'حدث خطأ في العملية')
+        return redirect('super_owner_store_center', store_id=store.id)
+
+    from .models import Product, Order
+    products_count = Product.objects.filter(store=store).count()
+    orders_today = Order.objects.filter(store=store, created_at__date=timezone.now().date()).count()
+    last_update = store.created_at
+    context = {
+        'store': store,
+        'products_count': products_count,
+        'orders_today': orders_today,
+        'last_update': last_update,
+        'stores_all': Store.objects.exclude(id=store.id).order_by('name'),
+    }
+    return render(request, 'dashboard/super_owner/store_center.html', context)
 
 
 @login_required
@@ -2156,7 +2324,7 @@ def super_owner_quick_add_store(request):
                 is_active=is_active
             )
             messages.success(request, f'تم إنشاء المتجر "{store.name}" بنجاح!')
-            return redirect('super_owner_edit_store', store_id=store.id)
+            return redirect('super_owner_store_center', store_id=store.id)
 
         except Exception as e:
             messages.error(request, f'خطأ في إنشاء المتجر: {str(e)}')
@@ -2289,6 +2457,7 @@ def super_owner_add_product(request):
         return redirect('home')
     
     stores = Store.objects.all()
+    preselect_store = request.GET.get('store')
     
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -2409,6 +2578,7 @@ def super_owner_add_product(request):
     
     context = {
         'stores': stores,
+        'selected_store_id': int(preselect_store) if preselect_store and preselect_store.isdigit() else None,
     }
     return render(request, 'dashboard/super_owner/add_product.html', context)
 
@@ -2647,7 +2817,10 @@ def super_owner_orders(request):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
+    store_filter = (request.GET.get('store') or '').strip()
     orders = Order.objects.all().order_by('-created_at')
+    if store_filter and store_filter.isdigit():
+        orders = orders.filter(store_id=int(store_filter))
     
     if request.method == 'POST':
         order_id = request.POST.get('order_id')
@@ -2672,6 +2845,7 @@ def super_owner_orders(request):
     
     context = {
         'orders': orders,
+        'store_filter': int(store_filter) if store_filter.isdigit() else None,
     }
     return render(request, 'dashboard/super_owner/orders.html', context)
 

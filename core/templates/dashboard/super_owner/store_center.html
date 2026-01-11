@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مركز تحكم: {{ store.name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h3 mb-1">{{ store.name }}</h1>
+      <div class="text-muted small">آخر تحديث: {{ last_update|date:"Y-m-d H:i" }}</div>
+    </div>
+    <div>
+      {% if store.is_active %}
+        <span class="badge bg-success">نشط</span>
+      {% else %}
+        <span class="badge bg-danger">موقوف</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+      <div class="card text-center p-3">
+        <div class="fw-bold fs-4">{{ products_count }}</div>
+        <div class="small">عدد المنتجات</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-center p-3">
+        <div class="fw-bold fs-4">{{ orders_today }}</div>
+        <div class="small">طلبات اليوم</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-center p-3">
+        <div class="fw-bold fs-4">{{ store.get_category_display }}</div>
+        <div class="small">القالب</div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6">
+      <div class="card text-center p-3">
+        <div class="fw-bold fs-4">{{ store.city }}</div>
+        <div class="small">المدينة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'super_owner_add_product' %}?store={{ store.id }}" class="btn btn-primary btn-lg"><i class="fas fa-plus me-1"></i> إدارة المنتجات</a>
+    <a href="{% url 'super_owner_orders' %}?store={{ store.id }}" class="btn btn-secondary btn-lg"><i class="fas fa-list me-1"></i> إدارة الطلبات</a>
+    <a href="{% url 'super_owner_store_settings' store.id %}" class="btn btn-info btn-lg"><i class="fas fa-cog me-1"></i> إعدادات المتجر</a>
+    <form method="post" class="d-inline">
+      {% csrf_token %}
+      {% if store.is_active %}
+        <button name="action" value="deactivate" class="btn btn-warning btn-lg"><i class="fas fa-pause me-1"></i> تعطيل</button>
+      {% else %}
+        <button name="action" value="activate" class="btn btn-success btn-lg"><i class="fas fa-play me-1"></i> تفعيل</button>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="card">
+    <div class="card-header">نسخ إعدادات من متجر</div>
+    <div class="card-body">
+      <form method="post" class="row g-2 align-items-center">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="smart_clone">
+        <div class="col-md-4">
+          <select name="source_store_id" class="form-select">
+            <option value="">اختر متجر المصدر</option>
+            {% for s in stores_all %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-8">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="copy_category" id="copy_category"><label class="form-check-label" for="copy_category">القالب</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="copy_delivery_fee" id="copy_delivery_fee"><label class="form-check-label" for="copy_delivery_fee">رسوم التوصيل</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="copy_delivery_time" id="copy_delivery_time"><label class="form-check-label" for="copy_delivery_time">زمن التوصيل</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="copy_description" id="copy_description"><label class="form-check-label" for="copy_description">الوصف</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="copy_logo" id="copy_logo"><label class="form-check-label" for="copy_logo">الشعار</label></div>
+            <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="copy_address" id="copy_address"><label class="form-check-label" for="copy_address">العنوان</label></div>
+            <button class="btn btn-outline-primary">نسخ الآن</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.btn-lg { padding: .6rem 1rem }
+</style>
+{% endblock %}
