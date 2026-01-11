@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, IntegerField, Case, When
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -1510,6 +1510,208 @@ def super_owner_dashboard(request):
     elif status_score >= 2:
         system_status = 'Warning'
 
+    now = timezone.now()
+    today = now.date()
+    yesterday = today - timedelta(days=1)
+    week_start = today - timedelta(days=today.weekday())
+    last_week_start = week_start - timedelta(days=7)
+    last_week_end = week_start - timedelta(days=1)
+    month_start = today.replace(day=1)
+    last_month_end = month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+
+    delivered_qs = Order.objects.filter(status='delivered')
+    orders_today_all = Order.objects.filter(created_at__date=today)
+    orders_yesterday_all = Order.objects.filter(created_at__date=yesterday)
+    orders_week_all = Order.objects.filter(created_at__date__gte=week_start)
+    orders_last_week_all = Order.objects.filter(created_at__date__range=(last_week_start, last_week_end))
+    orders_month_all = Order.objects.filter(created_at__date__gte=month_start)
+    orders_last_month_all = Order.objects.filter(created_at__date__range=(last_month_start, last_month_end))
+
+    gross_today = delivered_qs.filter(created_at__date=today).aggregate(total=Sum('total_amount'))['total'] or 0
+    gross_yesterday = delivered_qs.filter(created_at__date=yesterday).aggregate(total=Sum('total_amount'))['total'] or 0
+    gross_week = delivered_qs.filter(created_at__date__gte=week_start).aggregate(total=Sum('total_amount'))['total'] or 0
+    gross_last_week = delivered_qs.filter(created_at__date__range=(last_week_start, last_week_end)).aggregate(total=Sum('total_amount'))['total'] or 0
+    gross_month = delivered_qs.filter(created_at__date__gte=month_start).aggregate(total=Sum('total_amount'))['total'] or 0
+    gross_last_month = delivered_qs.filter(created_at__date__range=(last_month_start, last_month_end)).aggregate(total=Sum('total_amount'))['total'] or 0
+
+    fee_today = delivered_qs.filter(created_at__date=today).aggregate(total=Sum('delivery_fee'))['total'] or 0
+    fee_yesterday = delivered_qs.filter(created_at__date=yesterday).aggregate(total=Sum('delivery_fee'))['total'] or 0
+    fee_week = delivered_qs.filter(created_at__date__gte=week_start).aggregate(total=Sum('delivery_fee'))['total'] or 0
+    fee_last_week = delivered_qs.filter(created_at__date__range=(last_week_start, last_week_end)).aggregate(total=Sum('delivery_fee'))['total'] or 0
+    fee_month = delivered_qs.filter(created_at__date__gte=month_start).aggregate(total=Sum('delivery_fee'))['total'] or 0
+    fee_last_month = delivered_qs.filter(created_at__date__range=(last_month_start, last_month_end)).aggregate(total=Sum('delivery_fee'))['total'] or 0
+
+    net_today = float(gross_today) - float(fee_today)
+    net_yesterday = float(gross_yesterday) - float(fee_yesterday)
+    net_week = float(gross_week) - float(fee_week)
+    net_last_week = float(gross_last_week) - float(fee_last_week)
+    net_month = float(gross_month) - float(fee_month)
+    net_last_month = float(gross_last_month) - float(fee_last_month)
+
+    delivered_today_count = delivered_qs.filter(created_at__date=today).count()
+    delivered_week_count = delivered_qs.filter(created_at__date__gte=week_start).count()
+    delivered_month_count = delivered_qs.filter(created_at__date__gte=month_start).count()
+
+    def pct_change(curr, prev):
+        try:
+            prev_val = float(prev)
+            curr_val = float(curr)
+            if prev_val == 0:
+                return 100.0 if curr_val > 0 else 0.0
+            return round(((curr_val - prev_val) / prev_val) * 100.0, 1)
+        except Exception:
+            return 0.0
+
+    def dir_of(p):
+        return 'up' if p > 0 else ('down' if p < 0 else 'flat')
+
+    aov_today = round((net_today / (delivered_today_count or 1)), 2)
+    aov_week = round((net_week / (delivered_week_count or 1)), 2)
+    aov_month = round((net_month / (delivered_month_count or 1)), 2)
+
+    days = [today - timedelta(days=i) for i in range(13, -1, -1)]
+    revenue_line_labels = [d.strftime('%Y-%m-%d') for d in days]
+    revenue_line_data = []
+    for d in days:
+        amt = delivered_qs.filter(created_at__date=d).aggregate(total=Sum('total_amount'))['total'] or 0
+        fee = delivered_qs.filter(created_at__date=d).aggregate(total=Sum('delivery_fee'))['total'] or 0
+        revenue_line_data.append(float(amt) - float(fee))
+
+    last_30 = today - timedelta(days=30)
+    perf = list(
+        Order.objects.filter(created_at__date__gte=last_30)
+        .values('store_id')
+        .annotate(cnt=Sum(Case(When(id__gt=0, then=1), default=0, output_field=IntegerField())))
+    )
+    perf_sorted = sorted(perf, key=lambda x: int(x['cnt'] or 0), reverse=True)
+    top = perf_sorted[:8]
+    orders_bar_labels = []
+    orders_bar_data = []
+    for p in top:
+        s = Store.objects.filter(id=p['store_id']).first()
+        orders_bar_labels.append(s.name if s else 'متجر')
+        orders_bar_data.append(int(p['cnt'] or 0))
+
+    recent_orders_30 = Order.objects.filter(created_at__date__gte=last_30)
+    status_order = ['delivered','pending','accepted','preparing','on_the_way','canceled']
+    status_donut_data = []
+    for st in status_order:
+        status_donut_data.append(recent_orders_30.filter(status=st).count())
+
+    spark_net = revenue_line_data[-7:]
+    spark_orders = []
+    for d in days[-7:]:
+        spark_orders.append(Order.objects.filter(created_at__date=d).count())
+
+    cancel_today = orders_today_all.filter(status='canceled').count()
+    total_today = orders_today_all.count() or 1
+    cancel_week = orders_week_all.filter(status='canceled').count()
+    total_week = orders_week_all.count() or 1
+    cancel_month = orders_month_all.filter(status='canceled').count()
+    total_month = orders_month_all.count() or 1
+
+    visitors_total = 0
+    try:
+        settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
+        visitors_total = settings_obj.visitor_count or 0
+    except Exception:
+        visitors_total = 0
+
+    registered_total = User.objects.count()
+    downloads_total = 0
+
+    bi = {
+        'financial': {
+            'gross': {
+                'value': float(gross_today),
+                'delta': {
+                    'day': {'pct': pct_change(gross_today, gross_yesterday), 'dir': dir_of(pct_change(gross_today, gross_yesterday))},
+                    'week': {'pct': pct_change(gross_week, gross_last_week), 'dir': dir_of(pct_change(gross_week, gross_last_week))},
+                    'month': {'pct': pct_change(gross_month, gross_last_month), 'dir': dir_of(pct_change(gross_month, gross_last_month))},
+                },
+                'spark': spark_net,
+            },
+            'net': {
+                'value': float(net_today),
+                'delta': {
+                    'day': {'pct': pct_change(net_today, net_yesterday), 'dir': dir_of(pct_change(net_today, net_yesterday))},
+                    'week': {'pct': pct_change(net_week, net_last_week), 'dir': dir_of(pct_change(net_week, net_last_week))},
+                    'month': {'pct': pct_change(net_month, net_last_month), 'dir': dir_of(pct_change(net_month, net_last_month))},
+                },
+                'spark': spark_net,
+            },
+            'forecast': {
+                'value': round((sum(revenue_line_data[-7:]) / 7.0) * 30.0, 2),
+                'spark': revenue_line_data[-7:],
+            },
+            'aov': {
+                'value': aov_today,
+                'delta': {
+                    'day': {'pct': pct_change(aov_today, (net_yesterday / (delivered_qs.filter(created_at__date=yesterday).count() or 1))), 'dir': dir_of(pct_change(aov_today, (net_yesterday / (delivered_qs.filter(created_at__date=yesterday).count() or 1))))},
+                    'week': {'pct': pct_change(aov_week, (net_last_week / (delivered_qs.filter(created_at__date__range=(last_week_start, last_week_end)).count() or 1))), 'dir': dir_of(pct_change(aov_week, (net_last_week / (delivered_qs.filter(created_at__date__range=(last_week_start, last_week_end)).count() or 1))))},
+                    'month': {'pct': pct_change(aov_month, (net_last_month / (delivered_qs.filter(created_at__date__range=(last_month_start, last_month_end)).count() or 1))), 'dir': dir_of(pct_change(aov_month, (net_last_month / (delivered_qs.filter(created_at__date__range=(last_month_start, last_month_end)).count() or 1))))},
+                },
+                'spark': spark_net,
+            },
+        },
+        'orders': {
+            'total': {
+                'value': orders_today_all.count(),
+                'delta': {
+                    'day': {'pct': pct_change(orders_today_all.count(), orders_yesterday_all.count()), 'dir': dir_of(pct_change(orders_today_all.count(), orders_yesterday_all.count()))},
+                    'week': {'pct': pct_change(orders_week_all.count(), orders_last_week_all.count()), 'dir': dir_of(pct_change(orders_week_all.count(), orders_last_week_all.count()))},
+                    'month': {'pct': pct_change(orders_month_all.count(), orders_last_month_all.count()), 'dir': dir_of(pct_change(orders_month_all.count(), orders_last_month_all.count()))},
+                },
+                'spark': spark_orders,
+            },
+            'completed': {
+                'value': delivered_today_count,
+                'delta': {
+                    'day': {'pct': pct_change(delivered_today_count, delivered_qs.filter(created_at__date=yesterday).count()), 'dir': dir_of(pct_change(delivered_today_count, delivered_qs.filter(created_at__date=yesterday).count()))},
+                    'week': {'pct': pct_change(delivered_week_count, delivered_qs.filter(created_at__date__range=(last_week_start, last_week_end)).count()), 'dir': dir_of(pct_change(delivered_week_count, delivered_qs.filter(created_at__date__range=(last_week_start, last_week_end)).count()))},
+                    'month': {'pct': pct_change(delivered_month_count, delivered_qs.filter(created_at__date__range=(last_month_start, last_month_end)).count()), 'dir': dir_of(pct_change(delivered_month_count, delivered_qs.filter(created_at__date__range=(last_month_start, last_month_end)).count()))},
+                },
+                'spark': spark_orders,
+            },
+            'pending_late': {
+                'value': Order.objects.filter(status='pending').count(),
+                'delta': {
+                    'day': {'pct': 0.0, 'dir': 'flat'},
+                    'week': {'pct': 0.0, 'dir': 'flat'},
+                    'month': {'pct': 0.0, 'dir': 'flat'},
+                },
+                'spark': spark_orders,
+            },
+            'cancel_rate': {
+                'value': round((cancel_today / total_today) * 100.0, 1),
+                'delta': {
+                    'day': {'pct': pct_change((cancel_today / total_today) * 100.0, ((orders_yesterday_all.filter(status='canceled').count() / (orders_yesterday_all.count() or 1)) * 100.0)), 'dir': dir_of(pct_change((cancel_today / total_today) * 100.0, ((orders_yesterday_all.filter(status='canceled').count() / (orders_yesterday_all.count() or 1)) * 100.0)))},
+                    'week': {'pct': pct_change((cancel_week / total_week) * 100.0, ((orders_last_week_all.filter(status='canceled').count() / (orders_last_week_all.count() or 1)) * 100.0)), 'dir': dir_of(pct_change((cancel_week / total_week) * 100.0, ((orders_last_week_all.filter(status='canceled').count() / (orders_last_week_all.count() or 1)) * 100.0)))},
+                    'month': {'pct': pct_change((cancel_month / total_month) * 100.0, ((orders_last_month_all.filter(status='canceled').count() / (orders_last_month_all.count() or 1)) * 100.0)), 'dir': dir_of(pct_change((cancel_month / total_month) * 100.0, ((orders_last_month_all.filter(status='canceled').count() / (orders_last_month_all.count() or 1)) * 100.0)))},
+                },
+                'spark': spark_orders,
+            },
+        },
+        'users': {
+            'visitors': {'value': visitors_total, 'delta': {'day': {'pct': 0.0, 'dir': 'flat'}, 'week': {'pct': 0.0, 'dir': 'flat'}, 'month': {'pct': 0.0, 'dir': 'flat'}}},
+            'registered': {'value': registered_total, 'delta': {'day': {'pct': 0.0, 'dir': 'flat'}, 'week': {'pct': 0.0, 'dir': 'flat'}, 'month': {'pct': 0.0, 'dir': 'flat'}}},
+            'downloads': {'value': downloads_total, 'delta': {'day': {'pct': 0.0, 'dir': 'flat'}, 'week': {'pct': 0.0, 'dir': 'flat'}, 'month': {'pct': 0.0, 'dir': 'flat'}}},
+        },
+        'health': {
+            'payment_errors': 0,
+            'order_errors': canceled_recent,
+            'expired_products': ProductVariant.objects.filter(stock_qty=0).count(),
+            'inactive_stores': inactive_stores_count,
+        },
+    }
+
+    charts = {
+        'revenue_line': {'labels': revenue_line_labels, 'data': revenue_line_data},
+        'orders_bar': {'labels': orders_bar_labels, 'data': orders_bar_data},
+        'status_donut': {'labels': status_order, 'data': status_donut_data},
+    }
+
     context = {
         'snapshot': snapshot,
         'critical_alerts': critical_alerts,
@@ -1521,6 +1723,8 @@ def super_owner_dashboard(request):
             'worst_store': worst_store,
         },
         'system_status': system_status,
+        'bi': bi,
+        'charts': charts,
     }
     return render(request, 'dashboard/super_owner/dashboard.html', context)
 
