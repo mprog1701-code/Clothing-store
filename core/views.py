@@ -1419,50 +1419,39 @@ def super_owner_dashboard(request):
     }
 
     twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
-    attention_cards = []
-    pending_over_24h = Order.objects.filter(status='pending', created_at__lt=twenty_four_hours_ago).order_by('-created_at')[:10]
+    two_hours_ago = timezone.now() - timedelta(hours=2)
+    critical_alerts = []
+    pending_over_24h = Order.objects.filter(status='pending', created_at__lt=twenty_four_hours_ago)
     if pending_over_24h.exists():
-        attention_cards.append({
+        critical_alerts.append({
             'type': 'pending_orders_over_24h',
             'count': pending_over_24h.count(),
-            'link': 'super_owner_orders',
-            'label': 'طلبات قيد الانتظار منذ أكثر من 24 ساعة'
+            'url': 'super_owner_orders',
+            'label': 'طلبات متأخرة > 24 ساعة'
         })
-    inactive_stores = Store.objects.filter(is_active=False)[:10]
+    inactive_stores = Store.objects.filter(is_active=False)
     if inactive_stores.exists():
-        attention_cards.append({
+        critical_alerts.append({
             'type': 'inactive_stores',
             'count': inactive_stores.count(),
-            'link': 'super_owner_stores',
+            'url': 'super_owner_stores',
             'label': 'متاجر غير نشطة'
         })
-    campaigns_ending_soon = []
-    try:
-        campaigns_ending_soon = list(Campaign.objects.filter(is_active=True, end_date__lte=timezone.now() + timedelta(days=3)).order_by('end_date')[:10])
-    except Exception:
-        campaigns_ending_soon = []
-    if campaigns_ending_soon:
-        attention_cards.append({
-            'type': 'campaigns_ending_soon',
-            'count': len(campaigns_ending_soon),
-            'link': 'super_owner_announcements',
-            'label': 'إعلانات منتهية أو على وشك الانتهاء'
+    canceled_today = orders_today.filter(status='canceled').count()
+    if canceled_today > 0:
+        critical_alerts.append({
+            'type': 'canceled_today',
+            'count': canceled_today,
+            'url': 'super_owner_orders',
+            'label': 'طلبات ملغاة اليوم'
         })
-    products_without_images = Product.objects.filter(is_active=True).exclude(images__isnull=False).count()
-    if products_without_images > 0:
-        attention_cards.append({
-            'type': 'products_without_images',
-            'count': products_without_images,
-            'link': 'super_owner_products',
-            'label': 'منتجات بدون صور'
-        })
-    zero_price_products = Product.objects.filter(is_active=True, base_price__lte=0).count()
-    if zero_price_products > 0:
-        attention_cards.append({
-            'type': 'zero_price_products',
-            'count': zero_price_products,
-            'link': 'super_owner_products',
-            'label': 'منتجات بسعر صفري'
+    on_the_way_stale = Order.objects.filter(status='on_the_way', updated_at__lt=two_hours_ago).count()
+    if on_the_way_stale > 0:
+        critical_alerts.append({
+            'type': 'delivery_failure',
+            'count': on_the_way_stale,
+            'url': 'super_owner_orders',
+            'label': 'فشل/تأخر توصيل'
         })
 
     quick_actions = [
@@ -1506,16 +1495,32 @@ def super_owner_dashboard(request):
         best_store = None
         worst_store = None
 
+    status_score = 0
+    if pending_over_24h.count() > 0:
+        status_score += 2
+    if inactive_stores_count > 0:
+        status_score += 1
+    if canceled_recent > max(3, int(0.1 * total_recent)):
+        status_score += 2
+    if on_the_way_stale > 0:
+        status_score += 2
+    system_status = 'Healthy'
+    if status_score >= 4:
+        system_status = 'Critical'
+    elif status_score >= 2:
+        system_status = 'Warning'
+
     context = {
         'snapshot': snapshot,
-        'attention_cards': attention_cards,
-        'quick_actions': quick_actions,
+        'critical_alerts': critical_alerts,
+        'owner_actions': quick_actions,
         'health': {
             'completion_rate': completion_rate,
             'cancel_rate': cancel_rate,
             'best_store': best_store,
             'worst_store': worst_store,
         },
+        'system_status': system_status,
     }
     return render(request, 'dashboard/super_owner/dashboard.html', context)
 

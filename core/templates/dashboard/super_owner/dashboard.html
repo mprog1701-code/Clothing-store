@@ -5,43 +5,34 @@
 
 {% block content %}
 <div class="container py-3">
-  <h2>Executive Snapshot</h2>
-  <ul>
-    <li>🟢 إجمالي الطلبات (اليوم): {{ snapshot.orders_today }}</li>
-    <li>🟢 الإيرادات (اليوم): {{ snapshot.revenue_today|iqd }}</li>
-    <li>🟢 الإيرادات (الشهر): {{ snapshot.revenue_month|iqd }}</li>
-    <li>{% if snapshot.pending_orders > 0 %}🟡{% else %}🟢{% endif %} الطلبات المعلقة: {{ snapshot.pending_orders }}</li>
-    <li>{% if snapshot.inactive_stores > 0 %}🔴{% else %}🟢{% endif %} المتاجر غير النشطة: {{ snapshot.inactive_stores }}</li>
-  </ul>
-
-  <h2>Attention Required</h2>
-  {% if attention_cards %}
+  <h2>تنبيهات حرجة</h2>
+  {% if critical_alerts %}
     <ul>
-      {% for item in attention_cards %}
+      {% for item in critical_alerts %}
         <li>
-          {% if item.type == 'pending_orders_over_24h' %}🟡{% elif item.type == 'inactive_stores' %}🔴{% elif item.type == 'campaigns_ending_soon' %}🟠{% else %}🔴{% endif %}
-          <a href="{% url item.link %}">{{ item.label }}</a> ({{ item.count }})
+          {% if item.type == 'pending_orders_over_24h' %}🟡{% elif item.type == 'inactive_stores' %}🔴{% elif item.type == 'delivery_failure' %}🔴{% elif item.type == 'canceled_today' %}🟠{% else %}🟠{% endif %}
+          <strong>{{ item.count }}</strong> — <a href="{% url item.url %}">{{ item.label }}</a>
         </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p>لا توجد عناصر تحتاج تدخل الآن.</p>
+    <p>لا توجد تنبيهات حرجة الآن.</p>
   {% endif %}
 
-  <h2>Owner Quick Actions</h2>
+  <h2>نبض الأعمال</h2>
   <ul>
-    {% for qa in quick_actions %}
-      <li><a href="{% url qa.url %}">{{ qa.label }}</a></li>
-    {% endfor %}
+    <li>طلبات اليوم: <strong>{{ snapshot.orders_today }}</strong></li>
+    <li>إيرادات اليوم: <strong>{{ snapshot.revenue_today|iqd }}</strong></li>
+    <li>إيرادات الشهر: <strong>{{ snapshot.revenue_month|iqd }}</strong></li>
+    <li>نسبة اكتمال الطلبات: <strong>{{ health.completion_rate }}%</strong></li>
+    <li>الحالة العامة للنظام: <strong>{{ system_status }}</strong></li>
   </ul>
 
-  <h2>System Health Overview</h2>
+  <h2>إجراءات المالك</h2>
   <ul>
-    <li>نسبة الطلبات المكتملة: {{ health.completion_rate }}%</li>
-    <li>نسبة الإلغاء: {{ health.cancel_rate }}%</li>
-    <li>أفضل متجر أداءً: {% if health.best_store %}{{ health.best_store.name }}{% else %}—{% endif %}</li>
-    <li>أضعف متجر أداءً: {% if health.worst_store %}{{ health.worst_store.name }}{% else %}—{% endif %}</li>
+    {% for action in owner_actions %}
+      <li><a href="{% url action.url %}">{{ action.label }}</a></li>
+    {% endfor %}
   </ul>
 </div>
 {% endblock %}
-
