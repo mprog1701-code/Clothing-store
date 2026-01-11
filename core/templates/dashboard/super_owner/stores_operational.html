@@ -7,12 +7,10 @@
 <div class="container-fluid py-4">
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-body d-flex justify-content-between align-items-center">
-      <form method="get" class="d-flex align-items-center gap-2">
-        <input type="text" name="q" class="form-control" value="{{ filters.q }}" placeholder="بحث سريع: اسم/مدينة/مالك" style="max-width: 320px;">
+      <div class="d-flex align-items-center gap-2">
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filtersModal"><i class="fas fa-filter me-1"></i> تصفية</button>
-        <button class="btn btn-primary">بحث</button>
-      </form>
-      <a href="{% url 'super_owner_quick_add_store' %}" class="btn btn-success"><i class="fas fa-plus me-1"></i> إضافة متجر</a>
+        <a href="{% url 'super_owner_create_store' %}" class="btn btn-success"><i class="fas fa-plus me-1"></i> إضافة متجر</a>
+      </div>
     </div>
   </div>
 
@@ -75,7 +73,7 @@
           <option value="bulk_deactivate">إيقاف</option>
           <option value="bulk_set_category">تطبيق قالب/فئة</option>
           <option value="bulk_set_delivery_fee">تغيير رسوم التوصيل</option>
-          <option value="bulk_copy_settings">نسخ إعدادات من متجر</option>
+          
         </select>
         <select name="category" class="form-select form-select-sm" style="max-width:180px">
           <option value="">الفئة</option>
@@ -84,40 +82,8 @@
           {% endfor %}
         </select>
         <input type="number" step="0.01" name="delivery_fee" class="form-control form-control-sm" style="max-width:160px" placeholder="رسوم التوصيل">
-        <select name="source_store_id" class="form-select form-select-sm" style="max-width:220px">
-          <option value="">متجر المصدر للنسخ</option>
-          {% for s in stores %}
-            <option value="{{ s.id }}">{{ s.name }}</option>
-          {% endfor %}
-        </select>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" name="copy_category" id="copy_category">
-          <label class="form-check-label" for="copy_category">القالب</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" name="copy_delivery_fee" id="copy_delivery_fee">
-          <label class="form-check-label" for="copy_delivery_fee">رسوم التوصيل</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" name="copy_delivery_time" id="copy_delivery_time">
-          <label class="form-check-label" for="copy_delivery_time">زمن التوصيل</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" name="copy_description" id="copy_description">
-          <label class="form-check-label" for="copy_description">الوصف</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" name="copy_logo" id="copy_logo">
-          <label class="form-check-label" for="copy_logo">الشعار</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="checkbox" name="copy_address" id="copy_address">
-          <label class="form-check-label" for="copy_address">العنوان</label>
-        </div>
       </div>
-      <div>
-        <a href="{% url 'super_owner_quick_add_store' %}" class="btn btn-success"><i class="fas fa-bolt me-1"></i> إضافة متجر (سريع)</a>
-      </div>
+      
     </div>
 
     <div class="table-responsive">
@@ -172,24 +138,7 @@
                   {% endif %}
                   <a href="{% url 'super_owner_add_product' %}?store={{ store.id }}" class="btn btn-info" title="إنشاء منتج"><i class="fas fa-plus"></i></a>
                   <a href="{% url 'super_owner_orders' %}?store={{ store.id }}" class="btn btn-secondary" title="مشاهدة الطلبات"><i class="fas fa-list"></i></a>
-                  <button class="btn btn-light" title="نسخ الإعدادات" onclick="return openCloneInline({{ store.id }})"><i class="fas fa-copy"></i></button>
-                </div>
-                <div class="mt-2 d-none" id="clone_inline_{{ store.id }}">
-                  <div class="d-flex flex-wrap align-items-center gap-2">
-                    <select class="form-select form-select-sm" id="clone_source_{{ store.id }}" style="max-width:220px">
-                      {% for s in stores %}
-                        {% if s.id != store.id %}
-                          <option value="{{ s.id }}">{{ s.name }}</option>
-                        {% endif %}
-                      {% endfor %}
-                    </select>
-                  <div class="form-check form-check-inline"><input type="checkbox" class="form-check-input" id="c_cat_{{ store.id }}"><label class="form-check-label" for="c_cat_{{ store.id }}">القالب</label></div>
-                  <div class="form-check form-check-inline"><input type="checkbox" class="form-check-input" id="c_fee_{{ store.id }}"><label class="form-check-label" for="c_fee_{{ store.id }}">الرسوم</label></div>
-                  <div class="form-check form-check-inline"><input type="checkbox" class="form-check-input" id="c_time_{{ store.id }}"><label class="form-check-label" for="c_time_{{ store.id }}">الزمن</label></div>
-                  <div class="form-check form-check-inline"><input type="checkbox" class="form-check-input" id="c_desc_{{ store.id }}"><label class="form-check-label" for="c_desc_{{ store.id }}">الوصف</label></div>
-                  <div class="form-check form-check-inline"><input type="checkbox" class="form-check-input" id="c_logo_{{ store.id }}"><label class="form-check-label" for="c_logo_{{ store.id }}">الشعار</label></div>
-                  <div class="form-check form-check-inline"><input type="checkbox" class="form-check-input" id="c_addr_{{ store.id }}"><label class="form-check-label" for="c_addr_{{ store.id }}">العنوان</label></div>
-                  <button class="btn btn-sm btn-outline-primary" onclick="return submitCloneInline({{ store.id }})">نسخ الآن</button>
+                  
                 </div>
               </div>
               </td>
@@ -217,26 +166,6 @@ function submitRowAction(id, action){
   form.submit();
   return false;
 }
-function openCloneInline(id){
-  const el = document.getElementById('clone_inline_'+id); if(!el) return false; el.classList.toggle('d-none'); return false;
-}
-  function submitCloneInline(id){
-  const form = document.querySelector('form[method="post"]');
-  document.getElementById('row_action_store_id').value = id;
-  const input = document.createElement('input'); input.type='hidden'; input.name='action'; input.value='smart_clone_inline'; form.appendChild(input);
-  const srcSel = document.getElementById('clone_source_'+id);
-  const srcInput = document.createElement('input'); srcInput.type='hidden'; srcInput.name='source_store_id'; srcInput.value = srcSel ? srcSel.value : '';
-  form.appendChild(srcInput);
-    function add(name, checked){ const i=document.createElement('input'); i.type='hidden'; i.name=name; if(checked) i.value='on'; form.appendChild(i); }
-    add('copy_category', document.getElementById('c_cat_'+id).checked);
-    add('copy_delivery_fee', document.getElementById('c_fee_'+id).checked);
-    add('copy_delivery_time', document.getElementById('c_time_'+id).checked);
-    add('copy_description', document.getElementById('c_desc_'+id).checked);
-    add('copy_logo', document.getElementById('c_logo_'+id).checked);
-    add('copy_address', document.getElementById('c_addr_'+id).checked);
-    form.submit();
-    return false;
-  }
 </script>
 
 <style>

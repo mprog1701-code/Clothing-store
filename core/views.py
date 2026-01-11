@@ -1960,65 +1960,6 @@ def super_owner_stores(request):
                             messages.success(request, 'تم تطبيق القالب/الفئة للمتاجر المحددة')
                         else:
                             messages.error(request, 'قالب/فئة غير صالح')
-                    elif action == 'bulk_copy_settings':
-                        src_id = int(request.POST.get('source_store_id'))
-                        src = get_object_or_404(Store, id=src_id)
-                        copy_delivery_fee = request.POST.get('copy_delivery_fee') == 'on'
-                        copy_delivery_time = request.POST.get('copy_delivery_time') == 'on'
-                        copy_category = request.POST.get('copy_category') == 'on'
-                        copy_description = request.POST.get('copy_description') == 'on'
-                        copy_logo = request.POST.get('copy_logo') == 'on'
-                        copy_address = request.POST.get('copy_address') == 'on'
-                        for sid in ids:
-                            if sid == src.id:
-                                continue
-                            s = Store.objects.get(id=sid)
-                            if copy_delivery_fee:
-                                s.delivery_fee = src.delivery_fee
-                                s.free_delivery_threshold = src.free_delivery_threshold
-                            if copy_delivery_time:
-                                s.delivery_time = src.delivery_time
-                                s.delivery_time_value = getattr(src, 'delivery_time_value', 0)
-                                s.delivery_time_unit = getattr(src, 'delivery_time_unit', '')
-                            if copy_category:
-                                s.category = src.category
-                            if copy_description:
-                                s.description = src.description
-                            if copy_logo:
-                                s.logo = src.logo
-                            if copy_address:
-                                s.address = src.address
-                            s.save()
-                        messages.success(request, 'تم نسخ الإعدادات المحددة')
-                    elif action == 'smart_clone_inline':
-                        store_id = int(request.POST.get('store_id'))
-                        store = get_object_or_404(Store, id=store_id)
-                        src_id = int(request.POST.get('source_store_id'))
-                        src = get_object_or_404(Store, id=src_id)
-                        copy_delivery_fee = request.POST.get('copy_delivery_fee') == 'on'
-                        copy_delivery_time = request.POST.get('copy_delivery_time') == 'on'
-                        copy_category = request.POST.get('copy_category') == 'on'
-                        copy_description = request.POST.get('copy_description') == 'on'
-                        copy_logo = request.POST.get('copy_logo') == 'on'
-                        copy_address = request.POST.get('copy_address') == 'on'
-                        with transaction.atomic():
-                            if copy_delivery_fee:
-                                store.delivery_fee = src.delivery_fee
-                                store.free_delivery_threshold = src.free_delivery_threshold
-                            if copy_delivery_time:
-                                store.delivery_time = src.delivery_time
-                                store.delivery_time_value = getattr(src, 'delivery_time_value', 0)
-                                store.delivery_time_unit = getattr(src, 'delivery_time_unit', '')
-                            if copy_category:
-                                store.category = src.category
-                            if copy_description:
-                                store.description = src.description
-                            if copy_logo:
-                                store.logo = src.logo
-                            if copy_address:
-                                store.address = src.address
-                            store.save()
-                        messages.success(request, 'تم نسخ الإعدادات المحددة')
             return redirect('super_owner_stores')
         except Exception:
             messages.error(request, 'حدث خطأ أثناء تنفيذ العملية')
@@ -2061,30 +2002,7 @@ def super_owner_store_center(request, store_id):
                 store.is_active = False
                 store.save()
                 messages.success(request, 'تم تعطيل المتجر')
-            elif action == 'smart_clone':
-                src_id = int(request.POST.get('source_store_id'))
-                src = get_object_or_404(Store, id=src_id)
-                copy_delivery_fee = request.POST.get('copy_delivery_fee') == 'on'
-                copy_delivery_time = request.POST.get('copy_delivery_time') == 'on'
-                copy_category = request.POST.get('copy_category') == 'on'
-                copy_description = request.POST.get('copy_description') == 'on'
-                copy_logo = request.POST.get('copy_logo') == 'on'
-                copy_address = request.POST.get('copy_address') == 'on'
-                with transaction.atomic():
-                    if copy_delivery_fee:
-                        store.delivery_fee = src.delivery_fee
-                    if copy_delivery_time:
-                        store.delivery_time = src.delivery_time
-                    if copy_category:
-                        store.category = src.category
-                    if copy_description:
-                        store.description = src.description
-                    if copy_logo:
-                        store.logo = src.logo
-                    if copy_address:
-                        store.address = src.address
-                    store.save()
-                messages.success(request, 'تم نسخ الإعدادات المحددة')
+            
         except Exception:
             messages.error(request, 'حدث خطأ في العملية')
         return redirect('super_owner_store_center', store_id=store.id)
@@ -2290,50 +2208,47 @@ def super_owner_create_store(request):
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
         if step == '1':
-            name = (request.POST.get('name') or '').strip()
-            address = (request.POST.get('address') or '').strip()
-            if not name:
-                errors['name'] = 'يرجى إدخال اسم المتجر'
-            if not errors:
-                wizard.update({'name': name, 'address': address})
-                request.session['create_store_wizard'] = wizard
-                step = '2'
-            else:
-                status_code = 400
-        elif step == '2':
             owner_id = (request.POST.get('owner_id') or '').strip()
             if not owner_id or not owner_id.isdigit():
                 errors['owner_id'] = 'يرجى اختيار مالك المتجر'
+                status_code = 400
             else:
                 wizard['owner_id'] = int(owner_id)
                 request.session['create_store_wizard'] = wizard
-                step = '3'
-        elif step == '3':
-            category = (request.POST.get('category') or '').strip()
+                step = '2'
+        elif step == '2':
+            name = (request.POST.get('name') or '').strip()
             city = (request.POST.get('city') or '').strip()
+            category = (request.POST.get('category') or '').strip()
             status_choice = (request.POST.get('status') or 'ACTIVE').strip()
+            if not name:
+                errors['name'] = 'يرجى إدخال اسم المتجر'
             if not city:
-                errors['city'] = 'يرجى إدخال المدينة'
-            if status_choice not in ['ACTIVE','DISABLED']:
+                errors['city'] = 'يرجى اختيار المدينة'
+            valid_categories = [c[0] for c in Store.CATEGORY_CHOICES]
+            if category and category not in valid_categories:
+                errors['category'] = 'فئة غير صالحة'
+            if status_choice not in ['ACTIVE', 'DISABLED']:
                 status_choice = 'ACTIVE'
-            wizard.update({'category': category, 'city': city, 'status': status_choice})
-            request.session['create_store_wizard'] = wizard
             if not errors:
-                step = '4'
+                wizard.update({'name': name, 'city': city, 'category': category or 'clothing', 'status': status_choice})
+                request.session['create_store_wizard'] = wizard
+                step = '3'
             else:
                 status_code = 400
-        elif step == '4':
+        elif step == '3':
             delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
             free_threshold_raw = (request.POST.get('free_delivery_threshold') or '').strip()
             dt_value_raw = (request.POST.get('delivery_time_value') or '').strip()
             dt_unit = (request.POST.get('delivery_time_unit') or '').strip()
+            logo_file = request.FILES.get('logo')
             try:
                 delivery_fee = float(delivery_fee_raw)
             except Exception:
                 errors['delivery_fee'] = 'يرجى إدخال رسوم توصيل صحيحة'
                 delivery_fee = None
             free_threshold = None
-            if free_threshold_raw:
+            if free_threshold_raw != '':
                 try:
                     free_threshold = float(free_threshold_raw)
                 except Exception:
@@ -2360,54 +2275,6 @@ def super_owner_create_store(request):
                     'delivery_time_unit': dt_unit,
                     'delivery_time': delivery_time_text,
                 })
-                request.session['create_store_wizard'] = wizard
-                step = '5'
-            else:
-                status_code = 400
-        elif step == '5':
-            src_id = (request.POST.get('source_store_id') or '').strip()
-            primary_color = (request.POST.get('primary_color') or '').strip()
-            secondary_color = (request.POST.get('secondary_color') or '').strip()
-            copy_template_colors = request.POST.get('copy_template_colors') == 'on'
-            copy_delivery_settings = request.POST.get('copy_delivery_settings') == 'on'
-            copy_categories = request.POST.get('copy_categories') == 'on'
-            copy_policies = request.POST.get('copy_policies') == 'on'
-            copy_pages = request.POST.get('copy_pages') == 'on'
-            wizard.update({'src_id': src_id, 'copy_template_colors': copy_template_colors, 'copy_delivery_settings': copy_delivery_settings, 'copy_categories': copy_categories, 'copy_policies': copy_policies, 'copy_pages': copy_pages, 'primary_color': primary_color, 'secondary_color': secondary_color})
-            request.session['create_store_wizard'] = wizard
-            if action == 'save_draft':
-                if not wizard.get('owner_id'):
-                    errors['owner_id'] = 'يرجى اختيار مالك قبل حفظ المسودة'
-                else:
-                    try:
-                        with transaction.atomic():
-                            owner = User.objects.get(id=int(wizard['owner_id']))
-                            draft = Store.objects.create(
-                                name=wizard.get('name',''),
-                                city=wizard.get('city',''),
-                                address=wizard.get('address',''),
-                                description='',
-                                owner=owner,
-                                category=wizard.get('category') or 'clothing',
-                                delivery_time=wizard.get('delivery_time') or '30-45 دقيقة',
-                                delivery_time_value=wizard.get('delivery_time_value') or 0,
-                                delivery_time_unit=wizard.get('delivery_time_unit') or '',
-                                delivery_fee=wizard.get('delivery_fee') or 0.0,
-                                is_active=False,
-                                status='DRAFT',
-                                primary_color=wizard.get('primary_color') or '',
-                                secondary_color=wizard.get('secondary_color') or '',
-                                free_delivery_threshold=wizard.get('free_delivery_threshold')
-                            )
-                            request.session['draft_store_id'] = draft.id
-                            from .models import AdminAuditLog
-                            AdminAuditLog.objects.create(admin_user=request.user, action='create', model='Store', object_id=str(draft.id), before='', after=json.dumps({'name': draft.name}, ensure_ascii=False), ip=request.META.get('REMOTE_ADDR') or '')
-                        messages.success(request, 'تم حفظ المسودة')
-                        return redirect('super_owner_create_store')
-                    except Exception:
-                        errors['general'] = 'فشل حفظ المسودة'
-                        status_code = 500
-            elif action == 'publish':
                 try:
                     with transaction.atomic():
                         owner = User.objects.get(id=int(wizard['owner_id']))
@@ -2416,53 +2283,32 @@ def super_owner_create_store(request):
                         s = Store.objects.create(
                             name=wizard.get('name',''),
                             city=wizard.get('city',''),
-                            address=wizard.get('address',''),
+                            address='—',
                             description='',
                             owner=owner,
                             category=wizard.get('category') or 'clothing',
-                            delivery_time=wizard.get('delivery_time') or '30-45 دقيقة',
-                            delivery_time_value=wizard.get('delivery_time_value') or 0,
-                            delivery_time_unit=wizard.get('delivery_time_unit') or '',
-                            delivery_fee=wizard.get('delivery_fee') or 0.0,
+                            delivery_time=delivery_time_text,
+                            delivery_time_value=dt_value,
+                            delivery_time_unit=dt_unit,
+                            delivery_fee=delivery_fee or 0.0,
                             is_active=is_active,
                             status=status_choice,
-                            primary_color=wizard.get('primary_color') or '',
-                            secondary_color=wizard.get('secondary_color') or '',
-                            free_delivery_threshold=wizard.get('free_delivery_threshold')
+                            free_delivery_threshold=free_threshold,
                         )
-                        logo_file = request.FILES.get('logo')
                         if logo_file:
                             s.logo = logo_file
-                            s.save()
-                        src_store = None
-                        if wizard.get('src_id') and str(wizard.get('src_id')).isdigit():
-                            src_store = Store.objects.filter(id=int(wizard['src_id'])).first()
-                        if src_store:
-                            if wizard.get('copy_template_colors'):
-                                s.category = src_store.category
-                                s.primary_color = src_store.primary_color
-                                s.secondary_color = src_store.secondary_color
-                            if wizard.get('copy_delivery_settings'):
-                                s.delivery_fee = src_store.delivery_fee
-                                s.free_delivery_threshold = src_store.free_delivery_threshold
-                                s.delivery_time = src_store.delivery_time
-                                s.delivery_time_value = getattr(src_store, 'delivery_time_value', 0)
-                                s.delivery_time_unit = getattr(src_store, 'delivery_time_unit', '')
-                            if wizard.get('copy_categories'):
-                                s.category = src_store.category
-                            if wizard.get('copy_policies'):
-                                s.description = src_store.description
                             s.save()
                         from .models import AdminAuditLog
                         AdminAuditLog.objects.create(admin_user=request.user, action='create', model='Store', object_id=str(s.id), before='', after=json.dumps({'name': s.name}, ensure_ascii=False), ip=request.META.get('REMOTE_ADDR') or '')
                     request.session.pop('create_store_wizard', None)
-                    request.session.pop('draft_store_id', None)
-                    messages.success(request, 'تم إنشاء المتجر ونشره')
+                    messages.success(request, 'تم إنشاء المتجر بنجاح')
                     return redirect('super_owner_store_center', store_id=s.id)
                 except Exception:
                     errors['general'] = 'فشل الإنشاء'
                     status_code = 500
-    context = {'step': step, 'errors': errors, 'owners': owners, 'categories': categories, 'wizard': wizard, 'stores_all': Store.objects.all().order_by('name')}
+            else:
+                status_code = 400
+    context = {'step': step, 'errors': errors, 'owners': owners, 'categories': categories, 'wizard': wizard}
     return render(request, 'dashboard/super_owner/create_store_wizard.html', context, status=status_code)
 
 

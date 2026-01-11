@@ -63,8 +63,7 @@ urlpatterns = [
     # Super Owner Dashboard URLs
     path('dashboard/super-owner/', views.super_owner_dashboard, name='super_owner_dashboard'),
     path('dashboard/super-owner/stores/', views.super_owner_stores, name='super_owner_stores'),
-    path('dashboard/super-owner/stores/add/', views.super_owner_add_store, name='super_owner_add_store'),
-    path('dashboard/super-owner/stores/quick-add/', views.super_owner_quick_add_store, name='super_owner_quick_add_store'),
+    # إزالة صفحة الإضافة السريعة وصفحة الإضافة القديمة
     path('dashboard/super-owner/stores/create/', views.super_owner_create_store, name='super_owner_create_store'),
     path('dashboard/super-owner/owners/search/', views.super_owner_owner_search_json, name='super_owner_owner_search_json'),
     path('dashboard/super-owner/owners/create/', views.super_owner_create_owner_json, name='super_owner_create_owner_json'),
