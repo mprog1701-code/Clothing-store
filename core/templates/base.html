@@ -962,6 +962,15 @@
                 transition-duration: 0.01ms !important;
             }
         }
+        .form-label,
+        .form-check-label {
+            color: inherit;
+            font-weight: 500;
+            margin-bottom: .25rem;
+            display: block;
+        }
+        .form-text { color: rgba(255,255,255,0.75); }
+        body.theme-light .form-text { color: rgba(33,37,41,0.7); }
     </style>
     
     {% block extra_css %}{% endblock %}

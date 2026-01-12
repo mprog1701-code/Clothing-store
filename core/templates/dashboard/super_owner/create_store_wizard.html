@@ -91,6 +91,7 @@
             <option value="ACTIVE" {% if wizard.status == 'ACTIVE' %}selected{% endif %}>نشط</option>
             <option value="DISABLED" {% if wizard.status == 'DISABLED' %}selected{% endif %}>غير نشط</option>
           </select>
+          <div class="form-text">عند اختيار "نشط" يظهر المتجر ويقبل الطلبات؛ "غير نشط" يخفيه ولا يقبل الطلبات.</div>
         </div>
       </div>
       <div class="card-footer d-flex justify-content-between">
@@ -105,7 +106,7 @@
       <div class="card-header">إعدادات التشغيل</div>
       <div class="card-body row g-3">
         <div class="col-md-4">
-          <label class="form-label">رسوم التوصيل *</label>
+          <label class="form-label">رسوم التوصيل (دينار) *</label>
           <div class="input-group">
             <input type="number" step="0.01" class="form-control" name="delivery_fee" value="{{ wizard.delivery_fee|default:'' }}">
             <span class="input-group-text">IQD</span>
@@ -113,7 +114,7 @@
           {% if errors.delivery_fee %}<div class="text-danger small mt-1">{{ errors.delivery_fee }}</div>{% endif %}
         </div>
         <div class="col-md-4">
-          <label class="form-label">حد مجاني للتوصيل</label>
+          <label class="form-label">حد مجاني للتوصيل (دينار)</label>
           <div class="input-group">
             <input type="number" step="0.01" class="form-control" name="free_delivery_threshold" value="{{ wizard.free_delivery_threshold|default:'' }}">
             <span class="input-group-text">IQD</span>
@@ -121,12 +122,14 @@
           {% if errors.free_delivery_threshold %}<div class="text-danger small mt-1">{{ errors.free_delivery_threshold }}</div>{% endif %}
         </div>
         <div class="col-md-4">
-          <label class="form-label">وقت التوصيل المتوقع</label>
+          <label class="form-label">زمن التوصيل</label>
           <div class="row g-2">
             <div class="col-6">
+              <label for="dt_value" class="form-label">قيمة زمن التوصيل</label>
               <input id="dt_value" type="number" min="0" class="form-control" name="delivery_time_value" value="{{ wizard.delivery_time_value|default:24 }}">
             </div>
             <div class="col-6">
+              <label for="dt_unit" class="form-label">وحدة زمن التوصيل</label>
               <select id="dt_unit" class="form-select" name="delivery_time_unit">
                 <option value="hour" {% if wizard.delivery_time_unit == 'hour' or not wizard.delivery_time_unit %}selected{% endif %}>ساعة</option>
                 <option value="day" {% if wizard.delivery_time_unit == 'day' %}selected{% endif %}>يوم</option>
@@ -221,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <style>
 .form-label,
 .form-check-label {
-  color: #212529 !important;
+  color: inherit;
 }
 </style>
 {% endblock %}
