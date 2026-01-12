@@ -34,6 +34,7 @@
                         <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="#">معلومات المنتج</a></li>
                         <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}" href="#">الخصائص</a></li>
                         <li class="nav-item"><a class="nav-link {% if step == 'variants' %}active{% endif %}" href="#">المتغيرات</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}" href="#">الصور</a></li>
                     </ul>
 
                     {% if step == 'info' %}
@@ -114,7 +115,7 @@
                     {% endif %}
 
                     {% if product and step == 'attributes' %}
-                    <form method="post">
+                    <form method="post" data-ajax="true" id="generateVariantsForm">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="generate_variants">
                         <input type="hidden" name="pid" value="{{ product.id }}">
@@ -175,7 +176,7 @@
 
                     {% if product and step == 'variants' %}
                     <div class="mb-3">
-                        <form method="post" class="d-inline-block me-2">
+                        <form method="post" class="d-inline-block me-2" data-ajax="true">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="bulk_qty">
                             <input type="hidden" name="pid" value="{{ product.id }}">
@@ -185,7 +186,7 @@
                                 <button class="btn btn-outline-primary">تحديث الكل</button>
                             </div>
                         </form>
-                        <form method="post" class="d-inline-block me-2">
+                        <form method="post" class="d-inline-block me-2" data-ajax="true">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="bulk_price">
                             <input type="hidden" name="pid" value="{{ product.id }}">
@@ -195,7 +196,7 @@
                                 <button class="btn btn-outline-primary">تحديث الكل</button>
                             </div>
                         </form>
-                        <form method="post" class="d-inline-block">
+                        <form method="post" class="d-inline-block" data-ajax="true">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="bulk_status">
                             <input type="hidden" name="pid" value="{{ product.id }}">
@@ -204,46 +205,185 @@
                                 <button class="btn btn-outline-secondary" name="status" value="disable">تعطيل الكل</button>
                             </div>
                         </form>
+                        <div class="mt-2"></div>
+                        <form method="post" class="d-inline-block me-2" data-ajax="true">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_qty_color">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="input-group">
+                                <span class="input-group-text">كمية حسب اللون</span>
+                                <select name="color_id" class="form-select">
+                                    {% for c in color_attrs %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="number" class="form-control" name="qty" min="0" value="0">
+                                <button class="btn btn-outline-primary">تطبيق</button>
+                            </div>
+                        </form>
+                        <form method="post" class="d-inline-block me-2" data-ajax="true">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_qty_size">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="input-group">
+                                <span class="input-group-text">كمية حسب المقاس</span>
+                                <select name="size_id" class="form-select">
+                                    {% for s in size_attrs %}
+                                        <option value="{{ s.id }}">{{ s.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="number" class="form-control" name="qty" min="0" value="0">
+                                <button class="btn btn-outline-primary">تطبيق</button>
+                            </div>
+                        </form>
+                        <form method="post" class="d-inline-block me-2" data-ajax="true">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_price_color">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="input-group">
+                                <span class="input-group-text">سعر حسب اللون</span>
+                                <select name="color_id" class="form-select">
+                                    {% for c in color_attrs %}
+                                        <option value="{{ c.id }}">{{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="number" class="form-control" name="price" step="0.01" min="0">
+                                <button class="btn btn-outline-primary">تطبيق</button>
+                            </div>
+                        </form>
+                        <form method="post" class="d-inline-block" data-ajax="true">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_price_size">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="input-group">
+                                <span class="input-group-text">سعر حسب المقاس</span>
+                                <select name="size_id" class="form-select">
+                                    {% for s in size_attrs %}
+                                        <option value="{{ s.id }}">{{ s.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="number" class="form-control" name="price" step="0.01" min="0">
+                                <button class="btn btn-outline-primary">تطبيق</button>
+                            </div>
+                        </form>
                     </div>
-
                     <div class="table-responsive">
                         <table class="table align-middle">
                             <thead>
                                 <tr>
-                                    <th>اللون</th>
-                                    <th>المقاس</th>
-                                    <th>الكمية</th>
-                                    <th>سعر خاص</th>
-                                    <th>الحالة</th>
-                                    <th>إجراء</th>
+                                    <th style="min-width:140px;">اللون \ المقاس</th>
+                                    {% for s in size_attrs %}
+                                        <th class="text-center">{{ s.name }}</th>
+                                    {% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for v in variants %}
+                                {% for row in variant_grid %}
                                 <tr>
-                                    <form method="post" class="d-flex w-100 align-items-center">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="update_variant_row">
-                                        <input type="hidden" name="pid" value="{{ product.id }}">
-                                        <input type="hidden" name="variant_id" value="{{ v.id }}">
-                                        <td>{{ v.color }}</td>
-                                        <td>{{ v.size_display }}</td>
-                                        <td style="min-width:140px;"><input type="number" name="stock_qty" class="form-control" value="{{ v.stock_qty }}" min="0"></td>
-                                        <td style="min-width:160px;"><input type="number" name="price_override" class="form-control" step="0.01" min="0" value="{{ v.price_override|default_if_none:'' }}"></td>
+                                    <th>{{ row.color.name }}</th>
+                                    {% for cell in row.cells %}
+                                        {% if cell.variant %}
                                         <td>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="is_enabled" id="en{{ v.id }}" {% if v.is_enabled %}checked{% endif %}>
-                                                <label class="form-check-label" for="en{{ v.id }}">نشط</label>
-                                            </div>
+                                            <form method="post" class="d-flex flex-column gap-1" data-ajax="true">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="update_variant_row">
+                                                <input type="hidden" name="pid" value="{{ product.id }}">
+                                                <input type="hidden" name="variant_id" value="{{ cell.variant.id }}">
+                                                <input type="number" name="stock_qty" class="form-control" value="{{ cell.variant.stock_qty }}" min="0" placeholder="كمية">
+                                                <input type="number" name="price_override" class="form-control" step="0.01" min="0" value="{{ cell.variant.price_override|default_if_none:'' }}" placeholder="سعر خاص">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" name="is_enabled" id="en{{ cell.variant.id }}" {% if cell.variant.is_enabled %}checked{% endif %}>
+                                                    <label class="form-check-label" for="en{{ cell.variant.id }}">نشط</label>
+                                                </div>
+                                                <button class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>تحديث</button>
+                                            </form>
                                         </td>
-                                        <td class="text-nowrap"><button class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>تحديث</button></td>
-                                    </form>
+                                        {% else %}
+                                        <td><span class="text-muted">—</span></td>
+                                        {% endif %}
+                                    {% endfor %}
                                 </tr>
                                 {% empty %}
-                                <tr><td colspan="6" class="text-muted">لا توجد متغيرات بعد. انتقل لعلامة الخصائص لتوليدها.</td></tr>
+                                <tr><td colspan="{{ size_attrs|length|add:1 }}" class="text-muted">لا توجد متغيرات بعد. انتقل لعلامة الخصائص لتوليدها.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+                    {% endif %}
+
+                    {% if product and step == 'images' %}
+                    <div class="mb-3">
+                        <form method="post" enctype="multipart/form-data" data-ajax="true" class="d-inline-block">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="upload_images">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="input-group">
+                                <input type="file" class="form-control" name="images" multiple accept="image/*">
+                                <button class="btn btn-primary"><i class="fas fa-upload me-1"></i>رفع الصور</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="row g-3">
+                        {% for img in images %}
+                        <div class="col-md-3">
+                            <div class="card h-100">
+                                <img src="{{ img.get_image_url }}" class="card-img-top" alt="" style="height:180px;object-fit:cover;" onerror="this.onerror=null;this.src='https://placehold.co/300x180?text=Image'">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge {% if img.is_main %}bg-success{% else %}bg-light text-dark{% endif %}">{% if img.is_main %}رئيسية{% else %}عادية{% endif %}</span>
+                                        <small class="text-muted">ترتيب: {{ img.order }}</small>
+                                    </div>
+                                    <form method="post" class="d-inline" data-ajax="true">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="set_main_image">
+                                        <input type="hidden" name="pid" value="{{ product.id }}">
+                                        <input type="hidden" name="image_id" value="{{ img.id }}">
+                                        <button class="btn btn-outline-success btn-sm">اجعلها رئيسية</button>
+                                    </form>
+                                    <form method="post" class="d-inline" data-ajax="true">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="reorder_image">
+                                        <input type="hidden" name="pid" value="{{ product.id }}">
+                                        <input type="hidden" name="image_id" value="{{ img.id }}">
+                                        <input type="hidden" name="direction" value="up">
+                                        <button class="btn btn-outline-secondary btn-sm">أعلى</button>
+                                    </form>
+                                    <form method="post" class="d-inline" data-ajax="true">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="reorder_image">
+                                        <input type="hidden" name="pid" value="{{ product.id }}">
+                                        <input type="hidden" name="image_id" value="{{ img.id }}">
+                                        <input type="hidden" name="direction" value="down">
+                                        <button class="btn btn-outline-secondary btn-sm">أسفل</button>
+                                    </form>
+                                    <div class="mt-2">
+                                        <form method="post" class="d-flex" data-ajax="true">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="assign_image_color">
+                                            <input type="hidden" name="pid" value="{{ product.id }}">
+                                            <input type="hidden" name="image_id" value="{{ img.id }}">
+                                            <select name="color_id" class="form-select form-select-sm me-2">
+                                                <option value="">بدون لون</option>
+                                                {% for c in color_attrs %}
+                                                    <option value="{{ c.id }}" {% if img.color_attr and img.color_attr.id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button class="btn btn-outline-primary btn-sm">ربط لون</button>
+                                        </form>
+                                    </div>
+                                    <form method="post" class="mt-2" data-ajax="true" onsubmit="return confirm('حذف هذه الصورة؟')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="remove_image">
+                                        <input type="hidden" name="pid" value="{{ product.id }}">
+                                        <input type="hidden" name="image_id" value="{{ img.id }}">
+                                        <button class="btn btn-danger btn-sm"><i class="fas fa-trash me-1"></i>حذف</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12"><p class="text-muted">لا توجد صور حالياً.</p></div>
+                        {% endfor %}
                     </div>
                     {% endif %}
                 </div>
@@ -273,10 +413,54 @@
     box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
 }
 
-.alert-info {
-    border: none;
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-    color: white;
-}
+.alert-info { border: none; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; }
+.ajax-error-toast { position: fixed; bottom: 20px; left: 20px; z-index: 1055; }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('form[data-ajax="true"]').forEach(function(form){
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch(form.action || window.location.href, { method: form.method || 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(resp){
+                if (resp.ok || (resp.status >= 300 && resp.status < 400)) { window.location.reload(); return; }
+                return resp.text().then(function(text){
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-danger ajax-error-toast';
+                    alert.innerHTML = 'فشل الحفظ (' + resp.status + '): ' + (text || 'خطأ غير معروف');
+                    document.body.appendChild(alert);
+                    setTimeout(function(){ alert.remove(); }, 6000);
+                });
+            }).catch(function(err){
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger ajax-error-toast';
+                alert.textContent = 'تعذر الإرسال: ' + err;
+                document.body.appendChild(alert);
+                setTimeout(function(){ alert.remove(); }, 6000);
+            });
+        });
+    });
+
+    const form = document.getElementById('generateVariantsForm');
+    if (form) {
+        form.addEventListener('submit', function(e){
+            const selectedColors = Array.from(form.querySelectorAll('input[name="color_ids"]:checked')).map(function(x){ return parseInt(x.value); });
+            const selectedSizes = Array.from(form.querySelectorAll('input[name="size_ids"]:checked')).map(function(x){ return parseInt(x.value); });
+            const existingColors = {{ existing_color_ids|default:"[]"|safe }};
+            const existingSizes = {{ existing_size_ids|default:"[]"|safe }};
+            const removedColors = existingColors.filter(function(x){ return selectedColors.indexOf(x) === -1; });
+            const removedSizes = existingSizes.filter(function(x){ return selectedSizes.indexOf(x) === -1; });
+            if (removedColors.length > 0 || removedSizes.length > 0) {
+                e.preventDefault();
+                const msg = 'إزالة خصائص قد تؤثر على المتغيرات الحالية. متابعة؟';
+                if (confirm(msg)) {
+                    form.removeEventListener('submit', arguments.callee);
+                    form.submit();
+                }
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

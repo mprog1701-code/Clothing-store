@@ -205,10 +205,12 @@ class ProductColor(models.Model):
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
     color = models.ForeignKey('ProductColor', on_delete=models.CASCADE, related_name='images', null=True, blank=True)
+    color_attr = models.ForeignKey('AttributeColor', on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     variant = models.ForeignKey('ProductVariant', on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
     is_main = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
     
     def __str__(self):
         return f"Image for {self.product.name}"

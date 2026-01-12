@@ -32,11 +32,49 @@
                     {% endif %}
 
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0">إدارة المنتجات</h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#filtersPanel" aria-controls="filtersPanel">
+                                <i class="fas fa-filter me-2"></i>
+                                تصفية وبحث
+                            </button>
+                            {% if q %}
+                                <span class="badge bg-light text-dark">بحث: {{ q }}</span>
+                            {% endif %}
+                        </div>
                         <a href="{% url 'super_owner_add_product' %}" class="btn btn-success">
                             <i class="fas fa-plus me-2"></i>
                             إضافة منتج جديد
                         </a>
+                    </div>
+
+                    <div class="offcanvas offcanvas-end" tabindex="-1" id="filtersPanel" aria-labelledby="filtersPanelLabel">
+                        <div class="offcanvas-header">
+                            <h5 id="filtersPanelLabel">تصفية المنتجات</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                        </div>
+                        <div class="offcanvas-body">
+                            <form method="get" class="mb-3">
+                                <div class="mb-3">
+                                    <label class="form-label">بحث سريع بالاسم أو المتجر</label>
+                                    <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="اكتب اسم المنتج أو المتجر">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">الترتيب</label>
+                                    <select name="sort" class="form-select">
+                                        <option value="new" {% if sort == 'new' %}selected{% endif %}>الأحدث</option>
+                                        <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>السعر تصاعدي</option>
+                                        <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>السعر تنازلي</option>
+                                        <option value="active" {% if sort == 'active' %}selected{% endif %}>نشط أولاً</option>
+                                        <option value="variants_desc" {% if sort == 'variants_desc' %}selected{% endif %}>أكثر متغيرات</option>
+                                    </select>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button class="btn btn-primary" type="submit"><i class="fas fa-check me-2"></i>تطبيق</button>
+                                    <a href="{% url 'super_owner_products' %}" class="btn btn-outline-secondary">إعادة ضبط</a>
+                                </div>
+                            </form>
+                            <p class="text-muted">الحقول واضحة ومجمّعة لتسريع العمل.</p>
+                        </div>
                     </div>
 
                     <div class="table-responsive">
@@ -47,9 +85,10 @@
                                     <th>المنتج</th>
                                     <th>المتجر</th>
                                     <th>السعر</th>
+                                    <th>عدد المتغيرات</th>
+                                    <th>إجمالي المخزون</th>
                                     <th>الفئة</th>
                                     <th>الحالة</th>
-                                    <th>مميز</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
@@ -97,9 +136,12 @@
                                     </td>
                                     <td>
                                         <strong>{{ product.base_price|iqd }}</strong>
-                                        {% if product.variants.count > 1 %}
-                                            <br><small class="text-muted">+ {{ product.variants.count|add:"-1" }} متغيرات</small>
-                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info text-dark">{{ product.variants_count|default:0 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ product.total_stock|default:0 }}</span>
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary">{{ product.get_category_display }}</span>
@@ -118,23 +160,24 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if product.is_featured %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="fas fa-star me-1"></i>
-                                                مميز
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-light text-dark">
-                                                <i class="far fa-star me-1"></i>
-                                                عادي
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
                                         <div class="btn-group" role="group">
                                             <a href="{% url 'super_owner_edit_product' product.id %}" class="btn btn-primary btn-table-action" title="تعديل">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=variants" class="btn btn-outline-primary btn-table-action" title="المتغيرات">
+                                                <i class="fas fa-ruler-combined"></i>
+                                            </a>
+                                            <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images" class="btn btn-outline-secondary btn-table-action" title="الصور">
+                                                <i class="fas fa-images"></i>
+                                            </a>
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                <input type="hidden" name="action" value="duplicate">
+                                                <button type="submit" class="btn btn-outline-info btn-table-action" title="نسخ">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </form>
                                             
                                             {% if product.is_featured %}
                                                 <form method="post" class="d-inline">
@@ -176,7 +219,7 @@
                                                 </form>
                                             {% endif %}
                                             
-                                            <form method="post" class="d-inline">
+                                            <form method="post" class="d-inline" data-ajax="true">
                                                 {% csrf_token %}
                                                 <input type="hidden" name="product_id" value="{{ product.id }}">
                                                 <input type="hidden" name="action" value="delete">
@@ -189,7 +232,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="8" class="text-center py-4">
+                                    <td colspan="9" class="text-center py-4">
                                         <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
                                         <p class="text-muted">لا يوجد منتجات حتى الآن</p>
                                     </td>
@@ -198,6 +241,25 @@
                             </tbody>
                         </table>
                     </div>
+                    <nav aria-label="Page navigation" class="mt-3">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item"><a class="page-link" href="?q={{ q }}&sort={{ sort }}&page=1">الأولى</a></li>
+                                <li class="page-item"><a class="page-link" href="?q={{ q }}&sort={{ sort }}&page={{ page_obj.previous_page_number }}">السابق</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">الأولى</span></li>
+                                <li class="page-item disabled"><span class="page-link">السابق</span></li>
+                            {% endif %}
+                            <li class="page-item active"><span class="page-link">صفحة {{ page_obj.number }} من {{ paginator.num_pages }}</span></li>
+                            {% if page_obj.has_next %}
+                                <li class="page-item"><a class="page-link" href="?q={{ q }}&sort={{ sort }}&page={{ page_obj.next_page_number }}">التالي</a></li>
+                                <li class="page-item"><a class="page-link" href="?q={{ q }}&sort={{ sort }}&page={{ paginator.num_pages }}">الأخيرة</a></li>
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">التالي</span></li>
+                                <li class="page-item disabled"><span class="page-link">الأخيرة</span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
@@ -227,4 +289,35 @@
     padding: 0.4em 0.6em;
 }
 </style>
+<style>
+.btn-table-action { min-width: 36px; }
+.ajax-error-toast { position: fixed; bottom: 20px; left: 20px; z-index: 1055; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form[data-ajax="true"]').forEach(function(form){
+        form.addEventListener('submit', function(e){
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch(form.action || window.location.href, { method: form.method || 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(resp){
+                if (resp.ok || (resp.status >= 300 && resp.status < 400)) { window.location.reload(); return; }
+                return resp.text().then(function(text){
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-danger ajax-error-toast';
+                    alert.innerHTML = 'فشل الحفظ (' + resp.status + '): ' + (text || 'خطأ غير معروف');
+                    document.body.appendChild(alert);
+                    setTimeout(function(){ alert.remove(); }, 6000);
+                });
+            }).catch(function(err){
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger ajax-error-toast';
+                alert.textContent = 'تعذر الإرسال: ' + err;
+                document.body.appendChild(alert);
+                setTimeout(function(){ alert.remove(); }, 6000);
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

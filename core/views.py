@@ -2402,7 +2402,28 @@ def super_owner_products(request):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
-    products = Product.objects.all().order_by('-created_at')
+    from django.core.paginator import Paginator
+    from django.db.models import Count, Sum
+    q = (request.GET.get('q') or '').strip()
+    sort = (request.GET.get('sort') or 'new').strip()
+    page = int((request.GET.get('page') or '1') or 1)
+    base_qs = Product.objects.select_related('store').prefetch_related('images')
+    if q:
+        from django.db.models import Q
+        base_qs = base_qs.filter(Q(name__icontains=q) | Q(store__name__icontains=q))
+    base_qs = base_qs.annotate(variants_count=Count('variants'), total_stock=Sum('variants__stock_qty'))
+    if sort == 'price_asc':
+        base_qs = base_qs.order_by('base_price')
+    elif sort == 'price_desc':
+        base_qs = base_qs.order_by('-base_price')
+    elif sort == 'active':
+        base_qs = base_qs.order_by('-is_active', '-created_at')
+    elif sort == 'variants_desc':
+        base_qs = base_qs.order_by('-variants_count', '-created_at')
+    else:
+        base_qs = base_qs.order_by('-created_at')
+    paginator = Paginator(base_qs, 20)
+    products_page = paginator.get_page(page)
     
     if request.method == 'POST':
         product_id = request.POST.get('product_id')
@@ -2426,6 +2447,42 @@ def super_owner_products(request):
             product.is_active = False
             product.save()
             messages.success(request, f'تم تعطيل المنتج {product.name}!')
+        elif action == 'duplicate':
+            from django.db import transaction
+            with transaction.atomic():
+                new_product = Product.objects.create(
+                    store=product.store,
+                    name=f"{product.name} - نسخة",
+                    description=product.description,
+                    base_price=product.base_price,
+                    discount_price=product.discount_price,
+                    category=product.category,
+                    size_type=product.size_type,
+                    is_active=False,
+                    is_featured=False,
+                )
+                for img in product.images.all():
+                    ProductImage.objects.create(
+                        product=new_product,
+                        image=img.image,
+                        image_url=img.image_url,
+                        is_main=False,
+                        color=img.color,
+                        color_attr=getattr(img, 'color_attr', None),
+                        order=img.order,
+                    )
+                for v in product.variants.all():
+                    ProductVariant.objects.create(
+                        product=new_product,
+                        color_obj=v.color_obj,
+                        color_attr=getattr(v, 'color_attr', None),
+                        size=v.size,
+                        size_attr=getattr(v, 'size_attr', None),
+                        stock_qty=v.stock_qty,
+                        price_override=v.price_override,
+                        is_enabled=False,
+                    )
+            messages.success(request, f'تم إنشاء نسخة من المنتج {product.name}!')
         elif action == 'delete':
             product_name = product.name
             product.delete()
@@ -2434,7 +2491,11 @@ def super_owner_products(request):
         return redirect('super_owner_products')
     
     context = {
-        'products': products,
+        'products': products_page,
+        'page_obj': products_page,
+        'paginator': paginator,
+        'q': q,
+        'sort': sort,
     }
     return render(request, 'dashboard/super_owner/products.html', context)
 
@@ -2548,6 +2609,78 @@ def super_owner_add_product(request):
             messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً')
             return redirect(f"{request.path}?pid={product.id}&step=variants")
 
+        elif action == 'bulk_qty_color':
+            pid = request.POST.get('pid')
+            color_id = request.POST.get('color_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            try:
+                qty = int(request.POST.get('qty') or 0)
+            except ValueError:
+                qty = 0
+            ProductVariant.objects.filter(product=product, color_attr_id=int(color_id)).update(stock_qty=qty)
+            messages.success(request, 'تم تحديث الكمية حسب اللون')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'bulk_qty_size':
+            pid = request.POST.get('pid')
+            size_id = request.POST.get('size_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            try:
+                qty = int(request.POST.get('qty') or 0)
+            except ValueError:
+                qty = 0
+            ProductVariant.objects.filter(product=product, size_attr_id=int(size_id)).update(stock_qty=qty)
+            messages.success(request, 'تم تحديث الكمية حسب المقاس')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'bulk_price_color':
+            pid = request.POST.get('pid')
+            color_id = request.POST.get('color_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            from decimal import Decimal, InvalidOperation
+            raw = (request.POST.get('price') or '').strip()
+            price = None
+            if raw:
+                try:
+                    price = Decimal(raw)
+                except InvalidOperation:
+                    price = None
+            ProductVariant.objects.filter(product=product, color_attr_id=int(color_id)).update(price_override=price)
+            messages.success(request, 'تم تحديث السعر حسب اللون')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'bulk_price_size':
+            pid = request.POST.get('pid')
+            size_id = request.POST.get('size_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            from decimal import Decimal, InvalidOperation
+            raw = (request.POST.get('price') or '').strip()
+            price = None
+            if raw:
+                try:
+                    price = Decimal(raw)
+                except InvalidOperation:
+                    price = None
+            ProductVariant.objects.filter(product=product, size_attr_id=int(size_id)).update(price_override=price)
+            messages.success(request, 'تم تحديث السعر حسب المقاس')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
         elif action == 'bulk_qty':
             pid = request.POST.get('pid')
             try:
@@ -2625,12 +2758,120 @@ def super_owner_add_product(request):
             messages.success(request, 'تم تحديث المتغير')
             return redirect(f"{request.path}?pid={product.id}&step=variants")
 
+        elif action == 'upload_images':
+            pid = request.POST.get('pid')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            files = request.FILES.getlist('images')
+            max_order = product.images.aggregate(m=models.Max('order')).get('m') or 0
+            for idx, f in enumerate(files):
+                try:
+                    ProductImage.objects.create(product=product, image=f, is_main=False, order=max_order+idx+1)
+                except Exception:
+                    messages.error(request, 'فشل رفع صورة')
+            messages.success(request, 'تم رفع الصور')
+            return redirect(f"{request.path}?pid={product.id}&step=images")
+
+        elif action == 'set_main_image':
+            pid = request.POST.get('pid')
+            image_id = request.POST.get('image_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+                img = ProductImage.objects.get(id=int(image_id), product=product)
+            except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'الصورة غير موجودة')
+                return redirect('super_owner_add_product')
+            product.images.update(is_main=False)
+            img.is_main = True
+            img.save()
+            messages.success(request, 'تم تحديد الصورة الرئيسية')
+            return redirect(f"{request.path}?pid={product.id}&step=images")
+
+        elif action == 'assign_image_color':
+            pid = request.POST.get('pid')
+            image_id = request.POST.get('image_id')
+            color_id = request.POST.get('color_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+                img = ProductImage.objects.get(id=int(image_id), product=product)
+            except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'الصورة غير موجودة')
+                return redirect('super_owner_add_product')
+            try:
+                cid = int(color_id)
+            except (ValueError, TypeError):
+                cid = None
+            img.color_attr_id = cid
+            img.save()
+            messages.success(request, 'تم ربط الصورة باللون')
+            return redirect(f"{request.path}?pid={product.id}&step=images")
+
+        elif action == 'reorder_image':
+            pid = request.POST.get('pid')
+            image_id = request.POST.get('image_id')
+            direction = (request.POST.get('direction') or 'up').strip()
+            try:
+                product = Product.objects.get(id=int(pid))
+                img = ProductImage.objects.get(id=int(image_id), product=product)
+            except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'الصورة غير موجودة')
+                return redirect('super_owner_add_product')
+            if direction == 'up':
+                img.order = max(0, img.order - 1)
+            else:
+                img.order = img.order + 1
+            img.save()
+            messages.success(request, 'تم تعديل ترتيب الصورة')
+            return redirect(f"{request.path}?pid={product.id}&step=images")
+
+        elif action == 'remove_image':
+            pid = request.POST.get('pid')
+            image_id = request.POST.get('image_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+                img = ProductImage.objects.get(id=int(image_id), product=product)
+            except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'الصورة غير موجودة')
+                return redirect('super_owner_add_product')
+            img.delete()
+            messages.success(request, 'تم حذف الصورة')
+            return redirect(f"{request.path}?pid={product.id}&step=images")
+
     product = None
     variants = []
     if pid and pid.isdigit():
         product = Product.objects.filter(id=int(pid)).first()
         if product:
             variants = list(ProductVariant.objects.filter(product=product).select_related('color_attr', 'size_attr'))
+    color_attrs = []
+    size_attrs = []
+    variant_map = {}
+    existing_color_ids = []
+    existing_size_ids = []
+    variant_grid = []
+    if variants:
+        color_attrs = sorted({v.color_attr for v in variants if v.color_attr})
+        size_attrs = sorted({v.size_attr for v in variants if v.size_attr}, key=lambda x: x.order)
+        existing_color_ids = [c.id for c in color_attrs]
+        existing_size_ids = [s.id for s in size_attrs]
+        for v in variants:
+            if v.color_attr_id and v.size_attr_id:
+                if v.color_attr_id not in variant_map:
+                    variant_map[v.color_attr_id] = {}
+                variant_map[v.color_attr_id][v.size_attr_id] = v
+        for c in color_attrs:
+            row_cells = []
+            for s in size_attrs:
+                vv = None
+                try:
+                    vv = variant_map.get(c.id, {}).get(s.id)
+                except Exception:
+                    vv = None
+                row_cells.append({'size': s, 'variant': vv})
+            variant_grid.append({'color': c, 'cells': row_cells})
 
     if AttributeSize.objects.count() == 0:
         for idx, n in enumerate(['XS','S','M','L','XL','XXL','3XL','4XL']):
@@ -2647,6 +2888,13 @@ def super_owner_add_product(request):
         'colors': list(AttributeColor.objects.all()),
         'sizes': list(AttributeSize.objects.all()),
         'variants': variants,
+        'color_attrs': color_attrs,
+        'size_attrs': size_attrs,
+        'variant_map': variant_map,
+        'variant_grid': variant_grid,
+        'existing_color_ids': existing_color_ids,
+        'existing_size_ids': existing_size_ids,
+        'images': list(product.images.order_by('order', '-is_main')) if product else [],
     }
     return render(request, 'dashboard/super_owner/add_product.html', context)
 
