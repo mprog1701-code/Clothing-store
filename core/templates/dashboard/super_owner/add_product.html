@@ -115,7 +115,7 @@
                     {% endif %}
 
                     {% if product and step == 'attributes' %}
-                    <form method="post" data-ajax="true" id="generateVariantsForm">
+                    <form method="post" id="generateVariantsForm">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="generate_variants">
                         <input type="hidden" name="pid" value="{{ product.id }}">
@@ -126,7 +126,7 @@
                                     {% for c in colors %}
                                     <div class="col-6">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="color_ids" id="color{{ c.id }}" value="{{ c.id }}">
+                                            <input class="form-check-input" type="checkbox" name="color_ids" id="color{{ c.id }}" value="{{ c.id }}" {% if existing_color_ids and c.id in existing_color_ids %}checked{% endif %}>
                                             <label class="form-check-label" for="color{{ c.id }}">{{ c.name }}</label>
                                         </div>
                                     </div>
@@ -140,7 +140,7 @@
                                     {% for s in sizes %}
                                     <div class="col-6">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="size_ids" id="size{{ s.id }}" value="{{ s.id }}">
+                                            <input class="form-check-input" type="checkbox" name="size_ids" id="size{{ s.id }}" value="{{ s.id }}" {% if existing_size_ids and s.id in existing_size_ids %}checked{% endif %}>
                                             <label class="form-check-label" for="size{{ s.id }}">{{ s.name }}</label>
                                         </div>
                                     </div>
@@ -150,6 +150,7 @@
                             </div>
                         </div>
                         <hr>
+                        <p class="text-muted">اختر الألوان والمقاسات ثم اضغط "توليد المتغيرات تلقائياً". سيتم نقلك إلى تبويب "المتغيرات" حيث تظهر شبكة المتغيرات للتحرير السريع.</p>
                         <div class="row g-3">
                             <div class="col-md-3">
                                 <label class="form-label">كمية افتراضية</label>
