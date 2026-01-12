@@ -30,258 +30,222 @@
                         {% endfor %}
                     {% endif %}
 
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="#">معلومات المنتج</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}" href="#">الخصائص</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'variants' %}active{% endif %}" href="#">المتغيرات</a></li>
+                    </ul>
+
+                    {% if step == 'info' %}
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+                        <input type="hidden" name="action" value="create_product">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="name" class="form-label">اسم المنتج *</label>
+                                    <label for="name" class="form-label">اسم المنتج</label>
                                     <input type="text" class="form-control" id="name" name="name" required>
+                                    <small class="text-muted">اسم واضح وقابل للبحث</small>
                                 </div>
-                                
                                 <div class="mb-3">
-                                    <label for="store" class="form-label">المتجر *</label>
+                                    <label for="store" class="form-label">المتجر</label>
                                     <select class="form-select" id="store" name="store" required>
                                         <option value="">اختر المتجر</option>
                                         {% for store in stores %}
                                             <option value="{{ store.id }}" {% if selected_store_id == store.id %}selected{% endif %}>{{ store.name }}</option>
                                         {% endfor %}
                                     </select>
+                                    <small class="text-muted">المتجر الذي يملك المنتج</small>
                                 </div>
-                                
                                 <div class="mb-3">
-                                    <label for="category" class="form-label">الفئة *</label>
+                                    <label for="category" class="form-label">الفئة</label>
                                     <select class="form-select" id="category" name="category" required>
                                         <option value="">اختر الفئة</option>
-                                        <option value="clothing">ملابس</option>
+                                        <option value="men">رجالي</option>
+                                        <option value="women">نسائي</option>
+                                        <option value="kids">أطفال</option>
                                         <option value="shoes">أحذية</option>
                                         <option value="accessories">إكسسوارات</option>
-                                        <option value="bags">حقائب</option>
-                                        <option value="jewelry">مجوهرات</option>
                                     </select>
                                 </div>
-                                
                                 <div class="mb-3">
-                                    <label for="size_type" class="form-label">نوع القياس *</label>
+                                    <label for="size_type" class="form-label">نوع القياس</label>
                                     <select class="form-select" id="size_type" name="size_type" required>
-                                        <option value="symbolic" selected>رمزية (XS, S, M ...)</option>
-                                        <option value="numeric">رقمية (38, 40, 42 ...)</option>
-                                        <option value="none">بدون قياس</option>
+                                        <option value="symbolic" selected>رمزية</option>
+                                        <option value="numeric">رقمية</option>
+                                        <option value="none">بدون</option>
                                     </select>
+                                    <small class="text-muted">يحدد صلاحية المقاسات</small>
                                 </div>
-                                
                                 <div class="mb-3">
-                                    <label for="base_price" class="form-label">السعر الأساسي *</label>
-                                    <input type="number" class="form-control" id="base_price" name="base_price" 
-                                           min="0" step="0.01" required>
+                                    <label for="base_price" class="form-label">السعر الأساسي</label>
+                                    <input type="number" class="form-control" id="base_price" name="base_price" min="0" step="0.01" required>
                                 </div>
-                                
                                 <div class="mb-3">
-                                    <label for="description" class="form-label">وصف المنتج *</label>
-                                    <textarea class="form-control" id="description" name="description" 
-                                              rows="4" required></textarea>
+                                    <label for="description" class="form-label">الوصف</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
                                 </div>
                             </div>
-                            
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="images" class="form-label">صور المنتج</label>
-                                    <input type="file" class="form-control" id="images" name="images" 
-                                           multiple accept="image/*">
-                                    <small class="text-muted">يمكنك اختيار عدة صور في نفس الوقت</small>
+                                    <input type="file" class="form-control" id="images" name="images" multiple accept="image/*">
+                                    <small class="text-muted">يمكنك رفع عدة صور</small>
                                 </div>
-                                
                                 <div class="mb-3">
                                     <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="is_active" 
-                                               name="is_active" checked>
-                                        <label class="form-check-label" for="is_active">
-                                            تفعيل المنتج فوراً
-                                        </label>
+                                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
+                                        <label class="form-check-label" for="is_active">تفعيل المنتج فوراً</label>
                                     </div>
                                 </div>
-                                
                                 <div class="mb-3">
                                     <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="is_featured" 
-                                               name="is_featured">
-                                        <label class="form-check-label" for="is_featured">
-                                            تمييز المنتج كمنتج مميز
-                                        </label>
+                                        <input type="checkbox" class="form-check-input" id="is_featured" name="is_featured">
+                                        <label class="form-check-label" for="is_featured">تمييز المنتج</label>
                                     </div>
                                 </div>
-                                
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    <strong>ملاحظة:</strong> يمكنك إضافة الألوان والصور والمتغيرات هنا مباشرة.
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-12">
-                                <hr>
                                 <div class="d-flex justify-content-between">
-                                    <button type="submit" class="btn btn-success">
-                                        <i class="fas fa-plus me-2"></i>
-                                        إنشاء المنتج
-                                    </button>
-                                    <a href="{% url 'super_owner_products' %}" class="btn btn-secondary">
-                                        <i class="fas fa-times me-2"></i>
-                                        إلغاء
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <hr>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <h5 class="mb-3"><i class="fas fa-palette me-2"></i>الألوان</h5>
-                                <input type="hidden" name="colors_count" value="3">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">اسم اللون 1</label>
-                                        <input type="text" name="color_name_1" class="form-control">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">كود اللون 1 (اختياري)</label>
-                                        <input type="text" name="color_code_1" class="form-control" placeholder="#000000">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">صورة اللون 1 (اختياري)</label>
-                                        <input type="file" name="color_image_1" class="form-control" accept="image/*">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-2">
-                                    <div class="col-md-4">
-                                        <label class="form-label">اسم اللون 2</label>
-                                        <input type="text" name="color_name_2" class="form-control">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">كود اللون 2 (اختياري)</label>
-                                        <input type="text" name="color_code_2" class="form-control" placeholder="#000000">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">صورة اللون 2 (اختياري)</label>
-                                        <input type="file" name="color_image_2" class="form-control" accept="image/*">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-2">
-                                    <div class="col-md-4">
-                                        <label class="form-label">اسم اللون 3</label>
-                                        <input type="text" name="color_name_3" class="form-control">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">كود اللون 3 (اختياري)</label>
-                                        <input type="text" name="color_code_3" class="form-control" placeholder="#000000">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">صورة اللون 3 (اختياري)</label>
-                                        <input type="file" name="color_image_3" class="form-control" accept="image/*">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <h5 class="mb-3"><i class="fas fa-ruler-combined me-2"></i>المتغيرات (المقاس/اللون/الكمية)</h5>
-                                <input type="hidden" name="variants_count" value="5">
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label">المقاس 1</label>
-                                        <input type="text" name="variant_size_1" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">اللون 1</label>
-                                        <input type="text" name="variant_color_1" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">الكمية 1</label>
-                                        <input type="number" name="variant_stock_1" class="form-control" min="0" value="0">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">سعر خاص 1 (اختياري)</label>
-                                        <input type="number" name="variant_price_1" class="form-control" step="0.01" min="0">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-2">
-                                    <div class="col-md-3">
-                                        <label class="form-label">المقاس 2</label>
-                                        <input type="text" name="variant_size_2" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">اللون 2</label>
-                                        <input type="text" name="variant_color_2" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">الكمية 2</label>
-                                        <input type="number" name="variant_stock_2" class="form-control" min="0" value="0">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">سعر خاص 2 (اختياري)</label>
-                                        <input type="number" name="variant_price_2" class="form-control" step="0.01" min="0">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-2">
-                                    <div class="col-md-3">
-                                        <label class="form-label">المقاس 3</label>
-                                        <input type="text" name="variant_size_3" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">اللون 3</label>
-                                        <input type="text" name="variant_color_3" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">الكمية 3</label>
-                                        <input type="number" name="variant_stock_3" class="form-control" min="0" value="0">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">سعر خاص 3 (اختياري)</label>
-                                        <input type="number" name="variant_price_3" class="form-control" step="0.01" min="0">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-2">
-                                    <div class="col-md-3">
-                                        <label class="form-label">المقاس 4</label>
-                                        <input type="text" name="variant_size_4" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">اللون 4</label>
-                                        <input type="text" name="variant_color_4" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">الكمية 4</label>
-                                        <input type="number" name="variant_stock_4" class="form-control" min="0" value="0">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">سعر خاص 4 (اختياري)</label>
-                                        <input type="number" name="variant_price_4" class="form-control" step="0.01" min="0">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-2">
-                                    <div class="col-md-3">
-                                        <label class="form-label">المقاس 5</label>
-                                        <input type="text" name="variant_size_5" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">اللون 5</label>
-                                        <input type="text" name="variant_color_5" class="form-control">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">الكمية 5</label>
-                                        <input type="number" name="variant_stock_5" class="form-control" min="0" value="0">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">سعر خاص 5 (اختياري)</label>
-                                        <input type="number" name="variant_price_5" class="form-control" step="0.01" min="0">
-                                    </div>
+                                    <button type="submit" class="btn btn-success"><i class="fas fa-plus me-2"></i>إنشاء المنتج</button>
+                                    <a href="{% url 'super_owner_products' %}" class="btn btn-secondary"><i class="fas fa-times me-2"></i>إلغاء</a>
                                 </div>
                             </div>
                         </div>
                     </form>
+                    {% endif %}
+
+                    {% if product and step == 'attributes' %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="generate_variants">
+                        <input type="hidden" name="pid" value="{{ product.id }}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">الألوان</label>
+                                <div class="row g-2">
+                                    {% for c in colors %}
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="color_ids" id="color{{ c.id }}" value="{{ c.id }}">
+                                            <label class="form-check-label" for="color{{ c.id }}">{{ c.name }}</label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <small class="text-muted">تعريف الألوان مرة واحدة وقابلة لإعادة الاستخدام</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">المقاسات</label>
+                                <div class="row g-2">
+                                    {% for s in sizes %}
+                                    <div class="col-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="size_ids" id="size{{ s.id }}" value="{{ s.id }}">
+                                            <label class="form-check-label" for="size{{ s.id }}">{{ s.name }}</label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <small class="text-muted">المقاسات معرفة مسبقاً وقابلة لإعادة الاستخدام</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">كمية افتراضية</label>
+                                <input type="number" class="form-control" name="default_qty" min="0" value="0">
+                                <small class="text-muted">تطبق على كل المتغيرات الجديدة</small>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">سعر خاص افتراضي</label>
+                                <input type="number" class="form-control" name="default_price" step="0.01" min="0">
+                                <small class="text-muted">اختياري</small>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="enable_all" id="enable_all">
+                                    <label class="form-check-label" for="enable_all">تفعيل كل المتغيرات</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end justify-content-end">
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-bolt me-2"></i>توليد المتغيرات تلقائياً</button>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                    {% if product and step == 'variants' %}
+                    <div class="mb-3">
+                        <form method="post" class="d-inline-block me-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_qty">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="input-group">
+                                <span class="input-group-text">كمية</span>
+                                <input type="number" class="form-control" name="qty" min="0" value="0">
+                                <button class="btn btn-outline-primary">تحديث الكل</button>
+                            </div>
+                        </form>
+                        <form method="post" class="d-inline-block me-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_price">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="input-group">
+                                <span class="input-group-text">سعر خاص</span>
+                                <input type="number" class="form-control" name="price" step="0.01" min="0">
+                                <button class="btn btn-outline-primary">تحديث الكل</button>
+                            </div>
+                        </form>
+                        <form method="post" class="d-inline-block">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="bulk_status">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="btn-group">
+                                <button class="btn btn-outline-success" name="status" value="enable">تفعيل الكل</button>
+                                <button class="btn btn-outline-secondary" name="status" value="disable">تعطيل الكل</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>اللون</th>
+                                    <th>المقاس</th>
+                                    <th>الكمية</th>
+                                    <th>سعر خاص</th>
+                                    <th>الحالة</th>
+                                    <th>إجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for v in variants %}
+                                <tr>
+                                    <form method="post" class="d-flex w-100 align-items-center">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="update_variant_row">
+                                        <input type="hidden" name="pid" value="{{ product.id }}">
+                                        <input type="hidden" name="variant_id" value="{{ v.id }}">
+                                        <td>{{ v.color }}</td>
+                                        <td>{{ v.size_display }}</td>
+                                        <td style="min-width:140px;"><input type="number" name="stock_qty" class="form-control" value="{{ v.stock_qty }}" min="0"></td>
+                                        <td style="min-width:160px;"><input type="number" name="price_override" class="form-control" step="0.01" min="0" value="{{ v.price_override|default_if_none:'' }}"></td>
+                                        <td>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="is_enabled" id="en{{ v.id }}" {% if v.is_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="en{{ v.id }}">نشط</label>
+                                            </div>
+                                        </td>
+                                        <td class="text-nowrap"><button class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>تحديث</button></td>
+                                    </form>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="6" class="text-muted">لا توجد متغيرات بعد. انتقل لعلامة الخصائص لتوليدها.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

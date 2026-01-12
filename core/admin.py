@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem, SiteSettings, Campaign, ProductColor
+from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem, SiteSettings, Campaign, ProductColor, AttributeColor, AttributeSize
 
 
 @admin.register(User)
@@ -32,7 +32,7 @@ class ProductColorInline(admin.TabularInline):
     extra = 0
     fields = ['name', 'code']
 
-ProductAdmin.inlines = [ProductColorInline]
+ProductAdmin.inlines = []
 
 @admin.register(ProductColor)
 class ProductColorAdmin(admin.ModelAdmin):
@@ -57,9 +57,21 @@ class ProductImageAdmin(admin.ModelAdmin):
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ['product', 'color_obj', 'size', 'stock_qty', 'price_override']
-    list_filter = ['size', 'color_obj']
+    list_display = ['product', 'color_attr', 'size_attr', 'size', 'stock_qty', 'price_override', 'is_enabled']
+    list_filter = ['size', 'color_attr', 'size_attr', 'is_enabled']
     search_fields = ['product__name']
+
+
+@admin.register(AttributeColor)
+class AttributeColorAdmin(admin.ModelAdmin):
+    list_display = ['name', 'code']
+    search_fields = ['name', 'code']
+
+
+@admin.register(AttributeSize)
+class AttributeSizeAdmin(admin.ModelAdmin):
+    list_display = ['name', 'order']
+    search_fields = ['name']
 
 
 @admin.register(Address)

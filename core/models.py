@@ -170,6 +170,26 @@ class Product(models.Model):
         return self.images.filter(is_main=True).first()
 
 
+class AttributeColor(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=7, blank=True)
+    image = models.ImageField(upload_to='attributes/colors/', blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+
+class AttributeSize(models.Model):
+    name = models.CharField(max_length=20, unique=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
 class ProductColor(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='colors')
     name = models.CharField(max_length=50)
@@ -221,8 +241,11 @@ class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
     color_obj = models.ForeignKey('ProductColor', on_delete=models.CASCADE, related_name='variants', null=True, blank=True)
     size = models.CharField(max_length=20)
+    color_attr = models.ForeignKey('AttributeColor', on_delete=models.CASCADE, related_name='variants', null=True, blank=True)
+    size_attr = models.ForeignKey('AttributeSize', on_delete=models.CASCADE, related_name='variants', null=True, blank=True)
     stock_qty = models.IntegerField(validators=[MinValueValidator(0)])
     price_override = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    is_enabled = models.BooleanField(default=True)
 
     class Meta:
         constraints = [
@@ -233,24 +256,31 @@ class ProductVariant(models.Model):
         if self.color_obj and self.product and self.color_obj.product_id != self.product_id:
             raise ValidationError('اللون لا ينتمي إلى نفس المنتج')
         if self.product_id:
+            if self.color_attr is None and self.color_obj is None:
+                raise ValidationError({'color': 'يجب تحديد لون'})
+            if self.size_attr is None and not self.size:
+                raise ValidationError({'size': 'يجب تحديد قياس'})
             st = self.product.size_type
             if st == 'symbolic':
-                allowed = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
-                if self.size not in allowed:
-                    raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
+                if self.size_attr is None:
+                    allowed = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
+                    if self.size not in allowed:
+                        raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
             elif st == 'numeric':
-                allowed = [str(n) for n in range(28, 61, 2)]
-                if self.size not in allowed:
-                    raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
+                if self.size_attr is None:
+                    allowed = [str(n) for n in range(28, 61, 2)]
+                    if self.size not in allowed:
+                        raise ValidationError({'size': 'المقاس غير صالح لهذا المنتج'})
             elif st == 'none':
-                self.size = 'ONE'
+                if self.size_attr is None:
+                    self.size = 'ONE'
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.product.name} - {self.size} - {self.color}"
+        return f"{self.product.name} - {self.size_display} - {self.color}"
 
     @property
     def price(self):
@@ -258,7 +288,15 @@ class ProductVariant(models.Model):
 
     @property
     def color(self):
+        if self.color_attr:
+            return self.color_attr.name
         return self.color_obj.name if self.color_obj else ''
+
+    @property
+    def size_display(self):
+        if self.size_attr:
+            return self.size_attr.name
+        return self.size
 
 
 class Address(models.Model):

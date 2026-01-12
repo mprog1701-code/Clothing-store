@@ -7,6 +7,14 @@
 <div class="container py-4">
   <h1 class="mb-3" style="color: var(--gold);">إدارة الإعلانات</h1>
   <p class="text-muted">أضف إعلانات جديدة أو فعّل/عطّل الإعلانات الحالية. تظهر الإعلانات كشرائح في راية الصفحة الرئيسية.</p>
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-home me-1"></i> الرئيسية
+    </a>
+    <a href="{% url 'super_owner_dashboard' %}" class="btn btn-outline-secondary">
+      <i class="fas fa-tachometer-alt me-1"></i> لوحة التحكم
+    </a>
+  </div>
 
   <div class="card mb-4">
     <div class="card-body">

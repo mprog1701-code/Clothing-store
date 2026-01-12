@@ -181,7 +181,7 @@ def product_detail(request, product_id):
         {
             'id': v.id,
             'color': v.color,
-            'size': v.size,
+            'size': getattr(v, 'size_display', v.size),
             'stock_qty': v.stock_qty,
             'price': float(v.price),
         }
@@ -203,7 +203,7 @@ def product_detail(request, product_id):
             images_by_color[img.variant.color_obj.name].append(url)
     sizes_by_color = {}
     for c in variant_colors:
-        sizes_by_color[c] = sorted({v.size for v in variants if v.color == c})
+        sizes_by_color[c] = sorted({getattr(v, 'size_display', v.size) for v in variants if v.color == c})
     # Determine default variant to initialize UI
     default_variant_dict = None
     try:
@@ -214,7 +214,7 @@ def product_detail(request, product_id):
             default_variant_dict = {
                 'id': default_v.id,
                 'color': default_v.color,
-                'size': default_v.size,
+            'size': getattr(default_v, 'size_display', default_v.size),
                 'stock_qty': default_v.stock_qty,
                 'price': float(default_v.price),
             }
@@ -2444,130 +2444,209 @@ def super_owner_add_product(request):
     if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
-    
+
     stores = Store.objects.all()
     preselect_store = request.GET.get('store')
-    
+    step = (request.GET.get('step') or 'info').strip()
+    pid = request.GET.get('pid')
+
+    from .models import AttributeColor, AttributeSize
+
     if request.method == 'POST':
-        name = request.POST.get('name')
-        store_id = request.POST.get('store')
-        category = request.POST.get('category')
-        base_price = request.POST.get('base_price')
-        description = request.POST.get('description')
-        is_active = request.POST.get('is_active') == 'on'
-        is_featured = request.POST.get('is_featured') == 'on'
-        size_type = (request.POST.get('size_type') or 'symbolic').strip()
-        images = request.FILES.getlist('images')
-        
-        # Validate required fields
-        if not all([name, store_id, category, base_price, description]):
-            messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
-            return redirect('super_owner_add_product')
-        
-        try:
-            store = Store.objects.get(id=store_id)
-            
-            product = Product.objects.create(
-                name=name,
-                store=store,
-                category=category,
-                base_price=base_price,
-                description=description,
-                size_type=size_type,
-                is_active=is_active,
-                is_featured=is_featured
-            )
-            
-            # Handle images
-            if images:
-                for idx, image in enumerate(images):
-                    try:
-                        ProductImage.objects.create(
-                            product=product,
-                            image=image,
-                            is_main=(idx == 0)
-                        )
-                    except Exception:
-                        messages.error(request, 'فشل حفظ إحدى صور المنتج')
-                        return redirect('super_owner_add_product')
-            created_colors = {}
+        action = (request.POST.get('action') or '').strip()
+
+        if action == 'create_product':
+            name = request.POST.get('name')
+            store_id = request.POST.get('store')
+            category = request.POST.get('category')
+            base_price = request.POST.get('base_price')
+            description = request.POST.get('description')
+            is_active = request.POST.get('is_active') == 'on'
+            is_featured = request.POST.get('is_featured') == 'on'
+            size_type = (request.POST.get('size_type') or 'symbolic').strip()
+            images = request.FILES.getlist('images')
+
+            if not all([name, store_id, category, base_price, description]):
+                messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
+                return redirect('super_owner_add_product')
+
             try:
-                colors_count = int(request.POST.get('colors_count') or 0)
-            except (TypeError, ValueError):
-                colors_count = 0
-            if colors_count <= 0:
-                colors_range = range(1, 11)
-            else:
-                colors_range = range(1, colors_count + 1)
-            for i in colors_range:
-                cname = (request.POST.get(f'color_name_{i}') or '').strip()
-                if not cname:
-                    continue
-                ccode = (request.POST.get(f'color_code_{i}') or '').strip()
-                from .models import ProductColor
-                color_obj, _ = ProductColor.objects.get_or_create(product=product, name=cname, defaults={'code': ccode})
-                if ccode and color_obj.code != ccode:
-                    color_obj.code = ccode
-                    color_obj.save()
-                created_colors[cname] = color_obj
-                cimg = request.FILES.get(f'color_image_{i}')
-                if cimg:
-                    ProductImage.objects.create(product=product, color=color_obj, image=cimg)
+                store = Store.objects.get(id=store_id)
+                product = Product.objects.create(
+                    name=name,
+                    store=store,
+                    category=category,
+                    base_price=base_price,
+                    description=description,
+                    size_type=size_type,
+                    is_active=is_active,
+                    is_featured=is_featured
+                )
+
+                if images:
+                    for idx, image in enumerate(images):
+                        try:
+                            ProductImage.objects.create(product=product, image=image, is_main=(idx == 0))
+                        except Exception:
+                            messages.error(request, 'فشل حفظ إحدى صور المنتج')
+                            return redirect('super_owner_add_product')
+
+                return redirect(f"{request.path}?pid={product.id}&step=attributes")
+            except Store.DoesNotExist:
+                messages.error(request, 'المتجر المختار غير صالح!')
+                return redirect('super_owner_add_product')
+
+        elif action == 'generate_variants':
+            pid = request.POST.get('pid')
+            default_qty_raw = request.POST.get('default_qty')
+            default_price_raw = (request.POST.get('default_price') or '').strip()
+            color_ids = request.POST.getlist('color_ids')
+            size_ids = request.POST.getlist('size_ids')
+            enable_all = (request.POST.get('enable_all') == 'on')
+
             try:
-                variants_count = int(request.POST.get('variants_count') or 0)
-            except (TypeError, ValueError):
-                variants_count = 0
-            if variants_count <= 0:
-                variants_range = range(1, 21)
-            else:
-                variants_range = range(1, variants_count + 1)
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, TypeError, ValueError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+
+            try:
+                default_qty = int(default_qty_raw or 0)
+            except ValueError:
+                default_qty = 0
+
             from decimal import Decimal, InvalidOperation
-            for i in variants_range:
-                size = (request.POST.get(f'variant_size_{i}') or '').strip()
-                color_name = (request.POST.get(f'variant_color_{i}') or '').strip()
-                stock_raw = request.POST.get(f'variant_stock_{i}')
-                price_raw = (request.POST.get(f'variant_price_{i}') or '').strip()
-                if not size or not color_name or stock_raw is None:
-                    continue
+            default_price = None
+            if default_price_raw:
                 try:
-                    stock_qty = int(stock_raw)
-                except (TypeError, ValueError):
-                    continue
-                if stock_qty < 0:
-                    continue
-                price_override = None
-                if price_raw:
+                    default_price = Decimal(default_price_raw)
+                except InvalidOperation:
+                    default_price = None
+
+            selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
+            selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
+
+            created = 0
+            for c in selected_colors:
+                for s in selected_sizes:
+                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                    if exists:
+                        continue
                     try:
-                        price_override = Decimal(price_raw)
-                    except InvalidOperation:
-                        price_override = None
-                color_obj = created_colors.get(color_name)
-                if not color_obj:
-                    from .models import ProductColor
-                    color_obj = ProductColor.objects.filter(product=product, name=color_name).first()
-                if not color_obj:
-                    continue
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=c,
+                            size_attr=s,
+                            stock_qty=default_qty,
+                            price_override=default_price,
+                            is_enabled=enable_all or True,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+
+            messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'bulk_qty':
+            pid = request.POST.get('pid')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            try:
+                qty = int(request.POST.get('qty') or 0)
+            except ValueError:
+                qty = 0
+            ProductVariant.objects.filter(product=product).update(stock_qty=qty)
+            messages.success(request, 'تم تحديث الكمية لكل المتغيرات')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'bulk_price':
+            pid = request.POST.get('pid')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            from decimal import Decimal, InvalidOperation
+            raw = (request.POST.get('price') or '').strip()
+            price = None
+            if raw:
                 try:
-                    ProductVariant.objects.create(
-                        product=product,
-                        color_obj=color_obj,
-                        size=size,
-                        stock_qty=stock_qty,
-                        price_override=price_override,
-                    )
-                except Exception:
+                    price = Decimal(raw)
+                except InvalidOperation:
+                    price = None
+            ProductVariant.objects.filter(product=product).update(price_override=price)
+            messages.success(request, 'تم تحديث السعر لكل المتغيرات')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'bulk_status':
+            pid = request.POST.get('pid')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            status = (request.POST.get('status') or 'enable').strip()
+            enable = status == 'enable'
+            ProductVariant.objects.filter(product=product).update(is_enabled=enable)
+            messages.success(request, 'تم تحديث حالة المتغيرات')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'update_variant_row':
+            pid = request.POST.get('pid')
+            variant_id = request.POST.get('variant_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+                variant = ProductVariant.objects.get(id=int(variant_id), product=product)
+            except (Product.DoesNotExist, ProductVariant.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المتغير غير موجود')
+                return redirect('super_owner_add_product')
+            try:
+                variant.stock_qty = int(request.POST.get('stock_qty') or variant.stock_qty)
+            except ValueError:
+                pass
+            from decimal import Decimal, InvalidOperation
+            raw = (request.POST.get('price_override') or '').strip()
+            if raw == '':
+                variant.price_override = None
+            else:
+                try:
+                    variant.price_override = Decimal(raw)
+                except InvalidOperation:
                     pass
-            
-            messages.success(request, f'تم إنشاء المنتج "{product.name}" بنجاح!')
-            return redirect('super_owner_products')
-            
-        except Store.DoesNotExist:
-            messages.error(request, 'المتجر المختار غير صالح!')
-            return redirect('super_owner_add_product')
-    
+            variant.is_enabled = (request.POST.get('is_enabled') == 'on')
+            try:
+                variant.save()
+            except Exception:
+                pass
+            messages.success(request, 'تم تحديث المتغير')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+    product = None
+    variants = []
+    if pid and pid.isdigit():
+        product = Product.objects.filter(id=int(pid)).first()
+        if product:
+            variants = list(ProductVariant.objects.filter(product=product).select_related('color_attr', 'size_attr'))
+
+    if AttributeSize.objects.count() == 0:
+        for idx, n in enumerate(['XS','S','M','L','XL','XXL','3XL','4XL']):
+            try:
+                AttributeSize.objects.create(name=n, order=idx)
+            except Exception:
+                pass
+
     context = {
         'stores': stores,
         'selected_store_id': int(preselect_store) if preselect_store and preselect_store.isdigit() else None,
+        'step': step,
+        'product': product,
+        'colors': list(AttributeColor.objects.all()),
+        'sizes': list(AttributeSize.objects.all()),
+        'variants': variants,
     }
     return render(request, 'dashboard/super_owner/add_product.html', context)
 
