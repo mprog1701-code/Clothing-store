@@ -2853,6 +2853,37 @@ def super_owner_add_product(request):
             messages.success(request, 'تم حذف الصورة')
             return redirect(f"{request.path}?pid={product.id}&step=images")
 
+        elif action == 'extract_color_from_image':
+            pid = request.POST.get('pid')
+            image_id = request.POST.get('image_id')
+            try:
+                product = Product.objects.get(id=int(pid))
+                img = ProductImage.objects.get(id=int(image_id), product=product)
+            except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'الصورة غير موجودة')
+                return redirect('super_owner_add_product')
+            if not img.image:
+                messages.error(request, 'لا يمكن استخراج اللون من رابط صورة فقط')
+                return redirect(f"{request.path}?pid={product.id}&step=images")
+            try:
+                from PIL import Image
+                im = Image.open(img.image.path)
+                im = im.convert('RGB')
+                im.thumbnail((200, 200))
+                colors = im.getcolors(maxcolors=256*256)
+                if not colors:
+                    messages.error(request, 'تعذر استخراج اللون')
+                    return redirect(f"{request.path}?pid={product.id}&step=images")
+                dominant = max(colors, key=lambda t: t[0])[1]
+                hex_code = '#%02x%02x%02x' % dominant
+                color_obj, _ = AttributeColor.objects.get_or_create(name=hex_code, defaults={'code': hex_code})
+                img.color_attr = color_obj
+                img.save()
+                messages.success(request, f'تم استخراج اللون {hex_code} وربط الصورة به')
+            except Exception:
+                messages.error(request, 'حدث خطأ أثناء استخراج اللون')
+            return redirect(f"{request.path}?pid={product.id}&step=images")
+
     product = None
     variants = []
     if pid and pid.isdigit():
