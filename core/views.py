@@ -2425,12 +2425,291 @@ def super_owner_products(request):
     paginator = Paginator(base_qs, 20)
     products_page = paginator.get_page(page)
     
+    step = (request.GET.get('step') or '').strip()
+    batch = (request.GET.get('batch') or '').strip()
     if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        if action == 'upload_excel':
+            f = request.FILES.get('upload_file')
+            if not f:
+                messages.error(request, 'يرجى اختيار ملف Excel/CSV')
+                return redirect('super_owner_products')
+            name = (f.name or '').lower().strip()
+            parsed_rows = []
+            errors = []
+            stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0}
+            headers = []
+            data_rows = []
+            try:
+                if name.endswith('.csv'):
+                    import io, csv
+                    content = f.read()
+                    try:
+                        text = content.decode('utf-8')
+                    except Exception:
+                        text = content.decode('utf-8', errors='ignore')
+                    reader = csv.reader(io.StringIO(text))
+                    rows = list(reader)
+                    if rows:
+                        headers = [h.strip().lower() for h in rows[0]]
+                        data_rows = rows[1:]
+                elif name.endswith('.xlsx'):
+                    try:
+                        from openpyxl import load_workbook
+                    except Exception:
+                        messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl أو استخدام CSV')
+                        return redirect('super_owner_products')
+                    wb = load_workbook(f, read_only=True, data_only=True)
+                    ws = wb.active
+                    for ridx, row in enumerate(ws.iter_rows(values_only=True)):
+                        vals = [str(v).strip() if v is not None else '' for v in row]
+                        if ridx == 0:
+                            headers = [v.lower() for v in vals]
+                        else:
+                            data_rows.append(vals)
+                else:
+                    messages.error(request, 'صيغة غير مدعومة، استخدم CSV أو XLSX')
+                    return redirect('super_owner_products')
+            except Exception:
+                messages.error(request, 'تعذر قراءة الملف')
+                return redirect('super_owner_products')
+
+            hdr = {k: i for i, k in enumerate(headers)}
+            valid_categories = [c[0] for c in Store.CATEGORY_CHOICES]
+            boolify = lambda v: str(v).strip().lower() in ['1','true','yes','y','on']
+            getv = lambda row, key: (row[hdr[key]] if key in hdr and hdr[key] < len(row) else '').strip()
+            for idx, row in enumerate(data_rows, start=2):
+                row_errors = []
+                store_id_raw = getv(row, 'store_id') if 'store_id' in hdr else ''
+                store_name = getv(row, 'store_name') if 'store_name' in hdr else ''
+                product_id_raw = getv(row, 'product_id') if 'product_id' in hdr else ''
+                product_name = getv(row, 'product_name') if 'product_name' in hdr else ''
+                category = getv(row, 'category') if 'category' in hdr else ''
+                base_price_raw = getv(row, 'base_price') if 'base_price' in hdr else ''
+                description = getv(row, 'description') if 'description' in hdr else ''
+                size_type = getv(row, 'size_type') if 'size_type' in hdr else ''
+                is_active_raw = getv(row, 'is_active') if 'is_active' in hdr else ''
+                is_featured_raw = getv(row, 'is_featured') if 'is_featured' in hdr else ''
+                color_name = getv(row, 'variant_color') if 'variant_color' in hdr else ''
+                size = getv(row, 'variant_size') if 'variant_size' in hdr else ''
+                stock_qty_raw = getv(row, 'stock_qty') if 'stock_qty' in hdr else ''
+                price_override_raw = getv(row, 'price_override') if 'price_override' in hdr else ''
+                is_enabled_raw = getv(row, 'is_enabled') if 'is_enabled' in hdr else ''
+                image_urls_raw = getv(row, 'image_urls') if 'image_urls' in hdr else ''
+
+                store_obj = None
+                if store_id_raw:
+                    try:
+                        store_obj = Store.objects.get(id=int(store_id_raw))
+                    except Exception:
+                        row_errors.append('المتجر غير موجود')
+                elif store_name:
+                    store_obj = Store.objects.filter(name__iexact=store_name).first()
+                    if not store_obj:
+                        row_errors.append('اسم المتجر غير موجود')
+                else:
+                    row_errors.append('يجب تحديد المتجر')
+
+                base_price = None
+                if base_price_raw:
+                    try:
+                        from decimal import Decimal
+                        base_price = Decimal(base_price_raw)
+                    except Exception:
+                        row_errors.append('سعر أساسي غير صالح')
+                is_active = boolify(is_active_raw) if is_active_raw else True
+                is_featured = boolify(is_featured_raw) if is_featured_raw else False
+                if category and category not in valid_categories:
+                    row_errors.append('فئة غير صالحة')
+                if size_type and size_type not in ['symbolic','numeric','none']:
+                    row_errors.append('نوع المقاس غير صالح')
+
+                product_obj = None
+                will_create_product = False
+                will_update_product = False
+                if product_id_raw:
+                    try:
+                        product_obj = Product.objects.get(id=int(product_id_raw))
+                        will_update_product = True
+                    except Exception:
+                        row_errors.append('المنتج المحدد غير موجود')
+                else:
+                    if store_obj and product_name:
+                        product_obj = Product.objects.filter(store=store_obj, name__iexact=product_name).first()
+                        if product_obj:
+                            will_update_product = True
+                        else:
+                            will_create_product = True
+                    else:
+                        row_errors.append('يجب تحديد اسم المنتج')
+
+                color_obj = None
+                if color_name:
+                    if product_obj:
+                        from .models import ProductColor
+                        color_obj = ProductColor.objects.filter(product=product_obj, name__iexact=color_name).first()
+                    else:
+                        color_obj = None
+                stock_qty = None
+                if stock_qty_raw:
+                    try:
+                        stock_qty = int(stock_qty_raw)
+                        if stock_qty < 0:
+                            row_errors.append('الكمية يجب أن تكون >= 0')
+                    except Exception:
+                        row_errors.append('كمية غير صالحة')
+                price_override = None
+                if price_override_raw != '':
+                    try:
+                        from decimal import Decimal
+                        price_override = Decimal(price_override_raw)
+                    except Exception:
+                        row_errors.append('سعر خاص غير صالح')
+                is_enabled = boolify(is_enabled_raw) if is_enabled_raw else True
+
+                imgs = []
+                if image_urls_raw:
+                    for u in [x.strip() for x in image_urls_raw.split(',') if x.strip()]:
+                        imgs.append(u)
+
+                parsed_rows.append({
+                    'row_index': idx,
+                    'store_id': store_obj.id if store_obj else None,
+                    'store_name': store_obj.name if store_obj else store_name,
+                    'product_id': int(product_id_raw) if product_id_raw.isdigit() else None,
+                    'product_name': product_name,
+                    'category': category,
+                    'base_price': str(base_price) if base_price is not None else None,
+                    'description': description,
+                    'size_type': size_type or None,
+                    'is_active': is_active,
+                    'is_featured': is_featured,
+                    'variant_color': color_name,
+                    'variant_size': size,
+                    'stock_qty': stock_qty,
+                    'price_override': str(price_override) if price_override is not None else None,
+                    'is_enabled': is_enabled,
+                    'image_urls': imgs,
+                    'errors': row_errors,
+                    'will_create_product': will_create_product,
+                    'will_update_product': will_update_product,
+                })
+                if row_errors:
+                    errors.append({'row': idx, 'errors': row_errors})
+
+                if not row_errors:
+                    if will_create_product:
+                        stats['products_create'] += 1
+                    elif will_update_product:
+                        stats['products_update'] += 1
+                    if color_name and size:
+                        if product_obj and ProductVariant.objects.filter(product=product_obj, color_obj__name__iexact=color_name, size=size).exists():
+                            stats['variants_update'] += 1
+                        else:
+                            stats['variants_create'] += 1
+                    stats['images_add'] += len(imgs)
+
+            if not parsed_rows:
+                messages.error(request, 'الملف فارغ أو غير صالح')
+                return redirect('super_owner_products')
+
+            batch_id = str(uuid.uuid4())
+            cache.set(f"excel_upload:{batch_id}", {'rows': parsed_rows, 'stats': stats}, 60*20)
+            return redirect(f"{request.path}?step=upload_preview&batch={batch_id}")
+
+        elif action == 'confirm_excel':
+            batch_id = (request.POST.get('batch') or '').strip()
+            payload = cache.get(f"excel_upload:{batch_id}")
+            if not payload:
+                messages.error(request, 'انتهت صلاحية المعاينة أو غير موجودة')
+                return redirect('super_owner_products')
+            rows = payload.get('rows') or []
+            has_errors = any(r.get('errors') for r in rows)
+            if has_errors:
+                messages.error(request, 'يوجد أخطاء، يرجى تصحيحها قبل التأكيد')
+                return redirect(f"{request.path}?step=upload_preview&batch={batch_id}")
+            from django.db import transaction
+            try:
+                with transaction.atomic():
+                    for r in rows:
+                        store = Store.objects.get(id=r['store_id'])
+                        p = None
+                        if r['product_id']:
+                            p = Product.objects.get(id=r['product_id'])
+                        else:
+                            p = Product.objects.filter(store=store, name__iexact=r['product_name']).first()
+                        if p:
+                            if r['category']:
+                                p.category = r['category']
+                            if r['base_price'] is not None:
+                                from decimal import Decimal
+                                p.base_price = Decimal(r['base_price'])
+                            if r['description'] is not None:
+                                p.description = r['description']
+                            if r['size_type']:
+                                p.size_type = r['size_type']
+                            p.is_active = bool(r['is_active'])
+                            p.is_featured = bool(r['is_featured'])
+                            p.save()
+                        else:
+                            from decimal import Decimal
+                            p = Product.objects.create(
+                                store=store,
+                                name=r['product_name'],
+                                category=r['category'] or store.category,
+                                base_price=Decimal(r['base_price'] or '0'),
+                                description=r['description'] or '',
+                                size_type=(r['size_type'] or 'symbolic'),
+                                is_active=bool(r['is_active']),
+                                is_featured=bool(r['is_featured'])
+                            )
+                        color_obj = None
+                        if r['variant_color']:
+                            from .models import ProductColor
+                            color_obj, _ = ProductColor.objects.get_or_create(product=p, name=r['variant_color'])
+                        if r['variant_size']:
+                            pv = ProductVariant.objects.filter(product=p, color_obj=color_obj, size=r['variant_size']).first()
+                            if pv:
+                                if r['stock_qty'] is not None:
+                                    pv.stock_qty = r['stock_qty']
+                                if r['price_override'] is None:
+                                    pv.price_override = None
+                                elif r['price_override'] is not None:
+                                    from decimal import Decimal
+                                    pv.price_override = Decimal(r['price_override'])
+                                pv.is_enabled = bool(r['is_enabled'])
+                                pv.save()
+                            else:
+                                from decimal import Decimal
+                                ProductVariant.objects.create(
+                                    product=p,
+                                    color_obj=color_obj,
+                                    size=r['variant_size'],
+                                    stock_qty=(r['stock_qty'] or 0),
+                                    price_override=(Decimal(r['price_override']) if r['price_override'] is not None else None),
+                                    is_enabled=bool(r['is_enabled'])
+                                )
+                        if r['image_urls']:
+                            existing_urls = set([i.image_url for i in p.images.all() if i.image_url])
+                            for u in r['image_urls']:
+                                if u in existing_urls:
+                                    continue
+                                ProductImage.objects.create(product=p, image_url=u, is_main=False)
+                    cache.delete(f"excel_upload:{batch_id}")
+            except Exception:
+                messages.error(request, 'فشل التنفيذ وتم التراجع عن العملية')
+                return redirect(f"{request.path}?step=upload_preview&batch={batch_id}")
+            messages.success(request, 'تم تطبيق التغييرات بنجاح')
+            return redirect('super_owner_products')
+
+        elif action == 'cancel_excel':
+            batch_id = (request.POST.get('batch') or '').strip()
+            cache.delete(f"excel_upload:{batch_id}")
+            messages.info(request, 'تم إلغاء عملية الرفع')
+            return redirect('super_owner_products')
+
         product_id = request.POST.get('product_id')
-        action = request.POST.get('action')
-        
         product = get_object_or_404(Product, id=product_id)
-        
         if action == 'feature':
             product.is_featured = True
             product.save()
@@ -2490,15 +2769,227 @@ def super_owner_products(request):
         
         return redirect('super_owner_products')
     
+    preview_payload = None
+    if step == 'upload_preview' and batch:
+        preview_payload = cache.get(f"excel_upload:{batch}")
     context = {
         'products': products_page,
         'page_obj': products_page,
         'paginator': paginator,
         'q': q,
         'sort': sort,
+        'step': step,
+        'batch': batch,
+        'upload_payload': preview_payload,
     }
     return render(request, 'dashboard/super_owner/products.html', context)
 
+@login_required
+def import_products_excel(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+    if request.method != 'POST':
+        return redirect('super_owner_products')
+    f = request.FILES.get('upload_file')
+    if not f:
+        messages.error(request, 'يرجى اختيار ملف Excel/CSV')
+        return redirect('super_owner_products')
+    name = (f.name or '').lower().strip()
+    parsed_rows = []
+    stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0}
+    headers = []
+    data_rows = []
+    try:
+        if name.endswith('.csv'):
+            import io, csv
+            content = f.read()
+            try:
+                text = content.decode('utf-8')
+            except Exception:
+                text = content.decode('utf-8', errors='ignore')
+            reader = csv.reader(io.StringIO(text))
+            rows = list(reader)
+            if rows:
+                headers = [h.strip().lower() for h in rows[0]]
+                data_rows = rows[1:]
+        elif name.endswith('.xlsx'):
+            try:
+                from openpyxl import load_workbook
+            except Exception:
+                messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl أو استخدام CSV')
+                return redirect('super_owner_products')
+            wb = load_workbook(f, read_only=True, data_only=True)
+            ws = wb.active
+            for ridx, row in enumerate(ws.iter_rows(values_only=True)):
+                vals = [str(v).strip() if v is not None else '' for v in row]
+                if ridx == 0:
+                    headers = [v.lower() for v in vals]
+                else:
+                    data_rows.append(vals)
+        else:
+            messages.error(request, 'صيغة غير مدعومة، استخدم CSV أو XLSX')
+            return redirect('super_owner_products')
+    except Exception:
+        messages.error(request, 'تعذر قراءة الملف')
+        return redirect('super_owner_products')
+
+    hdr = {k: i for i, k in enumerate(headers)}
+    valid_categories = [c[0] for c in Store.CATEGORY_CHOICES]
+    boolify = lambda v: str(v).strip().lower() in ['1','true','yes','y','on']
+    getv = lambda row, key: (row[hdr[key]] if key in hdr and hdr[key] < len(row) else '').strip()
+    for idx, row in enumerate(data_rows, start=2):
+        row_errors = []
+        store_id_raw = getv(row, 'store_id') if 'store_id' in hdr else ''
+        store_name = getv(row, 'store_name') if 'store_name' in hdr else ''
+        product_id_raw = getv(row, 'product_id') if 'product_id' in hdr else ''
+        product_name = getv(row, 'product_name') if 'product_name' in hdr else ''
+        category = getv(row, 'category') if 'category' in hdr else ''
+        base_price_raw = getv(row, 'base_price') if 'base_price' in hdr else ''
+        description = getv(row, 'description') if 'description' in hdr else ''
+        size_type = getv(row, 'size_type') if 'size_type' in hdr else ''
+        is_active_raw = getv(row, 'is_active') if 'is_active' in hdr else ''
+        is_featured_raw = getv(row, 'is_featured') if 'is_featured' in hdr else ''
+        color_name = getv(row, 'variant_color') if 'variant_color' in hdr else ''
+        size = getv(row, 'variant_size') if 'variant_size' in hdr else ''
+        stock_qty_raw = getv(row, 'stock_qty') if 'stock_qty' in hdr else ''
+        price_override_raw = getv(row, 'price_override') if 'price_override' in hdr else ''
+        is_enabled_raw = getv(row, 'is_enabled') if 'is_enabled' in hdr else ''
+        image_urls_raw = getv(row, 'image_urls') if 'image_urls' in hdr else ''
+
+        store_obj = None
+        if store_id_raw:
+            try:
+                store_obj = Store.objects.get(id=int(store_id_raw))
+            except Exception:
+                row_errors.append('المتجر غير موجود')
+        elif store_name:
+            store_obj = Store.objects.filter(name__iexact=store_name).first()
+            if not store_obj:
+                row_errors.append('اسم المتجر غير موجود')
+        else:
+            row_errors.append('يجب تحديد المتجر')
+
+        base_price = None
+        if base_price_raw:
+            try:
+                from decimal import Decimal
+                base_price = Decimal(base_price_raw)
+            except Exception:
+                row_errors.append('سعر أساسي غير صالح')
+        is_active = boolify(is_active_raw) if is_active_raw else True
+        is_featured = boolify(is_featured_raw) if is_featured_raw else False
+        if category and category not in valid_categories:
+            row_errors.append('فئة غير صالحة')
+        if size_type and size_type not in ['symbolic','numeric','none']:
+            row_errors.append('نوع المقاس غير صالح')
+
+        product_obj = None
+        will_create_product = False
+        will_update_product = False
+        if product_id_raw:
+            try:
+                product_obj = Product.objects.get(id=int(product_id_raw))
+                will_update_product = True
+            except Exception:
+                row_errors.append('المنتج المحدد غير موجود')
+        else:
+            if store_obj and product_name:
+                product_obj = Product.objects.filter(store=store_obj, name__iexact=product_name).first()
+                if product_obj:
+                    will_update_product = True
+                else:
+                    will_create_product = True
+            else:
+                row_errors.append('يجب تحديد اسم المنتج')
+
+        color_obj = None
+        if color_name:
+            if product_obj:
+                from .models import ProductColor
+                color_obj = ProductColor.objects.filter(product=product_obj, name__iexact=color_name).first()
+            else:
+                color_obj = None
+        stock_qty = None
+        if stock_qty_raw:
+            try:
+                stock_qty = int(stock_qty_raw)
+                if stock_qty < 0:
+                    row_errors.append('الكمية يجب أن تكون >= 0')
+            except Exception:
+                row_errors.append('كمية غير صالحة')
+        price_override = None
+        if price_override_raw != '':
+            try:
+                from decimal import Decimal
+                price_override = Decimal(price_override_raw)
+            except Exception:
+                row_errors.append('سعر خاص غير صالح')
+        is_enabled = boolify(is_enabled_raw) if is_enabled_raw else True
+
+        imgs = []
+        if image_urls_raw:
+            for u in [x.strip() for x in image_urls_raw.split(',') if x.strip()]:
+                imgs.append(u)
+
+        parsed_rows.append({
+            'row_index': idx,
+            'store_id': store_obj.id if store_obj else None,
+            'store_name': store_obj.name if store_obj else store_name,
+            'product_id': int(product_id_raw) if product_id_raw.isdigit() else None,
+            'product_name': product_name,
+            'category': category,
+            'base_price': str(base_price) if base_price is not None else None,
+            'description': description,
+            'size_type': size_type or None,
+            'is_active': is_active,
+            'is_featured': is_featured,
+            'variant_color': color_name,
+            'variant_size': size,
+            'stock_qty': stock_qty,
+            'price_override': str(price_override) if price_override is not None else None,
+            'is_enabled': is_enabled,
+            'image_urls': imgs,
+            'errors': row_errors,
+            'will_create_product': will_create_product,
+            'will_update_product': will_update_product,
+        })
+
+        if not row_errors:
+            if will_create_product:
+                stats['products_create'] += 1
+            elif will_update_product:
+                stats['products_update'] += 1
+            if color_name and size:
+                if product_obj and ProductVariant.objects.filter(product=product_obj, color_obj__name__iexact=color_name, size=size).exists():
+                    stats['variants_update'] += 1
+                else:
+                    stats['variants_create'] += 1
+            stats['images_add'] += len(imgs)
+
+    if not parsed_rows:
+        messages.error(request, 'الملف فارغ أو غير صالح')
+        return redirect('super_owner_products')
+
+    batch_id = str(uuid.uuid4())
+    cache.set(f"excel_upload:{batch_id}", {'rows': parsed_rows, 'stats': stats}, 60*20)
+    return redirect(f"{request.build_absolute_uri('/dashboard/super-owner/products/') }?step=upload_preview&batch={batch_id}")
+
+
+@login_required
+def download_products_template(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+    import csv
+    from django.http import HttpResponse
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="products_template.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['store_id','store_name','product_id','product_name','category','base_price','description','size_type','is_active','is_featured','variant_color','variant_size','stock_qty','price_override','is_enabled','image_urls'])
+    writer.writerow(['','My Store','','Classic T-Shirt','men','15000','Soft cotton tee','symbolic','true','false','Black','M','50','','true','https://example.com/img1.jpg'])
+    writer.writerow(['','','','','','','','','','','','','','','',''])
+    return response
 
 @login_required
 def super_owner_add_product(request):
