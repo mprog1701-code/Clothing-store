@@ -209,6 +209,7 @@ class ProductImage(models.Model):
     variant = models.ForeignKey('ProductVariant', on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
+    image_hash = models.CharField(max_length=64, blank=True, null=True)
     is_main = models.BooleanField(default=False)
     order = models.IntegerField(default=0)
     
@@ -351,6 +352,19 @@ class Order(models.Model):
         items_total = sum(item.price * item.quantity for item in self.items.all())
         self.total_amount = items_total + self.delivery_fee
         return self.total_amount
+
+class ImportLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    file_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    products_created = models.IntegerField(default=0)
+    products_updated = models.IntegerField(default=0)
+    variants_created = models.IntegerField(default=0)
+    variants_updated = models.IntegerField(default=0)
+    images_added = models.IntegerField(default=0)
+    errors_count = models.IntegerField(default=0)
+    errors_json = models.TextField(blank=True, default='')
+    success = models.BooleanField(default=True)
 
 
 class OrderItem(models.Model):

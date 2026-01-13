@@ -2629,6 +2629,7 @@ def super_owner_products(request):
                 messages.error(request, 'يوجد أخطاء، يرجى تصحيحها قبل التأكيد')
                 return redirect(f"{request.path}?step=upload_preview&batch={batch_id}")
             from django.db import transaction
+            result = {'products_created': 0, 'products_updated': 0, 'variants_created': 0, 'variants_updated': 0, 'images_added': 0, 'errors': []}
             try:
                 with transaction.atomic():
                     for r in rows:
@@ -2651,6 +2652,7 @@ def super_owner_products(request):
                             p.is_active = bool(r['is_active'])
                             p.is_featured = bool(r['is_featured'])
                             p.save()
+                            result['products_updated'] += 1
                         else:
                             from decimal import Decimal
                             p = Product.objects.create(
@@ -2663,6 +2665,7 @@ def super_owner_products(request):
                                 is_active=bool(r['is_active']),
                                 is_featured=bool(r['is_featured'])
                             )
+                            result['products_created'] += 1
                         color_obj = None
                         if r['variant_color']:
                             from .models import ProductColor
@@ -2679,6 +2682,7 @@ def super_owner_products(request):
                                     pv.price_override = Decimal(r['price_override'])
                                 pv.is_enabled = bool(r['is_enabled'])
                                 pv.save()
+                                result['variants_updated'] += 1
                             else:
                                 from decimal import Decimal
                                 ProductVariant.objects.create(
@@ -2689,18 +2693,57 @@ def super_owner_products(request):
                                     price_override=(Decimal(r['price_override']) if r['price_override'] is not None else None),
                                     is_enabled=bool(r['is_enabled'])
                                 )
+                                result['variants_created'] += 1
                         if r['image_urls']:
-                            existing_urls = set([i.image_url for i in p.images.all() if i.image_url])
+                            existing_hashes = set([i.image_hash for i in p.images.all() if i.image_hash])
+                            from urllib.request import urlopen
+                            import hashlib
+                            from django.core.files.base import ContentFile
                             for u in r['image_urls']:
-                                if u in existing_urls:
+                                resp = urlopen(u)
+                                data = resp.read()
+                                h = hashlib.sha256(data).hexdigest()
+                                if h in existing_hashes:
                                     continue
-                                ProductImage.objects.create(product=p, image_url=u, is_main=False)
+                                filename = f"{h}.jpg"
+                                img = ProductImage(product=p, is_main=False, image_hash=h)
+                                img.image.save(filename, ContentFile(data), save=True)
+                                img.image_url = u
+                                img.save()
+                                result['images_added'] += 1
                     cache.delete(f"excel_upload:{batch_id}")
+                from .models import ImportLog
+                ImportLog.objects.create(
+                    user=request.user,
+                    file_name=(payload.get('file_name') or ''),
+                    products_created=result['products_created'],
+                    products_updated=result['products_updated'],
+                    variants_created=result['variants_created'],
+                    variants_updated=result['variants_updated'],
+                    images_added=result['images_added'],
+                    errors_count=len(result['errors']),
+                    errors_json='[]',
+                    success=True,
+                )
+                cache.set(f"excel_result:{batch_id}", result, 60*20)
             except Exception:
+                from .models import ImportLog
+                ImportLog.objects.create(
+                    user=request.user,
+                    file_name=(payload.get('file_name') or ''),
+                    products_created=0,
+                    products_updated=0,
+                    variants_created=0,
+                    variants_updated=0,
+                    images_added=0,
+                    errors_count=1,
+                    errors_json='["apply_failed"]',
+                    success=False,
+                )
                 messages.error(request, 'فشل التنفيذ وتم التراجع عن العملية')
                 return redirect(f"{request.path}?step=upload_preview&batch={batch_id}")
             messages.success(request, 'تم تطبيق التغييرات بنجاح')
-            return redirect('super_owner_products')
+            return redirect(f"{request.path}?step=import_result&batch={batch_id}")
 
         elif action == 'cancel_excel':
             batch_id = (request.POST.get('batch') or '').strip()
@@ -2770,8 +2813,11 @@ def super_owner_products(request):
         return redirect('super_owner_products')
     
     preview_payload = None
+    result_payload = None
     if step == 'upload_preview' and batch:
         preview_payload = cache.get(f"excel_upload:{batch}")
+    if step == 'import_result' and batch:
+        result_payload = cache.get(f"excel_result:{batch}")
     context = {
         'products': products_page,
         'page_obj': products_page,
@@ -2781,6 +2827,7 @@ def super_owner_products(request):
         'step': step,
         'batch': batch,
         'upload_payload': preview_payload,
+        'result_payload': result_payload,
     }
     return render(request, 'dashboard/super_owner/products.html', context)
 
@@ -2797,7 +2844,7 @@ def import_products_excel(request):
         return redirect('super_owner_products')
     name = (f.name or '').lower().strip()
     parsed_rows = []
-    stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0}
+    stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0, 'rows_total': 0, 'errors_count': 0}
     headers = []
     data_rows = []
     try:
@@ -2835,14 +2882,16 @@ def import_products_excel(request):
         return redirect('super_owner_products')
 
     hdr = {k: i for i, k in enumerate(headers)}
-    valid_categories = [c[0] for c in Store.CATEGORY_CHOICES]
+    valid_categories = [c[0] for c in Product.CATEGORY_CHOICES]
     boolify = lambda v: str(v).strip().lower() in ['1','true','yes','y','on']
     getv = lambda row, key: (row[hdr[key]] if key in hdr and hdr[key] < len(row) else '').strip()
+    stats['rows_total'] = len(data_rows)
     for idx, row in enumerate(data_rows, start=2):
         row_errors = []
         store_id_raw = getv(row, 'store_id') if 'store_id' in hdr else ''
         store_name = getv(row, 'store_name') if 'store_name' in hdr else ''
         product_id_raw = getv(row, 'product_id') if 'product_id' in hdr else ''
+        sku = getv(row, 'sku') if 'sku' in hdr else ''
         product_name = getv(row, 'product_name') if 'product_name' in hdr else ''
         category = getv(row, 'category') if 'category' in hdr else ''
         base_price_raw = getv(row, 'base_price') if 'base_price' in hdr else ''
@@ -2855,6 +2904,12 @@ def import_products_excel(request):
         stock_qty_raw = getv(row, 'stock_qty') if 'stock_qty' in hdr else ''
         price_override_raw = getv(row, 'price_override') if 'price_override' in hdr else ''
         is_enabled_raw = getv(row, 'is_enabled') if 'is_enabled' in hdr else ''
+        image_cols = [k for k in headers if k.startswith('image_')]
+        image_values = []
+        for col in image_cols:
+            v = getv(row, col)
+            if v:
+                image_values.append(v)
         image_urls_raw = getv(row, 'image_urls') if 'image_urls' in hdr else ''
 
         store_obj = None
@@ -2895,8 +2950,11 @@ def import_products_excel(request):
                 row_errors.append('المنتج المحدد غير موجود')
         else:
             if store_obj and product_name:
-                product_obj = Product.objects.filter(store=store_obj, name__iexact=product_name).first()
-                if product_obj:
+                qs = Product.objects.filter(store=store_obj, name__iexact=product_name)
+                if qs.count() > 1:
+                    row_errors.append('يوجد أكثر من منتج بنفس الاسم في هذا المتجر')
+                elif qs.count() == 1:
+                    product_obj = qs.first()
                     will_update_product = True
                 else:
                     will_create_product = True
@@ -2931,6 +2989,9 @@ def import_products_excel(request):
         if image_urls_raw:
             for u in [x.strip() for x in image_urls_raw.split(',') if x.strip()]:
                 imgs.append(u)
+        for u in image_values:
+            if u and u not in imgs:
+                imgs.append(u)
 
         parsed_rows.append({
             'row_index': idx,
@@ -2955,6 +3016,8 @@ def import_products_excel(request):
             'will_update_product': will_update_product,
         })
 
+        if row_errors:
+            stats['errors_count'] += 1
         if not row_errors:
             if will_create_product:
                 stats['products_create'] += 1
@@ -2972,7 +3035,7 @@ def import_products_excel(request):
         return redirect('super_owner_products')
 
     batch_id = str(uuid.uuid4())
-    cache.set(f"excel_upload:{batch_id}", {'rows': parsed_rows, 'stats': stats}, 60*20)
+    cache.set(f"excel_upload:{batch_id}", {'rows': parsed_rows, 'stats': stats, 'file_name': f.name}, 60*20)
     return redirect(f"{request.build_absolute_uri('/dashboard/super-owner/products/') }?step=upload_preview&batch={batch_id}")
 
 
@@ -2981,14 +3044,45 @@ def download_products_template(request):
     if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
-    import csv
     from django.http import HttpResponse
-    response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = 'attachment; filename="products_template.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['store_id','store_name','product_id','product_name','category','base_price','description','size_type','is_active','is_featured','variant_color','variant_size','stock_qty','price_override','is_enabled','image_urls'])
-    writer.writerow(['','My Store','','Classic T-Shirt','men','15000','Soft cotton tee','symbolic','true','false','Black','M','50','','true','https://example.com/img1.jpg'])
-    writer.writerow(['','','','','','','','','','','','','','','',''])
+    try:
+        from openpyxl import Workbook
+    except Exception:
+        messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl')
+        return redirect('super_owner_products')
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'TEMPLATE'
+    headers = ['store_id','store_name','product_id','sku','product_name','category','base_price','description','size_type','is_active','is_featured','variant_color','variant_size','stock_qty','price_override','is_enabled','image_1','image_2','image_3']
+    ws.append(headers)
+    ws.append(['','My Store','','','Classic T-Shirt','men','15000','Soft cotton tee','symbolic','true','false','Black','M','50','','true','https://example.com/img1.jpg','',''])
+    lookups = wb.create_sheet('LOOKUPS')
+    lookups.append(['stores_id','stores_name'])
+    from .models import Store, Product
+    for s in Store.objects.all().order_by('id'):
+        lookups.append([s.id, s.name])
+    lookups.append([])
+    lookups.append(['category_key','category_name'])
+    for key, name in Product.CATEGORY_CHOICES:
+        lookups.append([key, name])
+    lookups.append([])
+    lookups.append(['size_type'])
+    for st, _ in Product.SIZE_TYPE_CHOICES:
+        lookups.append([st])
+    lookups.append([])
+    lookups.append(['symbolic_sizes'])
+    for v in ['XS','S','M','L','XL','XXL','3XL','4XL']:
+        lookups.append([v])
+    lookups.append([])
+    lookups.append(['numeric_sizes'])
+    for v in [str(n) for n in range(28, 61, 2)]:
+        lookups.append([v])
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="products_template.xlsx"'
+    from io import BytesIO
+    bio = BytesIO()
+    wb.save(bio)
+    response.write(bio.getvalue())
     return response
 
 @login_required
