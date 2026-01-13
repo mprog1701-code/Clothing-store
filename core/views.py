@@ -2609,6 +2609,19 @@ def super_owner_add_product(request):
             messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً')
             return redirect(f"{request.path}?pid={product.id}&step=variants")
 
+        elif action == 'add_global_color':
+            cname = (request.POST.get('color_name') or '').strip()
+            ccode = (request.POST.get('color_code') or '').strip()
+            if not cname:
+                messages.error(request, 'يرجى إدخال اسم اللون')
+                return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
+            try:
+                AttributeColor.objects.get_or_create(name=cname, defaults={'code': ccode})
+                messages.success(request, 'تمت إضافة اللون إلى القائمة العامة')
+            except Exception:
+                messages.error(request, 'تعذر إضافة اللون')
+            return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
+
         elif action == 'bulk_qty_color':
             pid = request.POST.get('pid')
             color_id = request.POST.get('color_id')
@@ -2880,13 +2893,39 @@ def super_owner_add_product(request):
             except Exception:
                 pass
 
+    sizes_display = []
+    if product:
+        st = product.size_type
+        if st == 'numeric':
+            names = [str(n) for n in range(28, 61, 2)]
+            for idx, n in enumerate(names):
+                try:
+                    AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+                except Exception:
+                    pass
+            all_sizes = list(AttributeSize.objects.all())
+            sizes_display = sorted([s for s in all_sizes if s.name.isdigit()], key=lambda x: x.order)
+        elif st == 'symbolic':
+            names = ['XS','S','M','L','XL','XXL','3XL','4XL']
+            for idx, n in enumerate(names):
+                try:
+                    AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+                except Exception:
+                    pass
+            all_sizes = list(AttributeSize.objects.all())
+            sizes_display = sorted([s for s in all_sizes if s.name in names], key=lambda x: x.order)
+        else:
+            sizes_display = []
+    else:
+        sizes_display = list(AttributeSize.objects.all())
+
     context = {
         'stores': stores,
         'selected_store_id': int(preselect_store) if preselect_store and preselect_store.isdigit() else None,
         'step': step,
         'product': product,
         'colors': list(AttributeColor.objects.all()),
-        'sizes': list(AttributeSize.objects.all()),
+        'sizes': sizes_display,
         'variants': variants,
         'color_attrs': color_attrs,
         'size_attrs': size_attrs,

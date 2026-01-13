@@ -31,10 +31,10 @@
                     {% endif %}
 
                     <ul class="nav nav-tabs mb-3">
-                        <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="#">معلومات المنتج</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}" href="#">الخصائص</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'variants' %}active{% endif %}" href="#">المتغيرات</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}" href="#">الصور</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=info{% else %}?step=info{% endif %}">معلومات المنتج</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=attributes{% else %}?step=attributes{% endif %}">الخصائص</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'variants' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=variants{% else %}?step=variants{% endif %}">المتغيرات</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=images{% else %}?step=images{% endif %}">الصور</a></li>
                     </ul>
 
                     {% if step == 'info' %}
@@ -115,6 +115,25 @@
                     {% endif %}
 
                     {% if product and step == 'attributes' %}
+                    {% if not colors %}
+                        <div class="mb-3">
+                            <p class="text-muted">لا توجد ألوان معرفة. أضف لوناً عاماً سريعاً:</p>
+                            <form method="post" class="row g-2">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="add_global_color">
+                                <input type="hidden" name="pid" value="{{ product.id }}">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" name="color_name" placeholder="اسم اللون" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" name="color_code" placeholder="#كود" value="">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary w-100">إضافة</button>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
                     <form method="post" id="generateVariantsForm">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="generate_variants">
@@ -122,6 +141,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="form-label">الألوان</label>
+                                {% if colors %}
                                 <div class="row g-2">
                                     {% for c in colors %}
                                     <div class="col-6">
@@ -132,6 +152,7 @@
                                     </div>
                                     {% endfor %}
                                 </div>
+                                {% endif %}
                                 <small class="text-muted">تعريف الألوان مرة واحدة وقابلة لإعادة الاستخدام</small>
                             </div>
                             <div class="col-md-6">
@@ -168,7 +189,8 @@
                                     <label class="form-check-label" for="enable_all">تفعيل كل المتغيرات</label>
                                 </div>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end justify-content-end">
+                            <div class="col-md-3 d-flex align-items-end justify-content-end gap-2">
+                                <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=variants" class="btn btn-outline-secondary">الانتقال إلى المتغيرات</a>
                                 <button type="submit" class="btn btn-primary"><i class="fas fa-bolt me-2"></i>توليد المتغيرات تلقائياً</button>
                             </div>
                         </div>
