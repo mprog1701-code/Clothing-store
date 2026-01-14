@@ -2436,25 +2436,21 @@ def super_owner_products(request):
                 return redirect('super_owner_products')
             name = (f.name or '').lower().strip()
             parsed_rows = []
-            errors = []
-            stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0}
+            stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0, 'rows_total': 0}
             headers = []
             data_rows = []
             try:
                 if name.endswith('.xlsx'):
-                    try:
-                        from openpyxl import load_workbook
-                    except Exception:
-                        messages.error(request, 'تعذر قراءة ملف Excel.')
-                        return redirect('super_owner_products')
+                    from openpyxl import load_workbook
                     wb = load_workbook(f, read_only=True, data_only=True)
-                    ws = wb.active
+                    ws = wb['TEMPLATE_PRODUCTS'] if 'TEMPLATE_PRODUCTS' in wb.sheetnames else wb.active
                     for ridx, row in enumerate(ws.iter_rows(values_only=True)):
                         vals = [str(v).strip() if v is not None else '' for v in row]
                         if ridx == 0:
                             headers = [v.lower() for v in vals]
                         else:
-                            data_rows.append(vals)
+                            if any(v != '' for v in vals):
+                                data_rows.append(vals)
                 else:
                     messages.error(request, 'صيغة غير مدعومة، يجب رفع ملف XLSX فقط')
                     return redirect('super_owner_products')
@@ -2463,40 +2459,33 @@ def super_owner_products(request):
                 return redirect('super_owner_products')
 
             hdr = {k: i for i, k in enumerate(headers)}
-            valid_categories = [c[0] for c in Store.CATEGORY_CHOICES]
-            boolify = lambda v: str(v).strip().lower() in ['1','true','yes','y','on']
+            valid_categories = [c[0] for c in Product.CATEGORY_CHOICES]
+            boolify = lambda v: str(v).strip().lower() in ['1','true','yes','y','on','t','true','TRUE']
             getv = lambda row, key: (row[hdr[key]] if key in hdr and hdr[key] < len(row) else '').strip()
+            stats['rows_total'] = len(data_rows)
             for idx, row in enumerate(data_rows, start=2):
                 row_errors = []
-                store_id_raw = getv(row, 'store_id') if 'store_id' in hdr else ''
-                store_name = getv(row, 'store_name') if 'store_name' in hdr else ''
-                product_id_raw = getv(row, 'product_id') if 'product_id' in hdr else ''
+                store_code = getv(row, 'store_code') if 'store_code' in hdr else ''
                 product_name = getv(row, 'product_name') if 'product_name' in hdr else ''
-                category = getv(row, 'category') if 'category' in hdr else ''
-                base_price_raw = getv(row, 'base_price') if 'base_price' in hdr else ''
-                description = getv(row, 'description') if 'description' in hdr else ''
-                size_type = getv(row, 'size_type') if 'size_type' in hdr else ''
+                category_id = getv(row, 'category_id') if 'category_id' in hdr else ''
+                base_price_raw = getv(row, 'base_price_iqd') if 'base_price_iqd' in hdr else ''
                 is_active_raw = getv(row, 'is_active') if 'is_active' in hdr else ''
+                description = getv(row, 'description') if 'description' in hdr else ''
                 is_featured_raw = getv(row, 'is_featured') if 'is_featured' in hdr else ''
-                color_name = getv(row, 'variant_color') if 'variant_color' in hdr else ''
-                size = getv(row, 'variant_size') if 'variant_size' in hdr else ''
-                stock_qty_raw = getv(row, 'stock_qty') if 'stock_qty' in hdr else ''
-                price_override_raw = getv(row, 'price_override') if 'price_override' in hdr else ''
-                is_enabled_raw = getv(row, 'is_enabled') if 'is_enabled' in hdr else ''
+                colors_raw = getv(row, 'colors') if 'colors' in hdr else ''
+                sizes_raw = getv(row, 'sizes') if 'sizes' in hdr else ''
+                default_qty_raw = getv(row, 'default_stock_qty') if 'default_stock_qty' in hdr else ''
+                default_price_raw = getv(row, 'default_price_override_iqd') if 'default_price_override_iqd' in hdr else ''
                 image_urls_raw = getv(row, 'image_urls') if 'image_urls' in hdr else ''
 
                 store_obj = None
-                if store_id_raw:
+                if store_code:
                     try:
-                        store_obj = Store.objects.get(id=int(store_id_raw))
+                        store_obj = Store.objects.get(id=int(store_code))
                     except Exception:
-                        row_errors.append('المتجر غير موجود')
-                elif store_name:
-                    store_obj = Store.objects.filter(name__iexact=store_name).first()
-                    if not store_obj:
-                        row_errors.append('اسم المتجر غير موجود')
+                        row_errors.append('store_code غير موجود')
                 else:
-                    row_errors.append('يجب تحديد المتجر')
+                    row_errors.append('store_code مفقود')
 
                 base_price = None
                 if base_price_raw:
@@ -2504,97 +2493,99 @@ def super_owner_products(request):
                         from decimal import Decimal
                         base_price = Decimal(base_price_raw)
                     except Exception:
-                        row_errors.append('سعر أساسي غير صالح')
+                        row_errors.append('base_price_iqd غير صالح')
+                else:
+                    row_errors.append('base_price_iqd مفقود')
+
                 is_active = boolify(is_active_raw) if is_active_raw else True
                 is_featured = boolify(is_featured_raw) if is_featured_raw else False
-                if category and category not in valid_categories:
-                    row_errors.append('فئة غير صالحة')
-                if size_type and size_type not in ['symbolic','numeric','none']:
-                    row_errors.append('نوع المقاس غير صالح')
+                if category_id and category_id not in valid_categories:
+                    row_errors.append('category_id غير صالح')
+
+                if not product_name:
+                    row_errors.append('product_name مفقود')
 
                 product_obj = None
                 will_create_product = False
                 will_update_product = False
-                if product_id_raw:
-                    try:
-                        product_obj = Product.objects.get(id=int(product_id_raw))
-                        will_update_product = True
-                    except Exception:
-                        row_errors.append('المنتج المحدد غير موجود')
-                else:
-                    if store_obj and product_name:
-                        product_obj = Product.objects.filter(store=store_obj, name__iexact=product_name).first()
-                        if product_obj:
-                            will_update_product = True
-                        else:
-                            will_create_product = True
-                    else:
-                        row_errors.append('يجب تحديد اسم المنتج')
-
-                color_obj = None
-                if color_name:
+                if store_obj and product_name:
+                    product_obj = Product.objects.filter(store=store_obj, name__iexact=product_name).first()
                     if product_obj:
-                        from .models import ProductColor
-                        color_obj = ProductColor.objects.filter(product=product_obj, name__iexact=color_name).first()
+                        will_update_product = True
                     else:
-                        color_obj = None
-                stock_qty = None
-                if stock_qty_raw:
+                        will_create_product = True
+
+                colors = [x.strip() for x in (colors_raw or '').split(',') if x.strip()]
+                sizes = [x.strip() for x in (sizes_raw or '').split(',') if x.strip()]
+
+                size_type = None
+                if sizes:
+                    if all(s.isdigit() for s in sizes):
+                        size_type = 'numeric'
+                    elif all(not s.isdigit() for s in sizes):
+                        size_type = 'symbolic'
+                    else:
+                        row_errors.append('sizes تحتوي أنواع مختلطة')
+
+                try:
+                    default_qty = int(default_qty_raw) if default_qty_raw else 0
+                    if default_qty < 0:
+                        row_errors.append('default_stock_qty يجب أن يكون >= 0')
+                except Exception:
+                    row_errors.append('default_stock_qty غير صالح')
+                    default_qty = 0
+
+                from decimal import Decimal, InvalidOperation
+                default_price = None
+                if default_price_raw:
                     try:
-                        stock_qty = int(stock_qty_raw)
-                        if stock_qty < 0:
-                            row_errors.append('الكمية يجب أن تكون >= 0')
-                    except Exception:
-                        row_errors.append('كمية غير صالحة')
-                price_override = None
-                if price_override_raw != '':
-                    try:
-                        from decimal import Decimal
-                        price_override = Decimal(price_override_raw)
-                    except Exception:
-                        row_errors.append('سعر خاص غير صالح')
-                is_enabled = boolify(is_enabled_raw) if is_enabled_raw else True
+                        default_price = Decimal(default_price_raw)
+                    except InvalidOperation:
+                        row_errors.append('default_price_override_iqd غير صالح')
 
                 imgs = []
                 if image_urls_raw:
                     for u in [x.strip() for x in image_urls_raw.split(',') if x.strip()]:
-                        imgs.append(u)
+                        if u not in imgs:
+                            imgs.append(u)
+
+                variant_expected = 0
+                if colors and sizes:
+                    variant_expected = len(colors) * len(sizes)
+                elif colors:
+                    variant_expected = len(colors)
+                elif sizes:
+                    variant_expected = len(sizes)
 
                 parsed_rows.append({
                     'row_index': idx,
                     'store_id': store_obj.id if store_obj else None,
-                    'store_name': store_obj.name if store_obj else store_name,
-                    'product_id': int(product_id_raw) if product_id_raw.isdigit() else None,
+                    'store_code': store_code,
+                    'store_name': store_obj.name if store_obj else '',
                     'product_name': product_name,
-                    'category': category,
+                    'category': category_id,
                     'base_price': str(base_price) if base_price is not None else None,
                     'description': description,
-                    'size_type': size_type or None,
+                    'size_type': size_type,
                     'is_active': is_active,
                     'is_featured': is_featured,
-                    'variant_color': color_name,
-                    'variant_size': size,
-                    'stock_qty': stock_qty,
-                    'price_override': str(price_override) if price_override is not None else None,
-                    'is_enabled': is_enabled,
+                    'colors': colors,
+                    'sizes': sizes,
+                    'default_qty': default_qty,
+                    'default_price': (str(default_price) if default_price is not None else None),
                     'image_urls': imgs,
                     'errors': row_errors,
                     'will_create_product': will_create_product,
                     'will_update_product': will_update_product,
+                    'expected_variants': variant_expected,
                 })
-                if row_errors:
-                    errors.append({'row': idx, 'errors': row_errors})
 
                 if not row_errors:
                     if will_create_product:
                         stats['products_create'] += 1
                     elif will_update_product:
                         stats['products_update'] += 1
-                    if color_name and size:
-                        if product_obj and ProductVariant.objects.filter(product=product_obj, color_obj__name__iexact=color_name, size=size).exists():
-                            stats['variants_update'] += 1
-                        else:
-                            stats['variants_create'] += 1
+                    stats['variants_create'] += variant_expected
                     stats['images_add'] += len(imgs)
 
             if not parsed_rows:
@@ -2622,16 +2613,12 @@ def super_owner_products(request):
                 with transaction.atomic():
                     for r in rows:
                         store = Store.objects.get(id=r['store_id'])
-                        p = None
-                        if r['product_id']:
-                            p = Product.objects.get(id=r['product_id'])
-                        else:
-                            p = Product.objects.filter(store=store, name__iexact=r['product_name']).first()
+                        p = Product.objects.filter(store=store, name__iexact=r['product_name']).first()
+                        from decimal import Decimal
                         if p:
                             if r['category']:
                                 p.category = r['category']
                             if r['base_price'] is not None:
-                                from decimal import Decimal
                                 p.base_price = Decimal(r['base_price'])
                             if r['description'] is not None:
                                 p.description = r['description']
@@ -2642,7 +2629,6 @@ def super_owner_products(request):
                             p.save()
                             result['products_updated'] += 1
                         else:
-                            from decimal import Decimal
                             p = Product.objects.create(
                                 store=store,
                                 name=r['product_name'],
@@ -2654,34 +2640,63 @@ def super_owner_products(request):
                                 is_featured=bool(r['is_featured'])
                             )
                             result['products_created'] += 1
-                        color_obj = None
-                        if r['variant_color']:
-                            from .models import ProductColor
-                            color_obj, _ = ProductColor.objects.get_or_create(product=p, name=r['variant_color'])
-                        if r['variant_size']:
-                            pv = ProductVariant.objects.filter(product=p, color_obj=color_obj, size=r['variant_size']).first()
-                            if pv:
-                                if r['stock_qty'] is not None:
-                                    pv.stock_qty = r['stock_qty']
-                                if r['price_override'] is None:
-                                    pv.price_override = None
-                                elif r['price_override'] is not None:
-                                    from decimal import Decimal
-                                    pv.price_override = Decimal(r['price_override'])
-                                pv.is_enabled = bool(r['is_enabled'])
-                                pv.save()
-                                result['variants_updated'] += 1
+
+                        from .models import ProductColor
+                        default_color_obj = None
+                        if not r.get('colors') and r.get('sizes'):
+                            default_color_obj, _ = ProductColor.objects.get_or_create(product=p, name='Default')
+
+                        color_names = r.get('colors') or ([] if not default_color_obj else ['Default'])
+                        size_values = r.get('sizes') or []
+
+                        for cname in (color_names or []):
+                            color_obj, _ = ProductColor.objects.get_or_create(product=p, name=cname)
+                            if size_values:
+                                for s in size_values:
+                                    pv = ProductVariant.objects.filter(product=p, color_obj=color_obj, size=s).first()
+                                    if pv:
+                                        if r['default_qty'] is not None:
+                                            pv.stock_qty = r['default_qty']
+                                        if r['default_price'] is None:
+                                            pv.price_override = None
+                                        elif r['default_price'] is not None:
+                                            pv.price_override = Decimal(r['default_price'])
+                                        pv.is_enabled = True
+                                        pv.save()
+                                        result['variants_updated'] += 1
+                                    else:
+                                        ProductVariant.objects.create(
+                                            product=p,
+                                            color_obj=color_obj,
+                                            size=s,
+                                            stock_qty=(r['default_qty'] or 0),
+                                            price_override=(Decimal(r['default_price']) if r['default_price'] is not None else None),
+                                            is_enabled=True
+                                        )
+                                        result['variants_created'] += 1
                             else:
-                                from decimal import Decimal
-                                ProductVariant.objects.create(
-                                    product=p,
-                                    color_obj=color_obj,
-                                    size=r['variant_size'],
-                                    stock_qty=(r['stock_qty'] or 0),
-                                    price_override=(Decimal(r['price_override']) if r['price_override'] is not None else None),
-                                    is_enabled=bool(r['is_enabled'])
-                                )
-                                result['variants_created'] += 1
+                                pv = ProductVariant.objects.filter(product=p, color_obj=color_obj, size='ONE').first()
+                                if pv:
+                                    if r['default_qty'] is not None:
+                                        pv.stock_qty = r['default_qty']
+                                    if r['default_price'] is None:
+                                        pv.price_override = None
+                                    elif r['default_price'] is not None:
+                                        pv.price_override = Decimal(r['default_price'])
+                                    pv.is_enabled = True
+                                    pv.save()
+                                    result['variants_updated'] += 1
+                                else:
+                                    ProductVariant.objects.create(
+                                        product=p,
+                                        color_obj=color_obj,
+                                        size='ONE',
+                                        stock_qty=(r['default_qty'] or 0),
+                                        price_override=(Decimal(r['default_price']) if r['default_price'] is not None else None),
+                                        is_enabled=True
+                                    )
+                                    result['variants_created'] += 1
+
                         if r['image_urls']:
                             existing_hashes = set([i.image_hash for i in p.images.all() if i.image_hash])
                             from urllib.request import urlopen
@@ -3024,35 +3039,64 @@ def download_products_template(request):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     from django.http import HttpResponse
-    headers = ['store_id','store_name','product_id','product_name','category','base_price','variant_color','variant_size','stock_qty','price_override','is_active','image_urls']
-    example = ['','My Store','','Classic T-Shirt','men','15000','Black','M','50','','true','https://example.com/img1.jpg, https://example.com/img2.jpg']
-    from .models import Store, Product
+    from .models import Store, Product, AttributeColor, AttributeSize
     stores = list(Store.objects.all().order_by('id'))
     categories = list(Product.CATEGORY_CHOICES)
+    colors = list(AttributeColor.objects.all().order_by('name'))
+    sizes = list(AttributeSize.objects.all().order_by('order', 'name'))
 
     try:
         from openpyxl import Workbook
+        from openpyxl.worksheet.datavalidation import DataValidation
+        from openpyxl.workbook.defined_name import DefinedName
         wb = Workbook()
         ws = wb.active
-        ws.title = 'TEMPLATE'
+        ws.title = 'TEMPLATE_PRODUCTS'
+        headers = [
+            'store_code','product_name','category_id','base_price_iqd','is_active',
+            'description','is_featured','colors','sizes','default_stock_qty','default_price_override_iqd','image_urls'
+        ]
         ws.append(headers)
-        ws.append(example)
         lookups = wb.create_sheet('LOOKUPS')
-        lookups.append(['stores_id','stores_name'])
+        lookups.append(['store_code','store_name'])
         for s in stores:
-            lookups.append([s.id, s.name])
+            lookups.append([str(s.id), s.name])
         lookups.append([])
-        lookups.append(['category_key','category_name'])
+        lookups.append(['category_id','category_name'])
         for key, name in categories:
             lookups.append([key, name])
         lookups.append([])
-        lookups.append(['symbolic_sizes'])
-        for v in ['XS','S','M','L','XL','XXL','3XL','4XL']:
-            lookups.append([v])
+        lookups.append(['color_name','display_name'])
+        for c in colors:
+            lookups.append([c.name, c.name])
         lookups.append([])
-        lookups.append(['numeric_sizes'])
-        for v in [str(n) for n in range(28, 61, 2)]:
-            lookups.append([v])
+        lookups.append(['size_name'])
+        for s in sizes:
+            lookups.append([s.name])
+        lookups.append([])
+        lookups.append(['BOOLEAN'])
+        lookups.append(['TRUE'])
+        lookups.append(['FALSE'])
+
+        last_row_stores = 1 + 1 + len(stores)
+        last_row_categories = last_row_stores + 1 + 1 + len(categories)
+        last_row_colors = last_row_categories + 1 + 1 + len(colors)
+        last_row_sizes = last_row_colors + 1 + 1 + len(sizes)
+        wb.defined_names.append(DefinedName(name='stores_codes', attr_text=f"LOOKUPS!$A$2:$A${1+len(stores)}"))
+        wb.defined_names.append(DefinedName(name='categories_ids', attr_text=f"LOOKUPS!$A${last_row_stores+2}:$A${last_row_stores+1+len(categories)}"))
+        wb.defined_names.append(DefinedName(name='bool_values', attr_text=f"LOOKUPS!$A${last_row_sizes+2}:$A${last_row_sizes+3}"))
+
+        dv_store = DataValidation(type="list", formula1="=stores_codes", allow_blank=False)
+        dv_category = DataValidation(type="list", formula1="=categories_ids", allow_blank=False)
+        dv_bool = DataValidation(type="list", formula1="=bool_values", allow_blank=True)
+        ws.add_data_validation(dv_store)
+        ws.add_data_validation(dv_category)
+        ws.add_data_validation(dv_bool)
+        dv_store.add("A2:A1000")
+        dv_category.add("C2:C1000")
+        dv_bool.add("E2:E1000")
+        dv_bool.add("G2:G1000")
+
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="products_template.xlsx"'
         from io import BytesIO
@@ -3085,24 +3129,33 @@ def download_products_template(request):
                     cells.append(f'<c r="{cr}" t="inlineStr"><is><t>{escape(str(val))}</t></is></c>')
             return f"<row r=\"{r}\">{''.join(cells)}</row>"
 
-        sheet1_rows = [row_xml(1, headers), row_xml(2, example)]
+        headers = [
+            'store_code','product_name','category_id','base_price_iqd','is_active',
+            'description','is_featured','colors','sizes','default_stock_qty','default_price_override_iqd','image_urls'
+        ]
+        sheet1_rows = [row_xml(1, headers)]
+
         look_rows = []
-        look_rows.append(row_xml(1, ['stores_id','stores_name']))
+        look_rows.append(row_xml(1, ['store_code','store_name']))
         rr = 2
         for s in stores:
-            look_rows.append(row_xml(rr, [s.id, s.name])); rr += 1
+            look_rows.append(row_xml(rr, [str(s.id), s.name])); rr += 1
         rr += 1
-        look_rows.append(row_xml(rr, ['category_key','category_name'])); rr += 1
+        look_rows.append(row_xml(rr, ['category_id','category_name'])); rr += 1
         for key, name in categories:
             look_rows.append(row_xml(rr, [key, name])); rr += 1
         rr += 1
-        look_rows.append(row_xml(rr, ['symbolic_sizes'])); rr += 1
-        for v in ['XS','S','M','L','XL','XXL','3XL','4XL']:
-            look_rows.append(row_xml(rr, [v])); rr += 1
+        look_rows.append(row_xml(rr, ['color_name','display_name'])); rr += 1
+        for c in colors:
+            look_rows.append(row_xml(rr, [c.name, c.name])); rr += 1
         rr += 1
-        look_rows.append(row_xml(rr, ['numeric_sizes'])); rr += 1
-        for v in [str(n) for n in range(28, 61, 2)]:
-            look_rows.append(row_xml(rr, [v])); rr += 1
+        look_rows.append(row_xml(rr, ['size_name'])); rr += 1
+        for s in sizes:
+            look_rows.append(row_xml(rr, [s.name])); rr += 1
+        rr += 1
+        look_rows.append(row_xml(rr, ['BOOLEAN'])); rr += 1
+        look_rows.append(row_xml(rr, ['TRUE'])); rr += 1
+        look_rows.append(row_xml(rr, ['FALSE']))
 
         sheet1_xml = f"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{''.join(sheet1_rows)}</sheetData></worksheet>"
         sheet2_xml = f"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{''.join(look_rows)}</sheetData></worksheet>"
@@ -3126,7 +3179,7 @@ def download_products_template(request):
         workbook_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <sheets>
-    <sheet name="TEMPLATE" sheetId="1" r:id="rId1"/>
+    <sheet name="TEMPLATE_PRODUCTS" sheetId="1" r:id="rId1"/>
     <sheet name="LOOKUPS" sheetId="2" r:id="rId2"/>
   </sheets>
 </workbook>"""
@@ -3181,8 +3234,11 @@ def export_products_excel(request):
         return redirect('super_owner_products')
     wb = Workbook()
     ws = wb.active
-    ws.title = 'EXPORT'
-    headers = ['store_id','store_name','product_id','product_name','category','base_price','variant_color','variant_size','stock_qty','price_override','is_active','image_urls']
+    ws.title = 'TEMPLATE_PRODUCTS'
+    headers = [
+        'store_code','product_name','category_id','base_price_iqd','is_active',
+        'description','is_featured','colors','sizes','default_stock_qty','default_price_override_iqd','image_urls'
+    ]
     ws.append(headers)
     products = Product.objects.select_related('store').prefetch_related('variants','images').all()
     for p in products:
@@ -3191,38 +3247,23 @@ def export_products_excel(request):
             u = i.get_image_url()
             if u:
                 img_urls.append(u)
-        url_str = ', '.join(img_urls)
-        if p.variants.exists():
-            for v in p.variants.all():
-                ws.append([
-                    p.store_id,
-                    p.store.name,
-                    p.id,
-                    p.name,
-                    p.category,
-                    str(p.base_price),
-                    v.color,
-                    v.size_display,
-                    v.stock_qty,
-                    (str(v.price_override) if v.price_override is not None else ''),
-                    ('true' if p.is_active else 'false'),
-                    url_str,
-                ])
-        else:
-            ws.append([
-                p.store_id,
-                p.store.name,
-                p.id,
-                p.name,
-                p.category,
-                str(p.base_price),
-                '',
-                '',
-                '',
-                '',
-                ('true' if p.is_active else 'false'),
-                url_str,
-            ])
+        url_str = ', '.join(sorted(set(img_urls)))
+        colors = sorted(set([v.color for v in p.variants.all() if v.color]))
+        sizes = sorted(set([v.size_display for v in p.variants.all() if v.size_display]))
+        ws.append([
+            str(p.store_id),
+            p.name,
+            p.category,
+            str(p.base_price),
+            ('TRUE' if p.is_active else 'FALSE'),
+            p.description,
+            ('TRUE' if p.is_featured else 'FALSE'),
+            ','.join(colors),
+            ','.join(sizes),
+            '',
+            '',
+            url_str,
+        ])
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="products_export.xlsx"'
     from io import BytesIO
