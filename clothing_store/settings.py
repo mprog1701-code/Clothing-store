@@ -7,6 +7,7 @@ from decimal import Decimal
 from decouple import config
 import os
 import dj_database_url
+from django.contrib.messages import constants as messages
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -99,6 +100,15 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# خريطة مستويات الرسائل إلى فئات Bootstrap
+MESSAGE_TAGS = {
+    messages.DEBUG: 'secondary',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'danger',
+}
 
 LANGUAGE_CODE = 'ar'
 TIME_ZONE = 'UTC'
@@ -230,7 +240,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default Django authentication
 ]
 
-DELIVERY_FEE = Decimal('50.00')  # 50 SAR
+DELIVERY_FEE = Decimal('5000')  # 5000 IQD
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 CSRF_TRUSTED_ORIGINS_ENV = config('CSRF_TRUSTED_ORIGINS', default='')
 if CSRF_TRUSTED_ORIGINS_ENV:

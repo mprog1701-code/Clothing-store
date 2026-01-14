@@ -3024,41 +3024,149 @@ def download_products_template(request):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     from django.http import HttpResponse
+    headers = ['store_id','store_name','product_id','product_name','category','base_price','variant_color','variant_size','stock_qty','price_override','is_active','image_urls']
+    example = ['','My Store','','Classic T-Shirt','men','15000','Black','M','50','','true','https://example.com/img1.jpg, https://example.com/img2.jpg']
+    from .models import Store, Product
+    stores = list(Store.objects.all().order_by('id'))
+    categories = list(Product.CATEGORY_CHOICES)
+
     try:
         from openpyxl import Workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = 'TEMPLATE'
+        ws.append(headers)
+        ws.append(example)
+        lookups = wb.create_sheet('LOOKUPS')
+        lookups.append(['stores_id','stores_name'])
+        for s in stores:
+            lookups.append([s.id, s.name])
+        lookups.append([])
+        lookups.append(['category_key','category_name'])
+        for key, name in categories:
+            lookups.append([key, name])
+        lookups.append([])
+        lookups.append(['symbolic_sizes'])
+        for v in ['XS','S','M','L','XL','XXL','3XL','4XL']:
+            lookups.append([v])
+        lookups.append([])
+        lookups.append(['numeric_sizes'])
+        for v in [str(n) for n in range(28, 61, 2)]:
+            lookups.append([v])
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="products_template.xlsx"'
+        from io import BytesIO
+        bio = BytesIO()
+        wb.save(bio)
+        response.write(bio.getvalue())
+        return response
     except Exception:
-        messages.error(request, 'تعذر إنشاء ملف القالب. يرجى المحاولة لاحقاً.')
-        return redirect('super_owner_products')
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'TEMPLATE'
-    headers = ['store_id','store_name','product_id','product_name','category','base_price','variant_color','variant_size','stock_qty','price_override','is_active','image_urls']
-    ws.append(headers)
-    ws.append(['','My Store','','Classic T-Shirt','men','15000','Black','M','50','','true','https://example.com/img1.jpg, https://example.com/img2.jpg'])
-    lookups = wb.create_sheet('LOOKUPS')
-    lookups.append(['stores_id','stores_name'])
-    from .models import Store, Product
-    for s in Store.objects.all().order_by('id'):
-        lookups.append([s.id, s.name])
-    lookups.append([])
-    lookups.append(['category_key','category_name'])
-    for key, name in Product.CATEGORY_CHOICES:
-        lookups.append([key, name])
-    lookups.append([])
-    lookups.append(['symbolic_sizes'])
-    for v in ['XS','S','M','L','XL','XXL','3XL','4XL']:
-        lookups.append([v])
-    lookups.append([])
-    lookups.append(['numeric_sizes'])
-    for v in [str(n) for n in range(28, 61, 2)]:
-        lookups.append([v])
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="products_template.xlsx"'
-    from io import BytesIO
-    bio = BytesIO()
-    wb.save(bio)
-    response.write(bio.getvalue())
-    return response
+        import zipfile
+        from io import BytesIO
+        from xml.sax.saxutils import escape
+
+        def col_name(idx):
+            s = ''
+            i = idx
+            while i >= 0:
+                s = chr(i % 26 + 65) + s
+                i = i // 26 - 1
+            return s
+
+        def row_xml(r, values):
+            cells = []
+            for cidx, val in enumerate(values):
+                cr = f"{col_name(cidx)}{r}"
+                if isinstance(val, bool):
+                    cells.append(f'<c r="{cr}" t="b"><v>{"1" if val else "0"}</v></c>')
+                elif isinstance(val, (int, float)):
+                    cells.append(f'<c r="{cr}"><v>{val}</v></c>')
+                else:
+                    cells.append(f'<c r="{cr}" t="inlineStr"><is><t>{escape(str(val))}</t></is></c>')
+            return f"<row r=\"{r}\">{''.join(cells)}</row>"
+
+        sheet1_rows = [row_xml(1, headers), row_xml(2, example)]
+        look_rows = []
+        look_rows.append(row_xml(1, ['stores_id','stores_name']))
+        rr = 2
+        for s in stores:
+            look_rows.append(row_xml(rr, [s.id, s.name])); rr += 1
+        rr += 1
+        look_rows.append(row_xml(rr, ['category_key','category_name'])); rr += 1
+        for key, name in categories:
+            look_rows.append(row_xml(rr, [key, name])); rr += 1
+        rr += 1
+        look_rows.append(row_xml(rr, ['symbolic_sizes'])); rr += 1
+        for v in ['XS','S','M','L','XL','XXL','3XL','4XL']:
+            look_rows.append(row_xml(rr, [v])); rr += 1
+        rr += 1
+        look_rows.append(row_xml(rr, ['numeric_sizes'])); rr += 1
+        for v in [str(n) for n in range(28, 61, 2)]:
+            look_rows.append(row_xml(rr, [v])); rr += 1
+
+        sheet1_xml = f"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{''.join(sheet1_rows)}</sheetData></worksheet>"
+        sheet2_xml = f"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{''.join(look_rows)}</sheetData></worksheet>"
+        content_types = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+</Types>"""
+        rels_root = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>
+</Relationships>"""
+        workbook_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="TEMPLATE" sheetId="1" r:id="rId1"/>
+    <sheet name="LOOKUPS" sheetId="2" r:id="rId2"/>
+  </sheets>
+</workbook>"""
+        workbook_rels = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>"""
+        styles_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <fonts count="1"><font><sz val="11"/></font></fonts>
+  <fills count="1"><fill><patternFill patternType="none"/></fill></fills>
+  <borders count="1"><border/></borders>
+  <cellStyleXfs count="1"><xf/></cellStyleXfs>
+  <cellXfs count="1"><xf xfId="0"/></cellXfs>
+</styleSheet>"""
+        core_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>Products Template</dc:title>
+</cp:coreProperties>"""
+        app_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+  <Application>Python</Application>
+</Properties>"""
+        bio = BytesIO()
+        with zipfile.ZipFile(bio, mode='w', compression=zipfile.ZIP_DEFLATED) as z:
+            z.writestr('[Content_Types].xml', content_types)
+            z.writestr('_rels/.rels', rels_root)
+            z.writestr('xl/workbook.xml', workbook_xml)
+            z.writestr('xl/_rels/workbook.xml.rels', workbook_rels)
+            z.writestr('xl/styles.xml', styles_xml)
+            z.writestr('xl/worksheets/sheet1.xml', sheet1_xml)
+            z.writestr('xl/worksheets/sheet2.xml', sheet2_xml)
+            z.writestr('docProps/core.xml', core_xml)
+            z.writestr('docProps/app.xml', app_xml)
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="products_template.xlsx"'
+        response.write(bio.getvalue())
+        return response
 
 @login_required
 def export_products_excel(request):
