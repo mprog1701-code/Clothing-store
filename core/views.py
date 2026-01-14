@@ -2848,35 +2848,22 @@ def import_products_excel(request):
     headers = []
     data_rows = []
     try:
-        if name.endswith('.csv'):
-            import io, csv
-            content = f.read()
-            try:
-                text = content.decode('utf-8')
-            except Exception:
-                text = content.decode('utf-8', errors='ignore')
-            reader = csv.reader(io.StringIO(text))
-            rows = list(reader)
-            if rows:
-                headers = [h.strip().lower() for h in rows[0]]
-                data_rows = rows[1:]
-        elif name.endswith('.xlsx'):
-            try:
-                from openpyxl import load_workbook
-            except Exception:
-                messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl أو استخدام CSV')
-                return redirect('super_owner_products')
-            wb = load_workbook(f, read_only=True, data_only=True)
-            ws = wb.active
-            for ridx, row in enumerate(ws.iter_rows(values_only=True)):
-                vals = [str(v).strip() if v is not None else '' for v in row]
-                if ridx == 0:
-                    headers = [v.lower() for v in vals]
-                else:
-                    data_rows.append(vals)
-        else:
-            messages.error(request, 'صيغة غير مدعومة، استخدم CSV أو XLSX')
+        if not name.endswith('.xlsx'):
+            messages.error(request, 'صيغة غير مدعومة، يجب رفع ملف XLSX فقط')
             return redirect('super_owner_products')
+        try:
+            from openpyxl import load_workbook
+        except Exception:
+            messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl')
+            return redirect('super_owner_products')
+        wb = load_workbook(f, read_only=True, data_only=True)
+        ws = wb.active
+        for ridx, row in enumerate(ws.iter_rows(values_only=True)):
+            vals = [str(v).strip() if v is not None else '' for v in row]
+            if ridx == 0:
+                headers = [v.lower() for v in vals]
+            else:
+                data_rows.append(vals)
     except Exception:
         messages.error(request, 'تعذر قراءة الملف')
         return redirect('super_owner_products')
@@ -2896,9 +2883,9 @@ def import_products_excel(request):
         category = getv(row, 'category') if 'category' in hdr else ''
         base_price_raw = getv(row, 'base_price') if 'base_price' in hdr else ''
         description = getv(row, 'description') if 'description' in hdr else ''
-        size_type = getv(row, 'size_type') if 'size_type' in hdr else ''
+        size_type = ''
         is_active_raw = getv(row, 'is_active') if 'is_active' in hdr else ''
-        is_featured_raw = getv(row, 'is_featured') if 'is_featured' in hdr else ''
+        is_featured_raw = ''
         color_name = getv(row, 'variant_color') if 'variant_color' in hdr else ''
         size = getv(row, 'variant_size') if 'variant_size' in hdr else ''
         stock_qty_raw = getv(row, 'stock_qty') if 'stock_qty' in hdr else ''
@@ -2936,8 +2923,12 @@ def import_products_excel(request):
         is_featured = boolify(is_featured_raw) if is_featured_raw else False
         if category and category not in valid_categories:
             row_errors.append('فئة غير صالحة')
-        if size_type and size_type not in ['symbolic','numeric','none']:
-            row_errors.append('نوع المقاس غير صالح')
+        # infer size_type from size value if needed
+        if size:
+            if size.isdigit():
+                size_type = 'numeric'
+            else:
+                size_type = 'symbolic'
 
         product_obj = None
         will_create_product = False
@@ -3053,9 +3044,9 @@ def download_products_template(request):
     wb = Workbook()
     ws = wb.active
     ws.title = 'TEMPLATE'
-    headers = ['store_id','store_name','product_id','sku','product_name','category','base_price','description','size_type','is_active','is_featured','variant_color','variant_size','stock_qty','price_override','is_enabled','image_1','image_2','image_3']
+    headers = ['store_id','store_name','product_id','product_name','category','base_price','variant_color','variant_size','stock_qty','price_override','is_active','image_urls']
     ws.append(headers)
-    ws.append(['','My Store','','','Classic T-Shirt','men','15000','Soft cotton tee','symbolic','true','false','Black','M','50','','true','https://example.com/img1.jpg','',''])
+    ws.append(['','My Store','','Classic T-Shirt','men','15000','Black','M','50','','true','https://example.com/img1.jpg, https://example.com/img2.jpg'])
     lookups = wb.create_sheet('LOOKUPS')
     lookups.append(['stores_id','stores_name'])
     from .models import Store, Product
@@ -3065,10 +3056,6 @@ def download_products_template(request):
     lookups.append(['category_key','category_name'])
     for key, name in Product.CATEGORY_CHOICES:
         lookups.append([key, name])
-    lookups.append([])
-    lookups.append(['size_type'])
-    for st, _ in Product.SIZE_TYPE_CHOICES:
-        lookups.append([st])
     lookups.append([])
     lookups.append(['symbolic_sizes'])
     for v in ['XS','S','M','L','XL','XXL','3XL','4XL']:
@@ -3085,6 +3072,68 @@ def download_products_template(request):
     response.write(bio.getvalue())
     return response
 
+@login_required
+def export_products_excel(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+    from django.http import HttpResponse
+    try:
+        from openpyxl import Workbook
+    except Exception:
+        messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl')
+        return redirect('super_owner_products')
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'EXPORT'
+    headers = ['store_id','store_name','product_id','product_name','category','base_price','variant_color','variant_size','stock_qty','price_override','is_active','image_urls']
+    ws.append(headers)
+    products = Product.objects.select_related('store').prefetch_related('variants','images').all()
+    for p in products:
+        img_urls = []
+        for i in p.images.all():
+            u = i.get_image_url()
+            if u:
+                img_urls.append(u)
+        url_str = ', '.join(img_urls)
+        if p.variants.exists():
+            for v in p.variants.all():
+                ws.append([
+                    p.store_id,
+                    p.store.name,
+                    p.id,
+                    p.name,
+                    p.category,
+                    str(p.base_price),
+                    v.color,
+                    v.size_display,
+                    v.stock_qty,
+                    (str(v.price_override) if v.price_override is not None else ''),
+                    ('true' if p.is_active else 'false'),
+                    url_str,
+                ])
+        else:
+            ws.append([
+                p.store_id,
+                p.store.name,
+                p.id,
+                p.name,
+                p.category,
+                str(p.base_price),
+                '',
+                '',
+                '',
+                '',
+                ('true' if p.is_active else 'false'),
+                url_str,
+            ])
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="products_export.xlsx"'
+    from io import BytesIO
+    bio = BytesIO()
+    wb.save(bio)
+    response.write(bio.getvalue())
+    return response
 @login_required
 def super_owner_add_product(request):
     if request.user.username != 'super_owner':

@@ -48,11 +48,15 @@
                             </a>
                             <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#uploadExcelModal">
                                 <i class="fas fa-file-upload me-2"></i>
-                                رفع Excel/CSV
+                                رفع Excel (.xlsx)
                             </button>
                             <a class="btn btn-outline-secondary" href="{% url 'download_products_template' %}">
                                 <i class="fas fa-download me-2"></i>
                                 تنزيل قالب Excel
+                            </a>
+                            <a class="btn btn-outline-secondary" href="{% url 'export_products_excel' %}">
+                                <i class="fas fa-file-export me-2"></i>
+                                تنزيل تصدير Excel
                             </a>
                         </div>
                     </div>
@@ -288,8 +292,8 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">اختر الملف</label>
-            <input type="file" class="form-control" name="upload_file" accept=".csv,.xlsx" required>
-            <small class="text-muted d-block mt-2">الأعمدة: store_id | store_name | product_id | product_name | category | base_price | description | size_type | is_active | is_featured | variant_color | variant_size | stock_qty | price_override | is_enabled | image_urls</small>
+            <input type="file" class="form-control" name="upload_file" accept=".xlsx" required>
+            <small class="text-muted d-block mt-2">الأعمدة: store_id | store_name | product_id | product_name | category | base_price | variant_color | variant_size | stock_qty | price_override | is_active | image_urls</small>
           </div>
         </div>
         <div class="modal-footer">
