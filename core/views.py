@@ -3135,13 +3135,19 @@ def download_products_template(request):
         lookups.append(['ACTIVE'])
         lookups.append(['INACTIVE'])
 
-        last_row_stores = 1 + 1 + len(stores)
-        last_row_categories = last_row_stores + 1 + 1 + len(categories)
-        last_row_colors = last_row_categories + 1 + 1 + len(colors)
-        last_row_sizes = last_row_colors + 1 + 1 + len(sizes)
-        wb.defined_names.append(DefinedName(name='stores_codes', attr_text=f"LOOKUPS!$A$2:$A${1+len(stores)}"))
-        wb.defined_names.append(DefinedName(name='categories_list', attr_text=f"LOOKUPS!$A${last_row_stores+2}:$A${last_row_stores+1+len(categories)}"))
-        wb.defined_names.append(DefinedName(name='active_values', attr_text=f"LOOKUPS!$A${last_row_sizes+2}:$A${last_row_sizes+3}"))
+        stores_start = 2
+        stores_end = 1 + len(stores)
+        categories_start = stores_end + 3
+        categories_end = categories_start + len(categories) - 1
+        colors_start = categories_end + 3
+        colors_end = colors_start + len(colors) - 1
+        sizes_start = colors_end + 3
+        sizes_end = sizes_start + len(sizes) - 1
+        active_values_start = sizes_end + 3
+        active_values_end = active_values_start + 1
+        wb.defined_names.append(DefinedName(name='stores_codes', attr_text=f"LOOKUPS!$A${stores_start}:$A${stores_end}"))
+        wb.defined_names.append(DefinedName(name='categories_list', attr_text=f"LOOKUPS!$A${categories_start}:$A${categories_end}"))
+        wb.defined_names.append(DefinedName(name='active_values', attr_text=f"LOOKUPS!$A${active_values_start}:$A${active_values_end}"))
 
         dv_store = DataValidation(type="list", formula1="=stores_codes", allow_blank=False)
         dv_category = DataValidation(type="list", formula1="=categories_list", allow_blank=False)
