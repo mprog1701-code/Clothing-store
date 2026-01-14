@@ -3150,13 +3150,9 @@ def download_products_template(request):
         active_values_start = active_header_row + 1
         active_values_end = active_header_row + 2
 
-        wb.defined_names.append(DefinedName(name='stores_codes', attr_text=f"LOOKUPS!$A${stores_start}:$A${stores_end}"))
-        wb.defined_names.append(DefinedName(name='categories_list', attr_text=f"LOOKUPS!$A${categories_start}:$A${categories_end}"))
-        wb.defined_names.append(DefinedName(name='active_values', attr_text=f"LOOKUPS!$A${active_values_start}:$A${active_values_end}"))
-
-        dv_store = DataValidation(type="list", formula1="=stores_codes", allow_blank=False)
-        dv_category = DataValidation(type="list", formula1="=categories_list", allow_blank=False)
-        dv_active = DataValidation(type="list", formula1="=active_values", allow_blank=False)
+        dv_store = DataValidation(type="list", formula1=f"=LOOKUPS!$A${stores_start}:$A${stores_end}", allow_blank=False)
+        dv_category = DataValidation(type="list", formula1=f"=LOOKUPS!$A${categories_start}:$A${categories_end}", allow_blank=False)
+        dv_active = DataValidation(type="list", formula1=f"=LOOKUPS!$A${active_values_start}:$A${active_values_end}", allow_blank=False)
         ws.add_data_validation(dv_store)
         ws.add_data_validation(dv_category)
         ws.add_data_validation(dv_active)
