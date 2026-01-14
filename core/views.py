@@ -2432,7 +2432,7 @@ def super_owner_products(request):
         if action == 'upload_excel':
             f = request.FILES.get('upload_file')
             if not f:
-                messages.error(request, 'يرجى اختيار ملف Excel/CSV')
+                messages.error(request, 'يرجى اختيار ملف Excel (XLSX)')
                 return redirect('super_owner_products')
             name = (f.name or '').lower().strip()
             parsed_rows = []
@@ -2441,23 +2441,11 @@ def super_owner_products(request):
             headers = []
             data_rows = []
             try:
-                if name.endswith('.csv'):
-                    import io, csv
-                    content = f.read()
-                    try:
-                        text = content.decode('utf-8')
-                    except Exception:
-                        text = content.decode('utf-8', errors='ignore')
-                    reader = csv.reader(io.StringIO(text))
-                    rows = list(reader)
-                    if rows:
-                        headers = [h.strip().lower() for h in rows[0]]
-                        data_rows = rows[1:]
-                elif name.endswith('.xlsx'):
+                if name.endswith('.xlsx'):
                     try:
                         from openpyxl import load_workbook
                     except Exception:
-                        messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl أو استخدام CSV')
+                        messages.error(request, 'تعذر قراءة ملف Excel.')
                         return redirect('super_owner_products')
                     wb = load_workbook(f, read_only=True, data_only=True)
                     ws = wb.active
@@ -2468,7 +2456,7 @@ def super_owner_products(request):
                         else:
                             data_rows.append(vals)
                 else:
-                    messages.error(request, 'صيغة غير مدعومة، استخدم CSV أو XLSX')
+                    messages.error(request, 'صيغة غير مدعومة، يجب رفع ملف XLSX فقط')
                     return redirect('super_owner_products')
             except Exception:
                 messages.error(request, 'تعذر قراءة الملف')
@@ -2840,7 +2828,7 @@ def import_products_excel(request):
         return redirect('super_owner_products')
     f = request.FILES.get('upload_file')
     if not f:
-        messages.error(request, 'يرجى اختيار ملف Excel/CSV')
+        messages.error(request, 'يرجى اختيار ملف Excel (XLSX)')
         return redirect('super_owner_products')
     name = (f.name or '').lower().strip()
     parsed_rows = []
@@ -2854,7 +2842,7 @@ def import_products_excel(request):
         try:
             from openpyxl import load_workbook
         except Exception:
-            messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl')
+            messages.error(request, 'تعذر قراءة ملف Excel.')
             return redirect('super_owner_products')
         wb = load_workbook(f, read_only=True, data_only=True)
         ws = wb.active
@@ -3039,7 +3027,7 @@ def download_products_template(request):
     try:
         from openpyxl import Workbook
     except Exception:
-        messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl')
+        messages.error(request, 'تعذر إنشاء ملف القالب. يرجى المحاولة لاحقاً.')
         return redirect('super_owner_products')
     wb = Workbook()
     ws = wb.active
@@ -3081,7 +3069,7 @@ def export_products_excel(request):
     try:
         from openpyxl import Workbook
     except Exception:
-        messages.error(request, 'Excel غير مدعوم، يرجى تثبيت openpyxl')
+        messages.error(request, 'تعذر إنشاء ملف Excel. يرجى المحاولة لاحقاً.')
         return redirect('super_owner_products')
     wb = Workbook()
     ws = wb.active
