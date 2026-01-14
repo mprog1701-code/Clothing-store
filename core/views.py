@@ -2436,7 +2436,7 @@ def super_owner_products(request):
                 return redirect('super_owner_products')
             name = (f.name or '').lower().strip()
             parsed_rows = []
-            stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0, 'rows_total': 0}
+            stats = {'products_create': 0, 'products_update': 0, 'variants_create': 0, 'variants_update': 0, 'images_add': 0, 'rows_total': 0, 'errors_count': 0}
             headers = []
             data_rows = []
             try:
@@ -2460,23 +2460,26 @@ def super_owner_products(request):
 
             hdr = {k: i for i, k in enumerate(headers)}
             valid_categories = [c[0] for c in Product.CATEGORY_CHOICES]
+            from .models import AttributeColor, AttributeSize
+            allowed_colors = set(AttributeColor.objects.values_list('name', flat=True))
+            allowed_sizes = set(AttributeSize.objects.values_list('name', flat=True))
             boolify = lambda v: str(v).strip().lower() in ['1','true','yes','y','on','t','true','TRUE']
             getv = lambda row, key: (row[hdr[key]] if key in hdr and hdr[key] < len(row) else '').strip()
             stats['rows_total'] = len(data_rows)
             for idx, row in enumerate(data_rows, start=2):
                 row_errors = []
-                store_code = getv(row, 'store_code') if 'store_code' in hdr else ''
                 product_name = getv(row, 'product_name') if 'product_name' in hdr else ''
-                category_id = getv(row, 'category_id') if 'category_id' in hdr else ''
+                description = getv(row, 'description') if 'description' in hdr else ''
+                store_code = getv(row, 'store_code') if 'store_code' in hdr else ''
+                category_id = getv(row, 'category') if 'category' in hdr else ''
                 base_price_raw = getv(row, 'base_price_iqd') if 'base_price_iqd' in hdr else ''
                 is_active_raw = getv(row, 'is_active') if 'is_active' in hdr else ''
-                description = getv(row, 'description') if 'description' in hdr else ''
-                is_featured_raw = getv(row, 'is_featured') if 'is_featured' in hdr else ''
                 colors_raw = getv(row, 'colors') if 'colors' in hdr else ''
                 sizes_raw = getv(row, 'sizes') if 'sizes' in hdr else ''
-                default_qty_raw = getv(row, 'default_stock_qty') if 'default_stock_qty' in hdr else ''
-                default_price_raw = getv(row, 'default_price_override_iqd') if 'default_price_override_iqd' in hdr else ''
-                image_urls_raw = getv(row, 'image_urls') if 'image_urls' in hdr else ''
+                default_qty_raw = getv(row, 'default_qty') if 'default_qty' in hdr else ''
+                default_price_raw = getv(row, 'price_override_iqd') if 'price_override_iqd' in hdr else ''
+                image_urls_raw = getv(row, 'images') if 'images' in hdr else ''
+                color_images_raw = getv(row, 'color_images') if 'color_images' in hdr else ''
 
                 store_obj = None
                 if store_code:
@@ -2497,8 +2500,18 @@ def super_owner_products(request):
                 else:
                     row_errors.append('base_price_iqd مفقود')
 
-                is_active = boolify(is_active_raw) if is_active_raw else True
-                is_featured = boolify(is_featured_raw) if is_featured_raw else False
+                def parse_active(v):
+                    t = str(v).strip().lower()
+                    if t in ['1','true','t','yes','y','on','active']:
+                        return True
+                    if t in ['0','false','f','no','n','off','inactive']:
+                        return False
+                    return None
+                is_active = parse_active(is_active_raw)
+                if is_active is None and is_active_raw:
+                    row_errors.append('is_active غير صالح')
+                    is_active = True
+                is_featured = False
                 if category_id and category_id not in valid_categories:
                     row_errors.append('category_id غير صالح')
 
@@ -2543,6 +2556,16 @@ def super_owner_products(request):
                     except InvalidOperation:
                         row_errors.append('default_price_override_iqd غير صالح')
 
+                # Validate colors/sizes against allowed lists
+                if colors:
+                    invalid_colors = [c for c in colors if c not in allowed_colors]
+                    if invalid_colors:
+                        row_errors.append('colors غير صالحة: ' + ', '.join(invalid_colors))
+                if sizes:
+                    invalid_sizes = [s for s in sizes if s not in allowed_sizes]
+                    if invalid_sizes:
+                        row_errors.append('sizes غير صالحة: ' + ', '.join(invalid_sizes))
+
                 imgs = []
                 if image_urls_raw:
                     for u in [x.strip() for x in image_urls_raw.split(',') if x.strip()]:
@@ -2556,6 +2579,16 @@ def super_owner_products(request):
                     variant_expected = len(colors)
                 elif sizes:
                     variant_expected = len(sizes)
+
+                color_images = {}
+                if color_images_raw:
+                    for pair in [x.strip() for x in color_images_raw.split(',') if x.strip()]:
+                        if ':' in pair:
+                            k, v = pair.split(':', 1)
+                            k = k.strip()
+                            v = v.strip()
+                            if k and v:
+                                color_images[k] = v
 
                 parsed_rows.append({
                     'row_index': idx,
@@ -2574,12 +2607,15 @@ def super_owner_products(request):
                     'default_qty': default_qty,
                     'default_price': (str(default_price) if default_price is not None else None),
                     'image_urls': imgs,
+                    'color_images': color_images,
                     'errors': row_errors,
                     'will_create_product': will_create_product,
                     'will_update_product': will_update_product,
                     'expected_variants': variant_expected,
                 })
 
+                if row_errors:
+                    stats['errors_count'] += 1
                 if not row_errors:
                     if will_create_product:
                         stats['products_create'] += 1
@@ -2714,6 +2750,27 @@ def super_owner_products(request):
                                 img.image_url = u
                                 img.save()
                                 result['images_added'] += 1
+                        if r.get('color_images'):
+                            for cname, url in r['color_images'].items():
+                                color_obj, _ = ProductColor.objects.get_or_create(product=p, name=cname)
+                                existing = ProductImage.objects.filter(product=p, color__name=cname).first()
+                                if existing:
+                                    continue
+                                try:
+                                    from urllib.request import urlopen
+                                    import hashlib
+                                    from django.core.files.base import ContentFile
+                                    resp = urlopen(url)
+                                    data = resp.read()
+                                    h = hashlib.sha256(data).hexdigest()
+                                    filename = f"{h}.jpg"
+                                    img = ProductImage(product=p, image_hash=h, color=color_obj)
+                                    img.image.save(filename, ContentFile(data), save=True)
+                                    img.image_url = url
+                                    img.save()
+                                    result['images_added'] += 1
+                                except Exception:
+                                    pass
                     cache.delete(f"excel_upload:{batch_id}")
                 from .models import ImportLog
                 ImportLog.objects.create(
@@ -3053,8 +3110,8 @@ def download_products_template(request):
         ws = wb.active
         ws.title = 'TEMPLATE_PRODUCTS'
         headers = [
-            'store_code','product_name','category_id','base_price_iqd','is_active',
-            'description','is_featured','colors','sizes','default_stock_qty','default_price_override_iqd','image_urls'
+            'product_name','description','store_code','category','base_price_iqd','is_active',
+            'colors','sizes','default_qty','price_override_iqd','images'
         ]
         ws.append(headers)
         lookups = wb.create_sheet('LOOKUPS')
@@ -3062,7 +3119,7 @@ def download_products_template(request):
         for s in stores:
             lookups.append([str(s.id), s.name])
         lookups.append([])
-        lookups.append(['category_id','category_name'])
+        lookups.append(['category','category_name'])
         for key, name in categories:
             lookups.append([key, name])
         lookups.append([])
@@ -3074,28 +3131,27 @@ def download_products_template(request):
         for s in sizes:
             lookups.append([s.name])
         lookups.append([])
-        lookups.append(['BOOLEAN'])
-        lookups.append(['TRUE'])
-        lookups.append(['FALSE'])
+        lookups.append(['ACTIVE_VALUES'])
+        lookups.append(['ACTIVE'])
+        lookups.append(['INACTIVE'])
 
         last_row_stores = 1 + 1 + len(stores)
         last_row_categories = last_row_stores + 1 + 1 + len(categories)
         last_row_colors = last_row_categories + 1 + 1 + len(colors)
         last_row_sizes = last_row_colors + 1 + 1 + len(sizes)
         wb.defined_names.append(DefinedName(name='stores_codes', attr_text=f"LOOKUPS!$A$2:$A${1+len(stores)}"))
-        wb.defined_names.append(DefinedName(name='categories_ids', attr_text=f"LOOKUPS!$A${last_row_stores+2}:$A${last_row_stores+1+len(categories)}"))
-        wb.defined_names.append(DefinedName(name='bool_values', attr_text=f"LOOKUPS!$A${last_row_sizes+2}:$A${last_row_sizes+3}"))
+        wb.defined_names.append(DefinedName(name='categories_list', attr_text=f"LOOKUPS!$A${last_row_stores+2}:$A${last_row_stores+1+len(categories)}"))
+        wb.defined_names.append(DefinedName(name='active_values', attr_text=f"LOOKUPS!$A${last_row_sizes+2}:$A${last_row_sizes+3}"))
 
         dv_store = DataValidation(type="list", formula1="=stores_codes", allow_blank=False)
-        dv_category = DataValidation(type="list", formula1="=categories_ids", allow_blank=False)
-        dv_bool = DataValidation(type="list", formula1="=bool_values", allow_blank=True)
+        dv_category = DataValidation(type="list", formula1="=categories_list", allow_blank=False)
+        dv_active = DataValidation(type="list", formula1="=active_values", allow_blank=False)
         ws.add_data_validation(dv_store)
         ws.add_data_validation(dv_category)
-        ws.add_data_validation(dv_bool)
-        dv_store.add("A2:A1000")
-        dv_category.add("C2:C1000")
-        dv_bool.add("E2:E1000")
-        dv_bool.add("G2:G1000")
+        ws.add_data_validation(dv_active)
+        dv_store.add("C2:C1000")
+        dv_category.add("D2:D1000")
+        dv_active.add("F2:F1000")
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="products_template.xlsx"'
@@ -3130,8 +3186,8 @@ def download_products_template(request):
             return f"<row r=\"{r}\">{''.join(cells)}</row>"
 
         headers = [
-            'store_code','product_name','category_id','base_price_iqd','is_active',
-            'description','is_featured','colors','sizes','default_stock_qty','default_price_override_iqd','image_urls'
+            'product_name','description','store_code','category','base_price_iqd','is_active',
+            'colors','sizes','default_qty','price_override_iqd','images'
         ]
         sheet1_rows = [row_xml(1, headers)]
 
@@ -3141,7 +3197,7 @@ def download_products_template(request):
         for s in stores:
             look_rows.append(row_xml(rr, [str(s.id), s.name])); rr += 1
         rr += 1
-        look_rows.append(row_xml(rr, ['category_id','category_name'])); rr += 1
+        look_rows.append(row_xml(rr, ['category','category_name'])); rr += 1
         for key, name in categories:
             look_rows.append(row_xml(rr, [key, name])); rr += 1
         rr += 1
@@ -3153,9 +3209,9 @@ def download_products_template(request):
         for s in sizes:
             look_rows.append(row_xml(rr, [s.name])); rr += 1
         rr += 1
-        look_rows.append(row_xml(rr, ['BOOLEAN'])); rr += 1
-        look_rows.append(row_xml(rr, ['TRUE'])); rr += 1
-        look_rows.append(row_xml(rr, ['FALSE']))
+        look_rows.append(row_xml(rr, ['ACTIVE_VALUES'])); rr += 1
+        look_rows.append(row_xml(rr, ['ACTIVE'])); rr += 1
+        look_rows.append(row_xml(rr, ['INACTIVE']))
 
         sheet1_xml = f"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{''.join(sheet1_rows)}</sheetData></worksheet>"
         sheet2_xml = f"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>{''.join(look_rows)}</sheetData></worksheet>"
@@ -3236,8 +3292,8 @@ def export_products_excel(request):
     ws = wb.active
     ws.title = 'TEMPLATE_PRODUCTS'
     headers = [
-        'store_code','product_name','category_id','base_price_iqd','is_active',
-        'description','is_featured','colors','sizes','default_stock_qty','default_price_override_iqd','image_urls'
+        'product_name','description','store_code','category','base_price_iqd','is_active',
+        'colors','sizes','default_qty','price_override_iqd','images'
     ]
     ws.append(headers)
     products = Product.objects.select_related('store').prefetch_related('variants','images').all()
@@ -3251,13 +3307,12 @@ def export_products_excel(request):
         colors = sorted(set([v.color for v in p.variants.all() if v.color]))
         sizes = sorted(set([v.size_display for v in p.variants.all() if v.size_display]))
         ws.append([
-            str(p.store_id),
             p.name,
+            p.description,
+            str(p.store_id),
             p.category,
             str(p.base_price),
-            ('TRUE' if p.is_active else 'FALSE'),
-            p.description,
-            ('TRUE' if p.is_featured else 'FALSE'),
+            ('ACTIVE' if p.is_active else 'INACTIVE'),
             ','.join(colors),
             ','.join(sizes),
             '',

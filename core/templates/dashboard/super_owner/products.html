@@ -287,13 +287,14 @@
         <h5 class="modal-title" id="uploadExcelLabel">رفع ملف Excel (XLSX)</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form method="post" enctype="multipart/form-data" action="{% url 'import_products_excel' %}">
+      <form method="post" enctype="multipart/form-data" action="{% url 'super_owner_products' %}">
         {% csrf_token %}
+        <input type="hidden" name="action" value="upload_excel">
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">اختر الملف</label>
             <input type="file" class="form-control" name="upload_file" accept=".xlsx" required>
-            <small class="text-muted d-block mt-2">الأعمدة: store_id | store_name | product_id | product_name | category | base_price | variant_color | variant_size | stock_qty | price_override | is_active | image_urls</small>
+            <small class="text-muted d-block mt-2">الأعمدة: product_name | description | store_code | category | base_price_iqd | is_active | colors | sizes | default_qty | price_override_iqd | images — العملة: IQD</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -333,6 +334,7 @@
         <div class="col-md-3"><div class="alert alert-secondary">إنشاء متغيرات: <strong>{{ upload_payload.stats.variants_create }}</strong></div></div>
         <div class="col-md-3"><div class="alert alert-secondary">تحديث متغيرات: <strong>{{ upload_payload.stats.variants_update }}</strong></div></div>
       </div>
+      <div class="alert alert-light">العملة: <strong>IQD</strong></div>
       <div class="alert alert-warning">صور سيتم إضافتها: <strong>{{ upload_payload.stats.images_add }}</strong></div>
       <div class="alert alert-danger">عدد الأخطاء: <strong>{{ upload_payload.stats.errors_count }}</strong></div>
       {% if upload_payload.rows %}
@@ -344,11 +346,11 @@
               <th>المتجر</th>
               <th>المنتج</th>
               <th>الفئة</th>
-              <th>السعر</th>
-              <th>اللون</th>
-              <th>المقاس</th>
-              <th>الكمية</th>
-              <th>السعر الخاص</th>
+              <th>السعر (IQD)</th>
+              <th>الألوان</th>
+              <th>المقاسات</th>
+              <th>الكمية الافتراضية</th>
+              <th>السعر الخاص (IQD)</th>
               <th>الصور</th>
               <th>أخطاء</th>
             </tr>
@@ -360,11 +362,11 @@
               <td>{{ r.store_name }}</td>
               <td>{{ r.product_name }}</td>
               <td>{{ r.category }}</td>
-              <td>{{ r.base_price }}</td>
-              <td>{{ r.variant_color }}</td>
-              <td>{{ r.variant_size }}</td>
-              <td>{{ r.stock_qty }}</td>
-              <td>{{ r.price_override }}</td>
+              <td>{{ r.base_price }} IQD</td>
+              <td><small>{{ r.colors|join:', ' }}</small></td>
+              <td><small>{{ r.sizes|join:', ' }}</small></td>
+              <td>{{ r.default_qty }}</td>
+              <td>{{ r.default_price }}</td>
               <td><small>{{ r.image_urls|join:', ' }}</small></td>
               <td>
                 {% if r.errors and r.errors|length > 0 %}
