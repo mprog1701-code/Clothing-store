@@ -3139,14 +3139,16 @@ def download_products_template(request):
         stores_end = 1 + len(stores)
         categories_start = stores_end + 3
         categories_end = categories_start + len(categories) - 1
+        stores_end_safe = max(stores_start, stores_end)
+        categories_end_safe = max(categories_start, categories_end)
         colors_start = categories_end + 3
         colors_end = colors_start + len(colors) - 1
         sizes_start = colors_end + 3
         sizes_end = sizes_start + len(sizes) - 1
         active_values_start = sizes_end + 3
         active_values_end = active_values_start + 1
-        wb.defined_names.append(DefinedName(name='stores_codes', attr_text=f"LOOKUPS!$A${stores_start}:$A${stores_end}"))
-        wb.defined_names.append(DefinedName(name='categories_list', attr_text=f"LOOKUPS!$A${categories_start}:$A${categories_end}"))
+        wb.defined_names.append(DefinedName(name='stores_codes', attr_text=f"LOOKUPS!$A${stores_start}:$A${stores_end_safe}"))
+        wb.defined_names.append(DefinedName(name='categories_list', attr_text=f"LOOKUPS!$A${categories_start}:$A${categories_end_safe}"))
         wb.defined_names.append(DefinedName(name='active_values', attr_text=f"LOOKUPS!$A${active_values_start}:$A${active_values_end}"))
 
         dv_store = DataValidation(type="list", formula1="=stores_codes", allow_blank=False)
