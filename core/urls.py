@@ -73,9 +73,7 @@ urlpatterns = [
     path('dashboard/super-owner/products/', views.super_owner_products, name='super_owner_products'),
     path('dashboard/super-owner/products/add/', views.super_owner_add_product, name='super_owner_add_product'),
     path('dashboard/super-owner/products/edit/<int:product_id>/', views.super_owner_edit_product, name='super_owner_edit_product'),
-    path('dashboard/products/import/', views.import_products_excel, name='import_products_excel'),
-    path('dashboard/products/import/template/', views.download_products_template, name='download_products_template'),
-    path('dashboard/products/export/', views.export_products_excel, name='export_products_excel'),
+    # تم إزالة مسارات Excel بالكامل
     path('dashboard/super-owner/orders/', views.super_owner_orders, name='super_owner_orders'),
     path('dashboard/super-owner/settings/', views.super_owner_settings, name='super_owner_settings'),
     path('dashboard/super-owner/announcements/', views.super_owner_announcements, name='super_owner_announcements'),

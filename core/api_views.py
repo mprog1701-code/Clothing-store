@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
-from .models import User, Store, Product, Address, Order
+from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize
 import logging
 import json
 from urllib.request import Request, urlopen
@@ -298,6 +298,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     
     def get_serializer_class(self):
         if self.action == 'create':
+            
             return OrderCreateSerializer
         return OrderSerializer
     
@@ -336,3 +337,4 @@ class OrderViewSet(viewsets.ModelViewSet):
         orders = Order.objects.all()
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data)
+

@@ -46,18 +46,6 @@
                                 <i class="fas fa-plus me-2"></i>
                                 إضافة منتج جديد
                             </a>
-                            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#uploadExcelModal">
-                                <i class="fas fa-file-upload me-2"></i>
-                                رفع Excel (.xlsx)
-                            </button>
-                            <a class="btn btn-outline-secondary" href="{% url 'download_products_template' %}">
-                                <i class="fas fa-download me-2"></i>
-                                تنزيل قالب Excel
-                            </a>
-                            <a class="btn btn-outline-secondary" href="{% url 'export_products_excel' %}">
-                                <i class="fas fa-file-export me-2"></i>
-                                تنزيل تصدير Excel
-                            </a>
                         </div>
                     </div>
 
@@ -280,135 +268,11 @@
     </div>
 </div>
 
-<div class="modal fade" id="uploadExcelModal" tabindex="-1" aria-labelledby="uploadExcelLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="uploadExcelLabel">رفع ملف Excel (XLSX)</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <form method="post" enctype="multipart/form-data" action="{% url 'super_owner_products' %}">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="upload_excel">
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">اختر الملف</label>
-            <input type="file" class="form-control" name="upload_file" accept=".xlsx" required>
-            <small class="text-muted d-block mt-2">الأعمدة: product_name | description | store_code | category | base_price_iqd | is_active | colors | sizes | default_qty | price_override_iqd | images — العملة: IQD</small>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
-          <button type="submit" class="btn btn-primary">معاينة</button>
-        </div>
-      </form>
-    </div>
-  </div>
- </div>
+<!-- تم إزالة واجهة رفع Excel بالكامل -->
 
-{% if step == 'upload_preview' and upload_payload %}
-<div class="container-fluid py-3">
-  <div class="card border-primary">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-      <strong>معاينة الرفع</strong>
-      <div>
-        <form method="post" class="d-inline">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="confirm_excel">
-          <input type="hidden" name="batch" value="{{ batch }}">
-          <button type="submit" class="btn btn-light btn-sm" {% if upload_payload.stats.errors_count > 0 %}disabled{% endif %}><i class="fas fa-check me-1"></i>تأكيد</button>
-        </form>
-        <form method="post" class="d-inline ms-2">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="cancel_excel">
-          <input type="hidden" name="batch" value="{{ batch }}">
-          <button type="submit" class="btn btn-outline-light btn-sm"><i class="fas fa-times me-1"></i>إلغاء</button>
-        </form>
-      </div>
-    </div>
-    <div class="card-body">
-      <div class="row mb-3">
-        <div class="col-md-3"><div class="alert alert-light">إجمالي الصفوف: <strong>{{ upload_payload.stats.rows_total }}</strong></div></div>
-        <div class="col-md-3"><div class="alert alert-info">منتجات جديدة: <strong>{{ upload_payload.stats.products_create }}</strong></div></div>
-        <div class="col-md-3"><div class="alert alert-info">تحديث منتجات: <strong>{{ upload_payload.stats.products_update }}</strong></div></div>
-        <div class="col-md-3"><div class="alert alert-secondary">إنشاء متغيرات: <strong>{{ upload_payload.stats.variants_create }}</strong></div></div>
-        <div class="col-md-3"><div class="alert alert-secondary">تحديث متغيرات: <strong>{{ upload_payload.stats.variants_update }}</strong></div></div>
-      </div>
-      <div class="alert alert-light">العملة: <strong>IQD</strong></div>
-      <div class="alert alert-warning">صور سيتم إضافتها: <strong>{{ upload_payload.stats.images_add }}</strong></div>
-      <div class="alert alert-danger">عدد الأخطاء: <strong>{{ upload_payload.stats.errors_count }}</strong></div>
-      {% if upload_payload.rows %}
-      <div class="table-responsive">
-        <table class="table table-sm table-bordered">
-          <thead class="table-light">
-            <tr>
-              <th>سطر</th>
-              <th>المتجر</th>
-              <th>المنتج</th>
-              <th>الفئة</th>
-              <th>السعر (IQD)</th>
-              <th>الألوان</th>
-              <th>المقاسات</th>
-              <th>الكمية الافتراضية</th>
-              <th>السعر الخاص (IQD)</th>
-              <th>الصور</th>
-              <th>أخطاء</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in upload_payload.rows|slice:":50" %}
-            <tr class="{% if r.errors and r.errors|length > 0 %}table-danger{% endif %}">
-              <td>{{ r.row_index }}</td>
-              <td>{{ r.store_name }}</td>
-              <td>{{ r.product_name }}</td>
-              <td>{{ r.category }}</td>
-              <td>{{ r.base_price }} IQD</td>
-              <td><small>{{ r.colors|join:', ' }}</small></td>
-              <td><small>{{ r.sizes|join:', ' }}</small></td>
-              <td>{{ r.default_qty }}</td>
-              <td>{{ r.default_price }}</td>
-              <td><small>{{ r.image_urls|join:', ' }}</small></td>
-              <td>
-                {% if r.errors and r.errors|length > 0 %}
-                  <ul class="mb-0">
-                    {% for e in r.errors %}<li>{{ e }}</li>{% endfor %}
-                  </ul>
-                {% else %}
-                  <span class="text-success">لا يوجد</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% endif %}
-      <p class="text-muted">عرض أول 50 صف فقط.</p>
-      <p class="text-muted">لن يتم حفظ أي تغييرات حتى تضغط تأكيد. إن وُجدت أخطاء لن يتم التنفيذ.</p>
-    </div>
-  </div>
-</div>
-{% endif %}
+{% comment %} تمت إزالة معاينة ومعالجة الاستيراد من الواجهة {% endcomment %}
 
-{% if step == 'import_result' and result_payload %}
-<div class="container-fluid py-3">
-  <div class="card border-success">
-    <div class="card-header bg-success text-white">
-      <strong>نتيجة الاستيراد</strong>
-    </div>
-    <div class="card-body">
-      <div class="row mb-3">
-        <div class="col-md-3"><div class="alert alert-success">منتجات مضافة: <strong>{{ result_payload.products_created }}</strong></div></div>
-        <div class="col-md-3"><div class="alert alert-info">منتجات محدّثة: <strong>{{ result_payload.products_updated }}</strong></div></div>
-        <div class="col-md-3"><div class="alert alert-secondary">متغيرات مضافة: <strong>{{ result_payload.variants_created }}</strong></div></div>
-        <div class="col-md-3"><div class="alert alert-secondary">متغيرات محدّثة: <strong>{{ result_payload.variants_updated }}</strong></div></div>
-      </div>
-      <div class="alert alert-warning">صور مضافة: <strong>{{ result_payload.images_added }}</strong></div>
-      <a href="{% url 'super_owner_products' %}" class="btn btn-outline-success">عودة إلى قائمة المنتجات</a>
-    </div>
-  </div>
-</div>
-{% endif %}
+{% comment %} تمت إزالة نتيجة الاستيراد الخاصة بملف Excel {% endcomment %}
 
 <style>
 .bg-gradient-info {
