@@ -73,6 +73,7 @@ urlpatterns = [
     path('dashboard/super-owner/products/', views.super_owner_products, name='super_owner_products'),
     path('dashboard/super-owner/products/add/', views.super_owner_add_product, name='super_owner_add_product'),
     path('dashboard/super-owner/products/edit/<int:product_id>/', views.super_owner_edit_product, name='super_owner_edit_product'),
+    path('dashboard/super-owner/inventory/', views.super_owner_inventory, name='super_owner_inventory'),
     # تم إزالة مسارات Excel بالكامل
     path('dashboard/super-owner/orders/', views.super_owner_orders, name='super_owner_orders'),
     path('dashboard/super-owner/settings/', views.super_owner_settings, name='super_owner_settings'),

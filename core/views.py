@@ -3811,6 +3811,77 @@ def admin_portal_orders(request):
     orders = Order.objects.order_by('-created_at')[:50]
     return render(request, 'admin_portal/orders.html', { 'orders': orders })
 
+@login_required
+def super_owner_inventory(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+
+    store_id = (request.GET.get('store') or '').strip()
+    product_id = (request.GET.get('product') or '').strip()
+    q = (request.GET.get('q') or '').strip()
+
+    base_qs = ProductVariant.objects.select_related('product', 'product__store', 'color_attr', 'size_attr')
+    if store_id.isdigit():
+        base_qs = base_qs.filter(product__store_id=int(store_id))
+    if product_id.isdigit():
+        base_qs = base_qs.filter(product_id=int(product_id))
+    if q:
+        base_qs = base_qs.filter(Q(product__name__icontains=q) | Q(product__store__name__icontains=q) | Q(color_attr__name__icontains=q) | Q(size_attr__name__icontains=q))
+
+    variants = list(base_qs.order_by('product__store__name', 'product__name', 'color_attr__name', 'size_attr__order', 'size_attr__name'))
+
+    if request.method == 'POST':
+        try:
+            from django.db import transaction
+            with transaction.atomic():
+                for key, val in request.POST.items():
+                    if key.startswith('qty_'):
+                        try:
+                            vid = int(key[4:])
+                            qty_raw = (val or '').strip()
+                            qty = int(qty_raw or '0')
+                            if qty < 0:
+                                qty = 0
+                        except Exception:
+                            continue
+                        try:
+                            v = ProductVariant.objects.select_related('product').get(id=vid)
+                        except ProductVariant.DoesNotExist:
+                            continue
+                        v.stock_qty = qty
+                        v.is_enabled = qty > 0
+                        v.save()
+            messages.success(request, 'تم حفظ الكميات بنجاح')
+        except Exception:
+            messages.error(request, 'حدث خطأ أثناء الحفظ')
+        params = []
+        if store_id:
+            params.append(f'store={store_id}')
+        if product_id:
+            params.append(f'product={product_id}')
+        if q:
+            params.append(f'q={q}')
+        redirect_url = 'super_owner_inventory'
+        if params:
+            return redirect(f'{redirect_url}?'+('&'.join(params)))
+        return redirect(redirect_url)
+
+    stores = Store.objects.order_by('name')
+    products = Product.objects.order_by('name')
+    if store_id.isdigit():
+        products = products.filter(store_id=int(store_id))
+
+    context = {
+        'stores': stores,
+        'products': products,
+        'variants': variants,
+        'selected_store_id': int(store_id) if store_id.isdigit() else None,
+        'selected_product_id': int(product_id) if product_id.isdigit() else None,
+        'q': q,
+    }
+    return render(request, 'dashboard/super_owner/inventory.html', context)
+
 
 @role_required({'SUPER_ADMIN','OWNER'})
 def admin_portal_products(request):
