@@ -125,30 +125,33 @@
                             <input type="color" name="color_code" class="form-control form-control-color" value="#000000" title="اختر الكود اللوني">
                             <button class="btn btn-primary">إضافة لون</button>
                         </form>
-                        <div class="color-chips">
-                            {% for c in colors %}
-                            <div class="color-chip">
-                                <div class="color-preview" style="background-color: {{ c.code|default:'#ccc' }}"></div>
-                                <div class="chip-content">
-                                    <span class="chip-name">{{ c.name }}</span>
-                                    <div class="chip-actions">
-                                        <button type="button" class="btn btn-link text-danger p-0" title="حذف">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="chip-select">
-                                    <input class="form-check-input" type="checkbox" name="color_ids" id="attr-color{{ c.id }}" value="{{ c.id }}" {% if c.id in existing_color_ids %}checked{% endif %}>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
+                        <!-- سيتم عرض بطاقات الألوان داخل نموذج الحفظ أدناه -->
                     </div>
 
                     <form method="post" id="attributesForm">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="save_attributes">
                         <input type="hidden" name="pid" value="{{ product.id }}">
+                        <div class="section-block">
+                            <div class="color-chips">
+                                {% for c in colors %}
+                                <div class="color-chip">
+                                    <div class="color-preview" style="background-color: {{ c.code|default:'#ccc' }}"></div>
+                                    <div class="chip-content">
+                                        <span class="chip-name">{{ c.name }}</span>
+                                        <div class="chip-actions">
+                                            <button type="button" class="btn btn-link text-danger p-0" title="حذف">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="chip-select">
+                                        <input class="form-check-input" type="checkbox" name="color_ids" id="attr-color{{ c.id }}" value="{{ c.id }}" {% if c.id in existing_color_ids %}checked{% endif %}>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
                         <div class="section-block">
                             <h5 class="section-title">المقاسات</h5>
                             <div class="sizes-grid">
@@ -290,16 +293,16 @@
 .color-add-row .form-control-color { width: 42px; height: 42px; padding: 0; }
 
 .color-chips { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
-.color-chip { display: flex; align-items: center; gap: .6rem; border: 1px solid #e0e0e0; border-radius: .5rem; padding: .5rem .6rem; position: relative; background: #fff; }
+.color-chip { display: flex; align-items: center; gap: .6rem; border: 1px solid #e0e0e0; border-radius: .5rem; padding: .5rem .6rem; position: relative; background: #fff; cursor: pointer; }
 .color-preview { width: 24px; height: 24px; border-radius: .25rem; border: 1px solid #ddd; }
 .chip-content { display: flex; align-items: center; justify-content: space-between; flex: 1; }
-.chip-name { font-size: .95rem; font-weight: 500; }
+.chip-name { font-size: .95rem; font-weight: 500; color: #212529; }
 .chip-actions { display: flex; align-items: center; gap: .5rem; }
 .chip-select { position: absolute; top: .4rem; left: .4rem; }
 
 .sizes-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; }
 .size-option { display: flex; align-items: center; gap: .5rem; border: 1px solid #e0e0e0; border-radius: .5rem; padding: .4rem .6rem; background: #fff; }
-.size-label { font-size: .95rem; }
+.size-label { font-size: .95rem; color: #212529; }
 
 .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
 </style>
@@ -309,7 +312,9 @@ document.addEventListener('DOMContentLoaded', function(){
         form.addEventListener('submit', function(e){
             e.preventDefault();
             const formData = new FormData(form);
-            fetch(form.action || window.location.href, { method: form.method || 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            const url = form.getAttribute('action') || window.location.href;
+            const method = form.getAttribute('method') || (form.method || 'POST');
+            fetch(url, { method: method, body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function(resp){
                 if (resp.ok || (resp.status >= 300 && resp.status < 400)) { window.location.reload(); return; }
                 return resp.text().then(function(text){
@@ -328,6 +333,46 @@ document.addEventListener('DOMContentLoaded', function(){
             });
         });
     });
+
+    document.querySelectorAll('.color-chip').forEach(function(chip){
+        chip.addEventListener('click', function(e){
+            if (e.target.closest('.chip-actions')) { return; }
+            const cb = chip.querySelector('input[name="color_ids"]');
+            if (cb) { cb.checked = !cb.checked; }
+        });
+    });
+
+    const colorRow = document.querySelector('.color-add-row');
+    if (colorRow) {
+        const picker = colorRow.querySelector('input[name="color_code"]');
+        const nameInput = colorRow.querySelector('input[name="color_name"]');
+        const names = {
+            '#000000': 'أسود',
+            '#ffffff': 'أبيض',
+            '#ff0000': 'أحمر',
+            '#0000ff': 'أزرق',
+            '#008000': 'أخضر',
+            '#ffff00': 'أصفر',
+            '#ffc0cb': 'زهري',
+            '#808080': 'رمادي',
+            '#8b4513': 'بنّي',
+            '#800080': 'بنفسجي',
+            '#ffa500': 'برتقالي',
+            '#00ffff': 'سماوي',
+            '#ff00ff': 'فوشي'
+        };
+        function autofillName(){
+            if (!picker || !nameInput) return;
+            const hex = String(picker.value || '').toLowerCase();
+            if (!nameInput.value) {
+                nameInput.value = names[hex] || hex;
+            }
+        }
+        if (picker) {
+            picker.addEventListener('input', autofillName);
+            picker.addEventListener('change', autofillName);
+        }
+    }
 });
 </script>
 {% endblock %}
