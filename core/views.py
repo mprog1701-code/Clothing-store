@@ -2523,6 +2523,8 @@ def super_owner_add_product(request):
             is_featured = request.POST.get('is_featured') == 'on'
             size_type = (request.POST.get('size_type') or 'symbolic').strip()
             images = request.FILES.getlist('images')
+            color_ids = request.POST.getlist('color_ids')
+            size_ids = request.POST.getlist('size_ids')
 
             if not all([name, store_id, category, base_price, description]):
                 messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
@@ -2549,7 +2551,41 @@ def super_owner_add_product(request):
                             messages.error(request, 'فشل حفظ إحدى صور المنتج')
                             return redirect('super_owner_add_product')
 
-                return redirect(f"{request.path}?pid={product.id}&step=attributes")
+                # Auto-generate variants from selected colors & sizes, quantities default to 0
+                try:
+                    selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
+                except Exception:
+                    selected_colors = []
+                try:
+                    selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
+                except Exception:
+                    selected_sizes = []
+
+                created = 0
+                for c in selected_colors:
+                    for s in selected_sizes:
+                        exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                        if exists:
+                            continue
+                        try:
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=c,
+                                size_attr=s,
+                                stock_qty=0,
+                                price_override=None,
+                                is_enabled=False,
+                            )
+                            created += 1
+                        except Exception:
+                            pass
+
+                # Redirect to Inventory page for quantity management
+                params = []
+                params.append(f'store={store.id}')
+                params.append(f'product={product.id}')
+                inv_url = '/dashboard/super-owner/inventory/'
+                return redirect(f"{inv_url}?" + "&".join(params))
             except Store.DoesNotExist:
                 messages.error(request, 'المتجر المختار غير صالح!')
                 return redirect('super_owner_add_product')

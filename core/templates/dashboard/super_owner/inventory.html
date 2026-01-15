@@ -87,7 +87,7 @@
                                                 —
                                             {% endif %}
                                         </td>
-                                        <td>{{ v.size_attr.name if v.size_attr else '—' }}</td>
+                                        <td>{% if v.size_attr %}{{ v.size_attr.name }}{% else %}—{% endif %}</td>
                                         <td>
                                             <input type="number" name="qty_{{ v.id }}" class="form-control" min="0" value="{{ v.stock_qty }}">
                                         </td>

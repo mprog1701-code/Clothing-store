@@ -32,8 +32,6 @@
 
                     <ul class="nav nav-tabs mb-3">
                         <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=info{% else %}?step=info{% endif %}">معلومات المنتج</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=attributes{% else %}?step=attributes{% endif %}">الخصائص</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'variants' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=variants{% else %}?step=variants{% endif %}">المتغيرات</a></li>
                         <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=images{% else %}?step=images{% endif %}">الصور</a></li>
                     </ul>
 
@@ -94,6 +92,34 @@
                                     <small class="text-muted">يمكنك رفع عدة صور</small>
                                 </div>
                                 <div class="mb-3">
+                                    <label class="form-label">الألوان</label>
+                                    <div class="row g-2">
+                                        {% for c in colors %}
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="color_ids" id="color{{ c.id }}" value="{{ c.id }}">
+                                                <label class="form-check-label" for="color{{ c.id }}">{{ c.name }}{% if c.code %} <span class="badge" style="background-color: {{ c.code }};">&nbsp;&nbsp;</span>{% endif %}</label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted">اختر ألوان المنتج</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المقاسات</label>
+                                    <div class="row g-2">
+                                        {% for s in sizes %}
+                                        <div class="col-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="size_ids" id="size{{ s.id }}" value="{{ s.id }}">
+                                                <label class="form-check-label" for="size{{ s.id }}">{{ s.name }}</label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted">اختر المقاسات المتاحة</small>
+                                </div>
+                                <div class="mb-3">
                                     <div class="form-check">
                                         <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
                                         <label class="form-check-label" for="is_active">تفعيل المنتج فوراً</label>
@@ -114,225 +140,9 @@
                     </form>
                     {% endif %}
 
-                    {% if product and step == 'attributes' %}
-                    {% if not colors %}
-                        <div class="mb-3">
-                            <p class="text-muted">لا توجد ألوان معرفة. أضف لوناً عاماً سريعاً:</p>
-                            <form method="post" class="row g-2">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="add_global_color">
-                                <input type="hidden" name="pid" value="{{ product.id }}">
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control" name="color_name" placeholder="اسم اللون" required>
-                                </div>
-                                    <div class="col-md-4">
-                                        <input type="color" class="form-control form-control-color" name="color_code" value="#000000" title="اختر لونًا بسهولة">
-                                    </div>
-                                <div class="col-md-2">
-                                    <button class="btn btn-primary w-100">إضافة</button>
-                                </div>
-                            </form>
-                        </div>
-                    {% endif %}
-                    <form method="post" id="generateVariantsForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="generate_variants">
-                        <input type="hidden" name="pid" value="{{ product.id }}">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label">الألوان</label>
-                                {% if colors %}
-                                <div class="row g-2">
-                                    {% for c in colors %}
-                                    <div class="col-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="color_ids" id="color{{ c.id }}" value="{{ c.id }}" {% if existing_color_ids and c.id in existing_color_ids %}checked{% endif %}>
-                                            <label class="form-check-label" for="color{{ c.id }}">{{ c.name }}{% if c.code %} <span class="badge" style="background-color: {{ c.code }};">&nbsp;&nbsp;</span>{% endif %}</label>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                <small class="text-muted">تعريف الألوان مرة واحدة وقابلة لإعادة الاستخدام</small>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">المقاسات</label>
-                                <div class="row g-2">
-                                    {% for s in sizes %}
-                                    <div class="col-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="size_ids" id="size{{ s.id }}" value="{{ s.id }}" {% if existing_size_ids and s.id in existing_size_ids %}checked{% endif %}>
-                                            <label class="form-check-label" for="size{{ s.id }}">{{ s.name }}</label>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                                <small class="text-muted">المقاسات معرفة مسبقاً وقابلة لإعادة الاستخدام</small>
-                            </div>
-                        </div>
-                        <hr>
-                        <p class="text-muted">اختر الألوان والمقاسات ثم اضغط "توليد المتغيرات تلقائياً". سيتم نقلك إلى تبويب "المتغيرات" حيث تظهر شبكة المتغيرات للتحرير السريع.</p>
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">كمية افتراضية</label>
-                                <input type="number" class="form-control" name="default_qty" min="0" value="0">
-                                <small class="text-muted">تطبق على كل المتغيرات الجديدة</small>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">سعر خاص افتراضي</label>
-                                <input type="number" class="form-control" name="default_price" step="0.01" min="0">
-                                <small class="text-muted">اختياري</small>
-                            </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="enable_all" id="enable_all">
-                                    <label class="form-check-label" for="enable_all">تفعيل كل المتغيرات</label>
-                                </div>
-                            </div>
-                            <div class="col-md-3 d-flex align-items-end justify-content-end gap-2">
-                                <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=variants" class="btn btn-outline-secondary">الانتقال إلى المتغيرات</a>
-                                <button type="submit" class="btn btn-primary"><i class="fas fa-bolt me-2"></i>توليد المتغيرات تلقائياً</button>
-                            </div>
-                        </div>
-                    </form>
-                    {% endif %}
+                    {% comment %} تم دمج اختيار الألوان والمقاسات داخل نموذج معلومات المنتج؛ لا توجد خصائص منفصلة {% endcomment %}
 
-                    {% if product and step == 'variants' %}
-                    <div class="mb-3">
-                        <form method="post" class="d-inline-block me-2" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="bulk_qty">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <div class="input-group">
-                                <span class="input-group-text">كمية</span>
-                                <input type="number" class="form-control" name="qty" min="0" value="0">
-                                <button class="btn btn-outline-primary">تحديث الكل</button>
-                            </div>
-                        </form>
-                        <form method="post" class="d-inline-block me-2" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="bulk_price">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <div class="input-group">
-                                <span class="input-group-text">سعر خاص</span>
-                                <input type="number" class="form-control" name="price" step="0.01" min="0">
-                                <button class="btn btn-outline-primary">تحديث الكل</button>
-                            </div>
-                        </form>
-                        <form method="post" class="d-inline-block" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="bulk_status">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <div class="btn-group">
-                                <button class="btn btn-outline-success" name="status" value="enable">تفعيل الكل</button>
-                                <button class="btn btn-outline-secondary" name="status" value="disable">تعطيل الكل</button>
-                            </div>
-                        </form>
-                        <div class="mt-2"></div>
-                        <form method="post" class="d-inline-block me-2" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="bulk_qty_color">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <div class="input-group">
-                                <span class="input-group-text">كمية حسب اللون</span>
-                                <select name="color_id" class="form-select">
-                                    {% for c in color_attrs %}
-                                        <option value="{{ c.id }}">{{ c.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <input type="number" class="form-control" name="qty" min="0" value="0">
-                                <button class="btn btn-outline-primary">تطبيق</button>
-                            </div>
-                        </form>
-                        <form method="post" class="d-inline-block me-2" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="bulk_qty_size">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <div class="input-group">
-                                <span class="input-group-text">كمية حسب المقاس</span>
-                                <select name="size_id" class="form-select">
-                                    {% for s in size_attrs %}
-                                        <option value="{{ s.id }}">{{ s.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <input type="number" class="form-control" name="qty" min="0" value="0">
-                                <button class="btn btn-outline-primary">تطبيق</button>
-                            </div>
-                        </form>
-                        <form method="post" class="d-inline-block me-2" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="bulk_price_color">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <div class="input-group">
-                                <span class="input-group-text">سعر حسب اللون</span>
-                                <select name="color_id" class="form-select">
-                                    {% for c in color_attrs %}
-                                        <option value="{{ c.id }}">{{ c.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <input type="number" class="form-control" name="price" step="0.01" min="0">
-                                <button class="btn btn-outline-primary">تطبيق</button>
-                            </div>
-                        </form>
-                        <form method="post" class="d-inline-block" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="bulk_price_size">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <div class="input-group">
-                                <span class="input-group-text">سعر حسب المقاس</span>
-                                <select name="size_id" class="form-select">
-                                    {% for s in size_attrs %}
-                                        <option value="{{ s.id }}">{{ s.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <input type="number" class="form-control" name="price" step="0.01" min="0">
-                                <button class="btn btn-outline-primary">تطبيق</button>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead>
-                                <tr>
-                                    <th style="min-width:140px;">اللون \ المقاس</th>
-                                    {% for s in size_attrs %}
-                                        <th class="text-center">{{ s.name }}</th>
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for row in variant_grid %}
-                                <tr>
-                                    <th>{{ row.color.name }}</th>
-                                    {% for cell in row.cells %}
-                                        {% if cell.variant %}
-                                        <td>
-                                            <form method="post" class="d-flex flex-column gap-1" data-ajax="true">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="action" value="update_variant_row">
-                                                <input type="hidden" name="pid" value="{{ product.id }}">
-                                                <input type="hidden" name="variant_id" value="{{ cell.variant.id }}">
-                                                <input type="number" name="stock_qty" class="form-control" value="{{ cell.variant.stock_qty }}" min="0" placeholder="كمية">
-                                                <input type="number" name="price_override" class="form-control" step="0.01" min="0" value="{{ cell.variant.price_override|default_if_none:'' }}" placeholder="سعر خاص">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="is_enabled" id="en{{ cell.variant.id }}" {% if cell.variant.is_enabled %}checked{% endif %}>
-                                                    <label class="form-check-label" for="en{{ cell.variant.id }}">نشط</label>
-                                                </div>
-                                                <button class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>تحديث</button>
-                                            </form>
-                                        </td>
-                                        {% else %}
-                                        <td><span class="text-muted">—</span></td>
-                                        {% endif %}
-                                    {% endfor %}
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="{{ size_attrs|length|add:1 }}" class="text-muted">لا توجد متغيرات بعد. انتقل لعلامة الخصائص لتوليدها.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% endif %}
+                    {% comment %} لا توجد إدارة كميات أو شبكة متغيرات في صفحة المنتج. إدارة الكميات حصراً من صفحة المخزون {% endcomment %}
 
                     {% if product and step == 'images' %}
                     <div class="mb-3">
