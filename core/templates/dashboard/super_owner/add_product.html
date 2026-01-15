@@ -105,6 +105,33 @@
                                         <label class="form-check-label" for="is_featured">تمييز المنتج</label>
                                     </div>
                                 </div>
+                                <div class="section-block">
+                                    <h5 class="section-title">الألوان</h5>
+                                    <div class="color-chips">
+                                        {% for c in colors %}
+                                        <label class="color-chip">
+                                            <div class="color-preview" style="background-color: {{ c.code|default:'#ccc' }}"></div>
+                                            <div class="chip-content">
+                                                <span class="chip-name">{{ c.name }}</span>
+                                            </div>
+                                            <div class="chip-select">
+                                                <input class="form-check-input" type="checkbox" name="color_ids" value="{{ c.id }}">
+                                            </div>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="section-block">
+                                    <h5 class="section-title">المقاسات</h5>
+                                    <div class="sizes-grid" id="createSizesGrid">
+                                        {% for s in sizes %}
+                                        <label class="size-option" data-name="{{ s.name }}">
+                                            <input class="form-check-input" type="checkbox" name="size_ids" value="{{ s.id }}">
+                                            <span class="size-label">{{ s.name }}</span>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                                 <div class="d-flex justify-content-between">
                                     <button type="submit" class="btn btn-success"><i class="fas fa-plus me-2"></i>إنشاء المنتج</button>
                                     <a href="{% url 'super_owner_products' %}" class="btn btn-secondary"><i class="fas fa-times me-2"></i>إلغاء</a>
@@ -307,7 +334,7 @@
 .actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
 </style>
 <script>
-document.addEventListener('DOMContentLoaded', function(){
+        document.addEventListener('DOMContentLoaded', function(){
     document.querySelectorAll('form[data-ajax="true"]').forEach(function(form){
         form.addEventListener('submit', function(e){
             e.preventDefault();
@@ -342,8 +369,8 @@ document.addEventListener('DOMContentLoaded', function(){
         });
     });
 
-    const colorRow = document.querySelector('.color-add-row');
-    if (colorRow) {
+            const colorRow = document.querySelector('.color-add-row');
+            if (colorRow) {
         const picker = colorRow.querySelector('input[name="color_code"]');
         const nameInput = colorRow.querySelector('input[name="color_name"]');
         const names = {
@@ -372,7 +399,29 @@ document.addEventListener('DOMContentLoaded', function(){
             picker.addEventListener('input', autofillName);
             picker.addEventListener('change', autofillName);
         }
-    }
-});
+            }
+
+            const sizeType = document.getElementById('size_type');
+            const grid = document.getElementById('createSizesGrid');
+            function applySizeFilter(){
+                if (!sizeType || !grid) return;
+                const t = sizeType.value;
+                grid.querySelectorAll('.size-option').forEach(function(el){
+                    const name = String(el.dataset.name || '');
+                    const isNum = /^\d+$/.test(name);
+                    if (t === 'numeric') {
+                        el.style.display = isNum ? '' : 'none';
+                    } else if (t === 'symbolic') {
+                        el.style.display = isNum ? 'none' : '';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+            }
+            applySizeFilter();
+            if (sizeType) {
+                sizeType.addEventListener('change', applySizeFilter);
+            }
+        });
 </script>
 {% endblock %}

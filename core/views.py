@@ -2580,7 +2580,21 @@ def super_owner_add_product(request):
                         except Exception:
                             pass
 
-                return redirect(f"{request.path}?pid={product.id}&step=attributes")
+                if created == 0:
+                    if not ProductVariant.objects.filter(product=product).exists():
+                        try:
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=None,
+                                size_attr=None,
+                                stock_qty=0,
+                                price_override=None,
+                                is_enabled=False,
+                            )
+                        except Exception:
+                            pass
+
+                return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
             except Store.DoesNotExist:
                 messages.error(request, 'المتجر المختار غير صالح!')
                 return redirect('super_owner_add_product')
@@ -3447,6 +3461,51 @@ def super_owner_edit_product(request, product_id):
                 messages.error(request, 'المتغير غير موجود')
             return redirect('super_owner_edit_product', product_id=product_id)
 
+        elif action == 'edit_generate_variants':
+            color_ids = request.POST.getlist('color_attr_ids')
+            size_ids = request.POST.getlist('size_attr_ids')
+            default_qty_raw = request.POST.get('default_qty')
+            default_price_raw = (request.POST.get('default_price') or '').strip()
+            enable_all = (request.POST.get('enable_all') == 'on')
+
+            try:
+                default_qty = int(default_qty_raw or 0)
+            except ValueError:
+                default_qty = 0
+            from decimal import Decimal, InvalidOperation
+            default_price = None
+            if default_price_raw:
+                try:
+                    default_price = Decimal(default_price_raw)
+                except InvalidOperation:
+                    default_price = None
+
+            from .models import AttributeColor, AttributeSize
+            selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
+            selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
+
+            created = 0
+            for c in selected_colors:
+                for s in selected_sizes:
+                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                    if exists:
+                        continue
+                    try:
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=c,
+                            size_attr=s,
+                            stock_qty=default_qty,
+                            price_override=default_price,
+                            is_enabled=enable_all or True,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+
+            messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً')
+            return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
+
         elif action == 'add_color':
             cname = (request.POST.get('color_name') or '').strip()
             ccode = (request.POST.get('color_code') or '').strip()
@@ -3732,6 +3791,28 @@ def super_owner_edit_product(request, product_id):
     context['size_choices'] = size_choices
     context['size_type'] = product.size_type
     context['colors'] = list(product.colors.all())
+    from .models import AttributeColor, AttributeSize
+    context['color_attrs'] = list(AttributeColor.objects.all())
+    if product.size_type == 'numeric':
+        names = [str(n) for n in range(28, 61, 2)]
+        for idx, n in enumerate(names):
+            try:
+                AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+            except Exception:
+                pass
+        all_sizes = list(AttributeSize.objects.all())
+        context['size_attrs'] = sorted([s for s in all_sizes if s.name.isdigit()], key=lambda x: x.order)
+    elif product.size_type == 'symbolic':
+        names = ['XS','S','M','L','XL','XXL','3XL','4XL']
+        for idx, n in enumerate(names):
+            try:
+                AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+            except Exception:
+                pass
+        all_sizes = list(AttributeSize.objects.all())
+        context['size_attrs'] = sorted([s for s in all_sizes if s.name in names], key=lambda x: x.order)
+    else:
+        context['size_attrs'] = []
     return render(request, 'dashboard/super_owner/edit_product.html', context)
 
 
