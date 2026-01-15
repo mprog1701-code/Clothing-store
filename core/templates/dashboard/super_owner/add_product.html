@@ -115,60 +115,54 @@
                     {% endif %}
 
                     {% if product and step == 'attributes' %}
-                    <div class="mb-3">
-                        <form method="post" class="d-flex align-items-center gap-2" data-ajax="true">
+                    <div class="section-block">
+                        <h5 class="section-title">الألوان</h5>
+                        <form method="post" class="d-flex align-items-center gap-2 color-add-row" data-ajax="true">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="add_global_color">
                             <input type="hidden" name="pid" value="{{ product.id }}">
-                            <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" required style="max-width: 200px;">
-                            <input type="color" name="color_code" class="form-control form-control-color" value="#000000" title="اختر الكود اللوني" style="max-width: 60px;">
-                            <button class="btn btn-outline-primary btn-sm">إضافة لون</button>
+                            <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" required>
+                            <input type="color" name="color_code" class="form-control form-control-color" value="#000000" title="اختر الكود اللوني">
+                            <button class="btn btn-primary">إضافة لون</button>
                         </form>
+                        <div class="color-chips">
+                            {% for c in colors %}
+                            <div class="color-chip">
+                                <div class="color-preview" style="background-color: {{ c.code|default:'#ccc' }}"></div>
+                                <div class="chip-content">
+                                    <span class="chip-name">{{ c.name }}</span>
+                                    <div class="chip-actions">
+                                        <button type="button" class="btn btn-link text-danger p-0" title="حذف">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="chip-select">
+                                    <input class="form-check-input" type="checkbox" name="color_ids" id="attr-color{{ c.id }}" value="{{ c.id }}" {% if c.id in existing_color_ids %}checked{% endif %}>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
+
                     <form method="post" id="attributesForm">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="save_attributes">
                         <input type="hidden" name="pid" value="{{ product.id }}">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">الألوان</label>
-                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                        <input type="text" id="colorFilter" class="form-control form-control-sm" placeholder="ابحث عن لون" style="max-width: 200px;">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="selectAllColors">تحديد الكل</button>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="clearAllColors">إلغاء الكل</button>
-                                    </div>
-                                    <div class="row g-2">
-                                        {% for c in colors %}
-                                        <div class="col-6 color-item" data-name="{{ c.name }}" data-code="{{ c.code|default:'' }}">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="color_ids" id="attr-color{{ c.id }}" value="{{ c.id }}" {% if c.id in existing_color_ids %}checked{% endif %}>
-                                                <label class="form-check-label" for="attr-color{{ c.id }}">{{ c.name }}{% if c.code %} <span class="badge" style="background-color: {{ c.code }};">&nbsp;&nbsp;</span>{% endif %}</label>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">المقاسات</label>
-                                    <div class="row g-2">
-                                        {% for s in sizes %}
-                                        <div class="col-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" name="size_ids" id="attr-size{{ s.id }}" value="{{ s.id }}" {% if s.id in existing_size_ids %}checked{% endif %}>
-                                                <label class="form-check-label" for="attr-size{{ s.id }}">{{ s.name }}</label>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+                        <div class="section-block">
+                            <h5 class="section-title">المقاسات</h5>
+                            <div class="sizes-grid">
+                                {% for s in sizes %}
+                                <label class="size-option">
+                                    <input class="form-check-input" type="checkbox" name="size_ids" id="attr-size{{ s.id }}" value="{{ s.id }}" {% if s.id in existing_size_ids %}checked{% endif %}>
+                                    <span class="size-label">{{ s.name }}</span>
+                                </label>
+                                {% endfor %}
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between">
-                            <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ الخصائص وإنشاء المخزون</button>
-                            <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images" class="btn btn-outline-secondary">الانتقال للصور</a>
+                        <div class="actions-row">
+                            <a href="{% url 'super_owner_products' %}" class="btn btn-outline-secondary">إلغاء</a>
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ</button>
                         </div>
                     </form>
                     {% endif %}
@@ -288,6 +282,26 @@
 
 .alert-info { border: none; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; }
 .ajax-error-toast { position: fixed; bottom: 20px; left: 20px; z-index: 1055; }
+
+.section-block { margin-bottom: 1.25rem; }
+.section-title { font-size: 1rem; font-weight: 600; margin-bottom: .5rem; }
+
+.color-add-row .form-control { max-width: 240px; }
+.color-add-row .form-control-color { width: 42px; height: 42px; padding: 0; }
+
+.color-chips { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
+.color-chip { display: flex; align-items: center; gap: .6rem; border: 1px solid #e0e0e0; border-radius: .5rem; padding: .5rem .6rem; position: relative; background: #fff; }
+.color-preview { width: 24px; height: 24px; border-radius: .25rem; border: 1px solid #ddd; }
+.chip-content { display: flex; align-items: center; justify-content: space-between; flex: 1; }
+.chip-name { font-size: .95rem; font-weight: 500; }
+.chip-actions { display: flex; align-items: center; gap: .5rem; }
+.chip-select { position: absolute; top: .4rem; left: .4rem; }
+
+.sizes-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; }
+.size-option { display: flex; align-items: center; gap: .5rem; border: 1px solid #e0e0e0; border-radius: .5rem; padding: .4rem .6rem; background: #fff; }
+.size-label { font-size: .95rem; }
+
+.actions-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -314,61 +328,6 @@ document.addEventListener('DOMContentLoaded', function(){
             });
         });
     });
-
-    const form = document.getElementById('generateVariantsForm');
-    if (form) {
-        form.addEventListener('submit', function(e){
-            const selectedColors = Array.from(form.querySelectorAll('input[name="color_ids"]:checked')).map(function(x){ return parseInt(x.value); });
-            const selectedSizes = Array.from(form.querySelectorAll('input[name="size_ids"]:checked')).map(function(x){ return parseInt(x.value); });
-            const existingColors = {{ existing_color_ids|default:"[]"|safe }};
-            const existingSizes = {{ existing_size_ids|default:"[]"|safe }};
-            const removedColors = existingColors.filter(function(x){ return selectedColors.indexOf(x) === -1; });
-            const removedSizes = existingSizes.filter(function(x){ return selectedSizes.indexOf(x) === -1; });
-            if (removedColors.length > 0 || removedSizes.length > 0) {
-                e.preventDefault();
-                const msg = 'إزالة خصائص قد تؤثر على المتغيرات الحالية. متابعة؟';
-                if (confirm(msg)) {
-                    form.removeEventListener('submit', arguments.callee);
-                    form.submit();
-                }
-            }
-        });
-    }
-
-    const attributesForm = document.getElementById('attributesForm');
-    if (attributesForm) {
-        const selectAllBtn = document.getElementById('selectAllColors');
-        const clearAllBtn = document.getElementById('clearAllColors');
-        const filterInput = document.getElementById('colorFilter');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', function(){
-                attributesForm.querySelectorAll('input[name="color_ids"]').forEach(function(cb){ cb.checked = true; });
-            });
-        }
-        if (clearAllBtn) {
-            clearAllBtn.addEventListener('click', function(){
-                attributesForm.querySelectorAll('input[name="color_ids"]').forEach(function(cb){ cb.checked = false; });
-            });
-        }
-        if (filterInput) {
-            filterInput.addEventListener('input', function(){
-                const term = (filterInput.value || '').trim().toLowerCase();
-                attributesForm.querySelectorAll('.color-item').forEach(function(item){
-                    const name = (item.getAttribute('data-name') || '').toLowerCase();
-                    const code = (item.getAttribute('data-code') || '').toLowerCase();
-                    const show = !term || name.indexOf(term) !== -1 || code.indexOf(term) !== -1;
-                    item.style.display = show ? '' : 'none';
-                });
-            });
-        }
-        attributesForm.querySelectorAll('.color-item').forEach(function(item){
-            item.addEventListener('click', function(e){
-                if (e.target.tagName && e.target.tagName.toLowerCase() === 'input') { return; }
-                const cb = item.querySelector('input[type="checkbox"]');
-                if (cb) { cb.checked = !cb.checked; }
-            });
-        });
-    }
 });
 </script>
 {% endblock %}

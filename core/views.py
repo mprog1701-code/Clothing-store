@@ -2648,20 +2648,70 @@ def super_owner_add_product(request):
                 messages.error(request, 'المنتج غير موجود')
                 return redirect('super_owner_add_product')
 
-            selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
-            selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
+            selected_colors = list(AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()]))
+            selected_sizes = list(AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()]))
 
             created = 0
-            for c in selected_colors:
-                for s in selected_sizes:
-                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+            if selected_colors and selected_sizes:
+                for c in selected_colors:
+                    for s in selected_sizes:
+                        exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                        if exists:
+                            continue
+                        try:
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=c,
+                                size_attr=s,
+                                stock_qty=0,
+                                price_override=None,
+                                is_enabled=False,
+                            )
+                            created += 1
+                        except Exception:
+                            pass
+            elif selected_colors and not selected_sizes:
+                for c in selected_colors:
+                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr__isnull=True).exists()
                     if exists:
                         continue
                     try:
                         ProductVariant.objects.create(
                             product=product,
                             color_attr=c,
+                            size_attr=None,
+                            stock_qty=0,
+                            price_override=None,
+                            is_enabled=False,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+            elif selected_sizes and not selected_colors:
+                for s in selected_sizes:
+                    exists = ProductVariant.objects.filter(product=product, color_attr__isnull=True, size_attr=s).exists()
+                    if exists:
+                        continue
+                    try:
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=None,
                             size_attr=s,
+                            stock_qty=0,
+                            price_override=None,
+                            is_enabled=False,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+            else:
+                # لا توجد خصائص محددة: إنشاء صف مخزون افتراضي واحد
+                if not ProductVariant.objects.filter(product=product).exists():
+                    try:
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=None,
+                            size_attr=None,
                             stock_qty=0,
                             price_override=None,
                             is_enabled=False,
