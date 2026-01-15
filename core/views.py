@@ -2580,12 +2580,7 @@ def super_owner_add_product(request):
                         except Exception:
                             pass
 
-                # Redirect to Inventory page for quantity management
-                params = []
-                params.append(f'store={store.id}')
-                params.append(f'product={product.id}')
-                inv_url = '/dashboard/super-owner/inventory/'
-                return redirect(f"{inv_url}?" + "&".join(params))
+                return redirect(f"{request.path}?pid={product.id}&step=attributes")
             except Store.DoesNotExist:
                 messages.error(request, 'المتجر المختار غير صالح!')
                 return redirect('super_owner_add_product')
@@ -2641,6 +2636,43 @@ def super_owner_add_product(request):
 
             messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً')
             return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'save_attributes':
+            pid = request.POST.get('pid')
+            color_ids = request.POST.getlist('color_ids')
+            size_ids = request.POST.getlist('size_ids')
+
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, TypeError, ValueError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+
+            selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
+            selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
+
+            created = 0
+            for c in selected_colors:
+                for s in selected_sizes:
+                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                    if exists:
+                        continue
+                    try:
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=c,
+                            size_attr=s,
+                            stock_qty=0,
+                            price_override=None,
+                            is_enabled=False,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+
+            messages.success(request, f'تم حفظ الخصائص وإنشاء {created} صفوف مخزون')
+            # توجيه إلى صفحة المخزون لإدارة الكميات فقط
+            return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
 
         elif action == 'add_global_color':
             cname = (request.POST.get('color_name') or '').strip()
@@ -3106,6 +3138,25 @@ def super_owner_add_product(request):
         for idx, n in enumerate(['XS','S','M','L','XL','XXL','3XL','4XL']):
             try:
                 AttributeSize.objects.create(name=n, order=idx)
+            except Exception:
+                pass
+
+    # Seed default colors once, إذا لم توجد ألوان
+    if AttributeColor.objects.count() == 0:
+        default_colors = [
+            ('أسود', '#000000'),
+            ('أبيض', '#FFFFFF'),
+            ('أحمر', '#FF0000'),
+            ('أزرق', '#0000FF'),
+            ('أخضر', '#008000'),
+            ('أصفر', '#FFFF00'),
+            ('زهري', '#FFC0CB'),
+            ('رمادي', '#808080'),
+            ('بنّي', '#8B4513'),
+        ]
+        for name, code in default_colors:
+            try:
+                AttributeColor.objects.get_or_create(name=name, defaults={'code': code})
             except Exception:
                 pass
 
