@@ -309,9 +309,34 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3 d-flex align-items-end justify-content-end">
-                                                    <button class="btn btn-info"><i class="fas fa-magic me-1"></i>توليد</button>
+                                                    <button class="btn btn-info"><i class="fas fa-magic me-1"></i>توليد (اختيار يدوي)</button>
                                                 </div>
                                             </div>
+                                        </form>
+
+                                        <form method="post" class="mb-3">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="edit_generate_from_product">
+                                            <div class="row g-3">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">كمية افتراضية</label>
+                                                    <input type="number" name="default_qty" class="form-control" min="0" value="0">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">سعر خاص افتراضي</label>
+                                                    <input type="number" name="default_price" class="form-control" step="0.01" min="0">
+                                                </div>
+                                                <div class="col-md-3 d-flex align-items-end">
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input" id="enable_all2" name="enable_all">
+                                                        <label class="form-check-label" for="enable_all2">تفعيل الكل</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 d-flex align-items-end justify-content-end">
+                                                    <button class="btn btn-info"><i class="fas fa-bolt me-1"></i>توليد من ألوان ومقاسات المنتج</button>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">يستخدم الألوان التي أضفتها لهذا المنتج والمقاسات حسب نوع القياس، بدون الحاجة لإعادة اختيارها هنا.</small>
                                         </form>
                                         <h6 class="fw-bold mb-3">إضافة لون جديد</h6>
                                         <form method="post" enctype="multipart/form-data" class="mb-3">

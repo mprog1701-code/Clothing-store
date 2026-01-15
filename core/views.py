@@ -3506,6 +3506,124 @@ def super_owner_edit_product(request, product_id):
             messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً')
             return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
 
+        elif action == 'edit_generate_from_product':
+            default_qty_raw = request.POST.get('default_qty')
+            default_price_raw = (request.POST.get('default_price') or '').strip()
+            enable_all = (request.POST.get('enable_all') == 'on')
+
+            try:
+                default_qty = int(default_qty_raw or 0)
+            except ValueError:
+                default_qty = 0
+            from decimal import Decimal, InvalidOperation
+            default_price = None
+            if default_price_raw:
+                try:
+                    default_price = Decimal(default_price_raw)
+                except InvalidOperation:
+                    default_price = None
+
+            from .models import AttributeColor, AttributeSize
+            product_colors = list(product.colors.all())
+            color_attrs = []
+            for pc in product_colors:
+                try:
+                    ca, _ = AttributeColor.objects.get_or_create(name=pc.name, defaults={'code': pc.code or ''})
+                    color_attrs.append(ca)
+                except Exception:
+                    continue
+
+            size_attrs = []
+            if product.size_type == 'numeric':
+                names = [str(n) for n in range(28, 61, 2)]
+                for idx, n in enumerate(names):
+                    try:
+                        sa, _ = AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+                        size_attrs.append(sa)
+                    except Exception:
+                        continue
+            elif product.size_type == 'symbolic':
+                names = ['XS','S','M','L','XL','XXL','3XL','4XL']
+                for idx, n in enumerate(names):
+                    try:
+                        sa, _ = AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+                        size_attrs.append(sa)
+                    except Exception:
+                        continue
+            else:
+                size_attrs = []
+
+            created = 0
+            if color_attrs and size_attrs:
+                for c in color_attrs:
+                    for s in size_attrs:
+                        exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                        if exists:
+                            continue
+                        try:
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=c,
+                                size_attr=s,
+                                stock_qty=default_qty,
+                                price_override=default_price,
+                                is_enabled=enable_all and default_qty > 0,
+                            )
+                            created += 1
+                        except Exception:
+                            pass
+            elif color_attrs and not size_attrs:
+                for c in color_attrs:
+                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr__isnull=True).exists()
+                    if exists:
+                        continue
+                    try:
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=c,
+                            size_attr=None,
+                            stock_qty=default_qty,
+                            price_override=default_price,
+                            is_enabled=enable_all and default_qty > 0,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+            elif not color_attrs and size_attrs:
+                for s in size_attrs:
+                    exists = ProductVariant.objects.filter(product=product, color_attr__isnull=True, size_attr=s).exists()
+                    if exists:
+                        continue
+                    try:
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=None,
+                            size_attr=s,
+                            stock_qty=default_qty,
+                            price_override=default_price,
+                            is_enabled=enable_all and default_qty > 0,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+            else:
+                if not ProductVariant.objects.filter(product=product).exists():
+                    try:
+                        ProductVariant.objects.create(
+                            product=product,
+                            color_attr=None,
+                            size_attr=None,
+                            stock_qty=default_qty,
+                            price_override=default_price,
+                            is_enabled=enable_all and default_qty > 0,
+                        )
+                        created += 1
+                    except Exception:
+                        pass
+
+            messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً من ألوان ومقاسات المنتج')
+            return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
+
         elif action == 'add_color':
             cname = (request.POST.get('color_name') or '').strip()
             ccode = (request.POST.get('color_code') or '').strip()
