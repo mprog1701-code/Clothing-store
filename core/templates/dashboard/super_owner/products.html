@@ -170,8 +170,8 @@
                                             <a href="{% url 'super_owner_edit_product' product.id %}" class="btn btn-primary btn-table-action" title="تعديل">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=variants" class="btn btn-outline-primary btn-table-action" title="المتغيرات">
-                                                <i class="fas fa-ruler-combined"></i>
+                                            <a href="{% url 'super_owner_inventory' %}?store={{ product.store_id }}&product={{ product.id }}" class="btn btn-outline-primary btn-table-action" title="المخزون">
+                                                <i class="fas fa-warehouse"></i>
                                             </a>
                                             <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images" class="btn btn-outline-secondary btn-table-action" title="الصور">
                                                 <i class="fas fa-images"></i>
