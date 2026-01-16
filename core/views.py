@@ -2737,9 +2737,28 @@ def super_owner_add_product(request):
         elif action == 'add_global_color':
             cname = (request.POST.get('color_name') or '').strip()
             ccode = (request.POST.get('color_code') or '').strip()
+            def _hex_to_rgb(h):
+                try:
+                    return (int(h[1:3],16), int(h[3:5],16), int(h[5:7],16))
+                except Exception:
+                    return (0,0,0)
+            def _nearest_name(h):
+                targets = [
+                    ('أسود','#000000'),('أبيض','#FFFFFF'),('أحمر','#FF0000'),('أخضر','#008000'),('أزرق','#0000FF'),
+                    ('أصفر','#FFFF00'),('برتقالي','#FFA500'),('بنفسجي','#800080'),('نيلي','#4B0082'),('تركوازي','#40E0D0'),
+                    ('كحلي','#000080'),('رمادي','#808080'),('زهري','#FFC0CB'),('بنّي','#8B4513'),('سماوي','#87CEEB')
+                ]
+                t = _hex_to_rgb(h.upper())
+                best, bd = None, 10**9
+                for name, hexv in targets:
+                    r,g,b = _hex_to_rgb(hexv)
+                    d = (t[0]-r)*(t[0]-r) + (t[1]-g)*(t[1]-g) + (t[2]-b)*(t[2]-b)
+                    if d < bd:
+                        bd = d
+                        best = name
+                return best or h
             if not cname:
-                messages.error(request, 'يرجى إدخال اسم اللون')
-                return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
+                cname = _nearest_name(ccode or '#000000')
             try:
                 AttributeColor.objects.get_or_create(name=cname, defaults={'code': ccode})
                 messages.success(request, 'تمت إضافة اللون إلى القائمة العامة')
