@@ -3490,11 +3490,11 @@ def super_owner_edit_product(request, product_id):
                             exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
                             if exists:
                                 continue
-                    ProductVariant.objects.create(
+                            ProductVariant.objects.create(
                                 product=product,
                                 color_attr=c,
                                 size_attr=s,
-                        size=s.name,
+                                size=s.name,
                                 stock_qty=default_qty,
                                 price_override=default_price,
                                 is_enabled=(enable_all or product.is_active),
