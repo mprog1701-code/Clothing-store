@@ -92,7 +92,17 @@
                                     <input type="file" class="form-control" id="images" name="images" multiple accept="image/*">
                                     <small class="text-muted">يمكنك رفع عدة صور</small>
                                 </div>
-                                
+                                <div class="section-block">
+                                    <h5 class="section-title">المقاسات</h5>
+                                    <div class="sizes-grid" id="createSizesGrid">
+                                        {% for s in sizes %}
+                                        <label class="size-option" data-name="{{ s.name }}">
+                                            <input class="form-check-input" type="checkbox" name="size_ids" value="{{ s.id }}">
+                                            <span class="size-label">{{ s.name }}</span>
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                                 <div class="mb-3">
                                     <div class="form-check">
                                         <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
@@ -121,17 +131,7 @@
                                         {% endfor %}
                                     </div>
                                 </div>
-                                <div class="section-block">
-                                    <h5 class="section-title">المقاسات</h5>
-                                    <div class="sizes-grid" id="createSizesGrid">
-                                        {% for s in sizes %}
-                                        <label class="size-option" data-name="{{ s.name }}">
-                                            <input class="form-check-input" type="checkbox" name="size_ids" value="{{ s.id }}">
-                                            <span class="size-label">{{ s.name }}</span>
-                                        </label>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+                                
                                 <div class="d-flex justify-content-between">
                                     <button type="submit" class="btn btn-success"><i class="fas fa-plus me-2"></i>إنشاء المنتج</button>
                                     <a href="{% url 'super_owner_products' %}" class="btn btn-secondary"><i class="fas fa-times me-2"></i>إلغاء</a>
@@ -181,9 +181,9 @@
                         </div>
                         <div class="section-block">
                             <h5 class="section-title">المقاسات</h5>
-                            <div class="sizes-grid">
+                            <div class="sizes-grid" id="attrSizesGrid">
                                 {% for s in sizes %}
-                                <label class="size-option">
+                                <label class="size-option" data-name="{{ s.name }}">
                                     <input class="form-check-input" type="checkbox" name="size_ids" id="attr-size{{ s.id }}" value="{{ s.id }}" {% if s.id in existing_size_ids %}checked{% endif %}>
                                     <span class="size-label">{{ s.name }}</span>
                                 </label>
@@ -197,9 +197,7 @@
                     </form>
                     {% endif %}
 
-                    {% comment %} تم دمج اختيار الألوان والمقاسات داخل نموذج معلومات المنتج؛ لا توجد خصائص منفصلة {% endcomment %}
-
-                    {% comment %} لا توجد إدارة كميات أو شبكة متغيرات في صفحة المنتج. إدارة الكميات حصراً من صفحة المخزون {% endcomment %}
+                    
 
                     {% if product and step == 'images' %}
                     <div class="mb-3">
@@ -402,20 +400,25 @@
             }
 
             const sizeType = document.getElementById('size_type');
-            const grid = document.getElementById('createSizesGrid');
+            const grids = [
+                document.getElementById('createSizesGrid'),
+                document.getElementById('attrSizesGrid')
+            ].filter(Boolean);
             function applySizeFilter(){
-                if (!sizeType || !grid) return;
+                if (!sizeType || grids.length === 0) return;
                 const t = sizeType.value;
-                grid.querySelectorAll('.size-option').forEach(function(el){
-                    const name = String(el.dataset.name || '');
-                    const isNum = /^\d+$/.test(name);
-                    if (t === 'numeric') {
-                        el.style.display = isNum ? '' : 'none';
-                    } else if (t === 'symbolic') {
-                        el.style.display = isNum ? 'none' : '';
-                    } else {
-                        el.style.display = 'none';
-                    }
+                grids.forEach(function(grid){
+                    grid.querySelectorAll('.size-option').forEach(function(el){
+                        const name = String(el.dataset.name || el.querySelector('.size-label')?.textContent || '');
+                        const isNum = /^\d+$/.test(name);
+                        if (t === 'numeric') {
+                            el.style.display = isNum ? '' : 'none';
+                        } else if (t === 'symbolic') {
+                            el.style.display = isNum ? 'none' : '';
+                        } else {
+                            el.style.display = 'none';
+                        }
+                    });
                 });
             }
             applySizeFilter();

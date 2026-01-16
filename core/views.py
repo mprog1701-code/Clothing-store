@@ -2532,67 +2532,58 @@ def super_owner_add_product(request):
 
             try:
                 store = Store.objects.get(id=store_id)
-                product = Product.objects.create(
-                    name=name,
-                    store=store,
-                    category=category,
-                    base_price=base_price,
-                    description=description,
-                    size_type=size_type,
-                    is_active=is_active,
-                    is_featured=is_featured
-                )
+                from django.db import transaction
+                with transaction.atomic():
+                    product = Product.objects.create(
+                        name=name,
+                        store=store,
+                        category=category,
+                        base_price=base_price,
+                        description=description,
+                        size_type=size_type,
+                        is_active=is_active,
+                        is_featured=is_featured
+                    )
 
-                if images:
-                    for idx, image in enumerate(images):
-                        try:
+                    if images:
+                        for idx, image in enumerate(images):
                             ProductImage.objects.create(product=product, image=image, is_main=(idx == 0))
-                        except Exception:
-                            messages.error(request, 'فشل حفظ إحدى صور المنتج')
-                            return redirect('super_owner_add_product')
 
-                # Auto-generate variants from selected colors & sizes, quantities default to 0
-                try:
-                    selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
-                except Exception:
-                    selected_colors = []
-                try:
-                    selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
-                except Exception:
-                    selected_sizes = []
+                    try:
+                        selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
+                    except Exception:
+                        selected_colors = []
+                    try:
+                        selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
+                    except Exception:
+                        selected_sizes = []
 
-                created = 0
-                for c in selected_colors:
-                    for s in selected_sizes:
-                        exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
-                        if exists:
-                            continue
-                        try:
+                    created = 0
+                    for c in selected_colors:
+                        for s in selected_sizes:
+                            exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                            if exists:
+                                continue
                             ProductVariant.objects.create(
                                 product=product,
                                 color_attr=c,
                                 size_attr=s,
                                 stock_qty=0,
                                 price_override=None,
-                                is_enabled=False,
+                                is_enabled=product.is_active,
                             )
                             created += 1
-                        except Exception:
-                            pass
 
-                if created == 0:
-                    if not ProductVariant.objects.filter(product=product).exists():
-                        try:
+                    if created == 0:
+                        if not ProductVariant.objects.filter(product=product).exists():
                             ProductVariant.objects.create(
                                 product=product,
                                 color_attr=None,
                                 size_attr=None,
                                 stock_qty=0,
                                 price_override=None,
-                                is_enabled=False,
+                                is_enabled=product.is_active,
                             )
-                        except Exception:
-                            pass
 
                 return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
             except Store.DoesNotExist:
@@ -3481,29 +3472,38 @@ def super_owner_edit_product(request, product_id):
                     default_price = None
 
             from .models import AttributeColor, AttributeSize
-            selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
-            selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
+            selected_colors = list(AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()]))
+            selected_sizes = list(AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()]))
 
-            created = 0
-            for c in selected_colors:
-                for s in selected_sizes:
-                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
-                    if exists:
-                        continue
-                    try:
-                        ProductVariant.objects.create(
-                            product=product,
-                            color_attr=c,
-                            size_attr=s,
-                            stock_qty=default_qty,
-                            price_override=default_price,
-                            is_enabled=enable_all or True,
-                        )
-                        created += 1
-                    except Exception:
-                        pass
+            try:
+                from django.db import transaction
+                with transaction.atomic():
+                    created = 0
+                    for c in selected_colors:
+                        for s in selected_sizes:
+                            exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                            if exists:
+                                continue
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=c,
+                                size_attr=s,
+                                stock_qty=default_qty,
+                                price_override=default_price,
+                                is_enabled=(enable_all or product.is_active),
+                            )
+                            created += 1
 
-            messages.success(request, f'تم إنشاء {created} متغيرات تلقائياً')
+                    sel_color_ids = {c.id for c in selected_colors}
+                    sel_size_ids = {s.id for s in selected_sizes}
+                    for v in ProductVariant.objects.filter(product=product).only('id','color_attr_id','size_attr_id','is_enabled'):
+                        if (v.color_attr_id and v.color_attr_id not in sel_color_ids) or (v.size_attr_id and v.size_attr_id not in sel_size_ids):
+                            if v.is_enabled:
+                                ProductVariant.objects.filter(id=v.id).update(is_enabled=False)
+
+                messages.success(request, f'تم إنشاء {created} متغيرات وإيقاف غير المحدد منها')
+            except Exception:
+                messages.error(request, 'تعذر توليد المتغيرات')
             return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
 
         elif action == 'edit_generate_from_product':
@@ -3931,6 +3931,10 @@ def super_owner_edit_product(request, product_id):
         context['size_attrs'] = sorted([s for s in all_sizes if s.name in names], key=lambda x: x.order)
     else:
         context['size_attrs'] = []
+    # Existing selections from current variants
+    existing_variants = list(ProductVariant.objects.filter(product=product))
+    context['existing_color_attr_ids'] = [v.color_attr_id for v in existing_variants if v.color_attr_id]
+    context['existing_size_attr_ids'] = [v.size_attr_id for v in existing_variants if v.size_attr_id]
     return render(request, 'dashboard/super_owner/edit_product.html', context)
 
 
@@ -4163,7 +4167,10 @@ def super_owner_inventory(request):
     if product_id.isdigit():
         base_qs = base_qs.filter(product_id=int(product_id))
     if q:
-        base_qs = base_qs.filter(Q(product__name__icontains=q) | Q(product__store__name__icontains=q) | Q(color_attr__name__icontains=q) | Q(size_attr__name__icontains=q))
+        qobj = Q(product__name__icontains=q) | Q(product__store__name__icontains=q) | Q(color_attr__name__icontains=q) | Q(size_attr__name__icontains=q)
+        if q.isdigit():
+            qobj |= Q(product__id=int(q))
+        base_qs = base_qs.filter(qobj)
 
     variants = list(base_qs.order_by('product__store__name', 'product__name', 'color_attr__name', 'size_attr__order', 'size_attr__name'))
 
@@ -4171,24 +4178,30 @@ def super_owner_inventory(request):
         try:
             from django.db import transaction
             with transaction.atomic():
+                variant_ids = set()
                 for key, val in request.POST.items():
                     if key.startswith('qty_'):
                         try:
-                            vid = int(key[4:])
-                            qty_raw = (val or '').strip()
-                            qty = int(qty_raw or '0')
-                            if qty < 0:
-                                qty = 0
+                            variant_ids.add(int(key[4:]))
                         except Exception:
-                            continue
-                        try:
-                            v = ProductVariant.objects.select_related('product').get(id=vid)
-                        except ProductVariant.DoesNotExist:
-                            continue
-                        v.stock_qty = qty
-                        v.is_enabled = qty > 0
-                        v.save()
-            messages.success(request, 'تم حفظ الكميات بنجاح')
+                            pass
+                for vid in variant_ids:
+                    try:
+                        v = ProductVariant.objects.select_related('product').get(id=vid)
+                    except ProductVariant.DoesNotExist:
+                        continue
+                    qty_raw = request.POST.get(f'qty_{vid}', '')
+                    enabled_raw = request.POST.get(f'enabled_{vid}', None)
+                    try:
+                        qty = int((qty_raw or '').strip() or '0')
+                    except Exception:
+                        qty = 0
+                    if qty < 0:
+                        qty = 0
+                    v.stock_qty = qty
+                    v.is_enabled = bool(enabled_raw) if enabled_raw is not None else (qty > 0)
+                    v.save()
+            messages.success(request, 'تم حفظ الكميات والحالة بنجاح')
         except Exception:
             messages.error(request, 'حدث خطأ أثناء الحفظ')
         params = []

@@ -67,7 +67,8 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>المتجر</th>
-                                        <th>المنتج</th>
+                                        <th>كود المنتج</th>
+                                        <th>اسم المنتج</th>
                                         <th>اللون</th>
                                         <th>المقاس</th>
                                         <th style="width:150px">الكمية</th>
@@ -78,6 +79,7 @@
                                     {% for v in variants %}
                                     <tr>
                                         <td>{{ v.product.store.name }}</td>
+                                        <td>{{ v.product.id }}</td>
                                         <td>{{ v.product.name }}</td>
                                         <td>
                                             {% if v.color_attr %}
@@ -92,16 +94,15 @@
                                             <input type="number" name="qty_{{ v.id }}" class="form-control" min="0" value="{{ v.stock_qty }}">
                                         </td>
                                         <td>
-                                            {% if v.stock_qty > 0 %}
-                                                <span class="badge bg-success">نشط</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">نفد</span>
-                                            {% endif %}
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="enabled_{{ v.id }}" id="enabled_{{ v.id }}" {% if v.is_enabled %}checked{% endif %}>
+                                                <label class="form-check-label" for="enabled_{{ v.id }}">{% if v.is_enabled %}نشط{% else %}معطّل{% endif %}</label>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted">لا توجد عناصر مطابقة</td>
+                                        <td colspan="7" class="text-center text-muted">لا توجد عناصر مطابقة</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

@@ -156,112 +156,9 @@
                             <div class="col-12">
                                 <div class="card border-0 shadow-sm">
                                     <div class="card-header bg-gradient-info text-white">
-                                        <h5 class="mb-0"><i class="fas fa-ruler-combined me-2"></i>المتغيرات (المقاسات والألوان والكميات)</h5>
+                                        <h5 class="mb-0"><i class="fas fa-ruler-combined me-2"></i>الخصائص (ألوان ومقاسات) + توليد المتغيرات</h5>
                                     </div>
                                     <div class="card-body">
-                                        {% if product.variants.all %}
-                                        <div class="table-responsive mb-4">
-                                            <table class="table align-middle">
-                                                <thead>
-                                                    <tr>
-                                                        <th>المقاس</th>
-                                                        <th>اللون</th>
-                                                        <th>الكمية</th>
-                                                        <th>سعر خاص</th>
-                                                        <th>الإجراءات</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                {% for v in product.variants.all %}
-                                                    <tr>
-                                                        <form method="post" class="d-flex w-100 align-items-center">
-                                                            {% csrf_token %}
-                                                            <input type="hidden" name="action" value="update_variant">
-                                                            <input type="hidden" name="variant_id" value="{{ v.id }}">
-                                                            <td style="min-width:120px;">
-                                                                {% if size_type != 'none' %}
-                                                                    <select name="size" class="form-select">
-                                                                        {% for s in size_choices %}
-                                                                            <option value="{{ s.0 }}" {% if s.0 == v.size %}selected{% endif %}>{{ s.1 }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
-                                                                {% else %}
-                                                                    <input type="text" name="size" class="form-control" value="{{ v.size }}" required>
-                                                                {% endif %}
-                                                            </td>
-                                                            <td style="min-width:160px;">
-                                                                <select name="color_id" class="form-select" required>
-                                                                    {% for c in colors %}
-                                                                        <option value="{{ c.id }}" {% if v.color_obj and c.id == v.color_obj.id %}selected{% endif %}>{{ c.name }}</option>
-                                                                    {% endfor %}
-                                                                </select>
-                                                            </td>
-                                                            <td style="min-width:140px;">
-                                                                <input type="number" name="stock_qty" class="form-control" value="{{ v.stock_qty }}" min="0" required>
-                                                            </td>
-                                                            <td style="min-width:160px;">
-                                                                <input type="number" name="price_override" class="form-control" step="0.01" min="0" value="{{ v.price_override|default_if_none:''|unlocalize }}">
-                                                            </td>
-                                                            <td class="text-nowrap">
-                                                                <button type="submit" class="btn btn-primary btn-sm me-2"><i class="fas fa-save me-1"></i>تحديث</button>
-                                                        </form>
-                                                                <form method="post" class="d-inline">
-                                                                    {% csrf_token %}
-                                                                    <input type="hidden" name="action" value="delete_variant">
-                                                                    <input type="hidden" name="variant_id" value="{{ v.id }}">
-                                                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('حذف هذا المتغير؟')"><i class="fas fa-trash me-1"></i>حذف</button>
-                                                                </form>
-                                                            </td>
-                                                    </tr>
-                                                {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        {% else %}
-                                            <p class="text-muted">لا توجد متغيرات لهذا المنتج بعد.</p>
-                                        {% endif %}
-                                        
-                                        <h6 class="fw-bold mb-3">إضافة متغير جديد</h6>
-                                        <form method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="action" value="add_variant">
-                                            <div class="row g-3">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">المقاس</label>
-                                                    {% if size_type != 'none' %}
-                                                        <select name="size" class="form-select" required>
-                                                            <option value="">اختر المقاس</option>
-                                                            {% for s in size_choices %}
-                                                                <option value="{{ s.0 }}">{{ s.1 }}</option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    {% else %}
-                                                        <input type="text" name="size" class="form-control" placeholder="اكتب القياس" required>
-                                                    {% endif %}
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">اللون</label>
-                                                    <select name="color_id" class="form-select" required>
-                                                        <option value="">اختر اللون</option>
-                                                        {% for c in colors %}
-                                                            <option value="{{ c.id }}">{{ c.name }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">الكمية</label>
-                                                    <input type="number" name="stock_qty" class="form-control" min="0" value="0" required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">سعر خاص (اختياري)</label>
-                                                    <input type="number" name="price_override" class="form-control" step="0.01" min="0">
-                                                </div>
-                                            </div>
-                                            <div class="mt-3">
-                                                <button type="submit" class="btn btn-info"><i class="fas fa-plus me-1"></i>إضافة متغير</button>
-                                            </div>
-                                        </form>
-                                        <hr>
                                         <h6 class="fw-bold mb-3">توليد متغيرات تلقائياً</h6>
                                         <form method="post" class="mb-3">
                                             {% csrf_token %}
@@ -277,7 +174,7 @@
                                                                 <span class="chip-name">{{ c.name }}</span>
                                                             </div>
                                                             <div class="chip-select">
-                                                                <input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}">
+                                                                <input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}>
                                                             </div>
                                                         </label>
                                                         {% endfor %}
@@ -288,7 +185,7 @@
                                                     <div class="sizes-grid">
                                                         {% for s in size_attrs %}
                                                         <label class="size-option">
-                                                            <input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}">
+                                                            <input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}>
                                                             <span class="size-label">{{ s.name }}</span>
                                                         </label>
                                                         {% endfor %}
@@ -336,29 +233,7 @@
                                                     <button class="btn btn-info"><i class="fas fa-bolt me-1"></i>توليد من ألوان ومقاسات المنتج</button>
                                                 </div>
                                             </div>
-                                            <small class="text-muted">يستخدم الألوان التي أضفتها لهذا المنتج والمقاسات حسب نوع القياس، بدون الحاجة لإعادة اختيارها هنا.</small>
-                                        </form>
-                                        <h6 class="fw-bold mb-3">إضافة لون جديد</h6>
-                                        <form method="post" enctype="multipart/form-data" class="mb-3">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="action" value="add_color">
-                                            <div class="row g-3">
-                                                <div class="col-md-4">
-                                                    <label class="form-label">اسم اللون</label>
-                                                    <input type="text" name="color_name" class="form-control" required>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">كود اللون (اختياري)</label>
-                                                    <input type="text" name="color_code" class="form-control" placeholder="#000000">
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <label class="form-label">صورة اللون (اختياري)</label>
-                                                    <input type="file" name="color_image" class="form-control" accept="image/*">
-                                                </div>
-                                            </div>
-                                            <div class="mt-3">
-                                                <button type="submit" class="btn btn-info"><i class="fas fa-plus me-1"></i>إضافة لون</button>
-                                            </div>
+                                            <small class="text-muted">التوليد يضيف المتغيرات الناقصة فقط. إذا ألغيت تحديد لون/مقاس سيتم تعطيل المتغيرات المطابقة دون حذفها.</small>
                                         </form>
                                     </div>
                                 </div>
