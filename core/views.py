@@ -2568,6 +2568,7 @@ def super_owner_add_product(request):
                                 product=product,
                                 color_attr=c,
                                 size_attr=s,
+                                size=s.name,
                                 stock_qty=0,
                                 price_override=None,
                                 is_enabled=product.is_active,
@@ -2575,11 +2576,12 @@ def super_owner_add_product(request):
                             created += 1
 
                     if created == 0:
-                        if not ProductVariant.objects.filter(product=product).exists():
+                        if not ProductVariant.objects.filter(product=product).exists() and size_type == 'none':
                             ProductVariant.objects.create(
                                 product=product,
                                 color_attr=None,
                                 size_attr=None,
+                                size='ONE',
                                 stock_qty=0,
                                 price_override=None,
                                 is_enabled=product.is_active,
@@ -2668,6 +2670,7 @@ def super_owner_add_product(request):
                                 product=product,
                                 color_attr=c,
                                 size_attr=s,
+                                size=s.name,
                                 stock_qty=0,
                                 price_override=None,
                                 is_enabled=False,
@@ -2675,7 +2678,7 @@ def super_owner_add_product(request):
                             created += 1
                         except Exception:
                             pass
-            elif selected_colors and not selected_sizes:
+            elif selected_colors and not selected_sizes and product.size_type == 'none':
                 for c in selected_colors:
                     exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr__isnull=True).exists()
                     if exists:
@@ -2685,6 +2688,7 @@ def super_owner_add_product(request):
                             product=product,
                             color_attr=c,
                             size_attr=None,
+                            size='ONE',
                             stock_qty=0,
                             price_override=None,
                             is_enabled=False,
@@ -2702,6 +2706,7 @@ def super_owner_add_product(request):
                             product=product,
                             color_attr=None,
                             size_attr=s,
+                            size=s.name,
                             stock_qty=0,
                             price_override=None,
                             is_enabled=False,
@@ -2710,20 +2715,21 @@ def super_owner_add_product(request):
                     except Exception:
                         pass
             else:
-                # لا توجد خصائص محددة: إنشاء صف مخزون افتراضي واحد
-                if not ProductVariant.objects.filter(product=product).exists():
-                    try:
-                        ProductVariant.objects.create(
-                            product=product,
-                            color_attr=None,
-                            size_attr=None,
-                            stock_qty=0,
-                            price_override=None,
-                            is_enabled=False,
-                        )
-                        created += 1
-                    except Exception:
-                        pass
+                if product.size_type == 'none':
+                    if not ProductVariant.objects.filter(product=product).exists():
+                        try:
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=None,
+                                size_attr=None,
+                                size='ONE',
+                                stock_qty=0,
+                                price_override=None,
+                                is_enabled=False,
+                            )
+                            created += 1
+                        except Exception:
+                            pass
 
             messages.success(request, f'تم حفظ الخصائص وإنشاء {created} صفوف مخزون')
             # توجيه إلى صفحة المخزون لإدارة الكميات فقط
@@ -3484,10 +3490,11 @@ def super_owner_edit_product(request, product_id):
                             exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
                             if exists:
                                 continue
-                            ProductVariant.objects.create(
+                    ProductVariant.objects.create(
                                 product=product,
                                 color_attr=c,
                                 size_attr=s,
+                        size=s.name,
                                 stock_qty=default_qty,
                                 price_override=default_price,
                                 is_enabled=(enable_all or product.is_active),
@@ -3565,6 +3572,7 @@ def super_owner_edit_product(request, product_id):
                                 product=product,
                                 color_attr=c,
                                 size_attr=s,
+                                size=s.name,
                                 stock_qty=default_qty,
                                 price_override=default_price,
                                 is_enabled=enable_all and default_qty > 0,
@@ -3582,6 +3590,7 @@ def super_owner_edit_product(request, product_id):
                             product=product,
                             color_attr=c,
                             size_attr=None,
+                            size='ONE',
                             stock_qty=default_qty,
                             price_override=default_price,
                             is_enabled=enable_all and default_qty > 0,
@@ -3599,6 +3608,7 @@ def super_owner_edit_product(request, product_id):
                             product=product,
                             color_attr=None,
                             size_attr=s,
+                            size=s.name,
                             stock_qty=default_qty,
                             price_override=default_price,
                             is_enabled=enable_all and default_qty > 0,
@@ -3613,6 +3623,7 @@ def super_owner_edit_product(request, product_id):
                             product=product,
                             color_attr=None,
                             size_attr=None,
+                            size='ONE',
                             stock_qty=default_qty,
                             price_override=default_price,
                             is_enabled=enable_all and default_qty > 0,
