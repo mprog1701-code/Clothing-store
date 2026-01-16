@@ -30,11 +30,7 @@
                         {% endfor %}
                     {% endif %}
 
-                    <ul class="nav nav-tabs mb-3">
-                        <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=info{% else %}?step=info{% endif %}">معلومات المنتج</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=attributes{% else %}?step=attributes{% endif %}">الخصائص</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=images{% else %}?step=images{% endif %}">الصور</a></li>
-                    </ul>
+                    <div class="alert alert-info">هذه الصفحة لإنشاء المنتج بالبيانات الأساسية والصور فقط. إدارة الألوان والمقاسات تتم من صفحة خصائص المنتج لاحقاً.</div>
 
                     {% if step == 'info' %}
                     <form method="post" enctype="multipart/form-data">
@@ -68,23 +64,12 @@
                                         <option value="accessories">إكسسوارات</option>
                                     </select>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="size_type" class="form-label">نوع القياس</label>
-                                    <select class="form-select" id="size_type" name="size_type" required>
-                                        <option value="symbolic" selected>رمزية</option>
-                                        <option value="numeric">رقمية</option>
-                                        <option value="none">بدون</option>
-                                    </select>
-                                    <small class="text-muted">يحدد صلاحية المقاسات</small>
-                                </div>
+                                <input type="hidden" name="size_type" value="symbolic">
                                 <div class="mb-3">
                                     <label for="base_price" class="form-label">السعر الأساسي</label>
                                     <input type="number" class="form-control" id="base_price" name="base_price" min="0" step="0.01" required>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="description" class="form-label">الوصف</label>
-                                    <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-                                </div>
+                                <input type="hidden" id="description" name="description" value="—">
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -92,45 +77,15 @@
                                     <input type="file" class="form-control" id="images" name="images" multiple accept="image/*">
                                     <small class="text-muted">يمكنك رفع عدة صور</small>
                                 </div>
-                                <div class="section-block">
-                                    <h5 class="section-title">المقاسات</h5>
-                                    <div class="sizes-grid" id="createSizesGrid">
-                                        {% for s in sizes %}
-                                        <label class="size-option" data-name="{{ s.name }}">
-                                            <input class="form-check-input" type="checkbox" name="size_ids" value="{{ s.id }}">
-                                            <span class="size-label">{{ s.name }}</span>
-                                        </label>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+                                
                                 <div class="mb-3">
                                     <div class="form-check">
                                         <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
                                         <label class="form-check-label" for="is_active">تفعيل المنتج فوراً</label>
                                     </div>
                                 </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="is_featured" name="is_featured">
-                                        <label class="form-check-label" for="is_featured">تمييز المنتج</label>
-                                    </div>
-                                </div>
-                                <div class="section-block">
-                                    <h5 class="section-title">الألوان</h5>
-                                    <div class="color-chips">
-                                        {% for c in colors %}
-                                        <label class="color-chip">
-                                            <div class="color-preview" style="background-color: {{ c.code|default:'#ccc' }}"></div>
-                                            <div class="chip-content">
-                                                <span class="chip-name">{{ c.name }}</span>
-                                            </div>
-                                            <div class="chip-select">
-                                                <input class="form-check-input" type="checkbox" name="color_ids" value="{{ c.id }}">
-                                            </div>
-                                        </label>
-                                        {% endfor %}
-                                    </div>
-                                </div>
+                                
+                                
                                 
                                 <div class="d-flex justify-content-between">
                                     <button type="submit" class="btn btn-success"><i class="fas fa-plus me-2"></i>إنشاء المنتج</button>
@@ -141,61 +96,7 @@
                     </form>
                     {% endif %}
 
-                    {% if product and step == 'attributes' %}
-                    <div class="section-block">
-                        <h5 class="section-title">الألوان</h5>
-                        <form method="post" class="d-flex align-items-center gap-2 color-add-row" data-ajax="true">
-                            {% csrf_token %}
-                            <input type="hidden" name="action" value="add_global_color">
-                            <input type="hidden" name="pid" value="{{ product.id }}">
-                            <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" required>
-                            <input type="color" name="color_code" class="form-control form-control-color" value="#000000" title="اختر الكود اللوني">
-                            <button class="btn btn-primary">إضافة لون</button>
-                        </form>
-                        <!-- سيتم عرض بطاقات الألوان داخل نموذج الحفظ أدناه -->
-                    </div>
-
-                    <form method="post" id="attributesForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="save_attributes">
-                        <input type="hidden" name="pid" value="{{ product.id }}">
-                        <div class="section-block">
-                            <div class="color-chips">
-                                {% for c in colors %}
-                                <div class="color-chip">
-                                    <div class="color-preview" style="background-color: {{ c.code|default:'#ccc' }}"></div>
-                                    <div class="chip-content">
-                                        <span class="chip-name">{{ c.name }}</span>
-                                        <div class="chip-actions">
-                                            <button type="button" class="btn btn-link text-danger p-0" title="حذف">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="chip-select">
-                                        <input class="form-check-input" type="checkbox" name="color_ids" id="attr-color{{ c.id }}" value="{{ c.id }}" {% if c.id in existing_color_ids %}checked{% endif %}>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="section-block">
-                            <h5 class="section-title">المقاسات</h5>
-                            <div class="sizes-grid" id="attrSizesGrid">
-                                {% for s in sizes %}
-                                <label class="size-option" data-name="{{ s.name }}">
-                                    <input class="form-check-input" type="checkbox" name="size_ids" id="attr-size{{ s.id }}" value="{{ s.id }}" {% if s.id in existing_size_ids %}checked{% endif %}>
-                                    <span class="size-label">{{ s.name }}</span>
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="actions-row">
-                            <a href="{% url 'super_owner_products' %}" class="btn btn-outline-secondary">إلغاء</a>
-                            <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ</button>
-                        </div>
-                    </form>
-                    {% endif %}
+                    
 
                     
 

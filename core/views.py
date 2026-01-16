@@ -2587,7 +2587,7 @@ def super_owner_add_product(request):
                                 is_enabled=product.is_active,
                             )
 
-                return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
+                return redirect(f"/dashboard/super-owner/products/edit/{product.id}/?section=properties")
             except Store.DoesNotExist:
                 messages.error(request, 'المتجر المختار غير صالح!')
                 return redirect('super_owner_add_product')
@@ -4222,7 +4222,8 @@ def super_owner_inventory(request):
             params.append(f'product={product_id}')
         if q:
             params.append(f'q={q}')
-        redirect_url = 'super_owner_inventory'
+        from django.urls import reverse
+        redirect_url = reverse('super_owner_inventory')
         if params:
             return redirect(f'{redirect_url}?'+('&'.join(params)))
         return redirect(redirect_url)
