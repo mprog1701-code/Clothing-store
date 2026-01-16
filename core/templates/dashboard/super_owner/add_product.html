@@ -32,7 +32,7 @@
 
                     <ul class="nav nav-tabs mb-3">
                         <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=info{% else %}?step=info{% endif %}">معلومات المنتج</a></li>
-                        <li class="nav-item"><a class="nav-link disabled" tabindex="-1" aria-disabled="true">الخصائص (انتقل من تعديل المنتج)</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}{% if not product %} disabled{% endif %}" href="{% if product %}{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=attributes{% else %}#{% endif %}">الخصائص</a></li>
                         <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=images{% else %}?step=images{% endif %}">الصور</a></li>
                     </ul>
 
@@ -104,8 +104,6 @@
                                         <label class="form-check-label" for="is_active">تفعيل المنتج فوراً</label>
                                     </div>
                                 </div>
-                                <!-- تمت إزالة واجهة الألوان من صفحة الإضافة وفق المطلوب -->
-                                
                                 
                                 <div class="d-flex justify-content-between">
                                     <button type="submit" class="btn btn-success"><i class="fas fa-plus me-2"></i>إنشاء المنتج</button>
@@ -114,6 +112,56 @@
                             </div>
                         </div>
                     </form>
+                    {% endif %}
+
+                    {% if product and step == 'attributes' %}
+                    <div class="section-block">
+                        <div class="section-title">ألوان المنتج</div>
+                        <div class="mb-3 d-flex align-items-center gap-2 color-add-row">
+                            <form method="post" class="d-flex align-items-center gap-2" data-ajax="true">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="add_global_color">
+                                <input type="hidden" name="pid" value="{{ product.id }}">
+                                <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" style="max-width:220px;">
+                                <input type="color" name="color_code" class="form-control form-control-color" value="#000000" title="اختر الكود اللوني">
+                                <button class="btn btn-primary">إضافة لون</button>
+                            </form>
+                        </div>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_attributes">
+                            <input type="hidden" name="pid" value="{{ product.id }}">
+                            <div class="color-chips">
+                                {% for c in colors %}
+                                <label class="color-chip">
+                                    <input class="form-check-input chip-select" type="checkbox" name="color_ids" value="{{ c.id }}" {% if c.id in existing_color_ids %}checked{% endif %}>
+                                    <span class="color-preview" style="background: {{ c.code|default:'#000000' }};"></span>
+                                    <span class="chip-name">{{ c.name }}</span>
+                                </label>
+                                {% empty %}
+                                <span class="text-muted">لا توجد ألوان متاحة حالياً</span>
+                                {% endfor %}
+                            </div>
+
+                            <div class="section-title mt-4">المقاسات</div>
+                            <div class="sizes-grid">
+                                {% for s in sizes %}
+                                <label class="size-option">
+                                    <input class="form-check-input" type="checkbox" name="size_ids" value="{{ s.id }}" {% if s.id in existing_size_ids %}checked{% endif %}>
+                                    <span class="size-label">{{ s.name }}</span>
+                                </label>
+                                {% empty %}
+                                <span class="text-muted">لا توجد مقاسات لهذا المنتج</span>
+                                {% endfor %}
+                            </div>
+
+                            <div class="actions-row">
+                                <button class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ الخصائص</button>
+                                <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images" class="btn btn-outline-secondary">الانتقال إلى الصور</a>
+                            </div>
+                        </form>
+                    </div>
                     {% endif %}
 
                     

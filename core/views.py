@@ -2587,7 +2587,7 @@ def super_owner_add_product(request):
                                 is_enabled=product.is_active,
                             )
 
-                return redirect(f"/dashboard/super-owner/products/edit/{product.id}/?section=properties")
+                return redirect(f"{request.path}?pid={product.id}&step=attributes")
             except Store.DoesNotExist:
                 messages.error(request, 'المتجر المختار غير صالح!')
                 return redirect('super_owner_add_product')
@@ -2732,8 +2732,7 @@ def super_owner_add_product(request):
                             pass
 
             messages.success(request, f'تم حفظ الخصائص وإنشاء {created} صفوف مخزون')
-            # توجيه إلى صفحة المخزون لإدارة الكميات فقط
-            return redirect(f"/dashboard/super-owner/inventory/?store={product.store_id}&product={product.id}")
+            return redirect(f"{request.path}?pid={product.id}&step=images")
 
         elif action == 'add_global_color':
             cname = (request.POST.get('color_name') or '').strip()
