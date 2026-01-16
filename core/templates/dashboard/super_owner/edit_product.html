@@ -172,7 +172,39 @@
                                         <div class="alert alert-secondary">الألوان والمقاسات تُدار من صفحة الخصائص. استخدم الزر أعلاه للانتقال.</div>
                                         {% endif %}
                                         {% if request.GET.section == 'properties' %}
-                                        <h6 class="fw-bold mb-3">توليد متغيرات تلقائياً</h6>
+                                        <div class="mb-3 d-flex align-items-center gap-2">
+                                            <form id="addColorForm" class="d-flex align-items-center gap-2" onsubmit="return false;">
+                                                {% csrf_token %}
+                                                <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" style="max-width:220px;">
+                                                <input type="color" name="color_code" class="form-control form-control-color" value="#000000" title="اختر الكود اللوني">
+                                                <button id="addColorBtn" class="btn btn-primary">إضافة لون</button>
+                                            </form>
+                                        </div>
+                                        <script>
+                                        (function(){
+                                            var btn=document.getElementById('addColorBtn');
+                                            if(btn){
+                                                btn.addEventListener('click',async function(){
+                                                    var f=document.getElementById('addColorForm');
+                                                    var name=f.querySelector('[name=color_name]').value.trim();
+                                                    var code=f.querySelector('[name=color_code]').value.trim();
+                                                    if(!name){alert('يرجى إدخال اسم اللون');return;}
+                                                    try{
+                                                        var fd=new FormData();
+                                                        var t=f.querySelector('input[name=csrfmiddlewaretoken]');
+                                                        if(t){fd.append('csrfmiddlewaretoken',t.value);}    
+                                                        fd.append('action','add_global_color');
+                                                        fd.append('pid','{{ product.id }}');
+                                                        fd.append('color_name',name);
+                                                        fd.append('color_code',code);
+                                                        await fetch('{% url "super_owner_add_product" %}',{method:'POST',body:fd,credentials:'same-origin'});
+                                                        location.reload();
+                                                    }catch(e){alert('تعذر إضافة اللون');}
+                                                });
+                                            }
+                                        })();
+                                        </script>
+                                        <h6 class="fw-bold mb-3">الخصائص</h6>
                                         <form method="post" class="mb-3">
                                             {% csrf_token %}
                                             <input type="hidden" name="action" value="edit_generate_variants">
@@ -219,7 +251,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3 d-flex align-items-end justify-content-end">
-                                                    <button class="btn btn-info"><i class="fas fa-magic me-1"></i>توليد (اختيار يدوي)</button>
+                                                    <button class="btn btn-success"><i class="fas fa-save me-1"></i>حفظ</button>
                                                 </div>
                                             </div>
                                         </form>
