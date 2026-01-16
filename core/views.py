@@ -3174,7 +3174,11 @@ def super_owner_add_product(request):
     existing_size_ids = []
     variant_grid = []
     if variants:
-        color_attrs = sorted({v.color_attr for v in variants if v.color_attr})
+        color_map = {}
+        for v in variants:
+            if v.color_attr_id and v.color_attr:
+                color_map[v.color_attr_id] = v.color_attr
+        color_attrs = sorted(color_map.values(), key=lambda x: (x.name or '').lower())
         size_attrs = sorted({v.size_attr for v in variants if v.size_attr}, key=lambda x: x.order)
         existing_color_ids = [c.id for c in color_attrs]
         existing_size_ids = [s.id for s in size_attrs]
