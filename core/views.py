@@ -3511,6 +3511,32 @@ def super_owner_edit_product(request, product_id):
             messages.success(request, 'تم تحديث المتغير بنجاح!')
             return redirect('super_owner_edit_product', product_id=product_id)
 
+        elif action == 'delete_attribute_color':
+            cid = (request.POST.get('color_id') or '').strip()
+            try:
+                from .models import AttributeColor
+                if cid and cid.isdigit():
+                    AttributeColor.objects.filter(id=int(cid)).delete()
+                    messages.success(request, 'تم حذف اللون')
+                else:
+                    messages.error(request, 'معرف لون غير صالح')
+            except Exception:
+                messages.error(request, 'تعذر حذف اللون')
+            return redirect(f"{request.path}?section=properties")
+
+        elif action == 'delete_attribute_size':
+            sid = (request.POST.get('size_id') or '').strip()
+            try:
+                from .models import AttributeSize
+                if sid and sid.isdigit():
+                    AttributeSize.objects.filter(id=int(sid)).delete()
+                    messages.success(request, 'تم حذف القياس')
+                else:
+                    messages.error(request, 'معرف قياس غير صالح')
+            except Exception:
+                messages.error(request, 'تعذر حذف القياس')
+            return redirect(f"{request.path}?section=properties")
+
         elif action == 'delete_variant':
             variant_id = request.POST.get('variant_id')
             try:
