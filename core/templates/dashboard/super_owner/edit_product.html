@@ -373,8 +373,9 @@
 .chip-content{display:flex;align-items:center;justify-content:space-between;flex:1}
 .chip-name{font-size:.95rem;font-weight:500;color:#212529}
 .chip-select{position:absolute;top:.35rem;left:.35rem}
-.chip-wrap,.size-wrap{position:relative}
-.chip-actions{position:absolute;top:-.35rem;right:-.35rem;z-index:2}
+.chip-wrap,.size-wrap{position:relative;margin-right:12px}
+.chip-actions{position:absolute;top:50%;right:-10px;transform:translateY(-50%);z-index:2}
+.color-chips,.sizes-grid{overflow:visible}
 .icon-btn{border:none;background:transparent;color:#dc3545;padding:0;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}
 .icon-btn:hover{color:#a71d2a}
 .sizes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem}
