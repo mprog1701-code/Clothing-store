@@ -236,11 +236,11 @@
                                                                     <div class="color-chips">
                                                                         {% for c in color_attrs %}
                                                                         <div class="chip-wrap">
-                                                                            <label class="color-chip">
+                                                                            <div class="color-chip">
                                                                                 <div class="color-preview" style="background-color: {{ c|color_code }}"></div>
                                                                                 <div class="chip-content"><span class="chip-name">{{ c.name }}</span></div>
                                                                                 <div class="chip-select"><input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}></div>
-                                                                            </label>
+                                                                            </div>
                                                                             <span class="chip-actions">
                                                                                 <form method="post" class="d-inline" data-ajax="true" onsubmit="return confirm('حذف اللون؟')">
                                                                                     {% csrf_token %}
@@ -267,10 +267,10 @@
                                                                     <div class="sizes-grid">
                                                                         {% for s in size_attrs %}
                                                                         <div class="size-wrap">
-                                                                            <label class="size-option">
+                                                                            <div class="size-option">
                                                                                 <span class="size-label">{{ s.name }}</span>
                                                                                 <div class="size-select"><input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}></div>
-                                                                            </label>
+                                                                            </div>
                                                                             <span class="chip-actions">
                                                                                 <form method="post" class="d-inline" data-ajax="true" onsubmit="return confirm('حذف القياس؟')">
                                                                                     {% csrf_token %}
@@ -368,7 +368,7 @@
     color: white;
 }
 .color-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem}
-.color-chip{display:flex;align-items:center;gap:.6rem;border:1px solid #e0e0e0;border-radius:.5rem;padding:.45rem .6rem;position:relative;background:#fff;cursor:pointer}
+.color-chip{display:flex;align-items:center;gap:.6rem;border:1px solid #e0e0e0;border-radius:.5rem;padding:.45rem .6rem;position:relative;background:#fff}
 .color-preview{width:20px;height:20px;border-radius:.25rem;border:1px solid #ddd}
 .chip-content{display:flex;align-items:center;justify-content:space-between;flex:1}
 .chip-name{font-size:.95rem;font-weight:500;color:#212529}
