@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load color_filters %}
 
 {% block title %}إدارة المخزون{% endblock %}
 
@@ -83,8 +84,11 @@
                                         <td>{{ v.product.name }}</td>
                                         <td>
                                             {% if v.color_attr %}
-                                                <span class="badge bg-secondary me-2" style="background-color: {{ v.color_attr.code|default:'' }}">&nbsp;&nbsp;</span>
+                                                <span class="color-chip-sq me-2" style="background-color: {{ v.color_attr|color_code }}"></span>
                                                 {{ v.color_attr.name }}
+                                            {% elif v.color_obj %}
+                                                <span class="color-chip-sq me-2" style="background-color: {{ v.color_obj|color_code }}"></span>
+                                                {{ v.color_obj.name }}
                                             {% else %}
                                                 —
                                             {% endif %}
@@ -120,4 +124,29 @@
         </div>
     </div>
  </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.color-chip-sq{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid #ddd;vertical-align:middle}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var form = document.querySelector('form[method="get"]');
+  if(!form) return;
+  var storeSel = form.querySelector('select[name="store"]');
+  var productSel = form.querySelector('select[name="product"]');
+  var qInput = form.querySelector('input[name="q"]');
+  function submit(){ if(form.requestSubmit){ form.requestSubmit(); } else { form.submit(); } }
+  if(storeSel){ storeSel.addEventListener('change', submit); }
+  if(productSel){ productSel.addEventListener('change', submit); }
+  if(qInput){
+    var timer=null;
+    qInput.addEventListener('input', function(){ clearTimeout(timer); timer=setTimeout(submit, 400); });
+  }
+});
+</script>
 {% endblock %}

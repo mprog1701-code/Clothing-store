@@ -139,6 +139,15 @@
                                     <input class="form-check-input chip-select" type="checkbox" name="color_ids" value="{{ c.id }}" {% if c.id in existing_color_ids %}checked{% endif %}>
                                     <span class="color-preview" style="background-color: {{ c|color_code }};"></span>
                                     <span class="chip-name">{{ c.name }}</span>
+                                    <span class="chip-actions">
+                                        <form method="post" class="d-inline" data-ajax="true" onsubmit="return confirm('حذف اللون؟')">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="delete_attribute_color">
+                                            <input type="hidden" name="pid" value="{{ product.id }}">
+                                            <input type="hidden" name="color_id" value="{{ c.id }}">
+                                            <button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    </span>
                                 </label>
                                 {% empty %}
                                 <span class="text-muted">لا توجد ألوان متاحة حالياً</span>
@@ -151,10 +160,27 @@
                                 <label class="size-option">
                                     <input class="form-check-input" type="checkbox" name="size_ids" value="{{ s.id }}" {% if s.id in existing_size_ids %}checked{% endif %}>
                                     <span class="size-label">{{ s.name }}</span>
+                                    <form method="post" class="d-inline ms-auto" data-ajax="true" onsubmit="return confirm('حذف القياس؟')">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_attribute_size">
+                                        <input type="hidden" name="pid" value="{{ product.id }}">
+                                        <input type="hidden" name="size_id" value="{{ s.id }}">
+                                        <button class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                    </form>
                                 </label>
                                 {% empty %}
                                 <span class="text-muted">لا توجد مقاسات لهذا المنتج</span>
                                 {% endfor %}
+                            </div>
+
+                            <div class="mt-3 d-flex align-items-center gap-2">
+                                <form method="post" class="d-flex align-items-center gap-2" data-ajax="true">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="add_attribute_size">
+                                    <input type="hidden" name="pid" value="{{ product.id }}">
+                                    <input type="text" name="size_name" class="form-control" placeholder="إضافة قياس" style="max-width:220px;">
+                                    <button class="btn btn-outline-primary">إضافة قياس</button>
+                                </form>
                             </div>
 
                             <div class="actions-row">

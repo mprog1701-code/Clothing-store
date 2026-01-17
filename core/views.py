@@ -2782,6 +2782,19 @@ def super_owner_add_product(request):
             messages.success(request, 'تم تحديث الكمية حسب اللون')
             return redirect(f"{request.path}?pid={product.id}&step=variants")
 
+        elif action == 'delete_attribute_color':
+            cid = (request.POST.get('color_id') or '').strip()
+            try:
+                from .models import AttributeColor
+                if cid and cid.isdigit():
+                    AttributeColor.objects.filter(id=int(cid)).delete()
+                    messages.success(request, 'تم حذف اللون')
+                else:
+                    messages.error(request, 'معرف لون غير صالح')
+            except Exception:
+                messages.error(request, 'تعذر حذف اللون')
+            return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
+
         elif action == 'bulk_qty_size':
             pid = request.POST.get('pid')
             size_id = request.POST.get('size_id')
@@ -2797,6 +2810,34 @@ def super_owner_add_product(request):
             ProductVariant.objects.filter(product=product, size_attr_id=int(size_id)).update(stock_qty=qty)
             messages.success(request, 'تم تحديث الكمية حسب المقاس')
             return redirect(f"{request.path}?pid={product.id}&step=variants")
+
+        elif action == 'add_attribute_size':
+            sname = (request.POST.get('size_name') or '').strip()
+            try:
+                if not sname:
+                    messages.error(request, 'يرجى إدخال اسم القياس')
+                    return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
+                from django.db.models import Max
+                from .models import AttributeSize
+                max_order = AttributeSize.objects.aggregate(m=Max('order')).get('m') or 0
+                AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
+                messages.success(request, 'تمت إضافة القياس')
+            except Exception:
+                messages.error(request, 'تعذر إضافة القياس')
+            return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
+
+        elif action == 'delete_attribute_size':
+            sid = (request.POST.get('size_id') or '').strip()
+            try:
+                from .models import AttributeSize
+                if sid and sid.isdigit():
+                    AttributeSize.objects.filter(id=int(sid)).delete()
+                    messages.success(request, 'تم حذف القياس')
+                else:
+                    messages.error(request, 'معرف قياس غير صالح')
+            except Exception:
+                messages.error(request, 'تعذر حذف القياس')
+            return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
 
         elif action == 'bulk_price_color':
             pid = request.POST.get('pid')
