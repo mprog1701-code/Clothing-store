@@ -235,10 +235,12 @@
                                                                     <label class="form-label">الألوان</label>
                                                                     <div class="color-chips">
                                                                         {% for c in color_attrs %}
-                                                                        <label class="color-chip">
-                                                                            <div class="color-preview" style="background-color: {{ c|color_code }}"></div>
-                                                                            <div class="chip-content"><span class="chip-name">{{ c.name }}</span></div>
-                                                                            <div class="chip-select"><input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}></div>
+                                                                        <div class="chip-wrap">
+                                                                            <label class="color-chip">
+                                                                                <div class="color-preview" style="background-color: {{ c|color_code }}"></div>
+                                                                                <div class="chip-content"><span class="chip-name">{{ c.name }}</span></div>
+                                                                                <div class="chip-select"><input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}></div>
+                                                                            </label>
                                                                             <span class="chip-actions">
                                                                                 <form method="post" class="d-inline" data-ajax="true" onsubmit="return confirm('حذف اللون؟')">
                                                                                     {% csrf_token %}
@@ -256,7 +258,7 @@
                                                                                     </button>
                                                                                 </form>
                                                                             </span>
-                                                                        </label>
+                                                                        </div>
                                                                         {% endfor %}
                                                                     </div>
                                                                 </div>
@@ -264,9 +266,11 @@
                                                                     <label class="form-label">المقاسات</label>
                                                                     <div class="sizes-grid">
                                                                         {% for s in size_attrs %}
-                                                                        <label class="size-option">
-                                                                            <span class="size-label">{{ s.name }}</span>
-                                                                            <div class="size-select"><input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}></div>
+                                                                        <div class="size-wrap">
+                                                                            <label class="size-option">
+                                                                                <span class="size-label">{{ s.name }}</span>
+                                                                                <div class="size-select"><input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}></div>
+                                                                            </label>
                                                                             <span class="chip-actions">
                                                                                 <form method="post" class="d-inline" data-ajax="true" onsubmit="return confirm('حذف القياس؟')">
                                                                                     {% csrf_token %}
@@ -284,7 +288,7 @@
                                                                                     </button>
                                                                                 </form>
                                                                             </span>
-                                                                        </label>
+                                                                        </div>
                                                                         {% endfor %}
                                                                     </div>
                                                                 </div>
@@ -369,7 +373,8 @@
 .chip-content{display:flex;align-items:center;justify-content:space-between;flex:1}
 .chip-name{font-size:.95rem;font-weight:500;color:#212529}
 .chip-select{position:absolute;top:.35rem;left:.35rem}
-.chip-actions{position:absolute;top:.35rem;right:.35rem}
+.chip-wrap,.size-wrap{position:relative}
+.chip-actions{position:absolute;top:-.35rem;right:-.35rem;z-index:2}
 .icon-btn{border:none;background:transparent;color:#dc3545;padding:0;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}
 .icon-btn:hover{color:#a71d2a}
 .sizes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem}
