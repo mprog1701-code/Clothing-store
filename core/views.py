@@ -3544,9 +3544,27 @@ def super_owner_edit_product(request, product_id):
                 return redirect(f"{request.path}?section=properties")
             try:
                 from django.db.models import Max
-                from .models import AttributeSize
+                from .models import AttributeSize, ProductVariant
                 max_order = AttributeSize.objects.aggregate(m=Max('order')).get('m') or 0
-                AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
+                size_obj, _ = AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
+                if size_obj:
+                    try:
+                        exists = ProductVariant.objects.filter(product=product, size_attr=size_obj).exists()
+                    except Exception:
+                        exists = True
+                    if not exists:
+                        try:
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=None,
+                                size_attr=size_obj,
+                                size=size_obj.name,
+                                stock_qty=0,
+                                price_override=None,
+                                is_enabled=False,
+                            )
+                        except Exception:
+                            pass
                 messages.success(request, 'تمت إضافة القياس')
             except Exception:
                 messages.error(request, 'تعذر إضافة القياس')
@@ -4027,6 +4045,15 @@ def super_owner_edit_product(request, product_id):
     existing_variants = list(ProductVariant.objects.filter(product=product))
     context['existing_color_attr_ids'] = [v.color_attr_id for v in existing_variants if v.color_attr_id]
     context['existing_size_attr_ids'] = [v.size_attr_id for v in existing_variants if v.size_attr_id]
+    # Show only selected size attributes in the properties page
+    try:
+        sel_ids = context['existing_size_attr_ids']
+        if sel_ids:
+            context['size_attrs'] = list(AttributeSize.objects.filter(id__in=sel_ids).order_by('order', 'name'))
+        else:
+            context['size_attrs'] = []
+    except Exception:
+        context['size_attrs'] = []
     return render(request, 'dashboard/super_owner/edit_product.html', context)
 
 
