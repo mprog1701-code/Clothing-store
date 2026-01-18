@@ -388,12 +388,16 @@
 <script>
 (function(){
   try{
+    function getCookie(name){
+      var v=document.cookie.match('(^|; )'+name+'=([^;]*)');
+      return v?decodeURIComponent(v[2]):'';
+    }
     document.querySelectorAll('form[data-ajax="true"]').forEach(function(f){
       f.addEventListener('submit',async function(e){
         e.preventDefault();
         try{
           var fd=new FormData(f);
-          await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'});
+          await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}});
           location.reload();
         }catch(err){
           alert('حدث خطأ أثناء التنفيذ');
@@ -415,7 +419,7 @@
           if(csrf) fd.append('csrfmiddlewaretoken',csrf);
           if(t==='color'){ fd.append('action','delete_attribute_color'); fd.append('color_id',id); }
           else { fd.append('action','delete_attribute_size'); fd.append('size_id',id); }
-          await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'});
+          await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}});
           var wrap=this.closest('.chip-wrap, .size-wrap');
           if(wrap){ wrap.remove(); }
         }catch(err){ alert('تعذر تنفيذ الحذف'); }
@@ -450,7 +454,7 @@
         if(csrf) fd.append('csrfmiddlewaretoken',csrf);
         fd.append('action','add_attribute_size');
         fd.append('size_name',name);
-        await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'});
+        await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}});
         location.reload();
       });
     }

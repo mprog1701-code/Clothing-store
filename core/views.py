@@ -3644,25 +3644,14 @@ def super_owner_edit_product(request, product_id):
                 except Exception:
                     continue
 
-            size_attrs = []
-            if product.size_type == 'numeric':
-                names = [str(n) for n in range(28, 61, 2)]
-                for idx, n in enumerate(names):
-                    try:
-                        sa, _ = AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
-                        size_attrs.append(sa)
-                    except Exception:
-                        continue
-            elif product.size_type == 'symbolic':
-                names = ['XS','S','M','L','XL','XXL','3XL','4XL']
-                for idx, n in enumerate(names):
-                    try:
-                        sa, _ = AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
-                        size_attrs.append(sa)
-                    except Exception:
-                        continue
-            else:
-                size_attrs = []
+            try:
+                for idx, n in enumerate([str(x) for x in range(28, 61, 2)]):
+                    AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+                for idx, n in enumerate(['XS','S','M','L','XL','XXL','3XL','4XL']):
+                    AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+            except Exception:
+                pass
+            size_attrs = list(AttributeSize.objects.all())
 
             created = 0
             if color_attrs and size_attrs:
@@ -4026,26 +4015,14 @@ def super_owner_edit_product(request, product_id):
     context['colors'] = list(product.colors.all())
     from .models import AttributeColor, AttributeSize
     context['color_attrs'] = list(AttributeColor.objects.all())
-    if product.size_type == 'numeric':
-        names = [str(n) for n in range(28, 61, 2)]
-        for idx, n in enumerate(names):
-            try:
-                AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
-            except Exception:
-                pass
-        all_sizes = list(AttributeSize.objects.all())
-        context['size_attrs'] = sorted([s for s in all_sizes if s.name.isdigit()], key=lambda x: x.order)
-    elif product.size_type == 'symbolic':
-        names = ['XS','S','M','L','XL','XXL','3XL','4XL']
-        for idx, n in enumerate(names):
-            try:
-                AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
-            except Exception:
-                pass
-        all_sizes = list(AttributeSize.objects.all())
-        context['size_attrs'] = sorted([s for s in all_sizes if s.name in names], key=lambda x: x.order)
-    else:
-        context['size_attrs'] = []
+    try:
+        for idx, n in enumerate([str(x) for x in range(28, 61, 2)]):
+            AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+        for idx, n in enumerate(['XS','S','M','L','XL','XXL','3XL','4XL']):
+            AttributeSize.objects.get_or_create(name=n, defaults={'order': idx})
+    except Exception:
+        pass
+    context['size_attrs'] = list(AttributeSize.objects.all().order_by('order', 'name'))
     # Existing selections from current variants
     existing_variants = list(ProductVariant.objects.filter(product=product))
     context['existing_color_attr_ids'] = [v.color_attr_id for v in existing_variants if v.color_attr_id]
