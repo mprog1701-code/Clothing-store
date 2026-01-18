@@ -214,8 +214,21 @@
                                                     ['كحلي','#000080'],['رمادي','#808080'],['زهري','#FFC0CB'],['بنّي','#8B4513'],['سماوي','#87CEEB']
                                                 ].map(function(x){ return {name:x[0], rgb:hexToRgb(x[1])}; });
                                                 function nearestName(hex){ var t=hexToRgb(hex); var best=null,bd=1e9; for(var i=0;i<palette.length;i++){ var p=palette[i]; var d=(t[0]-p.rgb[0])*(t[0]-p.rgb[0])+(t[1]-p.rgb[1])*(t[1]-p.rgb[1])+(t[2]-p.rgb[2])*(t[2]-p.rgb[2]); if(d<bd){ bd=d; best=p.name; } } return best; }
-                                                function autofill(){ if(!picker||!nameInput) return; var hex=String(picker.value||'').toUpperCase(); if(!nameInput.value){ nameInput.value=nearestName(hex); } }
-                                                if(picker){ picker.addEventListener('input',autofill); picker.addEventListener('change',autofill); }
+                                                var lastAuto='';
+                                                function autofill(force){
+                                                    if(!picker||!nameInput) return;
+                                                    var hex=String(picker.value||'').toUpperCase();
+                                                    var suggestion=nearestName(hex);
+                                                    if(force || !nameInput.dataset.manual || nameInput.value===lastAuto || !nameInput.value){
+                                                        nameInput.value=suggestion;
+                                                        lastAuto=suggestion;
+                                                        nameInput.dataset.manual='';
+                                                    } else {
+                                                        nameInput.setAttribute('placeholder', suggestion);
+                                                    }
+                                                }
+                                                if(picker){ picker.addEventListener('input',function(){autofill(false);}); picker.addEventListener('change',function(){autofill(true);}); }
+                                                if(nameInput){ nameInput.addEventListener('input',function(){ this.dataset.manual='true'; }); }
                                             }
                                         })();
                                         </script>

@@ -3537,6 +3537,21 @@ def super_owner_edit_product(request, product_id):
                 messages.error(request, 'تعذر حذف القياس')
             return redirect(f"{request.path}?section=properties")
 
+        elif action == 'add_attribute_size':
+            sname = (request.POST.get('size_name') or '').strip()
+            if not sname:
+                messages.error(request, 'يرجى إدخال اسم القياس')
+                return redirect(f"{request.path}?section=properties")
+            try:
+                from django.db.models import Max
+                from .models import AttributeSize
+                max_order = AttributeSize.objects.aggregate(m=Max('order')).get('m') or 0
+                AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
+                messages.success(request, 'تمت إضافة القياس')
+            except Exception:
+                messages.error(request, 'تعذر إضافة القياس')
+            return redirect(f"{request.path}?section=properties")
+
         elif action == 'delete_variant':
             variant_id = request.POST.get('variant_id')
             try:
