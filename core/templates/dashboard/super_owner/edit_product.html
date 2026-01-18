@@ -295,14 +295,9 @@
                                                                         {% endfor %}
                                                                     </div>
                                                                 </div>
-                                                                    <div class="mt-3 d-flex align-items-center gap-2">
-                                                                        <form method="post" class="d-flex align-items-center gap-2" data-ajax="true">
-                                                                            {% csrf_token %}
-                                                                            <input type="hidden" name="action" value="add_attribute_size">
-                                                                            <input type="hidden" name="pid" value="{{ product.id }}">
-                                                                            <input type="text" name="size_name" class="form-control" placeholder="إضافة قياس" style="max-width:220px;">
-                                                                            <button class="btn btn-outline-primary">إضافة قياس</button>
-                                                                        </form>
+                                                                    <div class="mt-3 d-flex align-items-center gap-2" id="addSizeControls">
+                                                                        <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس" style="max-width:220px;">
+                                                                        <button type="button" id="addSizeBtn" class="btn btn-outline-primary">إضافة قياس</button>
                                                                     </div>
                                                                 <div class="col-md-3"><label class="form-label">كمية افتراضية</label><input type="number" name="default_qty" class="form-control" min="0" value="0"></div>
                                                                 <div class="col-md-3"><label class="form-label">سعر خاص افتراضي</label><input type="number" name="default_price" class="form-control" step="0.01" min="0"></div>
@@ -388,7 +383,6 @@
 .color-chip .form-check-input,.size-option .form-check-input{transform:scale(1.2);transform-origin:center;}
 .color-chip .form-check-input{margin-left:.1rem}
 .size-option .form-check-input{margin-left:.1rem}
-/* اجعل البطاقات غير تفاعلية فقط بإزالة label؛ لا حاجة لتعطيل الأحداث */
 </style>
 
 <script>
@@ -444,6 +438,21 @@
           if(!sub || !sub.matches('.btn-success')){ e.preventDefault(); e.stopPropagation(); }
         });
       }
+    }
+    var addBtn=document.getElementById('addSizeBtn');
+    var addName=document.getElementById('addSizeName');
+    if(addBtn && addName){
+      addBtn.addEventListener('click',async function(e){
+        e.preventDefault(); e.stopPropagation();
+        var name=(addName.value||'').trim();
+        if(!name){ addName.focus(); return; }
+        var fd=new FormData();
+        if(csrf) fd.append('csrfmiddlewaretoken',csrf);
+        fd.append('action','add_attribute_size');
+        fd.append('size_name',name);
+        await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'});
+        location.reload();
+      });
     }
   }catch(e){}
 })();
