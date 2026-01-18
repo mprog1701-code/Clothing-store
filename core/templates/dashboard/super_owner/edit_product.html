@@ -230,7 +230,7 @@
                                                         <form method="post" class="mb-3">
                                                             {% csrf_token %}
                                                             <input type="hidden" name="action" value="edit_generate_variants">
-                                                            <div class="row g-3">
+                                                            <div class="row g-3" id="attrControls">
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">الألوان</label>
                                                                     <div class="color-chips">
@@ -395,7 +395,7 @@
     var csrf=(tokenEl?tokenEl.value:'');
     document.querySelectorAll('[data-delete]').forEach(function(btn){
       btn.addEventListener('click',async function(ev){
-        ev.preventDefault();
+        ev.preventDefault(); ev.stopPropagation();
         try{
           var t=this.getAttribute('data-delete');
           var id=this.getAttribute('data-id');
@@ -407,10 +407,29 @@
           if(t==='color'){ fd.append('action','delete_attribute_color'); fd.append('color_id',id); }
           else { fd.append('action','delete_attribute_size'); fd.append('size_id',id); }
           await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'});
-          location.reload();
+          var wrap=this.closest('.chip-wrap, .size-wrap');
+          if(wrap){ wrap.remove(); }
         }catch(err){ alert('تعذر تنفيذ الحذف'); }
       });
     });
+    var attr=document.getElementById('attrControls');
+    if(attr){
+      // Prevent bubbling from checkboxes to parent form
+      attr.querySelectorAll('.form-check-input').forEach(function(cb){
+        cb.addEventListener('click',function(e){ e.stopPropagation(); }, true);
+        cb.addEventListener('change',function(e){ e.stopPropagation(); }, true);
+      });
+      // Ensure only explicit save submits the form
+      var genForm=attr.closest('form');
+      var formEl=document.querySelector('input[name="action"][value="edit_generate_variants"]');
+      if(formEl){ genForm=formEl.closest('form'); }
+      if(genForm){
+        genForm.addEventListener('submit',function(e){
+          var sub=e.submitter;
+          if(!sub || !sub.matches('.btn-success')){ e.preventDefault(); e.stopPropagation(); }
+        });
+      }
+    }
   }catch(e){}
 })();
 </script>
