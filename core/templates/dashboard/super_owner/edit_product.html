@@ -242,7 +242,7 @@
                                                                                 <div class="chip-select"><input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}></div>
                                                                             </div>
                                                                             <span class="chip-actions">
-                                                                                <button class="icon-btn" data-delete="color" data-id="{{ c.id }}" title="حذف">
+                                                                                <button class="icon-btn" type="button" data-delete="color" data-id="{{ c.id }}" title="حذف">
                                                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                                         <polyline points="3 6 5 6 21 6"></polyline>
                                                                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
@@ -266,7 +266,7 @@
                                                                                 <div class="size-select"><input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}></div>
                                                                             </div>
                                                                             <span class="chip-actions">
-                                                                                <button class="icon-btn" data-delete="size" data-id="{{ s.id }}" title="حذف">
+                                                                                <button class="icon-btn" type="button" data-delete="size" data-id="{{ s.id }}" title="حذف">
                                                                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                                         <polyline points="3 6 5 6 21 6"></polyline>
                                                                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
@@ -355,21 +355,24 @@
     box-shadow: 0 4px 15px rgba(23, 162, 184, 0.4);
     color: white;
 }
-.color-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem}
-.color-chip{display:flex;align-items:center;gap:.6rem;border:1px solid #e0e0e0;border-radius:.5rem;padding:.45rem .6rem;position:relative;background:#fff}
-.color-preview{width:20px;height:20px;border-radius:.25rem;border:1px solid #ddd}
+.color-chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem}
+.color-chip{display:flex;align-items:center;gap:.8rem;border:1px solid #e0e0e0;border-radius:.6rem;padding:.6rem .8rem;position:relative;background:#fff}
+.color-preview{width:26px;height:26px;border-radius:.3rem;border:1px solid #ddd}
 .chip-content{display:flex;align-items:center;justify-content:space-between;flex:1}
-.chip-name{font-size:.95rem;font-weight:500;color:#212529}
+.chip-name{font-size:1rem;font-weight:500;color:#212529}
 .chip-select{position:absolute;top:.35rem;left:.35rem}
 .chip-wrap,.size-wrap{position:relative;margin-right:12px}
 .chip-actions{position:absolute;top:.35rem;right:-10px;z-index:2}
 .color-chips,.sizes-grid{overflow:visible}
-.icon-btn{border:none;background:transparent;color:#dc3545;padding:0;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}
 .icon-btn:hover{color:#a71d2a}
-.sizes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem}
+.icon-btn svg{width:18px;height:18px}
+.sizes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.75rem}
+.size-option{display:flex;align-items:center;gap:.7rem;border:1px solid #e0e0e0;border-radius:.6rem;padding:.55rem .8rem;background:#fff;position:relative}
 .size-option{display:flex;align-items:center;gap:.5rem;border:1px solid #e0e0e0;border-radius:.5rem;padding:.45rem .6rem;background:#fff;position:relative}
-.size-select{position:absolute;top:.35rem;left:.35rem}
-.size-label{font-size:.95rem;color:#212529}
+.size-label{font-size:1rem;color:#212529}
+.color-chip .form-check-input,.size-option .form-check-input{transform:scale(1.2);transform-origin:center;}
+.color-chip .form-check-input{margin-left:.1rem}
+.size-option .form-check-input{margin-left:.1rem}
 /* اجعل البطاقات غير تفاعلية فقط بإزالة label؛ لا حاجة لتعطيل الأحداث */
 </style>
 
