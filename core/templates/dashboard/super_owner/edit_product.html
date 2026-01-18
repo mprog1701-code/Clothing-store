@@ -242,21 +242,15 @@
                                                                                 <div class="chip-select"><input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}></div>
                                                                             </div>
                                                                             <span class="chip-actions">
-                                                                                <form method="post" class="d-inline" data-ajax="true" onsubmit="return confirm('حذف اللون؟')">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="action" value="delete_attribute_color">
-                                                                                    <input type="hidden" name="pid" value="{{ product.id }}">
-                                                                                    <input type="hidden" name="color_id" value="{{ c.id }}">
-                                                                                    <button class="icon-btn" type="submit" title="حذف">
-                                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                                                                                            <path d="M10 11v6"></path>
-                                                                                            <path d="M14 11v6"></path>
-                                                                                            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
-                                                                                        </svg>
-                                                                                    </button>
-                                                                                </form>
+                                                                                <button class="icon-btn" data-delete="color" data-id="{{ c.id }}" title="حذف">
+                                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                                                                                        <path d="M10 11v6"></path>
+                                                                                        <path d="M14 11v6"></path>
+                                                                                        <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+                                                                                    </svg>
+                                                                                </button>
                                                                             </span>
                                                                         </div>
                                                                         {% endfor %}
@@ -272,21 +266,15 @@
                                                                                 <div class="size-select"><input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}></div>
                                                                             </div>
                                                                             <span class="chip-actions">
-                                                                                <form method="post" class="d-inline" data-ajax="true" onsubmit="return confirm('حذف القياس؟')">
-                                                                                    {% csrf_token %}
-                                                                                    <input type="hidden" name="action" value="delete_attribute_size">
-                                                                                    <input type="hidden" name="pid" value="{{ product.id }}">
-                                                                                    <input type="hidden" name="size_id" value="{{ s.id }}">
-                                                                                    <button class="icon-btn" type="submit" title="حذف">
-                                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                                                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                                                                                            <path d="M10 11v6"></path>
-                                                                                            <path d="M14 11v6"></path>
-                                                                                            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
-                                                                                        </svg>
-                                                                                    </button>
-                                                                                </form>
+                                                                                <button class="icon-btn" data-delete="size" data-id="{{ s.id }}" title="حذف">
+                                                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                                                                                        <path d="M10 11v6"></path>
+                                                                                        <path d="M14 11v6"></path>
+                                                                                        <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+                                                                                    </svg>
+                                                                                </button>
                                                                             </span>
                                                                         </div>
                                                                         {% endfor %}
@@ -374,7 +362,7 @@
 .chip-name{font-size:.95rem;font-weight:500;color:#212529}
 .chip-select{position:absolute;top:.35rem;left:.35rem}
 .chip-wrap,.size-wrap{position:relative;margin-right:12px}
-.chip-actions{position:absolute;top:50%;right:-10px;transform:translateY(-50%);z-index:2}
+.chip-actions{position:absolute;top:.35rem;right:-10px;z-index:2}
 .color-chips,.sizes-grid{overflow:visible}
 .icon-btn{border:none;background:transparent;color:#dc3545;padding:0;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center}
 .icon-btn:hover{color:#a71d2a}
@@ -382,8 +370,7 @@
 .size-option{display:flex;align-items:center;gap:.5rem;border:1px solid #e0e0e0;border-radius:.5rem;padding:.45rem .6rem;background:#fff;position:relative}
 .size-select{position:absolute;top:.35rem;left:.35rem}
 .size-label{font-size:.95rem;color:#212529}
-.color-chip,.size-option{pointer-events:none}
-.chip-select,.chip-select .form-check-input,.chip-actions,.chip-actions .icon-btn,.size-select,.size-select .form-check-input{pointer-events:auto}
+/* اجعل البطاقات غير تفاعلية فقط بإزالة label؛ لا حاجة لتعطيل الأحداث */
 </style>
 
 <script>
@@ -399,6 +386,26 @@
         }catch(err){
           alert('حدث خطأ أثناء التنفيذ');
         }
+      });
+    });
+    var tokenEl=document.querySelector('input[name=csrfmiddlewaretoken]');
+    var csrf=(tokenEl?tokenEl.value:'');
+    document.querySelectorAll('[data-delete]').forEach(function(btn){
+      btn.addEventListener('click',async function(ev){
+        ev.preventDefault();
+        try{
+          var t=this.getAttribute('data-delete');
+          var id=this.getAttribute('data-id');
+          if(!id) return;
+          var ok=confirm(t==='color'?'حذف اللون؟':'حذف القياس؟');
+          if(!ok) return;
+          var fd=new FormData();
+          if(csrf) fd.append('csrfmiddlewaretoken',csrf);
+          if(t==='color'){ fd.append('action','delete_attribute_color'); fd.append('color_id',id); }
+          else { fd.append('action','delete_attribute_size'); fd.append('size_id',id); }
+          await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin'});
+          location.reload();
+        }catch(err){ alert('تعذر تنفيذ الحذف'); }
       });
     });
   }catch(e){}
