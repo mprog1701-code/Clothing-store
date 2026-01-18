@@ -238,8 +238,8 @@
                                                                         <div class="chip-wrap">
                                                                             <div class="color-chip">
                                                                                 <div class="color-preview" style="background-color: {{ c|color_code }}"></div>
-                                                                                <div class="chip-content"><span class="chip-name">{{ c.name }}</span></div>
-                                                                                <div class="chip-select"><input class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}></div>
+                                                                                <div class="chip-content"><label class="chip-name" for="color-attr-{{ c.id }}">{{ c.name }}</label></div>
+                                                                                <div class="chip-select"><input id="color-attr-{{ c.id }}" class="form-check-input" type="checkbox" name="color_attr_ids" value="{{ c.id }}" {% if c.id in existing_color_attr_ids %}checked{% endif %}></div>
                                                                             </div>
                                                                             <span class="chip-actions">
                                                                                 <button class="icon-btn" type="button" data-delete="color" data-id="{{ c.id }}" title="حذف">
@@ -262,8 +262,8 @@
                                                                         {% for s in size_attrs %}
                                                                         <div class="size-wrap">
                                                                             <div class="size-option">
-                                                                                <span class="size-label">{{ s.name }}</span>
-                                                                                <div class="size-select"><input class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}></div>
+                                                                                <label class="size-label" for="size-{{ s.id }}">{{ s.name }}</label>
+                                                                                <div class="size-select"><input id="size-{{ s.id }}" class="form-check-input" type="checkbox" name="size_attr_ids" value="{{ s.id }}" {% if s.id in existing_size_attr_ids %}checked{% endif %}></div>
                                                                             </div>
                                                                             <span class="chip-actions">
                                                                                 <button class="icon-btn" type="button" data-delete="size" data-id="{{ s.id }}" title="حذف">
@@ -367,8 +367,8 @@
 .icon-btn:hover{color:#a71d2a}
 .icon-btn svg{width:18px;height:18px}
 .sizes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.75rem}
-.size-option{display:flex;align-items:center;gap:.7rem;border:1px solid #e0e0e0;border-radius:.6rem;padding:.55rem .8rem;background:#fff;position:relative}
-.size-option{display:flex;align-items:center;gap:.5rem;border:1px solid #e0e0e0;border-radius:.5rem;padding:.45rem .6rem;background:#fff;position:relative}
+.size-option{display:flex;align-items:center;gap:.7rem;border:1px solid #e0e0e0;border-radius:.6rem;padding:.6rem .9rem;background:#fff;position:relative;min-height:44px}
+.size-label{flex:1;text-align:center;padding-right:20px}
 .size-label{font-size:1rem;color:#212529}
 .color-chip .form-check-input,.size-option .form-check-input{transform:scale(1.2);transform-origin:center;}
 .color-chip .form-check-input{margin-left:.1rem}
