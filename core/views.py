@@ -3544,7 +3544,7 @@ def super_owner_edit_product(request, product_id):
                 return redirect(f"{request.path}?section=properties")
             try:
                 from django.db.models import Max
-                from .models import AttributeSize, ProductVariant
+                from .models import AttributeSize
                 max_order = AttributeSize.objects.aggregate(m=Max('order')).get('m') or 0
                 size_obj, _ = AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
                 if size_obj:
