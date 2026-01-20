@@ -377,12 +377,16 @@
 .icon-btn:hover{color:#a71d2a}
 .icon-btn svg{width:18px;height:18px}
 .sizes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.75rem}
-.size-option{display:flex;align-items:center;gap:.7rem;border:1px solid #e0e0e0;border-radius:.6rem;padding:.6rem .9rem;background:#fff;position:relative;min-height:44px}
+.size-option{display:flex;align-items:center;gap:.9rem;border:1px solid #e0e0e0;border-radius:.6rem;padding:.8rem 1rem;background:#fff;position:relative;min-height:48px;cursor:pointer}
 .size-label{flex:1;text-align:center;padding-right:20px}
 .size-label{font-size:1rem;color:#212529}
-.color-chip .form-check-input,.size-option .form-check-input{transform:scale(1.2);transform-origin:center;}
+.color-chip .form-check-input,.size-option .form-check-input{transform:scale(1.4);transform-origin:center;}
 .color-chip .form-check-input{margin-left:.1rem}
 .size-option .form-check-input{margin-left:.1rem}
+/* تحسين حساسية النقر */
+.color-chip{cursor:pointer}
+.color-chip:hover,.size-option:hover{border-color:#17a2b8}
+.color-chip.active,.size-option.active{border-color:#17a2b8;box-shadow:0 0 0 .12rem rgba(23,162,184,.25)}
 </style>
 
 <script>
@@ -431,6 +435,29 @@
       attr.querySelectorAll('.form-check-input').forEach(function(cb){
         cb.addEventListener('click',function(e){ e.stopPropagation(); }, true);
         cb.addEventListener('change',function(e){ e.stopPropagation(); }, true);
+      });
+      // Toggle checkbox on container click لزيادة الحساسية
+      attr.querySelectorAll('.color-chip').forEach(function(chip){
+        var inputInit=chip.querySelector('.form-check-input');
+        if(inputInit){ chip.classList.toggle('active', inputInit.checked); }
+        chip.addEventListener('click',function(e){
+          if(e.target.closest('.chip-actions')) return; // لا تؤثر على زر الحذف
+          var input=this.querySelector('.form-check-input');
+          if(!input) return;
+          input.checked=!input.checked;
+          this.classList.toggle('active', input.checked);
+        });
+      });
+      attr.querySelectorAll('.size-option').forEach(function(opt){
+        var inputInit=opt.querySelector('.form-check-input');
+        if(inputInit){ opt.classList.toggle('active', inputInit.checked); }
+        opt.addEventListener('click',function(e){
+          if(e.target.closest('.chip-actions')) return;
+          var input=this.querySelector('.form-check-input');
+          if(!input) return;
+          input.checked=!input.checked;
+          this.classList.toggle('active', input.checked);
+        });
       });
       // Ensure only explicit save submits the form
       var genForm=attr.closest('form');
