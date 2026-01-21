@@ -173,14 +173,18 @@
                                         <div class="alert alert-secondary">الألوان والمقاسات تُدار من صفحة الخصائص. استخدم الزر أعلاه للانتقال.</div>
                                         {% endif %}
                                         {% if request.GET.section == 'properties' %}
-                                        <div class="mb-3 d-flex align-items-center gap-3 flex-wrap">
+                                        <div class="mb-3 d-flex align-items-center gap-3 flex-wrap justify-content-between">
+                                            <div class="d-flex align-items-center gap-2" id="addSizeRow">
+                                                <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس (مثال: 42 أو XL)" style="max-width:220px;">
+                                                <button type="button" id="addSizeBtn" class="btn btn-primary">إضافة قياس</button>
+                                                <small id="addSizeMsg" class="ms-2 text-muted"></small>
+                                            </div>
                                             <form id="addColorForm" class="d-flex align-items-center gap-2" onsubmit="return false;">
                                                 {% csrf_token %}
                                                 <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" style="max-width:220px;">
                                                 <input type="color" name="color_code" class="form-control form-control-color" value="#000000">
                                                 <button id="addColorBtn" type="button" class="btn btn-primary">إضافة لون</button>
                                             </form>
-                                            
                                         </div>
                                         <script>
                                         (function(){
@@ -274,11 +278,6 @@
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">المقاسات</label>
-                                                                    <div class="mb-3 d-flex align-items-center justify-content-start gap-2" id="addSizeRow">
-                                                                        <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس (مثال: 42 أو XL)" style="max-width:220px;">
-                                                                        <button type="button" id="addSizeBtn" class="btn btn-primary">إضافة قياس</button>
-                                                                        <small id="addSizeMsg" class="ms-2 text-muted"></small>
-                                                                    </div>
                                                                     <div class="sizes-grid">
                                                                         {% for s in size_attrs %}
                                                                         <div class="size-wrap">
