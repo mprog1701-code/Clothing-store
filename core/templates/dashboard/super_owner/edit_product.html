@@ -173,7 +173,7 @@
                                         <div class="alert alert-secondary">الألوان والمقاسات تُدار من صفحة الخصائص. استخدم الزر أعلاه للانتقال.</div>
                                         {% endif %}
                                         {% if request.GET.section == 'properties' %}
-                                        <div class="mb-3 d-flex align-items-center gap-3 flex-wrap justify-content-between">
+                                        <div class="mb-3 d-flex align-items-center gap-3 flex-wrap justify-content-between controls-bar">
                                             <div class="d-flex align-items-center gap-2" id="addSizeRow">
                                                 <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس (مثال: 42 أو XL)" style="max-width:220px;">
                                                 <button type="button" id="addSizeBtn" class="btn btn-primary">إضافة قياس</button>
@@ -391,6 +391,9 @@
 .color-chip{cursor:pointer}
 .color-chip:hover,.size-option:hover{border-color:#17a2b8}
 .color-chip.active,.size-option.active{border-color:#17a2b8;box-shadow:0 0 0 .12rem rgba(23,162,184,.25)}
+.controls-bar{display:grid;grid-template-columns:1fr auto;gap:.75rem;align-items:center}
+.controls-bar #addSizeRow{justify-self:start}
+.controls-bar #addColorForm{justify-self:end}
 /* تحسين حساسية النقر */
 .color-chip{cursor:pointer}
 .color-chip:hover,.size-option:hover{border-color:#17a2b8}
