@@ -499,10 +499,60 @@
         fd.append('size_name',name);
         try{
           console.log('add_size_payload', {size_name:name});
-          var resp=await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}});
+          var resp=await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken'),'X-Requested-With':'XMLHttpRequest'}});
           var respText='';
           try{ respText=await resp.clone().text(); }catch(_){ }
           console.log('add_size_response', {status:resp.status, ok:resp.ok, redirected:resp.redirected, body:respText && respText.slice(0,200)});
+          var ctype=(resp.headers.get('Content-Type')||'');
+          if(ctype.indexOf('application/json')!==-1){
+            var data={};
+            try{ data=await resp.json(); }catch(__){ data={}; }
+            if(data && data.ok && data.size){
+              var sid=data.size.id, sname=data.size.name;
+              var curGrid=document.querySelector('.sizes-grid');
+              if(curGrid){
+                var wrap=document.createElement('div');
+                wrap.className='size-wrap';
+                wrap.innerHTML='<div class="size-option"><label class="size-label" for="size-'+sid+'">'+sname+'</label><div class="size-select"><input id="size-'+sid+'" class="form-check-input" type="checkbox" name="size_attr_ids" value="'+sid+'"></div></div><span class="chip-actions"><button class="icon-btn" type="button" data-delete="size" data-id="'+sid+'" title="حذف"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg></button></span>';
+                curGrid.prepend(wrap);
+                addMsg.textContent=data.duplicate?'تمت إضافة قياس موجود سابقًا':'تمت الإضافة'; addMsg.className='ms-2 text-success';
+                addName.value='';
+                // ربط السلوك للعناصر الجديدة
+                var opt=wrap.querySelector('.size-option');
+                if(opt){
+                  var inputInit=opt.querySelector('.form-check-input');
+                  if(inputInit){ opt.classList.toggle('active', inputInit.checked); }
+                  opt.addEventListener('click',function(ev){
+                    if(ev.target.closest('.chip-actions')) return;
+                    var input=this.querySelector('.form-check-input');
+                    if(!input) return;
+                    input.checked=!input.checked;
+                    this.classList.toggle('active', input.checked);
+                  });
+                }
+                var delBtn=wrap.querySelector('[data-delete]');
+                if(delBtn){
+                  delBtn.addEventListener('click',async function(ev){
+                    ev.preventDefault(); ev.stopPropagation();
+                    try{
+                      var id=this.getAttribute('data-id');
+                      var fd2=new FormData();
+                      if(csrf) fd2.append('csrfmiddlewaretoken',csrf);
+                      fd2.append('action','delete_attribute_size');
+                      fd2.append('size_id',id);
+                      await fetch(window.location.href,{method:'POST',body:fd2,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken'), 'X-Requested-With':'XMLHttpRequest'}});
+                      var w=this.closest('.size-wrap'); if(w){ w.remove(); }
+                    }catch(err){ alert('تعذر تنفيذ الحذف'); }
+                  });
+                }
+                var names=[]; document.querySelectorAll('.size-label').forEach(function(el){names.push(el.textContent.trim());});
+                console.log('sizes_after_add', names);
+              }
+              return;
+            } else {
+              addMsg.textContent=(data && data.error)?data.error:'تعذر الإضافة، حاول مجددًا'; addMsg.className='ms-2 text-danger';
+            }
+          }
           if(resp.ok || resp.status===201 || resp.status===302){
             // أعد جلب جزء المقاسات وتحديثه فورًا
             var htmlResp=await fetch(window.location.href,{method:'GET',credentials:'same-origin'});

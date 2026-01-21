@@ -3540,13 +3540,15 @@ def super_owner_edit_product(request, product_id):
         elif action == 'add_attribute_size':
             sname = (request.POST.get('size_name') or '').strip()
             if not sname:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'ok': False, 'error': 'يرجى إدخال اسم القياس'}, status=400)
                 messages.error(request, 'يرجى إدخال اسم القياس')
                 return redirect(f"{request.path}?section=properties")
             try:
                 from django.db.models import Max
                 from .models import AttributeSize, AttributeColor, ProductColor
                 max_order = AttributeSize.objects.aggregate(m=Max('order')).get('m') or 0
-                size_obj, _ = AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
+                size_obj, created = AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
                 if size_obj:
                     # اربط القياس الجديد بكل ألوان المنتج الموجودة لضمان ظهوره ضمن المختار
                     product_colors = list(product.colors.all())
@@ -3557,10 +3559,8 @@ def super_owner_edit_product(request, product_id):
                             color_attrs.append(ca)
                         except Exception:
                             continue
-                    if not color_attrs:
-                        # في حال لا توجد ألوان للمنتج، لا ننشئ متغيرات، لكن القياس سيبقى مضافًا كنطاق عام
-                        pass
-                    else:
+                    created_variants = 0
+                    if color_attrs:
                         for ca in color_attrs:
                             try:
                                 exists = ProductVariant.objects.filter(product=product, color_attr=ca, size_attr=size_obj).exists()
@@ -3577,10 +3577,15 @@ def super_owner_edit_product(request, product_id):
                                         price_override=None,
                                         is_enabled=False,
                                     )
+                                    created_variants += 1
                                 except Exception:
                                     continue
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'ok': True, 'size': {'id': size_obj.id, 'name': size_obj.name}, 'duplicate': (not created), 'created_variants': created_variants})
                 messages.success(request, 'تمت إضافة القياس')
             except Exception:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'ok': False, 'error': 'تعذر إضافة القياس'}, status=500)
                 messages.error(request, 'تعذر إضافة القياس')
             return redirect(f"{request.path}?section=properties")
 
