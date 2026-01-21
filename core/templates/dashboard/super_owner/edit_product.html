@@ -174,17 +174,17 @@
                                         {% endif %}
                                         {% if request.GET.section == 'properties' %}
                                         <div class="mb-3 d-flex align-items-center gap-3 flex-wrap justify-content-between controls-bar">
+                                            <div class="d-flex align-items-center gap-2" id="addSizeRow">
+                                                <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس (مثال: 42 أو XL)" style="max-width:220px;">
+                                                <button type="button" id="addSizeBtn" class="btn btn-primary">إضافة قياس</button>
+                                                <small id="addSizeMsg" class="ms-2 text-muted"></small>
+                                            </div>
                                             <form id="addColorForm" class="d-flex align-items-center gap-2" onsubmit="return false;">
                                                 {% csrf_token %}
                                                 <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" style="max-width:220px;">
                                                 <input type="color" name="color_code" class="form-control form-control-color" value="#000000">
                                                 <button id="addColorBtn" type="button" class="btn btn-primary">إضافة لون</button>
                                             </form>
-                                            <div class="d-flex align-items-center gap-2" id="addSizeRow">
-                                                <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس (مثال: 42 أو XL)" style="max-width:220px;">
-                                                <button type="button" id="addSizeBtn" class="btn btn-primary">إضافة قياس</button>
-                                                <small id="addSizeMsg" class="ms-2 text-muted"></small>
-                                            </div>
                                         </div>
                                         <script>
                                         (function(){
@@ -391,9 +391,7 @@
 .color-chip{cursor:pointer}
 .color-chip:hover,.size-option:hover{border-color:#17a2b8}
 .color-chip.active,.size-option.active{border-color:#17a2b8;box-shadow:0 0 0 .12rem rgba(23,162,184,.25)}
-.controls-bar{display:flex;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap}
-.controls-bar #addSizeRow{order:1}
-.controls-bar #addColorForm{order:2}
+.controls-bar{display:flex;direction:ltr;justify-content:space-between;align-items:center;gap:.75rem;flex-wrap:wrap}
 /* تحسين حساسية النقر */
 .color-chip{cursor:pointer}
 .color-chip:hover,.size-option:hover{border-color:#17a2b8}
