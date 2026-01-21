@@ -329,13 +329,17 @@
 </style>
 <script>
         document.addEventListener('DOMContentLoaded', function(){
+    function getCookie(name){
+      var v=document.cookie.match('(^|; )'+name+'=([^;]*)');
+      return v?decodeURIComponent(v[2]):'';
+    }
     document.querySelectorAll('form[data-ajax="true"]').forEach(function(form){
         form.addEventListener('submit', function(e){
             e.preventDefault();
             const formData = new FormData(form);
             const url = form.getAttribute('action') || window.location.href;
             const method = form.getAttribute('method') || (form.method || 'POST');
-            fetch(url, { method: method, body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            fetch(url, { method: method, body: formData, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') } })
             .then(function(resp){
                 if (resp.ok || (resp.status >= 300 && resp.status < 400)) { window.location.reload(); return; }
                 return resp.text().then(function(text){
