@@ -273,6 +273,11 @@
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">المقاسات</label>
+                                                                    <div class="mb-3 d-flex align-items-center gap-2" id="addSizeRow">
+                                                                        <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس" style="max-width:220px;">
+                                                                        <button type="button" id="addSizeBtn" class="btn btn-primary">إضافة قياس</button>
+                                                                        <small id="addSizeMsg" class="ms-2 text-muted"></small>
+                                                                    </div>
                                                                     <div class="sizes-grid">
                                                                         {% for s in size_attrs %}
                                                                         <div class="size-wrap">
@@ -295,10 +300,6 @@
                                                                         {% endfor %}
                                                                     </div>
                                                                 </div>
-                                                                    <div class="mt-3 d-flex align-items-center gap-2" id="addSizeControls">
-                                                                        <input type="text" id="addSizeName" class="form-control" placeholder="إضافة قياس" style="max-width:220px;">
-                                                                        <button type="button" id="addSizeBtn" class="btn btn-outline-primary">إضافة قياس</button>
-                                                                    </div>
                                                                 <div class="col-md-3"><label class="form-label">كمية افتراضية</label><input type="number" name="default_qty" class="form-control" min="0" value="0"></div>
                                                                 <div class="col-md-3"><label class="form-label">سعر خاص افتراضي</label><input type="number" name="default_price" class="form-control" step="0.01" min="0"></div>
                                                                 <div class="col-md-3 d-flex align-items-end"><div class="form-check"><input type="checkbox" class="form-check-input" id="enable_all" name="enable_all"><label class="form-check-label" for="enable_all">تفعيل الكل</label></div></div>
@@ -472,17 +473,70 @@
     }
     var addBtn=document.getElementById('addSizeBtn');
     var addName=document.getElementById('addSizeName');
+    var addMsg=document.getElementById('addSizeMsg');
     if(addBtn && addName){
       addBtn.addEventListener('click',async function(e){
         e.preventDefault(); e.stopPropagation();
         var name=(addName.value||'').trim();
-        if(!name){ addName.focus(); return; }
+        if(!name){ addMsg.textContent='يرجى إدخال القياس'; addMsg.className='ms-2 text-danger'; addName.focus(); return; }
+        // منع تكرار القياس الظاهر
+        var exists=false;
+        document.querySelectorAll('.size-label').forEach(function(el){ if(el.textContent.trim().toLowerCase()===name.toLowerCase()){ exists=true; } });
+        if(exists){ addMsg.textContent='القياس موجود مسبقًا'; addMsg.className='ms-2 text-danger'; return; }
+        addMsg.textContent='جاري الإضافة...'; addMsg.className='ms-2 text-muted';
         var fd=new FormData();
         if(csrf) fd.append('csrfmiddlewaretoken',csrf);
         fd.append('action','add_attribute_size');
         fd.append('size_name',name);
-        await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}});
-        location.reload();
+        try{
+          var resp=await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}});
+          console.log('add_size_status', resp.status, 'ok', resp.ok, 'redir', resp.redirected);
+          if(resp.ok || resp.status===201 || resp.status===302){
+            // أعد جلب جزء المقاسات وتحديثه فورًا
+            var htmlResp=await fetch(window.location.href,{method:'GET',credentials:'same-origin'});
+            if(htmlResp.ok){
+              var text=await htmlResp.text();
+              var parser=new DOMParser();
+              var doc=parser.parseFromString(text,'text/html');
+              var newGrid=doc.querySelector('.sizes-grid');
+              var curGrid=document.querySelector('.sizes-grid');
+              if(newGrid && curGrid){
+                curGrid.innerHTML=newGrid.innerHTML;
+                addMsg.textContent='تمت الإضافة'; addMsg.className='ms-2 text-success';
+                addName.value='';
+                // إعادة ربط حساسية النقر للعناصر الجديدة
+                document.querySelectorAll('.size-option').forEach(function(opt){
+                  var inputInit=opt.querySelector('.form-check-input');
+                  if(inputInit){ opt.classList.toggle('active', inputInit.checked); }
+                  opt.addEventListener('click',function(ev){
+                    if(ev.target.closest('.chip-actions')) return;
+                    var input=this.querySelector('.form-check-input');
+                    if(!input) return;
+                    input.checked=!input.checked;
+                    this.classList.toggle('active', input.checked);
+                  });
+                });
+              } else {
+                // في حال التعذر، أضف عنصرًا مؤقتًا في الواجهة
+                var curGrid=document.querySelector('.sizes-grid');
+                if(curGrid){
+                  var wrap=document.createElement('div');
+                  wrap.className='size-wrap';
+                  wrap.innerHTML='<div class="size-option"><label class="size-label">'+name+'</label><div class="size-select"><input class="form-check-input" type="checkbox" disabled></div></div>';
+                  curGrid.prepend(wrap);
+                  addMsg.textContent='تمت الإضافة (عرض مؤقت)'; addMsg.className='ms-2 text-success';
+                  addName.value='';
+                }
+              }
+            } else {
+              addMsg.textContent='تمت الإضافة، لكن تعذر تحديث العرض'; addMsg.className='ms-2 text-warning';
+            }
+          } else {
+            addMsg.textContent='تعذر الإضافة، حاول مجددًا'; addMsg.className='ms-2 text-danger';
+          }
+        }catch(err){
+          addMsg.textContent='فشل الطلب، تحقق من الاتصال'; addMsg.className='ms-2 text-danger';
+        }
       });
     }
   }catch(e){}
