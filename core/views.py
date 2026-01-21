@@ -3544,27 +3544,41 @@ def super_owner_edit_product(request, product_id):
                 return redirect(f"{request.path}?section=properties")
             try:
                 from django.db.models import Max
-                from .models import AttributeSize
+                from .models import AttributeSize, AttributeColor, ProductColor
                 max_order = AttributeSize.objects.aggregate(m=Max('order')).get('m') or 0
                 size_obj, _ = AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
                 if size_obj:
-                    try:
-                        exists = ProductVariant.objects.filter(product=product, size_attr=size_obj).exists()
-                    except Exception:
-                        exists = True
-                    if not exists:
+                    # اربط القياس الجديد بكل ألوان المنتج الموجودة لضمان ظهوره ضمن المختار
+                    product_colors = list(product.colors.all())
+                    color_attrs = []
+                    for pc in product_colors:
                         try:
-                            ProductVariant.objects.create(
-                                product=product,
-                                color_attr=None,
-                                size_attr=size_obj,
-                                size=size_obj.name,
-                                stock_qty=0,
-                                price_override=None,
-                                is_enabled=False,
-                            )
+                            ca, _ = AttributeColor.objects.get_or_create(name=pc.name, defaults={'code': pc.code or ''})
+                            color_attrs.append(ca)
                         except Exception:
-                            pass
+                            continue
+                    if not color_attrs:
+                        # في حال لا توجد ألوان للمنتج، لا ننشئ متغيرات، لكن القياس سيبقى مضافًا كنطاق عام
+                        pass
+                    else:
+                        for ca in color_attrs:
+                            try:
+                                exists = ProductVariant.objects.filter(product=product, color_attr=ca, size_attr=size_obj).exists()
+                            except Exception:
+                                exists = True
+                            if not exists:
+                                try:
+                                    ProductVariant.objects.create(
+                                        product=product,
+                                        color_attr=ca,
+                                        size_attr=size_obj,
+                                        size=size_obj.name,
+                                        stock_qty=0,
+                                        price_override=None,
+                                        is_enabled=False,
+                                    )
+                                except Exception:
+                                    continue
                 messages.success(request, 'تمت إضافة القياس')
             except Exception:
                 messages.error(request, 'تعذر إضافة القياس')
