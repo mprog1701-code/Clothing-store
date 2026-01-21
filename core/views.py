@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, IntegerField, Case, When
+from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, IntegerField, Case, When, Max
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -1475,15 +1475,22 @@ def super_owner_dashboard(request):
         perf = list(
             Order.objects.filter(created_at__gte=last_30)
             .values('store_id')
-            .annotate(delivered=Sum(models.Case(
-                models.When(status='delivered', then=1),
-                default=0,
-                output_field=models.IntegerField()
-            )), revenue=Sum(models.Case(
-                models.When(status='delivered', then='total_amount'),
-                default=0,
-                output_field=models.DecimalField(max_digits=10, decimal_places=2)
-            )))
+            .annotate(
+                delivered=Sum(
+                    Case(
+                        When(status='delivered', then=1),
+                        default=0,
+                        output_field=IntegerField(),
+                    )
+                ),
+                revenue=Sum(
+                    Case(
+                        When(status='delivered', then='total_amount'),
+                        default=0,
+                        output_field=DecimalField(max_digits=10, decimal_places=2),
+                    )
+                ),
+            )
         )
         if perf:
             perf_sorted = sorted(perf, key=lambda x: (float(x['delivered']), float(x['revenue'] or 0)), reverse=True)
@@ -3042,7 +3049,7 @@ def super_owner_add_product(request):
                 messages.error(request, 'المنتج غير موجود')
                 return redirect('super_owner_add_product')
             files = request.FILES.getlist('images')
-            max_order = product.images.aggregate(m=models.Max('order')).get('m') or 0
+            max_order = product.images.aggregate(m=Max('order')).get('m') or 0
             existing_images = list(product.images.all())
             import hashlib
             skipped = 0
@@ -3126,7 +3133,7 @@ def super_owner_add_product(request):
                 messages.error(request, 'يجب ربط الصورة بلون أولاً')
                 return redirect(f"{request.path}?pid={product.id}&step=images")
             # lowest order within this color becomes default
-            product.images.filter(color_attr_id=img.color_attr_id).update(order=models.F('order') + 1)
+            product.images.filter(color_attr_id=img.color_attr_id).update(order=F('order') + 1)
             img.order = 0
             img.save()
             messages.success(request, 'تم تعيين الصورة كافتراضية لهذا اللون')
