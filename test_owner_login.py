@@ -14,7 +14,7 @@ if csrf_token_match:
     # Now test the login
     login_data = {
         'csrfmiddlewaretoken': csrf_token,
-        'phone': '0500000000',
+        'phone': '07700000000',
         'password': 'admin123456',
         'owner_key': 'OWNER2025'
     }

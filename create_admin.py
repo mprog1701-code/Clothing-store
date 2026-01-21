@@ -6,8 +6,8 @@ if not User.objects.filter(username='admin').exists():
         username='admin',
         email='admin@example.com', 
         password='admin123',
-        phone='0500000000',
-        city='الرياض',
+        phone='07700000000',
+        city='بغداد',
         role='admin'
     )
     print("✅ تم إنشاء حساب الأدمن بنجاح!")
