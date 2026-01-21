@@ -1,10 +1,10 @@
 * { box-sizing: border-box; }
 html, body { width: 100%; max-width: 100%; overflow-x: hidden; height: auto; }
 body { font-family: 'Arial', sans-serif; }
-.app-container { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 12px; }
-@media (min-width: 768px) { .app-container { max-width: 720px; } }
-@media (min-width: 1200px) { .app-container { max-width: 960px; } }
-@media (min-width: 1600px) { .app-container { max-width: 1200px; } }
+.app-container { width: 100%; max-width: 100%; margin: 0; padding: 0 12px; }
+@media (min-width: 768px) { .app-container { max-width: 100%; } }
+@media (min-width: 1200px) { .app-container { max-width: 100%; } }
+@media (min-width: 1600px) { .app-container { max-width: 100%; } }
 main { padding-bottom: 2rem; }
 .container, .container-fluid, .row { width: 100%; max-width: 100%; }
 .card, .list-group, .table, .modal, .modal-dialog, .modal-content, .alert, .breadcrumb, .dashboard-card { max-width: 100%; }
