@@ -178,7 +178,7 @@
                                                 {% csrf_token %}
                                                 <input type="text" name="color_name" class="form-control" placeholder="اسم اللون" style="max-width:220px;">
                                                 <input type="color" name="color_code" class="form-control form-control-color" value="#000000">
-                                                <button id="addColorBtn" class="btn btn-primary">إضافة لون</button>
+                                                <button id="addColorBtn" type="button" class="btn btn-primary">إضافة لون</button>
                                             </form>
                                         </div>
                                         <script>
@@ -373,7 +373,7 @@
 .chip-name{font-size:1rem;font-weight:500;color:#212529;text-align:center}
 .chip-select{position:absolute;top:.35rem;left:.35rem}
 .chip-wrap,.size-wrap{position:relative;margin-right:12px}
-.chip-actions{position:absolute;top:.35rem;right:-10px;z-index:2}
+.chip-actions{position:absolute;top:.35rem;right:-10px;z-index:3}
 .color-chips,.sizes-grid{overflow:visible}
 .icon-btn:hover{color:#a71d2a}
 .icon-btn svg{width:18px;height:18px}
@@ -384,6 +384,13 @@
 .color-chip .form-check-input,.size-option .form-check-input{transform:scale(1.4);transform-origin:center;}
 .color-chip .form-check-input{margin-left:.1rem}
 .size-option .form-check-input{margin-left:.1rem}
+/* ضمان عدم وجود طبقات تعيق النقر */
+.chip-center{pointer-events:none}
+.chip-actions button,.chip-select input{pointer-events:auto}
+.chip-select{z-index:2}
+.color-chip{cursor:pointer}
+.color-chip:hover,.size-option:hover{border-color:#17a2b8}
+.color-chip.active,.size-option.active{border-color:#17a2b8;box-shadow:0 0 0 .12rem rgba(23,162,184,.25)}
 /* تحسين حساسية النقر */
 .color-chip{cursor:pointer}
 .color-chip:hover,.size-option:hover{border-color:#17a2b8}
@@ -484,13 +491,17 @@
         document.querySelectorAll('.size-label').forEach(function(el){ if(el.textContent.trim().toLowerCase()===name.toLowerCase()){ exists=true; } });
         if(exists){ addMsg.textContent='القياس موجود مسبقًا'; addMsg.className='ms-2 text-danger'; return; }
         addMsg.textContent='جاري الإضافة...'; addMsg.className='ms-2 text-muted';
+        addBtn.disabled=true; addBtn.classList.add('disabled');
         var fd=new FormData();
         if(csrf) fd.append('csrfmiddlewaretoken',csrf);
         fd.append('action','add_attribute_size');
         fd.append('size_name',name);
         try{
+          console.log('add_size_payload', {size_name:name});
           var resp=await fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-CSRFToken':getCookie('csrftoken')}});
-          console.log('add_size_status', resp.status, 'ok', resp.ok, 'redir', resp.redirected);
+          var respText='';
+          try{ respText=await resp.clone().text(); }catch(_){ }
+          console.log('add_size_response', {status:resp.status, ok:resp.ok, redirected:resp.redirected, body:respText && respText.slice(0,200)});
           if(resp.ok || resp.status===201 || resp.status===302){
             // أعد جلب جزء المقاسات وتحديثه فورًا
             var htmlResp=await fetch(window.location.href,{method:'GET',credentials:'same-origin'});
@@ -516,6 +527,8 @@
                     this.classList.toggle('active', input.checked);
                   });
                 });
+                var names=[]; document.querySelectorAll('.size-label').forEach(function(el){names.push(el.textContent.trim());});
+                console.log('sizes_after_add', names);
               } else {
                 // في حال التعذر، أضف عنصرًا مؤقتًا في الواجهة
                 var curGrid=document.querySelector('.sizes-grid');
@@ -536,6 +549,9 @@
           }
         }catch(err){
           addMsg.textContent='فشل الطلب، تحقق من الاتصال'; addMsg.className='ms-2 text-danger';
+          console.log('add_size_error', err);
+        }finally{
+          addBtn.disabled=false; addBtn.classList.remove('disabled');
         }
       });
     }
