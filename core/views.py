@@ -1095,9 +1095,26 @@ def order_detail(request, order_id):
             messages.error(request, 'ليس لديك صلاحية لعرض هذا الطلب!')
             return redirect('order_list')
     
+    status_timeline = []
+    try:
+        from .models import AdminAuditLog
+        import json
+        logs = AdminAuditLog.objects.filter(model='Order', object_id=str(order.id), action='update_status').order_by('timestamp')
+        for lg in logs:
+            st = None
+            try:
+                after = json.loads(lg.after or '{}')
+                st = after.get('status')
+            except Exception:
+                st = None
+            status_timeline.append({'status': st or order.status, 'timestamp': lg.timestamp})
+    except Exception:
+        status_timeline = []
+
     context = {
         'order': order,
         'order_items': order.items.all(),
+        'status_timeline': status_timeline,
     }
     return render(request, 'orders/detail.html', context)
 
@@ -4090,9 +4107,27 @@ def super_owner_orders(request):
         return redirect('home')
     
     store_filter = (request.GET.get('store') or '').strip()
-    orders = Order.objects.all().order_by('-created_at')
+    q = (request.GET.get('q') or '').strip()
+
+    status_order = Case(
+        When(status='pending', then=0),
+        When(status='accepted', then=1),
+        When(status='packed', then=2),
+        When(status='delivered', then=100),
+        When(status='canceled', then=100),
+        default=50,
+        output_field=IntegerField(),
+    )
+
+    orders = Order.objects.all().annotate(_status_order=status_order).order_by('_status_order', '-created_at')
     if store_filter and store_filter.isdigit():
         orders = orders.filter(store_id=int(store_filter))
+    if q:
+        try:
+            q_id = int(q)
+            orders = orders.filter(Q(id=q_id) | Q(user__first_name__icontains=q) | Q(user__last_name__icontains=q) | Q(user__username__icontains=q) | Q(user__phone__icontains=q))
+        except ValueError:
+            orders = orders.filter(Q(user__first_name__icontains=q) | Q(user__last_name__icontains=q) | Q(user__username__icontains=q) | Q(user__phone__icontains=q) | Q(id__icontains=q))
     
     if request.method == 'POST':
         order_id = request.POST.get('order_id')
@@ -4105,19 +4140,88 @@ def super_owner_orders(request):
             tracking_number = request.POST.get('tracking_number', '')
             
             if new_status in [choice[0] for choice in Order.STATUS_CHOICES]:
+                before_state = { 'status': order.status }
                 order.status = new_status
                 if tracking_number:
                     order.tracking_number = tracking_number
                 order.save()
+                try:
+                    from .models import AdminAuditLog
+                    import json
+                    AdminAuditLog.objects.create(
+                        admin_user=request.user,
+                        action='update_status',
+                        model='Order',
+                        object_id=str(order.id),
+                        before=json.dumps(before_state, ensure_ascii=False),
+                        after=json.dumps({ 'status': order.status }, ensure_ascii=False),
+                    )
+                except Exception:
+                    pass
                 messages.success(request, f'تم تحديث حالة الطلب #{order.id}!')
             else:
                 messages.error(request, 'حالة غير صحيحة!')
+        elif action == 'send_to_delivery':
+            tracking_number = request.POST.get('tracking_number', '').strip()
+            before_state = { 'status': order.status }
+            order.status = 'packed'
+            if tracking_number:
+                order.tracking_number = tracking_number
+            order.save()
+            try:
+                from .models import AdminAuditLog
+                import json
+                AdminAuditLog.objects.create(
+                    admin_user=request.user,
+                    action='update_status',
+                    model='Order',
+                    object_id=str(order.id),
+                    before=json.dumps(before_state, ensure_ascii=False),
+                    after=json.dumps({ 'status': order.status }, ensure_ascii=False),
+                )
+            except Exception:
+                pass
+            messages.success(request, f'تم إرسال الطلب #{order.id} لشركة التوصيل!')
         
         return redirect('super_owner_orders')
     
+    import urllib.parse
+    orders_info = []
+    for o in orders:
+        lines = []
+        for it in o.items.all():
+            color = ''
+            size = ''
+            if it.variant:
+                color = it.variant.color or ''
+                size = it.variant.size or ''
+            lines.append(f"- {it.product.name} | {color} | {size} × {it.quantity}")
+        total_iqd = f"{int(o.total_amount):,} د.ع"
+        text = f"طلب رقم #{o.id}\n" + "\n".join(lines) + f"\nالإجمالي: {total_iqd}"
+        wa_text = urllib.parse.quote(text)
+        phone = (o.store_phone or '')
+        if not phone:
+            try:
+                phone = o.store.owner.phone or ''
+            except Exception:
+                phone = ''
+        p = phone.strip()
+        if p.startswith('07') and len(p) == 11:
+            p = '964' + p[1:]
+        orders_info.append({'order': o, 'wa_text': wa_text, 'wa_number': p})
+
     context = {
-        'orders': orders,
+        'orders_info': orders_info,
         'store_filter': int(store_filter) if store_filter.isdigit() else None,
+        'q': q,
+        'allowed_statuses': ['pending','accepted','packed','delivered','canceled'],
+        'status_labels': {
+            'pending': 'قيد الانتظار',
+            'accepted': 'تم القبول',
+            'packed': 'تم التعبئة',
+            'delivered': 'تم التسليم',
+            'canceled': 'ملغي',
+        },
     }
     return render(request, 'dashboard/super_owner/orders.html', context)
 

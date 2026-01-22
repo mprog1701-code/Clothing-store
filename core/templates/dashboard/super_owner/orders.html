@@ -30,6 +30,15 @@
                             </div>
                         {% endfor %}
                     {% endif %}
+                    <form class="row g-3 mb-3" method="get">
+                        <div class="col-md-6">
+                            <input type="text" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="بحث شامل: رقم الطلب، اسم العميل، رقم الجوال">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary">بحث</button>
+                            <a href="?" class="btn btn-outline-secondary">إعادة تعيين</a>
+                        </div>
+                    </form>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
@@ -47,7 +56,8 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for order in orders %}
+                                {% for oi in orders_info %}
+                                {% with order=oi.order %}
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
                                     <td>
@@ -97,15 +107,10 @@
                                                 <i class="fas fa-check me-1"></i>
                                                 تم القبول
                                             </span>
-                                        {% elif order.status == 'preparing' %}
+                                        {% elif order.status == 'packed' %}
                                             <span class="badge bg-primary">
                                                 <i class="fas fa-box me-1"></i>
-                                                قيد التجهيز
-                                            </span>
-                                        {% elif order.status == 'on_the_way' %}
-                                            <span class="badge bg-secondary">
-                                                <i class="fas fa-truck me-1"></i>
-                                                في الطريق
+                                                تم التعبئة
                                             </span>
                                         {% elif order.status == 'delivered' %}
                                             <span class="badge bg-success">
@@ -138,56 +143,43 @@
                                             <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-primary btn-sm" title="عرض التفاصيل">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            {% if oi.wa_number %}
+                                            <a class="btn btn-success btn-sm" title="واتساب صاحب المتجر" target="_blank" href="https://wa.me/{{ oi.wa_number }}?text={{ oi.wa_text }}">
+                                                <i class="fab fa-whatsapp"></i>
+                                            </a>
+                                            {% endif %}
                                             
                                             <div class="dropdown">
                                                 <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="تغيير الحالة">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <form method="post" class="dropdown-menu">
+                                                <form method="post" class="dropdown-menu" onsubmit="return confirm('تأكيد تغيير الحالة؟');">
                                                     {% csrf_token %}
                                                     <input type="hidden" name="order_id" value="{{ order.id }}">
                                                     <input type="hidden" name="action" value="update_status">
-                                                     
-                                                    {% if order.status != 'pending' %}
-                                                        <button type="submit" name="status" value="pending" class="dropdown-item">
-                                                            <i class="fas fa-clock me-1"></i> قيد الانتظار
+                                                    {% for st in allowed_statuses %}
+                                                        {% if order.status != st %}
+                                                        <button type="submit" name="status" value="{{ st }}" class="dropdown-item {% if st == 'canceled' %}text-danger{% endif %}">
+                                                            {% if st == 'pending' %}<i class="fas fa-clock me-1"></i> قيد الانتظار{% elif st == 'accepted' %}<i class="fas fa-check me-1"></i> تم القبول{% elif st == 'packed' %}<i class="fas fa-box me-1"></i> تم التعبئة{% elif st == 'delivered' %}<i class="fas fa-check-circle me-1"></i> تم التسليم{% elif st == 'canceled' %}<i class="fas fa-times-circle me-1"></i> ملغي{% endif %}
                                                         </button>
-                                                    {% endif %}
-                                                     
-                                                    {% if order.status != 'accepted' %}
-                                                        <button type="submit" name="status" value="accepted" class="dropdown-item">
-                                                            <i class="fas fa-check me-1"></i> تم القبول
-                                                        </button>
-                                                    {% endif %}
-                                                     
-                                                    {% if order.status != 'preparing' %}
-                                                        <button type="submit" name="status" value="preparing" class="dropdown-item">
-                                                            <i class="fas fa-box me-1"></i> قيد التجهيز
-                                                        </button>
-                                                    {% endif %}
-                                                     
-                                                    {% if order.status != 'on_the_way' %}
-                                                        <button type="submit" name="status" value="on_the_way" class="dropdown-item">
-                                                            <i class="fas fa-truck me-1"></i> في الطريق
-                                                        </button>
-                                                    {% endif %}
-                                                     
-                                                    {% if order.status != 'delivered' %}
-                                                        <button type="submit" name="status" value="delivered" class="dropdown-item">
-                                                            <i class="fas fa-check-circle me-1"></i> تم التسليم
-                                                        </button>
-                                                    {% endif %}
-                                                     
-                                                    {% if order.status != 'canceled' %}
-                                                        <button type="submit" name="status" value="canceled" class="dropdown-item text-danger">
-                                                            <i class="fas fa-times-circle me-1"></i> إلغاء الطلب
-                                                        </button>
-                                                    {% endif %}
+                                                        {% endif %}
+                                                    {% endfor %}
                                                 </form>
                                             </div>
+
+                                            <form method="post" class="d-inline" onsubmit="return confirm('إرسال الطلب لشركة التوصيل؟');">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="order_id" value="{{ order.id }}">
+                                                <input type="hidden" name="action" value="send_to_delivery">
+                                                <input type="text" name="tracking_number" class="form-control form-control-sm d-inline" placeholder="رقم التتبع" style="width: 160px;">
+                                                <button class="btn btn-outline-success btn-sm" type="submit" title="إرسال لشركة التوصيل">
+                                                    <i class="fas fa-shipping-fast"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
+                                {% endwith %}
                                 {% empty %}
                                 <tr>
                                     <td colspan="9" class="text-center py-4">

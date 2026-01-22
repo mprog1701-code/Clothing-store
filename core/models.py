@@ -325,6 +325,7 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ('pending', 'قيد الانتظار'),
         ('accepted', 'تم القبول'),
+        ('packed', 'تم التعبئة'),
         ('preparing', 'قيد التجهيز'),
         ('on_the_way', 'في الطريق'),
         ('delivered', 'تم التسليم'),
@@ -338,6 +339,8 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    store_phone = models.CharField(max_length=20, blank=True, default='')
+    tracking_number = models.CharField(max_length=100, blank=True, default='')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
