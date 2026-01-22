@@ -62,6 +62,7 @@ urlpatterns = [
     
     # Super Owner Dashboard URLs
     path('dashboard/super-owner/', views.super_owner_dashboard, name='super_owner_dashboard'),
+    path('dashboard/super-owner/owners/', views.super_owner_owners, name='super_owner_owners'),
     path('dashboard/super-owner/stores/', views.super_owner_stores, name='super_owner_stores'),
     # إزالة صفحة الإضافة السريعة وصفحة الإضافة القديمة
     path('dashboard/super-owner/stores/create/', views.super_owner_create_store, name='super_owner_create_store'),

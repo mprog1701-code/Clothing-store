@@ -4298,6 +4298,67 @@ from .permissions import role_required, admin_required
 from django.db import transaction
 
 
+@login_required
+def super_owner_owners(request):
+    if request.user.username != 'super_owner':
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+
+    q = (request.GET.get('q') or '').strip()
+    owners = User.objects.filter(role='admin').order_by('username')
+    if q:
+        from django.db.models import Q
+        owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q))
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        try:
+            if action == 'update_phone':
+                owner_id = int(request.POST.get('owner_id'))
+                phone = (request.POST.get('phone') or '').strip()
+                import re
+                if not re.fullmatch(r'07\d{9}', phone):
+                    messages.error(request, 'رقم هاتف غير صالح. استخدم الصيغة: 07xxxxxxxxx')
+                    return redirect('super_owner_owners')
+                owner = get_object_or_404(User, id=owner_id)
+                before = owner.phone or ''
+                owner.phone = phone
+                owner.save()
+                try:
+                    from .models import AdminAuditLog
+                    import json
+                    AdminAuditLog.objects.create(
+                        admin_user=request.user,
+                        action='update_owner_phone',
+                        model='User',
+                        object_id=str(owner.id),
+                        before=json.dumps({'phone': before}, ensure_ascii=False),
+                        after=json.dumps({'phone': owner.phone}, ensure_ascii=False),
+                    )
+                except Exception:
+                    pass
+                messages.success(request, f'تم تحديث رقم هاتف المالك {owner.username}!')
+                return redirect('super_owner_owners')
+        except Exception:
+            messages.error(request, 'حدث خطأ أثناء التحديث')
+            return redirect('super_owner_owners')
+
+    from .models import Store
+    owners_info = []
+    for o in owners:
+        try:
+            store_count = Store.objects.filter(owner=o).count()
+        except Exception:
+            store_count = 0
+        owners_info.append({'owner': o, 'store_count': store_count})
+
+    context = {
+        'owners_info': owners_info,
+        'q': q,
+    }
+    return render(request, 'dashboard/super_owner/owners.html', context)
+
+
 def admin_portal_login(request):
     if request.method == 'POST':
         identifier = (request.POST.get('identifier') or '').strip()
