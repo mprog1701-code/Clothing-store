@@ -68,6 +68,12 @@
                                         {% endfor %}
                                     </select>
                                 </div>
+
+                                <div class="mb-3">
+                                    <label for="owner_phone" class="form-label">رقم واتساب مالك المتجر</label>
+                                    <input type="tel" class="form-control" id="owner_phone" name="owner_phone" value="{{ store.owner_phone|default:'' }}" placeholder="07xxxxxxxxx">
+                                    <small class="text-muted">أدخل بصيغة 07xxxxxxxxx؛ سيُحفظ تلقائياً بصيغة 9647xxxxxxxx</small>
+                                </div>
                                 
                                 <div class="mb-3">
                                     <label for="logo" class="form-label">شعار المتجر</label>

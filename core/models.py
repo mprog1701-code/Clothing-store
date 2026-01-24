@@ -106,6 +106,7 @@ class Store(models.Model):
     secondary_color = models.CharField(max_length=7, blank=True, default='')
     free_delivery_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=10, default='IQD')
+    owner_phone = models.CharField(max_length=20, blank=True, default='')
     delivery_time_value = models.PositiveIntegerField(default=0)
     delivery_time_unit = models.CharField(max_length=10, choices=[('hour','ساعة'),('day','يوم')], blank=True, default='')
     
@@ -341,6 +342,8 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     store_phone = models.CharField(max_length=20, blank=True, default='')
     tracking_number = models.CharField(max_length=100, blank=True, default='')
+    delivery_phone = models.CharField(max_length=20, blank=True, default='')
+    delivery_status = models.CharField(max_length=20, blank=True, default='')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')

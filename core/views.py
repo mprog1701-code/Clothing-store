@@ -2351,6 +2351,7 @@ def super_owner_edit_store(request, store_id):
         address = request.POST.get('address')
         description = request.POST.get('description')
         owner_id = request.POST.get('owner')
+        owner_phone = (request.POST.get('owner_phone') or '').strip()
         is_active = request.POST.get('is_active') == 'on'
         logo = request.FILES.get('logo')
         category = (request.POST.get('category') or '').strip()
@@ -2373,6 +2374,16 @@ def super_owner_edit_store(request, store_id):
             store.description = description
             store.owner = owner
             store.is_active = is_active
+            if owner_phone:
+                p = owner_phone.replace(' ', '')
+                if p.startswith('+964'):
+                    p = p[1:]
+                if p.startswith('07') and len(p) == 11:
+                    p = '964' + p[1:]
+                if p and (not p.startswith('9647') or len(p) != 13):
+                    messages.error(request, 'رقم هاتف المالك غير صالح')
+                    return redirect('super_owner_edit_store', store_id=store_id)
+                store.owner_phone = p
             if category in [c[0] for c in Store.CATEGORY_CHOICES]:
                 store.category = category
             dt_value = None
@@ -4130,59 +4141,6 @@ def super_owner_orders(request):
             orders = orders.filter(Q(user__first_name__icontains=q) | Q(user__last_name__icontains=q) | Q(user__username__icontains=q) | Q(user__phone__icontains=q) | Q(id__icontains=q))
     
     if request.method == 'POST':
-        order_id = request.POST.get('order_id')
-        action = request.POST.get('action')
-        
-        order = get_object_or_404(Order, id=order_id)
-        
-        if action == 'update_status':
-            new_status = request.POST.get('status')
-            tracking_number = request.POST.get('tracking_number', '')
-            
-            if new_status in [choice[0] for choice in Order.STATUS_CHOICES]:
-                before_state = { 'status': order.status }
-                order.status = new_status
-                if tracking_number:
-                    order.tracking_number = tracking_number
-                order.save()
-                try:
-                    from .models import AdminAuditLog
-                    import json
-                    AdminAuditLog.objects.create(
-                        admin_user=request.user,
-                        action='update_status',
-                        model='Order',
-                        object_id=str(order.id),
-                        before=json.dumps(before_state, ensure_ascii=False),
-                        after=json.dumps({ 'status': order.status }, ensure_ascii=False),
-                    )
-                except Exception:
-                    pass
-                messages.success(request, f'تم تحديث حالة الطلب #{order.id}!')
-            else:
-                messages.error(request, 'حالة غير صحيحة!')
-        elif action == 'send_to_delivery':
-            tracking_number = request.POST.get('tracking_number', '').strip()
-            before_state = { 'status': order.status }
-            order.status = 'packed'
-            if tracking_number:
-                order.tracking_number = tracking_number
-            order.save()
-            try:
-                from .models import AdminAuditLog
-                import json
-                AdminAuditLog.objects.create(
-                    admin_user=request.user,
-                    action='update_status',
-                    model='Order',
-                    object_id=str(order.id),
-                    before=json.dumps(before_state, ensure_ascii=False),
-                    after=json.dumps({ 'status': order.status }, ensure_ascii=False),
-                )
-            except Exception:
-                pass
-            messages.success(request, f'تم إرسال الطلب #{order.id} لشركة التوصيل!')
-        
         return redirect('super_owner_orders')
     
     import urllib.parse
@@ -4195,19 +4153,45 @@ def super_owner_orders(request):
             if it.variant:
                 color = it.variant.color or ''
                 size = it.variant.size or ''
-            lines.append(f"- {it.product.name} | {color} | {size} × {it.quantity}")
-        total_iqd = f"{int(o.total_amount):,} د.ع"
-        text = f"طلب رقم #{o.id}\n" + "\n".join(lines) + f"\nالإجمالي: {total_iqd}"
+            price = it.price
+            lines.append(f"- {it.product.name} | {color} | {size} × {it.quantity} | {int(price)} د.ع")
+        total_iqd_val = int(o.total_amount)
+        total_iqd = f"{total_iqd_val:,} د.ع"
+        pm = 'الدفع عند الاستلام' if o.payment_method == 'cod' else 'بطاقة ائتمان'
+        st_lbl = {
+            'pending': 'قيد الانتظار',
+            'accepted': 'تم القبول',
+            'packed': 'تم التعبئة',
+            'delivered': 'تم التسليم',
+            'canceled': 'ملغي',
+        }.get(o.status, o.status)
+        cust_name = o.user.get_full_name() or o.user.username
+        cust_phone = o.user.phone or ''
+        text = (
+            f"طلب رقم #{o.id}\n"
+            f"العميل: {cust_name} - {cust_phone}\n"
+            + "\n".join(lines)
+            + f"\nالإجمالي: {total_iqd}\n"
+            + f"طريقة الدفع: {pm}\n"
+            + f"الحالة: {st_lbl}\n"
+            + f"التاريخ: {o.created_at.strftime('%Y/%m/%d %H:%M')}"
+        )
         wa_text = urllib.parse.quote(text)
-        phone = (o.store_phone or '')
-        if not phone:
-            try:
+        phone = ''
+        try:
+            if o.store.owner_phone:
+                phone = o.store.owner_phone
+            elif o.store_phone:
+                phone = o.store_phone
+            else:
                 phone = o.store.owner.phone or ''
-            except Exception:
-                phone = ''
-        p = phone.strip()
+        except Exception:
+            phone = o.store_phone or ''
+        p = (phone or '').strip()
         if p.startswith('07') and len(p) == 11:
             p = '964' + p[1:]
+        if p.startswith('+964'):
+            p = p[1:]
         orders_info.append({'order': o, 'wa_text': wa_text, 'wa_number': p})
 
     context = {
@@ -4224,6 +4208,126 @@ def super_owner_orders(request):
         },
     }
     return render(request, 'dashboard/super_owner/orders.html', context)
+
+@login_required
+def super_owner_update_order_status_json(request):
+    if request.user.username != 'super_owner':
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'invalid_method'}, status=405)
+    try:
+        order_id = int(request.POST.get('order_id') or '0')
+        new_status = (request.POST.get('status') or '').strip()
+        order = Order.objects.get(id=order_id)
+        allowed = ['pending','accepted','packed','delivered','canceled']
+        if new_status not in allowed:
+            return JsonResponse({'error': 'invalid_status'}, status=400)
+        before = {'status': order.status}
+        order.status = new_status
+        order.save()
+        try:
+            from .models import AdminAuditLog
+            import json
+            AdminAuditLog.objects.create(
+                admin_user=request.user,
+                action='update_status',
+                model='Order',
+                object_id=str(order.id),
+                before=json.dumps(before, ensure_ascii=False),
+                after=json.dumps({'status': order.status}, ensure_ascii=False),
+                ip=request.META.get('REMOTE_ADDR') or ''
+            )
+        except Exception:
+            pass
+        labels = {
+            'pending': 'قيد الانتظار',
+            'accepted': 'تم القبول',
+            'packed': 'تم التعبئة',
+            'delivered': 'تم التسليم',
+            'canceled': 'ملغي',
+        }
+        return JsonResponse({'ok': True, 'order_id': order.id, 'status': order.status, 'label': labels.get(order.status, order.status)})
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'not_found'}, status=404)
+    except Exception:
+        return JsonResponse({'error': 'server_error'}, status=500)
+
+@login_required
+def super_owner_update_delivery_json(request):
+    if request.user.username != 'super_owner':
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'invalid_method'}, status=405)
+    try:
+        order_id = int(request.POST.get('order_id') or '0')
+        delivery_phone = (request.POST.get('delivery_phone') or '').strip()
+        tracking_number = (request.POST.get('tracking_number') or '').strip()
+        include_address = (request.POST.get('include_address') or '').strip() in ['1','true','on']
+        order = Order.objects.get(id=order_id)
+        if not tracking_number:
+            return JsonResponse({'error': 'tracking_required'}, status=400)
+        p = delivery_phone
+        if p:
+            pn = p.replace(' ', '')
+            if pn.startswith('+964'):
+                pn = pn[1:]
+            if pn.startswith('07') and len(pn) == 11:
+                pn = '964' + pn[1:]
+            if not pn.startswith('9647') or len(pn) != 13:
+                return JsonResponse({'error': 'invalid_phone'}, status=400)
+            delivery_phone = pn
+        order.tracking_number = tracking_number
+        if delivery_phone:
+            order.delivery_phone = delivery_phone
+        order.save()
+        try:
+            from .models import AdminAuditLog
+            import json
+            AdminAuditLog.objects.create(
+                admin_user=request.user,
+                action='update_delivery',
+                model='Order',
+                object_id=str(order.id),
+                before=json.dumps({}, ensure_ascii=False),
+                after=json.dumps({'tracking_number': order.tracking_number, 'delivery_phone': order.delivery_phone}, ensure_ascii=False),
+                ip=request.META.get('REMOTE_ADDR') or ''
+            )
+        except Exception:
+            pass
+        import urllib.parse
+        lines = []
+        for it in order.items.all():
+            color = ''
+            size = ''
+            if it.variant:
+                color = it.variant.color or ''
+                size = it.variant.size or ''
+            price = it.price
+            lines.append(f"- {it.product.name} | {color} | {size} × {it.quantity} | {int(price)} د.ع")
+        total_iqd = f"{int(order.total_amount):,} د.ع"
+        msg = (
+            "طلب توصيل جديد\n"
+            + f"طلب رقم #{order.id}\n"
+            + f"رقم تتبع: {order.tracking_number}\n"
+            + f"هاتف العميل: {order.user.phone}\n"
+            + "\n".join(lines)
+            + f"\nالإجمالي: {total_iqd}"
+        )
+        if include_address and order.address:
+            try:
+                addr = f"العنوان: {order.address.city} - {order.address.area} - {order.address.street}"
+                msg += f"\n{addr}"
+            except Exception:
+                pass
+        wa_text = urllib.parse.quote(msg)
+        wa_url = ''
+        if order.delivery_phone:
+            wa_url = f"https://wa.me/{order.delivery_phone}?text={wa_text}"
+        return JsonResponse({'ok': True, 'order_id': order.id, 'tracking_number': order.tracking_number, 'delivery_phone': order.delivery_phone, 'wa_url': wa_url})
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'not_found'}, status=404)
+    except Exception:
+        return JsonResponse({'error': 'server_error'}, status=500)
 
 
 @login_required

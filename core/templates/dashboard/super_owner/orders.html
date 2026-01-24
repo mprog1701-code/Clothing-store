@@ -139,43 +139,44 @@
                                     </td>
                                     <td>{{ order.created_at|date:"Y/m/d H:i" }}</td>
                                     <td>
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-primary btn-sm" title="عرض التفاصيل">
-                                                <i class="fas fa-eye"></i>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-primary btn-sm" title="عرض التفاصيل" data-bs-toggle="tooltip">
+                                                <i class="fas fa-eye" style="font-size:1.25rem;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;"></i>
                                             </a>
                                             {% if oi.wa_number %}
-                                            <a class="btn btn-success btn-sm" title="واتساب صاحب المتجر" target="_blank" href="https://wa.me/{{ oi.wa_number }}?text={{ oi.wa_text }}">
-                                                <i class="fab fa-whatsapp"></i>
+                                            <a class="btn btn-success btn-sm wa-owner-btn" title="واتساب صاحب المتجر" target="_blank" href="https://wa.me/{{ oi.wa_number }}?text={{ oi.wa_text }}" data-bs-toggle="tooltip">
+                                                <i class="fab fa-whatsapp" style="font-size:1.25rem;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;"></i>
                                             </a>
+                                            {% else %}
+                                            <button type="button" class="btn btn-success btn-sm" disabled title="لا يوجد رقم مالك" data-bs-toggle="tooltip">
+                                                <i class="fab fa-whatsapp" style="font-size:1.25rem;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;"></i>
+                                            </button>
+                                            <span class="text-danger small">رقم مالك المتجر غير متوفر</span>
                                             {% endif %}
-                                            
+
                                             <div class="dropdown">
-                                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" title="تغيير الحالة">
-                                                    <i class="fas fa-edit"></i>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle status-dd" data-bs-toggle="dropdown" title="تغيير الحالة" data-bs-placement="top">
+                                                    <i class="fas fa-edit" style="font-size:1.25rem;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;"></i>
                                                 </button>
-                                                <form method="post" class="dropdown-menu" onsubmit="return confirm('تأكيد تغيير الحالة؟');">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="order_id" value="{{ order.id }}">
-                                                    <input type="hidden" name="action" value="update_status">
+                                                <div class="dropdown-menu">
                                                     {% for st in allowed_statuses %}
                                                         {% if order.status != st %}
-                                                        <button type="submit" name="status" value="{{ st }}" class="dropdown-item {% if st == 'canceled' %}text-danger{% endif %}">
+                                                        <button type="button" class="dropdown-item {% if st == 'canceled' %}text-danger{% endif %} status-item" data-order-id="{{ order.id }}" data-status="{{ st }}">
                                                             {% if st == 'pending' %}<i class="fas fa-clock me-1"></i> قيد الانتظار{% elif st == 'accepted' %}<i class="fas fa-check me-1"></i> تم القبول{% elif st == 'packed' %}<i class="fas fa-box me-1"></i> تم التعبئة{% elif st == 'delivered' %}<i class="fas fa-check-circle me-1"></i> تم التسليم{% elif st == 'canceled' %}<i class="fas fa-times-circle me-1"></i> ملغي{% endif %}
                                                         </button>
                                                         {% endif %}
                                                     {% endfor %}
-                                                </form>
+                                                </div>
                                             </div>
 
-                                            <form method="post" class="d-inline" onsubmit="return confirm('إرسال الطلب لشركة التوصيل؟');">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="order_id" value="{{ order.id }}">
-                                                <input type="hidden" name="action" value="send_to_delivery">
-                                                <input type="text" name="tracking_number" class="form-control form-control-sm d-inline" placeholder="رقم التتبع" style="width: 160px;">
-                                                <button class="btn btn-outline-success btn-sm" type="submit" title="إرسال لشركة التوصيل">
-                                                    <i class="fas fa-shipping-fast"></i>
-                                                </button>
-                                            </form>
+                                            <input type="text" class="form-control form-control-sm track-input" value="{{ order.tracking_number|default:'' }}" placeholder="رقم التتبع" style="width:160px;" data-order-id="{{ order.id }}">
+                                            <button type="button" class="btn btn-outline-primary btn-sm save-track" data-order-id="{{ order.id }}" title="حفظ رقم التتبع" data-bs-toggle="tooltip">
+                                                <i class="fas fa-save" style="font-size:1.25rem;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;"></i>
+                                            </button>
+
+                                            <button type="button" class="btn btn-outline-success btn-sm delivery-btn" data-order-id="{{ order.id }}" title="إرسال لشركة التوصيل" data-bs-toggle="tooltip">
+                                                <i class="fas fa-shipping-fast" style="font-size:1.25rem;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -232,5 +233,61 @@
 .dropdown-item:hover {
     background-color: #f8f9fa;
 }
+</style>
+
+<div class="modal fade" id="deliveryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">إرسال لشركة التوصيل</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">هاتف شركة التوصيل</label>
+          <input type="tel" class="form-control" id="delivery_phone_input" placeholder="07xxxxxxxxx">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">رقم التتبع</label>
+          <input type="text" class="form-control" id="tracking_number_input" placeholder="رقم التتبع" required>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="include_address_input">
+          <label class="form-check-label" for="include_address_input">إضافة العنوان في الرسالة</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-success" id="confirm_delivery_btn">تأكيد وإرسال</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="snackbar" class="position-fixed bottom-0 end-0 p-3" style="z-index:1080; display:none;">
+  <div class="toast align-items-center text-white bg-success border-0 show">
+    <div class="d-flex">
+      <div class="toast-body" id="snackbar-text">تم الحفظ</div>
+      <button type="button" class="btn-close btn-close-white ms-2 m-auto" onclick="document.getElementById('snackbar').style.display='none'"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  try { var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')); tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); }); } catch (e) {}
+  var pending = false;
+  function showSnack(text, error) { var el = document.getElementById('snackbar'); var body = document.getElementById('snackbar-text'); body.textContent = text; var toast = el.querySelector('.toast'); toast.classList.remove('bg-success','bg-danger'); toast.classList.add(error ? 'bg-danger' : 'bg-success'); el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 2500); }
+  function getCookie(name){ var v = document.cookie.split(';').map(function(s){return s.trim();}).filter(function(s){return s.indexOf(name+'=')===0;}); if(!v.length) return ''; return decodeURIComponent(v[0].split('=')[1]); }
+  var csrftoken = getCookie('csrftoken');
+  document.querySelectorAll('.status-item').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); if(pending) return; pending = true; var oid = this.getAttribute('data-order-id'); var st = this.getAttribute('data-status'); fetch('{% url "super_owner_update_order_status_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(oid)+'&status='+encodeURIComponent(st) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ showSnack('تم الحفظ', false); } else { showSnack('فشل الحفظ', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }); });
+  document.querySelectorAll('.save-track').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); if(pending) return; var oid = this.getAttribute('data-order-id'); var inp = document.querySelector('.track-input[data-order-id="'+oid+'"]'); var val = inp ? inp.value.trim() : ''; pending = true; fetch('{% url "super_owner_update_delivery_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(oid)+'&tracking_number='+encodeURIComponent(val) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ showSnack('تم الحفظ', false); } else { showSnack('فشل الحفظ', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }); });
+  var deliveryModal = document.getElementById('deliveryModal'); var dm; try { dm = new bootstrap.Modal(deliveryModal); } catch(e) {}
+  var currentOrderId = null;
+  document.querySelectorAll('.delivery-btn').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); currentOrderId = this.getAttribute('data-order-id'); var inp = document.querySelector('.track-input[data-order-id="'+currentOrderId+'"]'); document.getElementById('tracking_number_input').value = inp ? inp.value.trim() : ''; document.getElementById('delivery_phone_input').value = ''; document.getElementById('include_address_input').checked = false; if(dm) dm.show(); }); });
+  document.getElementById('confirm_delivery_btn').addEventListener('click', function(){ if(pending) return; var tn = document.getElementById('tracking_number_input').value.trim(); var dp = document.getElementById('delivery_phone_input').value.trim(); var inc = document.getElementById('include_address_input').checked ? '1' : '0'; if(!tn){ showSnack('رقم التتبع مطلوب', true); return; } pending = true; fetch('{% url "super_owner_update_delivery_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(currentOrderId)+'&tracking_number='+encodeURIComponent(tn)+'&delivery_phone='+encodeURIComponent(dp)+'&include_address='+encodeURIComponent(inc) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ showSnack('تم الحفظ', false); try { dm.hide(); } catch(e) {} if(j.wa_url){ window.open(j.wa_url, '_blank'); } } else { showSnack('فشل الحفظ', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); });
+  document.querySelectorAll('.wa-owner-btn').forEach(function(a){ a.addEventListener('click', function(ev){ ev.stopPropagation(); }); });
+});
+</script>
 </style>
 {% endblock %}
