@@ -30,15 +30,28 @@
                             </div>
                         {% endfor %}
                     {% endif %}
-                    <form class="row g-3 mb-3" method="get">
-                        <div class="col-md-6">
-                            <input type="text" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="بحث شامل: رقم الطلب، اسم العميل، رقم الجوال">
+                    <div class="row g-3 mb-3 align-items-center">
+                        <div class="col-lg-8">
+                            <form class="row g-3" method="get">
+                                <input type="hidden" name="group" value="{{ group|default:'active' }}">
+                                <div class="col-md-6">
+                                    <input type="text" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="بحث شامل: رقم الطلب، اسم العميل، رقم الجوال">
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-primary">بحث</button>
+                                    <a href="?group={{ group|default:'active' }}" class="btn btn-outline-secondary">إعادة تعيين</a>
+                                </div>
+                            </form>
                         </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary">بحث</button>
-                            <a href="?" class="btn btn-outline-secondary">إعادة تعيين</a>
+                        <div class="col-lg-4">
+                            <div class="btn-group" role="group" aria-label="فلاتر الحالة">
+                                <a href="?group=active{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline-primary {% if group == 'active' %}active{% endif %}">نشطة</a>
+                                <a href="?group=completed{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline-success {% if group == 'completed' %}active{% endif %}">مكتملة</a>
+                                <a href="?group=canceled{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline-danger {% if group == 'canceled' %}active{% endif %}">ملغاة</a>
+                                <a href="?group=all{% if q %}&q={{ q }}{% endif %}" class="btn btn-outline-secondary {% if group == 'all' %}active{% endif %}">الكل</a>
+                            </div>
                         </div>
-                    </form>
+                    </div>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
@@ -206,6 +219,8 @@
 
 .dropdown-menu {
     min-width: 200px;
+    max-height: 220px;
+    overflow-y: auto;
 }
 
 .dropdown-item {

@@ -4119,6 +4119,7 @@ def super_owner_orders(request):
     
     store_filter = (request.GET.get('store') or '').strip()
     q = (request.GET.get('q') or '').strip()
+    group = (request.GET.get('group') or 'active').strip()
 
     status_order = Case(
         When(status='pending', then=0),
@@ -4139,6 +4140,12 @@ def super_owner_orders(request):
             orders = orders.filter(Q(id=q_id) | Q(user__first_name__icontains=q) | Q(user__last_name__icontains=q) | Q(user__username__icontains=q) | Q(user__phone__icontains=q))
         except ValueError:
             orders = orders.filter(Q(user__first_name__icontains=q) | Q(user__last_name__icontains=q) | Q(user__username__icontains=q) | Q(user__phone__icontains=q) | Q(id__icontains=q))
+    if group == 'active':
+        orders = orders.filter(status__in=['pending','accepted','packed'])
+    elif group == 'completed':
+        orders = orders.filter(status='delivered')
+    elif group == 'canceled':
+        orders = orders.filter(status='canceled')
     
     if request.method == 'POST':
         return redirect('super_owner_orders')
@@ -4198,6 +4205,13 @@ def super_owner_orders(request):
         'orders_info': orders_info,
         'store_filter': int(store_filter) if store_filter.isdigit() else None,
         'q': q,
+        'group': group,
+        'groups': {
+            'active': 'نشطة',
+            'completed': 'مكتملة',
+            'canceled': 'ملغاة',
+            'all': 'الكل'
+        },
         'allowed_statuses': ['pending','accepted','packed','delivered','canceled'],
         'status_labels': {
             'pending': 'قيد الانتظار',
