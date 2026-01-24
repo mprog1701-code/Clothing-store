@@ -4433,14 +4433,16 @@ def super_owner_owners(request):
                     messages.error(request, 'رقم هاتف عراقي غير صالح. أمثلة: 07xxxxxxxxx أو +9647xxxxxxxx')
                     return redirect('super_owner_owners')
                 owner = get_object_or_404(User, id=owner_id)
+                # تحقق مسبق من وجود الرقم عند أي مستخدم آخر (عميل أو مالك)
+                conflict = User.objects.filter(phone=phone).exclude(id=owner_id).first()
+                if conflict:
+                    role_label = conflict.get_role_display() if hasattr(conflict, 'get_role_display') else conflict.role
+                    messages.error(request, f'رقم الهاتف مستخدم بالفعل لدى المستخدم: {conflict.username} ({role_label})')
+                    return redirect('super_owner_owners')
                 before = owner.phone or ''
                 owner.phone = phone
                 try:
-                    from django.db import IntegrityError
                     owner.save()
-                except IntegrityError:
-                    messages.error(request, 'رقم الهاتف مستخدم بالفعل لحساب آخر')
-                    return redirect('super_owner_owners')
                 except Exception:
                     messages.error(request, 'تعذر حفظ الرقم، تحقق من الإدخال')
                     return redirect('super_owner_owners')
