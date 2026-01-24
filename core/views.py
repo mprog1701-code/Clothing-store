@@ -4419,15 +4419,31 @@ def super_owner_owners(request):
         try:
             if action == 'update_phone':
                 owner_id = int(request.POST.get('owner_id'))
-                phone = (request.POST.get('phone') or '').strip()
+                phone_raw = (request.POST.get('phone') or '').strip()
                 import re
-                if not re.fullmatch(r'07\d{9}', phone):
-                    messages.error(request, 'رقم هاتف غير صالح. استخدم الصيغة: 07xxxxxxxxx')
+                p = phone_raw.replace(' ', '')
+                if p.startswith('+'):
+                    p = p[1:]
+                phone = None
+                if re.fullmatch(r'07\d{9}', p):
+                    phone = p
+                elif re.fullmatch(r'9647\d{9}', p):
+                    phone = '0' + p[3:]
+                else:
+                    messages.error(request, 'رقم هاتف عراقي غير صالح. أمثلة: 07xxxxxxxxx أو +9647xxxxxxxx')
                     return redirect('super_owner_owners')
                 owner = get_object_or_404(User, id=owner_id)
                 before = owner.phone or ''
                 owner.phone = phone
-                owner.save()
+                try:
+                    from django.db import IntegrityError
+                    owner.save()
+                except IntegrityError:
+                    messages.error(request, 'رقم الهاتف مستخدم بالفعل لحساب آخر')
+                    return redirect('super_owner_owners')
+                except Exception:
+                    messages.error(request, 'تعذر حفظ الرقم، تحقق من الإدخال')
+                    return redirect('super_owner_owners')
                 try:
                     from .models import AdminAuditLog
                     import json
