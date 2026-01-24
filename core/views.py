@@ -4120,6 +4120,10 @@ def super_owner_orders(request):
     store_filter = (request.GET.get('store') or '').strip()
     q = (request.GET.get('q') or '').strip()
     group = (request.GET.get('group') or 'active').strip()
+    try:
+        recent_hours = int((request.GET.get('hours') or '48').strip())
+    except Exception:
+        recent_hours = 48
 
     status_order = Case(
         When(status='pending', then=0),
@@ -4146,6 +4150,12 @@ def super_owner_orders(request):
         orders = orders.filter(status='delivered')
     elif group == 'canceled':
         orders = orders.filter(status='canceled')
+    elif group == 'recent':
+        try:
+            since = timezone.now() - timedelta(hours=recent_hours)
+            orders = orders.filter(created_at__gte=since)
+        except Exception:
+            pass
     
     if request.method == 'POST':
         return redirect('super_owner_orders')
@@ -4206,10 +4216,12 @@ def super_owner_orders(request):
         'store_filter': int(store_filter) if store_filter.isdigit() else None,
         'q': q,
         'group': group,
+        'recent_hours': recent_hours,
         'groups': {
             'active': 'نشطة',
             'completed': 'مكتملة',
             'canceled': 'ملغاة',
+            'recent': 'حديثة',
             'all': 'الكل'
         },
         'allowed_statuses': ['pending','accepted','packed','delivered','canceled'],
@@ -4222,6 +4234,40 @@ def super_owner_orders(request):
         },
     }
     return render(request, 'dashboard/super_owner/orders.html', context)
+
+@login_required
+def super_owner_delete_order_json(request):
+    if request.user.username != 'super_owner':
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'invalid_method'}, status=405)
+    try:
+        order_id = int(request.POST.get('order_id') or '0')
+        order = Order.objects.get(id=order_id)
+        before = {
+            'id': order.id,
+            'status': order.status,
+            'user': order.user.username,
+            'phone': order.user.phone,
+            'total': float(order.total_amount),
+        }
+        from .models import AdminAuditLog
+        import json
+        AdminAuditLog.objects.create(
+            admin_user=request.user,
+            action='delete_order',
+            model='Order',
+            object_id=str(order.id),
+            before=json.dumps(before, ensure_ascii=False),
+            after=json.dumps({}, ensure_ascii=False),
+            ip=request.META.get('REMOTE_ADDR') or ''
+        )
+        order.delete()
+        return JsonResponse({'ok': True, 'order_id': order_id})
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'not_found'}, status=404)
+    except Exception:
+        return JsonResponse({'error': 'server_error'}, status=500)
 
 @login_required
 def super_owner_update_order_status_json(request):
