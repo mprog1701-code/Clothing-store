@@ -97,32 +97,19 @@
                                         <small class="text-muted">شحن: {{ order.delivery_fee|iqd }}</small>
                                     </td>
                                     <td>
-                                        {% if order.status == 'pending' %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="fas fa-clock me-1"></i>
-                                                قيد الانتظار
-                                            </span>
-                                        {% elif order.status == 'accepted' %}
-                                            <span class="badge bg-info">
-                                                <i class="fas fa-check me-1"></i>
-                                                تم القبول
-                                            </span>
-                                        {% elif order.status == 'packed' %}
-                                            <span class="badge bg-primary">
-                                                <i class="fas fa-box me-1"></i>
-                                                تم التعبئة
-                                            </span>
-                                        {% elif order.status == 'delivered' %}
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check-circle me-1"></i>
-                                                تم التسليم
-                                            </span>
-                                        {% elif order.status == 'canceled' %}
-                                            <span class="badge bg-danger">
-                                                <i class="fas fa-times-circle me-1"></i>
-                                                ملغي
-                                            </span>
-                                        {% endif %}
+                                        <span class="order-status" data-order-id="{{ order.id }}">
+                                            {% if order.status == 'pending' %}
+                                                <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> قيد الانتظار</span>
+                                            {% elif order.status == 'accepted' %}
+                                                <span class="badge bg-info"><i class="fas fa-check me-1"></i> تم القبول</span>
+                                            {% elif order.status == 'packed' %}
+                                                <span class="badge bg-primary"><i class="fas fa-box me-1"></i> تم التعبئة</span>
+                                            {% elif order.status == 'delivered' %}
+                                                <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> تم التسليم</span>
+                                            {% elif order.status == 'canceled' %}
+                                                <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i> ملغي</span>
+                                            {% endif %}
+                                        </span>
                                     </td>
                                     <td>
                                         {% if order.payment_method == 'cod' %}
@@ -280,7 +267,15 @@ document.addEventListener('DOMContentLoaded', function() {
   function showSnack(text, error) { var el = document.getElementById('snackbar'); var body = document.getElementById('snackbar-text'); body.textContent = text; var toast = el.querySelector('.toast'); toast.classList.remove('bg-success','bg-danger'); toast.classList.add(error ? 'bg-danger' : 'bg-success'); el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 2500); }
   function getCookie(name){ var v = document.cookie.split(';').map(function(s){return s.trim();}).filter(function(s){return s.indexOf(name+'=')===0;}); if(!v.length) return ''; return decodeURIComponent(v[0].split('=')[1]); }
   var csrftoken = getCookie('csrftoken');
-  document.querySelectorAll('.status-item').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); if(pending) return; pending = true; var oid = this.getAttribute('data-order-id'); var st = this.getAttribute('data-status'); fetch('{% url "super_owner_update_order_status_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(oid)+'&status='+encodeURIComponent(st) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ showSnack('تم الحفظ', false); } else { showSnack('فشل الحفظ', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }); });
+  var STATUS_UI = {
+    'pending': { cls: 'badge bg-warning text-dark', html: '<i class="fas fa-clock me-1"></i> قيد الانتظار' },
+    'accepted': { cls: 'badge bg-info', html: '<i class="fas fa-check me-1"></i> تم القبول' },
+    'packed': { cls: 'badge bg-primary', html: '<i class="fas fa-box me-1"></i> تم التعبئة' },
+    'delivered': { cls: 'badge bg-success', html: '<i class="fas fa-check-circle me-1"></i> تم التسليم' },
+    'canceled': { cls: 'badge bg-danger', html: '<i class="fas fa-times-circle me-1"></i> ملغي' }
+  };
+  function updateOrderStatusBadge(orderId, status){ var container = document.querySelector('.order-status[data-order-id="'+orderId+'"]'); if(!container) return; var ui = STATUS_UI[status] || { cls: 'badge bg-secondary', html: status }; container.innerHTML = '<span class="'+ui.cls+'">'+ui.html+'</span>'; }
+  document.querySelectorAll('.status-item').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); if(pending) return; pending = true; var oid = this.getAttribute('data-order-id'); var st = this.getAttribute('data-status'); fetch('{% url "super_owner_update_order_status_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(oid)+'&status='+encodeURIComponent(st) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ updateOrderStatusBadge(oid, j.status); showSnack('تم الحفظ', false); } else { showSnack('فشل الحفظ', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }); });
   document.querySelectorAll('.save-track').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); if(pending) return; var oid = this.getAttribute('data-order-id'); var inp = document.querySelector('.track-input[data-order-id="'+oid+'"]'); var val = inp ? inp.value.trim() : ''; pending = true; fetch('{% url "super_owner_update_delivery_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(oid)+'&tracking_number='+encodeURIComponent(val) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ showSnack('تم الحفظ', false); } else { showSnack('فشل الحفظ', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }); });
   var deliveryModal = document.getElementById('deliveryModal'); var dm; try { dm = new bootstrap.Modal(deliveryModal); } catch(e) {}
   var currentOrderId = null;
