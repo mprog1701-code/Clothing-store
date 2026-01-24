@@ -4161,7 +4161,9 @@ def super_owner_orders(request):
         return redirect('super_owner_orders')
     
     import urllib.parse
+    from django.urls import reverse
     orders_info = []
+    site_url = request.build_absolute_uri('/')
     for o in orders:
         lines = []
         for it in o.items.all():
@@ -4171,7 +4173,7 @@ def super_owner_orders(request):
                 color = it.variant.color or ''
                 size = it.variant.size or ''
             price = it.price
-            lines.append(f"- {it.product.name} | {color} | {size} × {it.quantity} | {int(price)} د.ع")
+            lines.append(f"• {it.product.name} | {color} | {size} | الكمية: {it.quantity} | السعر: {int(price)} د.ع")
         total_iqd_val = int(o.total_amount)
         total_iqd = f"{total_iqd_val:,} د.ع"
         pm = 'الدفع عند الاستلام' if o.payment_method == 'cod' else 'بطاقة ائتمان'
@@ -4184,14 +4186,22 @@ def super_owner_orders(request):
         }.get(o.status, o.status)
         cust_name = o.user.get_full_name() or o.user.username
         cust_phone = o.user.phone or ''
+        store_link = ''
+        try:
+            store_link = request.build_absolute_uri(reverse('store_detail', args=[o.store.id]))
+        except Exception:
+            store_link = site_url
         text = (
-            f"طلب رقم #{o.id}\n"
-            f"العميل: {cust_name} - {cust_phone}\n"
-            + "\n".join(lines)
-            + f"\nالإجمالي: {total_iqd}\n"
-            + f"طريقة الدفع: {pm}\n"
-            + f"الحالة: {st_lbl}\n"
-            + f"التاريخ: {o.created_at.strftime('%Y/%m/%d %H:%M')}"
+            f"طلب للمالك — إشعار\n"
+            f"رقم الطلب: #{o.id}\n"
+            f"الموقع: {site_url}\n"
+            f"المتجر: {o.store.name}\n"
+            f"رابط المتجر: {store_link}\n"
+            f"طريقة الدفع: {pm}\n"
+            f"الحالة الحالية: {st_lbl}\n"
+            f"تاريخ الطلب: {o.created_at.strftime('%Y/%m/%d %H:%M')}\n"
+            f"العميل: {cust_name} — {cust_phone}\n"
+            f"المنتجات:\n" + "\n".join(lines) + f"\nالإجمالي: {total_iqd}"
         )
         wa_text = urllib.parse.quote(text)
         phone = ''
@@ -4204,11 +4214,15 @@ def super_owner_orders(request):
                 phone = o.store.owner.phone or ''
         except Exception:
             phone = o.store_phone or ''
-        p = (phone or '').strip()
+        p = ''.join([ch for ch in (phone or '') if ch.isdigit()])
+        if p.startswith('00964'):
+            p = p[2:]
         if p.startswith('07') and len(p) == 11:
             p = '964' + p[1:]
-        if p.startswith('+964'):
-            p = p[1:]
+        if p.startswith('9647') and len(p) == 13:
+            pass
+        elif p.startswith('9647'):
+            p = ''
         orders_info.append({'order': o, 'wa_text': wa_text, 'wa_number': p})
 
     context = {
@@ -4355,6 +4369,13 @@ def super_owner_update_delivery_json(request):
         except Exception:
             pass
         import urllib.parse
+        from django.urls import reverse
+        site_url = request.build_absolute_uri('/')
+        store_link = ''
+        try:
+            store_link = request.build_absolute_uri(reverse('store_detail', args=[order.store.id]))
+        except Exception:
+            store_link = site_url
         lines = []
         for it in order.items.all():
             color = ''
@@ -4363,14 +4384,19 @@ def super_owner_update_delivery_json(request):
                 color = it.variant.color or ''
                 size = it.variant.size or ''
             price = it.price
-            lines.append(f"- {it.product.name} | {color} | {size} × {it.quantity} | {int(price)} د.ع")
+            lines.append(f"• {it.product.name} | {color} | {size} | الكمية: {it.quantity} | السعر: {int(price)} د.ع")
         total_iqd = f"{int(order.total_amount):,} د.ع"
+        pm = 'الدفع عند الاستلام' if order.payment_method == 'cod' else 'بطاقة ائتمان'
         msg = (
             "طلب توصيل جديد\n"
-            + f"طلب رقم #{order.id}\n"
+            + f"رقم الطلب: #{order.id}\n"
+            + f"الموقع: {site_url}\n"
+            + f"المتجر: {order.store.name}\n"
+            + f"رابط المتجر: {store_link}\n"
             + f"رقم تتبع: {order.tracking_number}\n"
+            + f"طريقة الدفع: {pm}\n"
             + f"هاتف العميل: {order.user.phone}\n"
-            + "\n".join(lines)
+            + "المنتجات:\n" + "\n".join(lines)
             + f"\nالإجمالي: {total_iqd}"
         )
         if include_address and order.address:
