@@ -4191,12 +4191,32 @@ def super_owner_orders(request):
             store_link = request.build_absolute_uri(reverse('store_detail', args=[o.store.id]))
         except Exception:
             store_link = site_url
+        order_link = ''
+        try:
+            order_link = request.build_absolute_uri(reverse('order_detail', args=[o.id]))
+        except Exception:
+            order_link = site_url
+        store_city = ''
+        store_category = ''
+        store_delivery_time = ''
+        store_delivery_fee = ''
+        try:
+            store_city = o.store.city or ''
+            store_category = o.store.get_category_display() if hasattr(o.store, 'get_category_display') else o.store.category
+            store_delivery_time = o.store.delivery_time or ''
+            store_delivery_fee = f"{int(o.store.delivery_fee):,} د.ع"
+        except Exception:
+            pass
         text = (
             f"طلب للمالك — إشعار\n"
             f"رقم الطلب: #{o.id}\n"
-            f"الموقع: {site_url}\n"
+            f"الموقع: {order_link}\n"
             f"المتجر: {o.store.name}\n"
             f"رابط المتجر: {store_link}\n"
+            f"مدينة المتجر: {store_city}\n"
+            f"تصنيف المتجر: {store_category}\n"
+            f"وقت التوصيل: {store_delivery_time}\n"
+            f"رسوم التوصيل: {store_delivery_fee}\n"
             f"طريقة الدفع: {pm}\n"
             f"الحالة الحالية: {st_lbl}\n"
             f"تاريخ الطلب: {o.created_at.strftime('%Y/%m/%d %H:%M')}\n"
@@ -4353,6 +4373,9 @@ def super_owner_update_delivery_json(request):
         order.tracking_number = tracking_number
         if delivery_phone:
             order.delivery_phone = delivery_phone
+        if not order.tracking_token:
+            import secrets
+            order.tracking_token = secrets.token_urlsafe(16)
         order.save()
         try:
             from .models import AdminAuditLog
@@ -4376,6 +4399,22 @@ def super_owner_update_delivery_json(request):
             store_link = request.build_absolute_uri(reverse('store_detail', args=[order.store.id]))
         except Exception:
             store_link = site_url
+        order_link = ''
+        try:
+            order_link = request.build_absolute_uri(reverse('order_detail', args=[order.id]))
+        except Exception:
+            order_link = site_url
+        store_city = ''
+        store_category = ''
+        store_delivery_time = ''
+        store_delivery_fee = ''
+        try:
+            store_city = order.store.city or ''
+            store_category = order.store.get_category_display() if hasattr(order.store, 'get_category_display') else order.store.category
+            store_delivery_time = order.store.delivery_time or ''
+            store_delivery_fee = f"{int(order.store.delivery_fee):,} د.ع"
+        except Exception:
+            pass
         lines = []
         for it in order.items.all():
             color = ''
@@ -4390,9 +4429,13 @@ def super_owner_update_delivery_json(request):
         msg = (
             "طلب توصيل جديد\n"
             + f"رقم الطلب: #{order.id}\n"
-            + f"الموقع: {site_url}\n"
+            + f"الموقع: {order_link}\n"
             + f"المتجر: {order.store.name}\n"
             + f"رابط المتجر: {store_link}\n"
+            + f"مدينة المتجر: {store_city}\n"
+            + f"تصنيف المتجر: {store_category}\n"
+            + f"وقت التوصيل: {store_delivery_time}\n"
+            + f"رسوم التوصيل: {store_delivery_fee}\n"
             + f"رقم تتبع: {order.tracking_number}\n"
             + f"طريقة الدفع: {pm}\n"
             + f"هاتف العميل: {order.user.phone}\n"
@@ -4405,11 +4448,17 @@ def super_owner_update_delivery_json(request):
                 msg += f"\n{addr}"
             except Exception:
                 pass
+        track_url = ''
+        try:
+            track_url = request.build_absolute_uri(reverse('order_track', args=[order.id, order.tracking_token]))
+        except Exception:
+            track_url = site_url
+        msg += f"\nرابط تتبع الطلب: {track_url}"
         wa_text = urllib.parse.quote(msg)
         wa_url = ''
         if order.delivery_phone:
             wa_url = f"https://wa.me/{order.delivery_phone}?text={wa_text}"
-        return JsonResponse({'ok': True, 'order_id': order.id, 'tracking_number': order.tracking_number, 'delivery_phone': order.delivery_phone, 'wa_url': wa_url})
+        return JsonResponse({'ok': True, 'order_id': order.id, 'tracking_number': order.tracking_number, 'delivery_phone': order.delivery_phone, 'wa_url': wa_url, 'track_url': track_url})
     except Order.DoesNotExist:
         return JsonResponse({'error': 'not_found'}, status=404)
     except Exception:
@@ -4486,6 +4535,7 @@ from django.core.cache import cache
 from django.contrib.auth import logout
 from .permissions import role_required, admin_required
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 
 
 @login_required
@@ -4635,6 +4685,46 @@ def admin_portal_dashboard(request):
         'stores_total': stores_total,
         'products_total': products_total,
     })
+
+
+def order_track(request, order_id, token):
+    order = get_object_or_404(Order, id=order_id)
+    if not token or token != (order.tracking_token or ''):
+        return render(request, 'orders/tracking.html', { 'order': None })
+    return render(request, 'orders/tracking.html', { 'order': order, 'token': token })
+
+
+@csrf_exempt
+def order_track_update_json(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'invalid_method'}, status=405)
+    try:
+        order_id = int(request.POST.get('order_id') or '0')
+        token = (request.POST.get('token') or '').strip()
+        new_status = (request.POST.get('status') or '').strip()
+        allowed = ['on_the_way', 'delivered', 'canceled']
+        if new_status not in allowed:
+            return JsonResponse({'error': 'invalid_status'}, status=400)
+        order = Order.objects.get(id=order_id)
+        if not token or token != (order.tracking_token or ''):
+            return JsonResponse({'error': 'unauthorized'}, status=403)
+        order.status = new_status
+        order.delivery_status = f"by_driver:{new_status}"
+        order.save()
+        labels = {
+            'pending': 'قيد الانتظار',
+            'accepted': 'تم القبول',
+            'packed': 'تم التعبئة',
+            'preparing': 'قيد التجهيز',
+            'on_the_way': 'في الطريق',
+            'delivered': 'تم التسليم',
+            'canceled': 'ملغي',
+        }
+        return JsonResponse({'ok': True, 'order_id': order.id, 'status': order.status, 'label': labels.get(order.status, order.status)})
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'not_found'}, status=404)
+    except Exception:
+        return JsonResponse({'error': 'server_error'}, status=500)
 
 
 @role_required({'SUPER_ADMIN','OWNER','SUPPORT'})

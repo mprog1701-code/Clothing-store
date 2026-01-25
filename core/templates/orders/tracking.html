@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  {% if not order %}
+  <div class="alert alert-danger">الرابط غير صالح أو انتهت صلاحية الوصول</div>
+  {% else %}
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card mb-3">
+        <div class="card-header">تتبع الطلب</div>
+        <div class="card-body">
+          <p><strong>رقم الطلب:</strong> #{{ order.id }}</p>
+          <p><strong>الحالة الحالية:</strong> 
+            <span class="badge 
+              {% if order.status == 'pending' %}bg-warning
+              {% elif order.status == 'accepted' %}bg-info
+              {% elif order.status == 'packed' %}bg-primary
+              {% elif order.status == 'preparing' %}bg-secondary
+              {% elif order.status == 'on_the_way' %}bg-secondary
+              {% elif order.status == 'delivered' %}bg-success
+              {% elif order.status == 'canceled' %}bg-danger
+              {% endif %}">{{ order.get_status_display }}</span>
+          </p>
+          {% if order.tracking_number %}
+          <p><strong>رقم التتبع:</strong> {{ order.tracking_number }}</p>
+          {% endif %}
+          <p><strong>طريقة الدفع:</strong> {{ order.get_payment_method_display }}</p>
+          <p><strong>المتجر:</strong> <a href="{% url 'store_detail' order.store.id %}" target="_blank">{{ order.store.name }}</a></p>
+          <p><strong>الإجمالي:</strong> {{ order.total_amount|iqd }}</p>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header">المنتجات</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>المنتج</th>
+                  <th>اللون</th>
+                  <th>المقاس</th>
+                  <th>الكمية</th>
+                  <th>السعر</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for it in order.items.all %}
+                <tr>
+                  <td>{{ it.product.name }}</td>
+                  <td>{% if it.variant %}{{ it.variant.color }}{% endif %}</td>
+                  <td>{% if it.variant %}{{ it.variant.size }}{% endif %}</td>
+                  <td>{{ it.quantity }}</td>
+                  <td>{{ it.price|iqd }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">تحديث الحالة</div>
+        <div class="card-body">
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-secondary" data-status="on_the_way">في الطريق</button>
+            <button class="btn btn-outline-success" data-status="delivered">تم التسليم</button>
+            <button class="btn btn-outline-danger" data-status="canceled">إلغاء</button>
+          </div>
+          <div id="track_msg" class="mt-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function(){
+    var token = '{{ token|default:"" }}';
+    var orderId = '{{ order.id }}';
+    var msg = document.getElementById('track_msg');
+    function show(t, ok){
+      msg.textContent = t;
+      msg.className = ok ? 'text-success' : 'text-danger';
+    }
+    document.querySelectorAll('[data-status]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var st = this.getAttribute('data-status');
+        var body = 'order_id=' + encodeURIComponent(orderId) + '&token=' + encodeURIComponent(token) + '&status=' + encodeURIComponent(st);
+        fetch('{% url "order_track_update_json" %}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body
+        }).then(function(r){
+          if(!r.ok) throw r;
+          return r.json();
+        }).then(function(j){
+          if(j.ok){
+            show('تم التحديث: ' + (j.label || j.status), true);
+            location.reload();
+          } else {
+            show('فشل التحديث', false);
+          }
+        }).catch(function(){
+          show('خطأ بالخادم', false);
+        });
+      });
+    });
+  })();
+  </script>
+  {% endif %}
+</div>
+{% endblock %}
