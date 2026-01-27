@@ -1,83 +1,64 @@
 {% extends 'base.html' %}
-{% load math_filters %}
 {% block content %}
 <div class="container py-4" dir="rtl">
   {% if not order %}
-  <div class="alert alert-danger">الرابط غير صالح أو منتهي الصلاحية</div>
+    <div class="alert alert-danger">الرابط غير صالح أو منتهي الصلاحية</div>
   {% else %}
-  <div class="row g-3">
-    <div class="col-12 col-lg-6">
-      <div class="card h-100">
-        <div class="card-header bg-light">العميل</div>
-        <div class="card-body">
-          <p class="mb-2"><strong>الاسم:</strong> {{ order.user.get_full_name|default:order.user.username }}</p>
-          <p class="mb-2"><strong>الهاتف:</strong> <a href="tel:{{ order.user.phone }}">{{ order.user.phone }}</a></p>
-          <div class="d-flex flex-wrap gap-2">
-            {% if cust_wa_url %}<a class="btn btn-success btn-sm" target="_blank" href="{{ cust_wa_url }}">واتساب</a>{% endif %}
-            {% if maps_cust %}<a class="btn btn-outline-success btn-sm" target="_blank" href="{{ maps_cust }}">خرائط</a>{% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12 col-lg-6">
-      <div class="card h-100">
-        <div class="card-header bg-light">المتجر</div>
-        <div class="card-body">
-          <p class="mb-2"><strong>الاسم:</strong> {{ order.store.name }}</p>
-          <p class="mb-2"><strong>الهاتف:</strong> {% if order.store.owner_phone %}<a href="tel:{{ order.store.owner_phone }}">{{ order.store.owner_phone }}</a>{% elif order.store_phone %}<a href="tel:{{ order.store_phone }}">{{ order.store_phone }}</a>{% else %}—{% endif %}</p>
-          <div class="d-flex flex-wrap gap-2">
-            {% if store_wa_url %}<a class="btn btn-success btn-sm" target="_blank" href="{{ store_wa_url }}">واتساب</a>{% endif %}
-            {% if maps_store %}<a class="btn btn-outline-success btn-sm" target="_blank" href="{{ maps_store }}">خرائط</a>{% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header bg-light">الطلب</div>
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <div><strong>رقم الطلب:</strong> #{{ order.id }}</div>
             <div>
-              <strong>رقم الطلب:</strong> #{{ order.id }}
-            </div>
-            <div>
-              <span class="badge {% if order.status == 'pending' %}bg-warning text-dark{% elif order.status == 'accepted' %}bg-info{% elif order.status == 'packed' %}bg-primary{% elif order.status == 'preparing' or order.status == 'on_the_way' %}bg-secondary{% elif order.status == 'delivered' %}bg-success{% elif order.status == 'canceled' %}bg-danger{% endif %}">{{ order.get_status_display }}</span>
+              {% with st=order.status %}
+                {% if st == 'pending' %}
+                  <span class="badge bg-warning text-dark">قيد الانتظار</span>
+                {% elif st == 'preparing' %}
+                  <span class="badge bg-primary">تم التجهيز</span>
+                {% elif st == 'packed' %}
+                  <span class="badge bg-info">تم التسليم للموصل</span>
+                {% else %}
+                  <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                {% endif %}
+              {% endwith %}
             </div>
           </div>
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th>المنتج</th>
-                  <th>اللون</th>
-                  <th>المقاس</th>
-                  <th>الكمية</th>
-                  <th>السعر</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for it in order.items.all %}
-                <tr>
-                  <td>{{ it.product.name }}</td>
-                  <td>{% if it.variant %}{{ it.variant.color }}{% endif %}</td>
-                  <td>{% if it.variant %}{{ it.variant.size }}{% endif %}</td>
-                  <td>{{ it.quantity }}</td>
-                  <td>{{ it.price|iqd }}</td>
-                </tr>
+          <div class="card-body">
+            <div class="mb-3">
+              <h6 class="mb-2">تفاصيل المنتجات</h6>
+              <div class="row g-3">
+                {% for it in items_info %}
+                  <div class="col-12">
+                    <div class="d-flex gap-3 align-items-center">
+                      <img src="{{ it.image_url|default:'https://placehold.co/120x120?text=Image' }}" alt="{{ it.product_name }}" width="100" height="100" style="object-fit:cover;border-radius:8px;" onerror="this.onerror=null;this.src='https://placehold.co/120x120?text=Image'">
+                      <div>
+                        <div class="fw-bold">{{ it.product_name }}</div>
+                        <div class="text-muted small">اللون: {{ it.color|default:'—' }} | المقاس: {{ it.size|default:'—' }}</div>
+                        <div class="small">الكمية: {{ it.quantity }} | السعر: {{ it.price_int|floatformat:0 }} د.ع</div>
+                      </div>
+                    </div>
+                  </div>
                 {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="d-flex justify-content-between pt-2 border-top">
-            <span class="fw-bold">الإجمالي:</span>
-            <span class="fw-bold">{{ order.total_amount|floatformat:0 }} د.ع</span>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <h6 class="mb-2">الموصل</h6>
+              <div class="row g-2">
+                <div class="col-md-4"><strong>الاسم:</strong> {{ courier_name|default:'—' }}</div>
+                <div class="col-md-4"><strong>الهاتف:</strong> {% if courier_phone %}<a href="tel:{{ courier_phone }}">{{ courier_phone }}</a>{% else %}—{% endif %}</div>
+                <div class="col-md-4"><strong>موعد الوصول:</strong> {{ eta_text|default:'—' }}</div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between pt-2 border-top">
+              <span class="fw-bold">الإجمالي:</span>
+              <span class="fw-bold">{{ order.total_amount|floatformat:0 }} د.ع</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   {% endif %}
 </div>
 {% endblock %}

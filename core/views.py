@@ -4808,38 +4808,69 @@ def share_store(request, token):
     if not oid or vtype != 'store':
         return render(request, 'share/store.html', { 'order': None })
     order = get_object_or_404(Order, id=oid)
-    page_url = request.build_absolute_uri(request.get_full_path())
-    cust_wa = _normalize_wa(order.user.phone)
-    store_phone = order.store.owner_phone or order.store_phone or (order.store.owner.phone if order.store.owner else '')
-    store_wa = _normalize_wa(store_phone)
-    total_iqd = f"{int(order.total_amount):,} د.ع"
-    msg = f"طلب #{order.id} — الإجمالي: {total_iqd}\n{page_url}"
-    wa_msg = urllib.parse.quote(msg)
-    cust_wa_url = f"https://wa.me/{cust_wa}?text={wa_msg}" if cust_wa else ''
-    store_wa_url = f"https://wa.me/{store_wa}?text={wa_msg}" if store_wa else ''
-    maps_cust = ''
+    # Build item details with image URLs
+    items_info = []
+    for it in order.items.all():
+        image_url = None
+        try:
+            if it.variant:
+                vimg = it.variant.images.first()
+                if vimg:
+                    image_url = vimg.get_image_url()
+        except Exception:
+            image_url = None
+        if not image_url and it.variant and it.variant.color_obj:
+            try:
+                cimg = it.product.images.filter(color=it.variant.color_obj).first()
+                if cimg:
+                    image_url = cimg.get_image_url()
+            except Exception:
+                image_url = None
+        if not image_url:
+            try:
+                mimg = it.product.main_image or it.product.images.first()
+                if mimg:
+                    image_url = mimg.get_image_url()
+            except Exception:
+                image_url = None
+        items_info.append({
+            'product_name': it.product.name,
+            'color': (it.variant.color if it.variant else ''),
+            'size': (getattr(it.variant, 'size_display', it.variant.size) if it.variant else ''),
+            'quantity': it.quantity,
+            'price_int': int(it.price),
+            'image_url': image_url,
+        })
+
+    # Courier info
+    courier_phone = (order.delivery_phone or '').strip()
+    courier_name = ''
+
+    # Arrival time estimation
+    eta_text = ''
     try:
-        if order.address and order.address.latitude and order.address.longitude:
-            maps_cust = f"https://www.google.com/maps?q={order.address.latitude},{order.address.longitude}"
-        elif order.address:
-            q = f"{order.address.city} {order.address.area} {order.address.street}"
-            maps_cust = f"https://www.google.com/maps/search/{urllib.parse.quote(q)}"
+        dv = int(order.store.delivery_time_value or 0)
+        du = (order.store.delivery_time_unit or '').strip()
+        if dv > 0 and du in ('hour','day'):
+            base = order.updated_at
+            from datetime import timedelta as _td
+            eta_dt = base + (_td(hours=dv) if du == 'hour' else _td(days=dv))
+            try:
+                eta_text = eta_dt.strftime('%Y/%m/%d %H:%M')
+            except Exception:
+                eta_text = eta_dt.isoformat(sep=' ', timespec='minutes')
+        else:
+            eta_text = order.store.delivery_time or ''
     except Exception:
-        maps_cust = ''
-    maps_store = ''
-    try:
-        q = f"{order.store.city} {order.store.address}"
-        maps_store = f"https://www.google.com/maps/search/{urllib.parse.quote(q)}"
-    except Exception:
-        maps_store = ''
+        eta_text = ''
+
     return render(request, 'share/store.html', {
         'order': order,
-        'page_url': page_url,
-        'cust_wa_url': cust_wa_url,
-        'store_wa_url': store_wa_url,
-        'maps_cust': maps_cust,
-        'maps_store': maps_store,
         'token': token,
+        'items_info': items_info,
+        'courier_phone': courier_phone,
+        'courier_name': courier_name,
+        'eta_text': eta_text,
     })
 
 
