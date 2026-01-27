@@ -11,7 +11,7 @@
             <div><strong>رقم الطلب:</strong> #{{ order.id }}</div>
             <div>
               {% with st=order.status %}
-                {% if st == 'pending' %}
+                {% if st == 'pending' or st == 'accepted' %}
                   <span class="badge bg-warning text-dark">قيد الانتظار</span>
                 {% elif st == 'preparing' %}
                   <span class="badge bg-primary">تم التجهيز</span>
@@ -26,30 +26,19 @@
           <div class="card-body">
             <div class="mb-3">
               <h6 class="mb-2">تفاصيل المنتجات</h6>
-              <div class="row g-3">
+              <div class="row g-4">
                 {% for it in items_info %}
-                  <div class="col-12">
-                    <div class="d-flex gap-3 align-items-center">
-                      <img src="{{ it.image_url|default:'https://placehold.co/120x120?text=Image' }}" alt="{{ it.product_name }}" width="100" height="100" style="object-fit:cover;border-radius:8px;" onerror="this.onerror=null;this.src='https://placehold.co/120x120?text=Image'">
-                      <div>
-                        <div class="fw-bold">{{ it.product_name }}</div>
-                        <div class="text-muted small">اللون: {{ it.color|default:'—' }} | المقاس: {{ it.size|default:'—' }}</div>
-                        <div class="small">الكمية: {{ it.quantity }} | السعر: {{ it.price_int|floatformat:0 }} د.ع</div>
-                      </div>
+                  <div class="col-12 col-md-6 col-lg-4">
+                    <div class="item-card">
+                      <img class="item-img" src="{{ it.image_url|default:'https://placehold.co/300x300?text=Image' }}" alt="{{ it.product_name }}" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
+                      <div class="item-line">{{ it.product_name }} — اللون: {{ it.color|default:'—' }} — الكمية: {{ it.quantity }}</div>
                     </div>
                   </div>
                 {% endfor %}
               </div>
             </div>
 
-            <div class="mb-3">
-              <h6 class="mb-2">الموصل</h6>
-              <div class="row g-2">
-                <div class="col-md-4"><strong>الاسم:</strong> {{ courier_name|default:'—' }}</div>
-                <div class="col-md-4"><strong>الهاتف:</strong> {% if courier_phone %}<a href="tel:{{ courier_phone }}">{{ courier_phone }}</a>{% else %}—{% endif %}</div>
-                <div class="col-md-4"><strong>موعد الوصول:</strong> {{ eta_text|default:'—' }}</div>
-              </div>
-            </div>
+            
 
             <div class="d-flex justify-content-between pt-2 border-top">
               <span class="fw-bold">الإجمالي:</span>
@@ -61,4 +50,9 @@
     </div>
   {% endif %}
 </div>
+<style>
+.item-card{display:flex;flex-direction:column;align-items:flex-start}
+.item-img{width:260px;height:260px;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,0.15)}
+.item-line{margin-top:10px;font-weight:700}
+</style>
 {% endblock %}
