@@ -12,6 +12,7 @@ import re
 import os
 import json
 import uuid
+import urllib.parse
 from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign
 from django.db.utils import OperationalError, ProgrammingError
 from .serializers import UserRegistrationSerializer
