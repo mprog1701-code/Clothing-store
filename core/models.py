@@ -49,6 +49,7 @@ class SiteSettings(models.Model):
     privacy_enabled = models.BooleanField(default=True)
     terms_enabled = models.BooleanField(default=True)
     contact_enabled = models.BooleanField(default=True)
+    delivery_company_phone = models.CharField(max_length=20, blank=True, default='')
     
     class Meta:
         verbose_name = 'إعدادات الموقع'

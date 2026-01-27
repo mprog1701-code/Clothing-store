@@ -4207,22 +4207,9 @@ def super_owner_orders(request):
             store_delivery_fee = f"{int(o.store.delivery_fee):,} د.ع"
         except Exception:
             pass
-        text = (
-            f"طلب للمالك — إشعار\n"
-            f"رقم الطلب: #{o.id}\n"
-            f"الموقع: {order_link}\n"
-            f"المتجر: {o.store.name}\n"
-            f"رابط المتجر: {store_link}\n"
-            f"مدينة المتجر: {store_city}\n"
-            f"تصنيف المتجر: {store_category}\n"
-            f"وقت التوصيل: {store_delivery_time}\n"
-            f"رسوم التوصيل: {store_delivery_fee}\n"
-            f"طريقة الدفع: {pm}\n"
-            f"الحالة الحالية: {st_lbl}\n"
-            f"تاريخ الطلب: {o.created_at.strftime('%Y/%m/%d %H:%M')}\n"
-            f"العميل: {cust_name} — {cust_phone}\n"
-            f"المنتجات:\n" + "\n".join(lines) + f"\nالإجمالي: {total_iqd}"
-        )
+        share_token_store = _share_sign(o.id, 'store')
+        share_url_store = request.build_absolute_uri(reverse('share_store', args=[share_token_store]))
+        text = f"طلب #{o.id} — الإجمالي: {total_iqd}\n{share_url_store}"
         wa_text = urllib.parse.quote(text)
         phone = ''
         try:
@@ -4426,39 +4413,14 @@ def super_owner_update_delivery_json(request):
             lines.append(f"• {it.product.name} | {color} | {size} | الكمية: {it.quantity} | السعر: {int(price)} د.ع")
         total_iqd = f"{int(order.total_amount):,} د.ع"
         pm = 'الدفع عند الاستلام' if order.payment_method == 'cod' else 'بطاقة ائتمان'
-        msg = (
-            "طلب توصيل جديد\n"
-            + f"رقم الطلب: #{order.id}\n"
-            + f"الموقع: {order_link}\n"
-            + f"المتجر: {order.store.name}\n"
-            + f"رابط المتجر: {store_link}\n"
-            + f"مدينة المتجر: {store_city}\n"
-            + f"تصنيف المتجر: {store_category}\n"
-            + f"وقت التوصيل: {store_delivery_time}\n"
-            + f"رسوم التوصيل: {store_delivery_fee}\n"
-            + f"رقم تتبع: {order.tracking_number}\n"
-            + f"طريقة الدفع: {pm}\n"
-            + f"هاتف العميل: {order.user.phone}\n"
-            + "المنتجات:\n" + "\n".join(lines)
-            + f"\nالإجمالي: {total_iqd}"
-        )
-        if include_address and order.address:
-            try:
-                addr = f"العنوان: {order.address.city} - {order.address.area} - {order.address.street}"
-                msg += f"\n{addr}"
-            except Exception:
-                pass
-        track_url = ''
-        try:
-            track_url = request.build_absolute_uri(reverse('order_track', args=[order.id, order.tracking_token]))
-        except Exception:
-            track_url = site_url
-        msg += f"\nرابط تتبع الطلب: {track_url}"
+        share_token = _share_sign(order.id, 'delivery')
+        share_url = request.build_absolute_uri(reverse('share_delivery', args=[share_token]))
+        msg = f"طلب #{order.id} — الإجمالي: {total_iqd}\n{share_url}"
         wa_text = urllib.parse.quote(msg)
         wa_url = ''
         if order.delivery_phone:
             wa_url = f"https://wa.me/{order.delivery_phone}?text={wa_text}"
-        return JsonResponse({'ok': True, 'order_id': order.id, 'tracking_number': order.tracking_number, 'delivery_phone': order.delivery_phone, 'wa_url': wa_url, 'track_url': track_url})
+        return JsonResponse({'ok': True, 'order_id': order.id, 'tracking_number': order.tracking_number, 'delivery_phone': order.delivery_phone, 'wa_url': wa_url, 'share_url': share_url})
     except Order.DoesNotExist:
         return JsonResponse({'error': 'not_found'}, status=404)
     except Exception:
@@ -4486,6 +4448,7 @@ def super_owner_settings(request):
         settings.featured_products_count = int(request.POST.get('featured_products_count', 8))
         settings.delivery_fee = float(request.POST.get('delivery_fee', 15.00))
         settings.free_delivery_threshold = float(request.POST.get('free_delivery_threshold', 200.00))
+        settings.delivery_company_phone = request.POST.get('delivery_company_phone', '')
         settings.facebook_url = request.POST.get('facebook_url', '')
         settings.instagram_url = request.POST.get('instagram_url', '')
         settings.twitter_url = request.POST.get('twitter_url', '')
@@ -4536,6 +4499,7 @@ from django.contrib.auth import logout
 from .permissions import role_required, admin_required
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 
 
 @login_required
@@ -4723,6 +4687,176 @@ def order_track_update_json(request):
         return JsonResponse({'ok': True, 'order_id': order.id, 'status': order.status, 'label': labels.get(order.status, order.status)})
     except Order.DoesNotExist:
         return JsonResponse({'error': 'not_found'}, status=404)
+    except Exception:
+        return JsonResponse({'error': 'server_error'}, status=500)
+
+
+def _share_sign(order_id, view_type):
+    signer = TimestampSigner()
+    payload = f"{order_id}:{view_type}"
+    return signer.sign(payload)
+
+
+def _share_unsign(token, max_age):
+    signer = TimestampSigner()
+    try:
+        payload = signer.unsign(token, max_age=max_age)
+        parts = (payload or '').split(':')
+        if len(parts) != 2:
+            return None, None
+        return int(parts[0]), parts[1]
+    except (BadSignature, SignatureExpired, ValueError):
+        return None, None
+
+
+def _normalize_wa(phone):
+    p = ''.join([ch for ch in (phone or '') if ch.isdigit()])
+    if p.startswith('00964'):
+        p = p[2:]
+    if p.startswith('07') and len(p) == 11:
+        p = '964' + p[1:]
+    if p.startswith('9647') and len(p) == 13:
+        return p
+    return ''
+
+
+def share_delivery(request, token):
+    oid, vtype = _share_unsign(token, max_age=7*24*3600)
+    if not oid or vtype != 'delivery':
+        return render(request, 'share/delivery.html', { 'order': None })
+    order = get_object_or_404(Order, id=oid)
+    page_url = request.build_absolute_uri(request.get_full_path())
+    cust_wa = _normalize_wa(order.user.phone)
+    store_phone = order.store.owner_phone or order.store_phone or (order.store.owner.phone if order.store.owner else '')
+    store_wa = _normalize_wa(store_phone)
+    try:
+        settings = SiteSettings.objects.get(id=1)
+        company_wa = _normalize_wa(settings.delivery_company_phone or '')
+    except SiteSettings.DoesNotExist:
+        company_wa = ''
+    total_iqd = f"{int(order.total_amount):,} د.ع"
+    msg = f"طلب #{order.id} — الإجمالي: {total_iqd}\n{page_url}"
+    wa_msg = urllib.parse.quote(msg)
+    cust_wa_url = f"https://wa.me/{cust_wa}?text={wa_msg}" if cust_wa else ''
+    store_wa_url = f"https://wa.me/{store_wa}?text={wa_msg}" if store_wa else ''
+    company_wa_url = f"https://wa.me/{company_wa}?text={wa_msg}" if company_wa else ''
+    maps_cust = ''
+    try:
+        if order.address and order.address.latitude and order.address.longitude:
+            maps_cust = f"https://www.google.com/maps?q={order.address.latitude},{order.address.longitude}"
+        elif order.address:
+            q = f"{order.address.city} {order.address.area} {order.address.street}"
+            maps_cust = f"https://www.google.com/maps/search/{urllib.parse.quote(q)}"
+    except Exception:
+        maps_cust = ''
+    maps_store = ''
+    try:
+        q = f"{order.store.city} {order.store.address}"
+        maps_store = f"https://www.google.com/maps/search/{urllib.parse.quote(q)}"
+    except Exception:
+        maps_store = ''
+    return render(request, 'share/delivery.html', {
+        'order': order,
+        'page_url': page_url,
+        'cust_wa_url': cust_wa_url,
+        'store_wa_url': store_wa_url,
+        'company_wa_url': company_wa_url,
+        'maps_cust': maps_cust,
+        'maps_store': maps_store,
+        'token': token,
+    })
+
+
+def share_store(request, token):
+    oid, vtype = _share_unsign(token, max_age=7*24*3600)
+    if not oid or vtype != 'store':
+        return render(request, 'share/store.html', { 'order': None })
+    order = get_object_or_404(Order, id=oid)
+    page_url = request.build_absolute_uri(request.get_full_path())
+    cust_wa = _normalize_wa(order.user.phone)
+    store_phone = order.store.owner_phone or order.store_phone or (order.store.owner.phone if order.store.owner else '')
+    store_wa = _normalize_wa(store_phone)
+    total_iqd = f"{int(order.total_amount):,} د.ع"
+    msg = f"طلب #{order.id} — الإجمالي: {total_iqd}\n{page_url}"
+    wa_msg = urllib.parse.quote(msg)
+    cust_wa_url = f"https://wa.me/{cust_wa}?text={wa_msg}" if cust_wa else ''
+    store_wa_url = f"https://wa.me/{store_wa}?text={wa_msg}" if store_wa else ''
+    maps_cust = ''
+    try:
+        if order.address and order.address.latitude and order.address.longitude:
+            maps_cust = f"https://www.google.com/maps?q={order.address.latitude},{order.address.longitude}"
+        elif order.address:
+            q = f"{order.address.city} {order.address.area} {order.address.street}"
+            maps_cust = f"https://www.google.com/maps/search/{urllib.parse.quote(q)}"
+    except Exception:
+        maps_cust = ''
+    maps_store = ''
+    try:
+        q = f"{order.store.city} {order.store.address}"
+        maps_store = f"https://www.google.com/maps/search/{urllib.parse.quote(q)}"
+    except Exception:
+        maps_store = ''
+    return render(request, 'share/store.html', {
+        'order': order,
+        'page_url': page_url,
+        'cust_wa_url': cust_wa_url,
+        'store_wa_url': store_wa_url,
+        'maps_cust': maps_cust,
+        'maps_store': maps_store,
+        'token': token,
+    })
+
+
+@csrf_exempt
+def share_status_update_json(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'invalid_method'}, status=405)
+    try:
+        token = (request.POST.get('token') or '').strip()
+        new_status = (request.POST.get('status') or '').strip()
+        tracking_number = (request.POST.get('tracking_number') or '').strip()
+        oid, vtype = _share_unsign(token, max_age=7*24*3600)
+        if not oid:
+            return JsonResponse({'error': 'unauthorized'}, status=403)
+        order = Order.objects.get(id=oid)
+        allowed = ['on_the_way', 'delivered', 'canceled']
+        if new_status not in allowed:
+            return JsonResponse({'error': 'invalid_status'}, status=400)
+        before = {'status': order.status, 'tracking_number': order.tracking_number}
+        order.status = new_status
+        if tracking_number:
+            order.tracking_number = tracking_number
+        order.save(update_fields=['status','tracking_number'] if tracking_number else ['status'])
+        try:
+            from .models import AdminAuditLog
+            import json
+            AdminAuditLog.objects.create(
+                admin_user=request.user if request.user.is_authenticated else order.store.owner,
+                action='share_update_status',
+                model='Order',
+                object_id=str(order.id),
+                before=json.dumps(before, ensure_ascii=False),
+                after=json.dumps({'status': order.status, 'tracking_number': order.tracking_number}, ensure_ascii=False),
+                ip=request.META.get('REMOTE_ADDR') or ''
+            )
+        except Exception:
+            pass
+        labels = {
+            'pending': 'قيد الانتظار',
+            'accepted': 'تم القبول',
+            'packed': 'تم التعبئة',
+            'preparing': 'قيد التجهيز',
+            'on_the_way': 'في الطريق',
+            'delivered': 'تم التسليم',
+            'canceled': 'ملغي',
+        }
+        return JsonResponse({'ok': True, 'order_id': order.id, 'status': order.status, 'label': labels.get(order.status, order.status)})
+    except Order.DoesNotExist:
+        return JsonResponse({'error': 'not_found'}, status=404)
+    except SignatureExpired:
+        return JsonResponse({'error': 'expired'}, status=403)
+    except BadSignature:
+        return JsonResponse({'error': 'unauthorized'}, status=403)
     except Exception:
         return JsonResponse({'error': 'server_error'}, status=500)
 

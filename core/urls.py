@@ -91,6 +91,9 @@ urlpatterns = [
     path('healthz/', views.healthz, name='healthz'),
     path('orders/track/<int:order_id>/<str:token>/', views.order_track, name='order_track'),
     path('orders/track/update-json/', views.order_track_update_json, name='order_track_update_json'),
+    path('share/delivery/<str:token>/', views.share_delivery, name='share_delivery'),
+    path('share/store/<str:token>/', views.share_store, name='share_store'),
+    path('share/status/update-json/', views.share_status_update_json, name='share_status_update_json'),
     
     # Debug URLs for testing
     path('debug-owner-login/', views.debug_owner_login, name='debug_owner_login'),
