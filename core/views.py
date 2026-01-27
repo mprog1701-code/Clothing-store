@@ -4246,10 +4246,10 @@ def super_owner_orders(request):
             'recent': 'حديثة',
             'all': 'الكل'
         },
-        'allowed_statuses': ['pending','accepted','packed','delivered','canceled'],
+        'allowed_statuses': ['pending','accepted','canceled'],
         'status_labels': {
             'pending': 'قيد الانتظار',
-            'accepted': 'تم القبول',
+            'accepted': 'تم التأكيد',
             'packed': 'تم التعبئة',
             'delivered': 'تم التسليم',
             'canceled': 'ملغي',
@@ -4301,7 +4301,7 @@ def super_owner_update_order_status_json(request):
         order_id = int(request.POST.get('order_id') or '0')
         new_status = (request.POST.get('status') or '').strip()
         order = Order.objects.get(id=order_id)
-        allowed = ['pending','accepted','packed','delivered','canceled']
+        allowed = ['pending','accepted','canceled']
         if new_status not in allowed:
             return JsonResponse({'error': 'invalid_status'}, status=400)
         before = {'status': order.status}
@@ -4323,14 +4323,49 @@ def super_owner_update_order_status_json(request):
             pass
         labels = {
             'pending': 'قيد الانتظار',
-            'accepted': 'تم القبول',
-            'packed': 'تم التعبئة',
-            'delivered': 'تم التسليم',
+            'accepted': 'تم التأكيد',
             'canceled': 'ملغي',
         }
         return JsonResponse({'ok': True, 'order_id': order.id, 'status': order.status, 'label': labels.get(order.status, order.status)})
     except Order.DoesNotExist:
         return JsonResponse({'error': 'not_found'}, status=404)
+    except Exception:
+        return JsonResponse({'error': 'server_error'}, status=500)
+
+
+@login_required
+def super_owner_orders_statuses_json(request):
+    if request.user.username != 'super_owner':
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    try:
+        ids_param = (request.GET.get('ids') or '').strip()
+        if not ids_param:
+            return JsonResponse({'ok': True, 'statuses': {}})
+        ids = []
+        for part in ids_param.split(','):
+            part = part.strip()
+            if part.isdigit():
+                ids.append(int(part))
+        if not ids:
+            return JsonResponse({'ok': True, 'statuses': {}})
+        qs = Order.objects.filter(id__in=ids).values('id', 'status', 'updated_at')
+        labels = {
+            'pending': 'قيد الانتظار',
+            'accepted': 'تم التأكيد',
+            'packed': 'تم التعبئة',
+            'preparing': 'قيد التجهيز',
+            'on_the_way': 'في الطريق',
+            'delivered': 'تم التسليم',
+            'canceled': 'ملغي',
+        }
+        result = {}
+        for row in qs:
+            result[str(row['id'])] = {
+                'status': row['status'],
+                'label': labels.get(row['status'], row['status']),
+                'updated_at': (row['updated_at'].isoformat() if row['updated_at'] else '')
+            }
+        return JsonResponse({'ok': True, 'statuses': result})
     except Exception:
         return JsonResponse({'error': 'server_error'}, status=500)
 

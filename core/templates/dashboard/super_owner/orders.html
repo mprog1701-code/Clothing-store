@@ -299,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
     'pending': { cls: 'badge bg-warning text-dark', html: '<i class="fas fa-clock me-1"></i> قيد الانتظار' },
     'accepted': { cls: 'badge bg-info', html: '<i class="fas fa-check me-1"></i> تم القبول' },
     'packed': { cls: 'badge bg-primary', html: '<i class="fas fa-box me-1"></i> تم التعبئة' },
+    'on_the_way': { cls: 'badge bg-secondary', html: '<i class="fas fa-truck me-1"></i> في الطريق' },
     'delivered': { cls: 'badge bg-success', html: '<i class="fas fa-check-circle me-1"></i> تم التسليم' },
     'canceled': { cls: 'badge bg-danger', html: '<i class="fas fa-times-circle me-1"></i> ملغي' }
   };
@@ -313,6 +314,22 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.wa-owner-btn').forEach(function(a){ a.addEventListener('click', function(ev){ ev.stopPropagation(); }); });
 
   document.querySelectorAll('.delete-order').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); if(pending) return; var tr = this.closest('tr'); var oid = this.getAttribute('data-order-id'); if(!confirm('تأكيد حذف الطلب #' + oid + '؟')) return; pending = true; fetch('{% url "super_owner_delete_order_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(oid) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ if(tr) tr.remove(); showSnack('تم حذف الطلب', false); } else { showSnack('فشل حذف الطلب', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }); });
+
+  // Auto-refresh statuses
+  function pollStatuses(){
+    try {
+      var ids = Array.prototype.map.call(document.querySelectorAll('.order-status[data-order-id]'), function(el){ return el.getAttribute('data-order-id'); }).filter(function(x){ return !!x; });
+      if(!ids.length) return;
+      var url = '{% url "super_owner_orders_statuses_json" %}?ids=' + encodeURIComponent(ids.join(','));
+      fetch(url, { headers: {'X-Requested-With':'XMLHttpRequest'} }).then(function(r){ if(!r.ok) throw r; return r.json(); }).then(function(j){
+        if(j && j.statuses){
+          Object.keys(j.statuses).forEach(function(k){ var st = j.statuses[k].status; updateOrderStatusBadge(k, st); });
+        }
+      }).catch(function(){});
+    } catch(e) {}
+  }
+  setInterval(pollStatuses, 10000);
+  setTimeout(pollStatuses, 2000);
 });
 </script>
 </style>
