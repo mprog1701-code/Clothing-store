@@ -996,12 +996,12 @@ def checkout(request):
             pass
         if failures:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'items': failures}, status=409)
+                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'message': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.', 'items': failures}, status=409)
             messages.error(request, 'تم تعديل المخزون، يرجى مراجعة السلة')
             return redirect('cart_view')
         if not cart_items:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'items': []}, status=409)
+                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'message': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.', 'items': []}, status=409)
             messages.error(request, 'السلة فارغة أو تحتوي على منتجات غير متوفرة!')
             return redirect('cart_view')
         applied_discount = 0
@@ -1038,7 +1038,7 @@ def checkout(request):
                     v.save()
         except Exception:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'items': []}, status=409)
+                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'message': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.', 'items': []}, status=409)
             messages.error(request, 'تعذر إتمام الطلب بسبب المخزون')
             return redirect('cart_view')
         request.session['cart'] = []

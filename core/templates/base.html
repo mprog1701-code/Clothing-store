@@ -1146,7 +1146,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>لا يمكن إضافة منتجات من متاجر مختلفة في نفس السلة.</p>
+                    <p>لا يمكن الجمع بين متاجر مختلفة في سلة واحدة.</p>
                     <p class="text-muted mb-0">اختر الإجراء المناسب:</p>
                 </div>
                 <div class="modal-footer">
@@ -1489,7 +1489,16 @@
                         hideLoading();
                         return;
                     }
-                    const msg = (res.data && res.data.message) ? res.data.message : 'تعذر إضافة المنتج إلى السلة';
+                    const code = res.data && res.data.code;
+                    const msgMap = {
+                        'VARIANT_REQUIRED': 'اختر اللون/القياس قبل الإضافة للسلة.',
+                        'INVALID_VARIANT': 'الخيار المختار غير صالح. اختر مرة أخرى.',
+                        'OUT_OF_STOCK': 'المنتج نفد حالياً.',
+                        'INSUFFICIENT_STOCK': 'الكمية المطلوبة غير متوفرة.',
+                        'MULTI_STORE_NOT_ALLOWED': 'لا يمكن الجمع بين متاجر مختلفة في سلة واحدة.',
+                        'CHECKOUT_STOCK_FAILED': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.'
+                    };
+                    const msg = (code && msgMap[code]) ? msgMap[code] : ((res.data && res.data.message) ? res.data.message : 'تعذر إضافة المنتج إلى السلة');
                     const toast = document.createElement('div');
                     toast.className = 'position-fixed top-0 end-0 p-3';
                     toast.style.zIndex = '9999';
