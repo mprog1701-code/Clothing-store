@@ -15,6 +15,7 @@ import uuid
 import urllib.parse
 from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign
 from django.db.utils import OperationalError, ProgrammingError
+from django.db import transaction
 from .serializers import UserRegistrationSerializer
 from .forms import AddressForm
 from .templatetags.math_filters import cart_count
@@ -918,86 +919,113 @@ def checkout(request):
 
         # Delivery available across Iraq (no city restriction)
         
-        # Calculate total
-        cart_items = []
+        failures = []
         total = 0
         store = None
-        
-        for item in cart:
+        variant_ids = []
+        for idx, item in enumerate(cart):
+            try:
+                vid = int(item.get('variant_id'))
+            except (TypeError, ValueError):
+                continue
+            variant_ids.append(vid)
+        locked_variants = list(ProductVariant.objects.select_for_update().filter(id__in=variant_ids))
+        variants_by_id = {v.id: v for v in locked_variants}
+        new_cart = []
+        cart_items = []
+        for idx, item in enumerate(cart):
             try:
                 variant_id = int(item.get('variant_id'))
             except (TypeError, ValueError):
                 continue
-            try:
-                variant = ProductVariant.objects.get(id=variant_id)
-            except ProductVariant.DoesNotExist:
+            variant = variants_by_id.get(variant_id)
+            if not variant:
                 continue
             product = variant.product
-            # single-store enforcement
             if not store:
                 store = product.store
             elif store != product.store:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'code': 'MULTI_STORE_NOT_ALLOWED', 'message': 'لا يمكن الطلب من متاجر مختلفة في نفس الطلب'}, status=409)
                 messages.error(request, 'لا يمكن الطلب من متاجر مختلفة في نفس الطلب!')
                 return redirect('cart_view')
-            # stock enforcement
             quantity = int(item.get('quantity') or 1)
-            if variant.stock_qty < quantity:
-                messages.error(request, 'تم تعديل المخزون، يرجى تحديث السلة')
-                return redirect('cart_view')
+            if variant.stock_qty <= 0 or quantity > variant.stock_qty:
+                reason = 'OUT_OF_STOCK' if variant.stock_qty <= 0 else 'INSUFFICIENT_STOCK'
+                failures.append({
+                    'cartItemId': idx,
+                    'productId': int(product.id),
+                    'variantId': int(variant.id),
+                    'reason': reason,
+                    'availableQty': int(max(0, variant.stock_qty))
+                })
+                if variant.stock_qty > 0:
+                    new_cart.append({'product_id': int(product.id), 'variant_id': int(variant.id), 'quantity': int(variant.stock_qty)})
+                continue
             price = variant.price
             subtotal = price * quantity
-            cart_items.append({
-                'product': product,
-                'variant': variant,
-                'quantity': quantity,
-                'price': price,
-            })
+            cart_items.append({'product': product, 'variant': variant, 'quantity': quantity, 'price': price})
             total += subtotal
-        
+            new_cart.append({'product_id': int(product.id), 'variant_id': int(variant.id), 'quantity': int(quantity)})
+        request.session['cart'] = new_cart
+        try:
+            request.session.modified = True
+        except Exception:
+            pass
+        if failures:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'items': failures}, status=409)
+            messages.error(request, 'تم تعديل المخزون، يرجى مراجعة السلة')
+            return redirect('cart_view')
         if not cart_items:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'items': []}, status=409)
             messages.error(request, 'السلة فارغة أو تحتوي على منتجات غير متوفرة!')
             return redirect('cart_view')
-        
-        # Create order
         applied_discount = 0
         try:
             applied_discount = int(request.session.get('discount') or 0)
         except Exception:
             applied_discount = 0
         grand_total = max(0, (total + settings.DELIVERY_FEE) - applied_discount)
-        order = Order.objects.create(
-            user=checkout_user,
-            store=store,
-            address=address,
-            total_amount=grand_total,
-            delivery_fee=settings.DELIVERY_FEE,
-            payment_method='cod',
-            status='pending'
-        )
-        
-        # Create order items
-        for item_data in cart_items:
-            from .models import OrderItem
-            OrderItem.objects.create(
-                order=order,
-                product=item_data['product'],
-                variant=item_data['variant'],
-                quantity=item_data['quantity'],
-                price=item_data['price']
-            )
-            
-            # Update stock
-            if item_data['variant']:
-                item_data['variant'].stock_qty -= item_data['quantity']
-                item_data['variant'].save()
-        
-        # Clear cart and applied coupon
+        try:
+            with transaction.atomic():
+                order = Order.objects.create(
+                    user=checkout_user,
+                    store=store,
+                    address=address,
+                    total_amount=grand_total,
+                    delivery_fee=settings.DELIVERY_FEE,
+                    payment_method='cod',
+                    status='pending'
+                )
+                from .models import OrderItem
+                for item_data in cart_items:
+                    v = item_data['variant']
+                    q = int(item_data['quantity'])
+                    if v.stock_qty < q:
+                        raise ValueError('INSUFFICIENT_STOCK')
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item_data['product'],
+                        variant=v,
+                        quantity=q,
+                        price=item_data['price']
+                    )
+                    v.stock_qty = int(v.stock_qty) - q
+                    v.save()
+        except Exception:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'items': []}, status=409)
+            messages.error(request, 'تعذر إتمام الطلب بسبب المخزون')
+            return redirect('cart_view')
         request.session['cart'] = []
         request.session['guest_order_id'] = order.id
         for k in ['discount','discount_code','discount_label']:
             if k in request.session:
                 del request.session[k]
-        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': True, 'order_id': order.id})
         messages.success(request, f'تم إنشاء الطلب رقم #{order.id} بنجاح!')
         if request.user.is_authenticated:
             return redirect('order_detail', order_id=order.id)

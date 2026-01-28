@@ -197,6 +197,21 @@
     </div>
   </div>
 
+  <div id="stockFailModal" class="modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>بعض المنتجات نفدت. تم تحديث سلتك.</div>
+        <button type="button" class="icon-btn" id="sfClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="sfList"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="secondary" id="sfBack">رجوع للسلة</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"><div class="toast-box"></div></div>
 </div>
 {% endblock %}
@@ -287,6 +302,43 @@ if(phoneEl && phoneErrEl){ phoneEl.addEventListener('input', function(){ var v =
 document.getElementById('backTo1').addEventListener('click', function(){ goStep(0); });
 document.getElementById('toStep3').addEventListener('click', function(){ goStep(2); });
 document.getElementById('backTo2').addEventListener('click', function(){ goStep(1); });
+
+var coForm = document.getElementById('coForm');
+if(coForm){
+  coForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var fd = new FormData(coForm);
+    fetch(coForm.action, { method:'POST', credentials:'same-origin', headers:{ 'X-Requested-With':'XMLHttpRequest' }, body: fd })
+      .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, data:j }; }); })
+      .then(function(res){
+        if(res.ok && res.data && res.data.ok){
+          window.location.assign('/my/orders/' + res.data.order_id + '/');
+          return;
+        }
+        if(res.status===409 && res.data && res.data.code==='CHECKOUT_STOCK_FAILED'){
+          var box = document.getElementById('sfList');
+          var modal = document.getElementById('stockFailModal');
+          if(box){
+            var items = Array.isArray(res.data.items)? res.data.items : [];
+            var html = '';
+            items.forEach(function(it){
+              var reason = (it.reason==='OUT_OF_STOCK') ? 'غير متوفر' : 'الكمية غير كافية';
+              html += '<div class="sel-info">' + 'منتج #' + it.productId + ' • نسخة #' + it.variantId + ' • ' + reason + ' • المتاح: ' + it.availableQty + '</div>';
+            });
+            box.innerHTML = html || '<div class="sel-info">تم تحديث السلة</div>';
+          }
+          if(modal){ modal.classList.add('open'); }
+          return;
+        }
+        showToast('تعذر إتمام الطلب');
+      })
+      .catch(function(){ showToast('تعذر إتمام الطلب'); });
+  });
+}
+var sfClose = document.getElementById('sfClose');
+var sfBack = document.getElementById('sfBack');
+if(sfClose){ sfClose.addEventListener('click', function(){ var m=document.getElementById('stockFailModal'); if(m){ m.classList.remove('open'); } }); }
+if(sfBack){ sfBack.addEventListener('click', function(){ window.location.assign('/cart/'); }); }
 
 var mapModal = document.getElementById('mapModal');
 var closeMap = document.getElementById('closeMap');
