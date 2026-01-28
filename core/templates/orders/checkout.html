@@ -99,8 +99,8 @@
               <div class="opt-sub">توصيل متاح لكل العراق</div>
             </div>
           </label>
-          <label class="opt-item disabled" data-soon="التوصيل السريع">
-            <input type="radio" disabled>
+          <label class="opt-item {% if not features.fast_delivery %}disabled{% endif %}" data-soon="التوصيل السريع">
+            <input type="radio" name="delivery_opt" value="express" {% if not features.fast_delivery %}disabled{% endif %}>
             <div class="opt-body">
               <div class="opt-title">التوصيل السريع <span class="pill soon">قريباً</span></div>
               <div class="opt-sub">تسليم أسرع خلال ساعات</div>
@@ -119,15 +119,15 @@
               <div class="opt-sub">نقداً عند التسليم</div>
             </div>
           </label>
-          <label class="opt-item disabled" data-soon="تحويل بنكي">
-            <input type="radio" disabled>
+          <label class="opt-item {% if not features.bank_transfer %}disabled{% endif %}" data-soon="تحويل بنكي">
+            <input type="radio" name="payment_method" value="bank" {% if not features.bank_transfer %}disabled{% endif %}>
             <div class="opt-body">
               <div class="opt-title">تحويل بنكي <span class="pill soon">قريباً</span></div>
               <div class="opt-sub">دفع إلكتروني عبر التحويل</div>
             </div>
           </label>
-          <label class="opt-item disabled" data-soon="بطاقة مصرفية">
-            <input type="radio" disabled>
+          <label class="opt-item {% if not features.card_payment %}disabled{% endif %}" data-soon="بطاقة مصرفية">
+            <input type="radio" name="payment_method" value="card" {% if not features.card_payment %}disabled{% endif %}>
             <div class="opt-body">
               <div class="opt-title">بطاقة مصرفية <span class="pill soon">قريباً</span></div>
               <div class="opt-sub">Visa/Master لاحقاً</div>

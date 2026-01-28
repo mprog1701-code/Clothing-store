@@ -69,10 +69,10 @@
             </div>
         </a>
         
-        <a href="#" class="list-group-item d-flex align-items-center justify-content-between disabled settings-row" style="pointer-events:none; opacity:0.6;">
+        <a href="#" class="list-group-item d-flex align-items-center justify-content-between {% if not features.app_icon_customization %}disabled{% endif %} settings-row" {% if not features.app_icon_customization %}style="pointer-events:none; opacity:0.6;"{% endif %}>
             <div class="d-flex align-items-center gap-3">
                 <i class="bi bi-app fs-5"></i>
-                <div class="fw-bold" data-i18n="account_appicon">ايقونة التطبيق</div>
+                <div class="fw-bold" data-i18n="account_appicon">ايقونة التطبيق {% if not features.app_icon_customization %}<span class="pill soon">قريباً</span>{% endif %}</div>
             </div>
             <i class="bi bi-lock"></i>
         </a>

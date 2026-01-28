@@ -139,4 +139,23 @@
         </div>
     </div>
 </div>
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5>فحص سريع (Smoke Test)</h5>
+      </div>
+      <div class="card-body">
+        <ol class="mb-2">
+          <li>التسجيل: افتح <a href="/register/" class="">التسجيل</a> وأنشئ حساباً جديداً.</li>
+          <li>التحقق: {% if features.otp_verification %}أدخل رمز التحقق المرسل.{% else %}<span class="badge bg-warning">قريباً</span> ميزة التحقق ليست مفعلة{% endif %}</li>
+          <li>تسجيل الدخول: افتح <a href="/login/" class="">تسجيل الدخول</a> ثم أدخل البيانات الصحيحة.</li>
+          <li>تسجيل الخروج ثم تسجيل الدخول مرة أخرى.</li>
+          <li>تحديث الملف الشخصي: من صفحة حسابي، حدّث اللغة/المظهر وتحقق من تطبيق التغييرات.</li>
+        </ol>
+        <p class="text-muted mb-0">حالات الخطأ المتوقعة: كلمة مرور خاطئة (401)، معدل محاولات مرتفع (429)، انتهاء صلاحية التوكن (401).</p>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
