@@ -746,26 +746,24 @@ def cart_items_json(request):
         if quantity > variant.stock_qty:
             return JsonResponse({'code': 'INSUFFICIENT_STOCK', 'message': 'insufficient stock', 'details': {'available': int(variant.stock_qty)}}, status=409)
     cart = request.session.get('cart', [])
-    if cart:
+    session_store_id = request.session.get('cart_store_id')
+    cur_store_id = session_store_id
+    if cur_store_id is None and cart:
         cur = cart[0]
         cur_vid = cur.get('variant_id')
         cur_pid = cur.get('product_id')
-        cur_store_id = None
-        if cur_vid:
-            try:
+        try:
+            if cur_vid:
                 cv = ProductVariant.objects.get(id=int(cur_vid))
                 cur_store_id = cv.product.store_id
-            except Exception:
-                cur_store_id = None
-        else:
-            try:
+            else:
                 cp = Product.objects.get(id=int(cur_pid))
                 cur_store_id = cp.store_id
-            except Exception:
-                cur_store_id = None
-        new_store_id = product.store_id
-        if cur_store_id and new_store_id and cur_store_id != new_store_id:
-            return JsonResponse({'code': 'MULTI_STORE_NOT_ALLOWED', 'message': 'cannot add items from multiple stores'}, status=409)
+        except Exception:
+            cur_store_id = None
+    requested_store_id = product.store_id
+    if cur_store_id and requested_store_id and cur_store_id != requested_store_id:
+        return JsonResponse({'code': 'MULTI_STORE_NOT_ALLOWED', 'message': 'cannot add items from multiple stores', 'currentCartStoreId': int(cur_store_id), 'requestedStoreId': int(requested_store_id)}, status=409)
     existing_item = None
     for citem in cart:
         if variant_id is not None:
@@ -789,6 +787,11 @@ def cart_items_json(request):
     else:
         cart.append({'product_id': product.id, 'variant_id': variant_id, 'quantity': quantity})
     request.session['cart'] = cart
+    if not cart or session_store_id is None:
+        try:
+            request.session['cart_store_id'] = int(requested_store_id)
+        except Exception:
+            request.session['cart_store_id'] = requested_store_id
     try:
         request.session.modified = True
     except Exception:
@@ -810,12 +813,14 @@ def remove_from_cart(request, index):
     return redirect('cart_view')
 
 def clear_cart(request):
-    if request.method != 'POST':
+    if request.method not in ['POST', 'DELETE']:
         messages.info(request, 'تم إلغاء عملية المسح')
         return redirect('cart_view')
     request.session['cart'] = []
+    if 'cart_store_id' in request.session:
+        del request.session['cart_store_id']
     messages.success(request, 'تم مسح السلة!')
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.method == 'DELETE':
         return JsonResponse({'success': True})
     return redirect('cart_view')
 
