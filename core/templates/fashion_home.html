@@ -593,7 +593,7 @@
                     {{ product.base_price|iqd }}
                     {% endif %}
                 </div>
-                <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart({{ product.id }})">
+                <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAdd({{ product.id }})">
                     <i class="bi bi-bag-plus"></i> أضف للسلة
                 </button>
                 
@@ -680,35 +680,91 @@
         input.addEventListener('blur', ()=> setTimeout(hideBox, 200));
         input.addEventListener('focus', ()=>{ if((input.value||'').trim().length>=2) fetchLive(input.value); });
     }
-    // Add to Cart Function
-    function addToCart(productId) {
+    function quickAdd(productId) {
         const meta = document.querySelector('meta[name="csrf-token"]');
         const csrfToken = (meta && meta.content && meta.content !== 'NOTPROVIDED') ? meta.content : (document.cookie.match(/csrftoken=([^;]+)/)||[])[1] || '';
-        fetch(`/cart/add/${productId}/`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ quantity: 1 })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.success) {
-                if (typeof updateCartBadge === 'function') {
-                    updateCartBadge(parseInt(data.cart_items_count || 0));
+        fetch(`/api/products/${productId}/`, { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(p){
+            try{
+                const variants = Array.isArray(p.variants) ? p.variants : [];
+                const storeId = (p.store && p.store.id) ? p.store.id : null;
+                if(!variants.length){
+                    addToCart(productId, null, 1, storeId);
+                    return;
                 }
-                showToast('تمت الإضافة إلى السلة بنجاح!');
-            } else {
-                showToast('تعذر إضافة المنتج إلى السلة');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('حدث خطأ أثناء الإضافة إلى السلة');
-        });
+                showVariantPicker(productId, storeId, variants);
+            }catch(e){ addToCart(productId, null, 1, null); }
+        }).catch(function(){ addToCart(productId, null, 1, null); });
+    }
+    function showVariantPicker(productId, storeId, variants){
+        let overlay = document.getElementById('vpOverlay');
+        if(!overlay){
+            overlay = document.createElement('div');
+            overlay.id = 'vpOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1060;display:flex;align-items:flex-end;';
+            const sheet = document.createElement('div');
+            sheet.id = 'vpSheet';
+            sheet.style.cssText = 'background:#fff;color:#000;width:100%;border-top-left-radius:16px;border-top-right-radius:16px;max-height:70vh;overflow:auto;padding:16px;';
+            sheet.innerHTML = '<div class="d-flex justify-content-between align-items-center mb-2"><strong>اختيار النسخة</strong><button type="button" id="vpClose" class="btn btn-sm btn-outline-secondary">إغلاق</button></div><div class="mb-3"><label class="form-label">اللون</label><select id="vpColor" class="form-select"><option value="">اختر اللون</option></select></div><div class="mb-3"><label class="form-label">المقاس</label><select id="vpSize" class="form-select" disabled><option value="">اختر المقاس</option></select></div><div class="mb-3"><label class="form-label">الكمية</label><input id="vpQty" type="number" class="form-control" value="1" min="1" style="max-width:120px"></div><div class="text-end"><button type="button" id="vpAdd" class="btn btn-primary">أضف للسلة</button></div>';
+            overlay.appendChild(sheet);
+            document.body.appendChild(overlay);
+            overlay.addEventListener('click', function(e){ if(e.target===overlay) closeVariantPicker(); });
+            document.getElementById('vpClose').addEventListener('click', closeVariantPicker);
+        }
+        const colorSel = document.getElementById('vpColor');
+        const sizeSel = document.getElementById('vpSize');
+        const qtyEl = document.getElementById('vpQty');
+        colorSel.innerHTML = '<option value="">اختر اللون</option>';
+        const colors = Array.from(new Set(variants.map(function(v){ return v.color; }).filter(Boolean)));
+        colors.forEach(function(c){ const opt = document.createElement('option'); opt.value = c; opt.textContent = c; colorSel.appendChild(opt); });
+        sizeSel.innerHTML = '<option value="">اختر المقاس</option>';
+        sizeSel.disabled = true;
+        qtyEl.value = 1;
+        qtyEl.removeAttribute('max');
+        let selectedVariantId = null;
+        function updateSize(){
+            const color = colorSel.value;
+            sizeSel.innerHTML = '<option value="">اختر المقاس</option>';
+            sizeSel.disabled = true;
+            selectedVariantId = null;
+            qtyEl.value = 1;
+            qtyEl.removeAttribute('max');
+            if(!color) return;
+            const sizes = variants.filter(function(v){ return v.color===color; }).map(function(v){ return { size: v.size, id: v.id, stock: v.stock_qty }; });
+            sizes.forEach(function(s){
+                const out = !s.stock || s.stock<=0;
+                const opt = document.createElement('option');
+                opt.value = s.size;
+                opt.textContent = out ? (s.size + ' (غير متاح)') : s.size;
+                opt.dataset.id = s.id;
+                opt.dataset.stock = s.stock;
+                sizeSel.appendChild(opt);
+            });
+            sizeSel.disabled = sizes.length===0;
+            const firstAvail = sizes.find(function(s){ return s.stock>0; });
+            if(firstAvail){ sizeSel.value = firstAvail.size; sizeSel.dispatchEvent(new Event('change')); }
+        }
+        colorSel.onchange = updateSize;
+        sizeSel.onchange = function(){
+            const opt = sizeSel.options[sizeSel.selectedIndex];
+            const id = opt ? parseInt(opt.dataset.id||'') : null;
+            const stock = opt ? parseInt(opt.dataset.stock||'') : 0;
+            selectedVariantId = id || null;
+            qtyEl.value = 1;
+            qtyEl.max = stock>0 ? stock : 1;
+        };
+        document.getElementById('vpAdd').onclick = function(){
+            const qty = parseInt(qtyEl.value||'1')||1;
+            if(!selectedVariantId){ return; }
+            addToCart(productId, selectedVariantId, qty, storeId);
+            closeVariantPicker();
+        };
+        overlay.style.display = 'flex';
+    }
+    function closeVariantPicker(){
+        const overlay = document.getElementById('vpOverlay');
+        if(overlay){ overlay.style.display='none'; }
     }
     
     // Toast Notification

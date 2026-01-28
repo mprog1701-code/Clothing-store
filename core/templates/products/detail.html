@@ -147,9 +147,11 @@
                             <span class="badge bg-light text-dark">لون: <span id="selColor">غير محدد</span></span>
                             <span class="badge bg-light text-dark ms-2">قياس: <span id="selSize">غير محدد</span></span>
                         </div>
-                        <form method="post" action="{% url 'add_to_cart' product.id %}" class="add-to-cart-form" id="variantPickerForm">
+                        <form method="post" action="{% url 'cart_items_json' %}" class="add-to-cart-form" id="variantPickerForm">
                             {% csrf_token %}
-                            <input type="hidden" name="variant_id" id="selectedVariantId">
+                            <input type="hidden" name="productId" value="{{ product.id }}">
+                            <input type="hidden" name="storeId" value="{{ product.store.id }}">
+                            <input type="hidden" name="variantId" id="selectedVariantId">
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold"><i class="bi bi-palette me-2"></i>اللون</label>

@@ -27,9 +27,9 @@ def hybrid_home(request):
     new_arrivals = list(Product.objects.filter(
         is_active=True,
         created_at__gte=since
-    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8])
+    ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8])
     if len(new_arrivals) == 0:
-        new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
+        new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
     
     cart = request.session.get('cart', [])
     cart_items_count = cart_count(cart)
@@ -697,6 +697,102 @@ def add_to_cart(request, product_id):
             messages.success(request, 'تمت الإضافة إلى السلة!')
     
     return redirect('cart_view')
+
+
+def cart_items_json(request):
+    if request.method != 'POST':
+        return JsonResponse({'code': 'METHOD_NOT_ALLOWED', 'message': 'method not allowed'}, status=405)
+    if request.headers.get('Content-Type', '').startswith('application/json'):
+        try:
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+        except Exception:
+            payload = {}
+    else:
+        payload = request.POST
+    raw_product_id = payload.get('productId') or payload.get('product_id')
+    raw_variant_id = payload.get('variantId') or payload.get('variant_id')
+    raw_quantity = payload.get('quantity')
+    raw_store_id = payload.get('storeId') or payload.get('store_id')
+    try:
+        product_id = int(raw_product_id)
+    except (TypeError, ValueError):
+        return JsonResponse({'code': 'INVALID_PRODUCT', 'message': 'invalid productId'}, status=400)
+    try:
+        quantity = int(raw_quantity or 1)
+    except (TypeError, ValueError):
+        quantity = 1
+    if quantity < 1:
+        return JsonResponse({'code': 'INVALID_QUANTITY', 'message': 'quantity must be >= 1'}, status=400)
+    product = Product.objects.filter(id=product_id, is_active=True).first()
+    if not product:
+        return JsonResponse({'code': 'PRODUCT_NOT_FOUND', 'message': 'product not found'}, status=404)
+    has_variants = product.variants.exists()
+    variant = None
+    variant_id = None
+    if raw_variant_id:
+        try:
+            variant_id = int(raw_variant_id)
+        except (TypeError, ValueError):
+            variant_id = None
+    if has_variants and not variant_id:
+        return JsonResponse({'code': 'VARIANT_REQUIRED', 'message': 'variantId is required for this product'}, status=400)
+    if variant_id:
+        variant = ProductVariant.objects.filter(id=variant_id, product_id=product.id).first()
+        if not variant:
+            return JsonResponse({'code': 'INVALID_VARIANT', 'message': 'variant does not belong to product'}, status=400)
+        if variant.stock_qty <= 0:
+            return JsonResponse({'code': 'OUT_OF_STOCK', 'message': 'variant is out of stock'}, status=409)
+        if quantity > variant.stock_qty:
+            return JsonResponse({'code': 'INSUFFICIENT_STOCK', 'message': 'insufficient stock', 'details': {'available': int(variant.stock_qty)}}, status=409)
+    cart = request.session.get('cart', [])
+    if cart:
+        cur = cart[0]
+        cur_vid = cur.get('variant_id')
+        cur_pid = cur.get('product_id')
+        cur_store_id = None
+        if cur_vid:
+            try:
+                cv = ProductVariant.objects.get(id=int(cur_vid))
+                cur_store_id = cv.product.store_id
+            except Exception:
+                cur_store_id = None
+        else:
+            try:
+                cp = Product.objects.get(id=int(cur_pid))
+                cur_store_id = cp.store_id
+            except Exception:
+                cur_store_id = None
+        new_store_id = product.store_id
+        if cur_store_id and new_store_id and cur_store_id != new_store_id:
+            return JsonResponse({'code': 'MULTI_STORE_NOT_ALLOWED', 'message': 'cannot add items from multiple stores'}, status=409)
+    existing_item = None
+    for citem in cart:
+        if variant_id is not None:
+            if citem.get('variant_id') == variant_id:
+                existing_item = citem
+                break
+        else:
+            if citem.get('variant_id') is None and citem.get('product_id') == product.id:
+                existing_item = citem
+                break
+    if existing_item:
+        new_qty = int(existing_item.get('quantity') or 1) + quantity
+        if variant_id:
+            try:
+                vobj = ProductVariant.objects.get(id=variant_id, product_id=product.id)
+                if new_qty > vobj.stock_qty:
+                    return JsonResponse({'code': 'INSUFFICIENT_STOCK', 'message': 'insufficient stock', 'details': {'available': int(vobj.stock_qty)}}, status=409)
+            except ProductVariant.DoesNotExist:
+                pass
+        existing_item['quantity'] = new_qty
+    else:
+        cart.append({'product_id': product.id, 'variant_id': variant_id, 'quantity': quantity})
+    request.session['cart'] = cart
+    try:
+        request.session.modified = True
+    except Exception:
+        pass
+    return JsonResponse({'ok': True, 'cart_items_count': cart_count(cart)})
 
 
 def remove_from_cart(request, index):
@@ -4886,7 +4982,7 @@ def share_status_update_json(request):
         if not oid:
             return JsonResponse({'error': 'unauthorized'}, status=403)
         order = Order.objects.get(id=oid)
-        allowed = ['on_the_way', 'delivered', 'canceled']
+        allowed = ['on_the_way', 'delivered', 'canceled', 'pending', 'preparing', 'packed']
         if new_status not in allowed:
             return JsonResponse({'error': 'invalid_status'}, status=400)
         before = {'status': order.status, 'tracking_number': order.tracking_number}

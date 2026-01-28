@@ -25,6 +25,24 @@
           </div>
           <div class="card-body">
             <div class="mb-3">
+              <h6 class="mb-2">الحالة</h6>
+              <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                  <select id="status_sel" class="form-select">
+                    <option value="pending" {% if order.status == 'pending' or order.status == 'accepted' %}selected{% endif %}>قيد الانتظار</option>
+                    <option value="preparing" {% if order.status == 'preparing' %}selected{% endif %}>تم التجهيز</option>
+                    <option value="packed" {% if order.status == 'packed' %}selected{% endif %}>تم التسليم للموصل</option>
+                  </select>
+                </div>
+                <div class="col-md-3 d-grid">
+                  <button id="update_btn" class="btn btn-primary">تحديث الحالة</button>
+                </div>
+                <div class="col">
+                  <div id="msg" class="small"></div>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3">
               <h6 class="mb-2">تفاصيل المنتجات</h6>
               <div class="row g-4">
                 {% for it in items_info %}
@@ -55,4 +73,36 @@
 .item-img{width:260px;height:260px;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,0.15)}
 .item-line{margin-top:10px;font-weight:700}
 </style>
+<script>
+(function(){
+  var token = '{{ token }}';
+  var msg = document.getElementById('msg');
+  function show(t, ok){ msg.textContent = t; msg.className = ok ? 'text-success small' : 'text-danger small'; }
+  var btn = document.getElementById('update_btn');
+  if(btn){
+    btn.addEventListener('click', function(){
+      var st = document.getElementById('status_sel').value;
+      fetch('{% url "share_status_update_json" %}', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'token='+encodeURIComponent(token)+'&status='+encodeURIComponent(st)
+      }).then(function(r){ if(!r.ok) throw r; return r.json(); }).then(function(j){
+        if(j.ok){
+          show('تم التحديث: ' + (j.label || j.status), true);
+          var badge = document.querySelector('.card-header .badge');
+          if(badge){
+            var s = j.status;
+            if(s==='pending' || s==='accepted'){ badge.className='badge bg-warning text-dark'; badge.textContent='قيد الانتظار'; }
+            else if(s==='preparing'){ badge.className='badge bg-primary'; badge.textContent='تم التجهيز'; }
+            else if(s==='packed'){ badge.className='badge bg-info'; badge.textContent='تم التسليم للموصل'; }
+            else { badge.className='badge bg-secondary'; badge.textContent=(j.label||s); }
+          }
+        } else {
+          show('فشل التحديث', false);
+        }
+      }).catch(function(){ show('خطأ بالخادم', false); });
+    });
+  }
+})();
+</script>
 {% endblock %}

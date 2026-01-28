@@ -300,34 +300,6 @@
 </style>
 
 <script>
-// Cart functionality (server session)
-function addToCart(productId) {
-    const tokenMatch = document.cookie.match(/csrftoken=([^;]+)/);
-    const csrfToken = tokenMatch ? tokenMatch[1] : '';
-    fetch(`/cart/add/${productId}/`, {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({ quantity: 1 })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data && data.success) {
-            showToast('✅ تم إضافة المنتج إلى السلة بنجاح!', 'success');
-            if (typeof updateCartBadge === 'function') {
-                updateCartBadge(parseInt(data.cart_items_count || 0));
-            }
-            animateCartButton();
-        }
-    })
-    .catch(() => {
-        showToast('❌ حدث خطأ أثناء الإضافة إلى السلة', 'danger');
-    });
-}
 
 function animateCartButton() {
     const cartButton = document.querySelector('.btn-outline-primary[href*="cart"]');

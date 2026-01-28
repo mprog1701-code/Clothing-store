@@ -1428,42 +1428,62 @@
             return m ? m[1] : '';
         }
         // Add to cart via server
-        function addToCart(productId, variantId = null, quantity = 1) {
+        function addToCart(productId, variantId = null, quantity = 1, storeId = null) {
             showLoading();
             const csrfToken = getCsrfToken();
-            const body = { quantity: quantity };
-            if (variantId) body.variant_id = variantId;
-            fetch(`/cart/add/${productId}/`, {
+            const body = { productId: productId, quantity: quantity };
+            if (variantId) body.variantId = variantId;
+            if (storeId) body.storeId = storeId;
+            fetch('/cart/items', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 body: JSON.stringify(body)
             })
-            .then(r => r.json())
-            .then(data => {
-                try {
-                    if (data && typeof data.cart_items_count !== 'undefined') {
-                        updateCartBadge(parseInt(data.cart_items_count || 0));
-                    }
-                } catch(e) {}
-                const toast = document.createElement('div');
-                toast.className = 'position-fixed top-0 end-0 p-3';
-                toast.style.zIndex = '9999';
-                toast.innerHTML = `
-                    <div class="toast show animate__animated animate__slideInRight" role="alert">
-                        <div class="toast-header bg-success text-white">
-                            <i class="bi bi-check-circle-fill me-2"></i>
-                            <strong class="me-auto">تمت الإضافة</strong>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, status: r.status, data: j }; }); })
+            .then(function(res){
+                if (res.ok && res.data && res.data.ok) {
+                    try {
+                        if (typeof res.data.cart_items_count !== 'undefined') {
+                            updateCartBadge(parseInt(res.data.cart_items_count || 0));
+                        }
+                    } catch(e) {}
+                    const toast = document.createElement('div');
+                    toast.className = 'position-fixed top-0 end-0 p-3';
+                    toast.style.zIndex = '9999';
+                    toast.innerHTML = `
+                        <div class="toast show animate__animated animate__slideInRight" role="alert">
+                            <div class="toast-header bg-success text-white">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                <strong class="me-auto">تمت الإضافة</strong>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                            </div>
+                            <div class="toast-body">تمت إضافة المنتج إلى السلة بنجاح!</div>
                         </div>
-                        <div class="toast-body">تمت إضافة المنتج إلى السلة بنجاح!</div>
-                    </div>
-                `;
-                document.body.appendChild(toast);
-                setTimeout(() => { toast.remove(); }, 3000);
+                    `;
+                    document.body.appendChild(toast);
+                    setTimeout(function(){ toast.remove(); }, 3000);
+                } else {
+                    const msg = (res.data && res.data.message) ? res.data.message : 'تعذر إضافة المنتج إلى السلة';
+                    const toast = document.createElement('div');
+                    toast.className = 'position-fixed top-0 end-0 p-3';
+                    toast.style.zIndex = '9999';
+                    toast.innerHTML = `
+                        <div class="toast show animate__animated animate__slideInRight" role="alert">
+                            <div class="toast-header bg-danger text-white">
+                                <i class="bi bi-x-circle-fill me-2"></i>
+                                <strong class="me-auto">فشل الإضافة</strong>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                            </div>
+                            <div class="toast-body">${msg}</div>
+                        </div>
+                    `;
+                    document.body.appendChild(toast);
+                    setTimeout(function(){ toast.remove(); }, 3000);
+                }
                 hideLoading();
             })
-            .catch(() => { hideLoading(); });
+            .catch(function(){ hideLoading(); });
         }
         function updateCartBadge(count){
             try{
