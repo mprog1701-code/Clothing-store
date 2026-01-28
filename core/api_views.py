@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
+from django.core.cache import cache
 from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize
 import logging
 import json
@@ -37,6 +38,26 @@ class AuthViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['post'], permission_classes=[])
     def login(self, request):
+        ip = (request.META.get('HTTP_X_FORWARDED_FOR') or '').split(',')[0].strip() or (request.META.get('REMOTE_ADDR') or '')
+        ident = (request.data.get('username') or request.data.get('phone') or '').strip()
+        limit = 5
+        window = 60
+        def over(k):
+            if not k:
+                return False
+            v = cache.get(k)
+            if v is None:
+                cache.set(k, 1, timeout=window)
+                return False
+            if v >= limit:
+                return True
+            try:
+                cache.incr(k)
+            except Exception:
+                cache.set(k, (int(v) + 1), timeout=window)
+            return False
+        if over(f"rl:login:ip:{ip}") or over(f"rl:login:id:{ident}"):
+            return Response({'error': 'rate_limited'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
         username = request.data.get('username')
         password = request.data.get('password')
         

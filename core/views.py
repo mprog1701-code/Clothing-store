@@ -578,6 +578,11 @@ def cart_view(request):
 
 def add_to_cart(request, product_id):
     if request.method == 'POST':
+        if not request.user.is_authenticated:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Content-Type','').startswith('application/json'):
+                return JsonResponse({'code': 'UNAUTHORIZED', 'message': 'authentication required'}, status=401)
+            messages.error(request, 'يرجى تسجيل الدخول أولاً')
+            return redirect('login')
         product = get_object_or_404(Product, id=product_id, is_active=True)
         variant_id = None
         quantity = 1
@@ -703,6 +708,8 @@ def add_to_cart(request, product_id):
 def cart_items_json(request):
     if request.method != 'POST':
         return JsonResponse({'code': 'METHOD_NOT_ALLOWED', 'message': 'method not allowed'}, status=405)
+    if not request.user.is_authenticated:
+        return JsonResponse({'code': 'UNAUTHORIZED', 'message': 'authentication required'}, status=401)
     if request.headers.get('Content-Type', '').startswith('application/json'):
         try:
             payload = json.loads(request.body.decode('utf-8') or '{}')
@@ -803,6 +810,11 @@ def remove_from_cart(request, index):
     if request.method != 'POST':
         messages.info(request, 'تم إلغاء عملية الحذف')
         return redirect('cart_view')
+    if not request.user.is_authenticated:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'code': 'UNAUTHORIZED', 'message': 'authentication required'}, status=401)
+        messages.error(request, 'يرجى تسجيل الدخول أولاً')
+        return redirect('login')
     cart = request.session.get('cart', [])
     if 0 <= index < len(cart):
         cart.pop(index)
@@ -816,6 +828,11 @@ def clear_cart(request):
     if request.method not in ['POST', 'DELETE']:
         messages.info(request, 'تم إلغاء عملية المسح')
         return redirect('cart_view')
+    if not request.user.is_authenticated:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.method == 'DELETE':
+            return JsonResponse({'code': 'UNAUTHORIZED', 'message': 'authentication required'}, status=401)
+        messages.error(request, 'يرجى تسجيل الدخول أولاً')
+        return redirect('login')
     request.session['cart'] = []
     if 'cart_store_id' in request.session:
         del request.session['cart_store_id']
