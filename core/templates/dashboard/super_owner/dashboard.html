@@ -99,7 +99,11 @@
   </div>
 
   <div class="text-center">
+    {% if features.OWNER_DASHBOARD_REPORTS %}
     <a href="{% url 'super_owner_reports' %}" class="btn btn-secondary">عرض التقارير</a>
+    {% else %}
+    <a class="btn btn-secondary disabled" tabindex="-1" aria-disabled="true">عرض التقارير <span class="badge bg-warning ms-2">قريبًا</span></a>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

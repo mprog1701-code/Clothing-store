@@ -415,6 +415,20 @@ class Campaign(models.Model):
         return self.is_active and self.start_date <= now <= self.end_date
 
 
+class FeatureFlag(models.Model):
+    SCOPE_CHOICES = [
+        ('global', 'Global'),
+        ('store', 'Store'),
+    ]
+    key = models.CharField(max_length=100, unique=True)
+    enabled = models.BooleanField(default=True)
+    scope = models.CharField(max_length=10, choices=SCOPE_CHOICES, default='global')
+    store = models.ForeignKey(Store, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.key}:{'on' if self.enabled else 'off'}"
+
+
 class AdminAuditLog(models.Model):
     admin_user = models.ForeignKey(User, on_delete=models.CASCADE)
     action = models.CharField(max_length=100)

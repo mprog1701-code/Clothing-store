@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.core.cache import cache
-from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize
+from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize, FeatureFlag
 import logging
 import json
 from urllib.request import Request, urlopen
@@ -302,6 +302,51 @@ class AddressViewSet(viewsets.ModelViewSet):
                 'provider_place_id': str(it.get('place_id') or ''),
             })
         return Response({'results': results})
+
+
+class FeatureFlagAdminList(APIView):
+    permission_classes = [IsAdmin]
+    def get(self, request):
+        initial = ['NEW_ARRIVALS_SECTION', 'ADS_SECTION', 'OWNER_DASHBOARD_REPORTS']
+        for k in initial:
+            if not FeatureFlag.objects.filter(key=k).exists():
+                FeatureFlag.objects.create(key=k, enabled=True, scope='global', store=None)
+        items = FeatureFlag.objects.all().order_by('key')
+        data = []
+        for it in items:
+            data.append({'key': it.key, 'enabled': bool(it.enabled), 'scope': it.scope, 'storeId': (it.store_id or None)})
+        return Response({'flags': data})
+
+
+class FeatureFlagAdminUpdate(APIView):
+    permission_classes = [IsAdmin]
+    def patch(self, request, key):
+        enabled = request.data.get('enabled')
+        scope = (request.data.get('scope') or '').strip() or None
+        store_id = request.data.get('storeId')
+        try:
+            ff = FeatureFlag.objects.filter(key=key).first()
+            if not ff:
+                ff = FeatureFlag(key=key)
+            if enabled is not None:
+                ff.enabled = bool(enabled)
+            if scope in ['global','store']:
+                ff.scope = scope
+            if store_id:
+                try:
+                    ff.store = Store.objects.get(id=int(store_id))
+                except Exception:
+                    ff.store = None
+            if not store_id and (scope == 'global' or scope is None):
+                ff.store = None
+            ff.save()
+            try:
+                cache.delete('feature_flags_cache')
+            except Exception:
+                pass
+            return Response({'key': ff.key, 'enabled': bool(ff.enabled), 'scope': ff.scope, 'storeId': (ff.store_id or None)})
+        except Exception as e:
+            return Response({'error': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class OrderViewSet(viewsets.ModelViewSet):
