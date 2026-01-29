@@ -223,6 +223,15 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
+# Feature flags (controlled via environment variables)
+FEATURE_FLAGS = {
+    'otp_verification': config('FEATURE_OTP_VERIFICATION', default=False, cast=bool),
+    'fast_delivery': config('FEATURE_FAST_DELIVERY', default=False, cast=bool),
+    'bank_transfer': config('FEATURE_BANK_TRANSFER', default=False, cast=bool),
+    'card_payment': config('FEATURE_CARD_PAYMENT', default=False, cast=bool),
+    'app_icon_customization': config('FEATURE_APP_ICON', default=False, cast=bool),
+}
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",

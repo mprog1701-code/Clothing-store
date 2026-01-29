@@ -251,7 +251,7 @@ def register(request):
         serializer = UserRegistrationSerializer(data=data)
         if serializer.is_valid():
             user = serializer.save()
-            login(request, user)
+            login(request, user, backend='core.backends.PhoneBackend')
             messages.success(request, f'مرحباً {user.first_name}! تم التسجيل بنجاح')
             return redirect('home')
         else:

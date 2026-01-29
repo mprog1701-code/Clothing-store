@@ -3,10 +3,13 @@
 from pathlib import Path
 from decimal import Decimal
 import os
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-change-this-in-production'
+SECRET_KEY = config('SECRET_KEY', default='')
+if not SECRET_KEY:
+    SECRET_KEY = os.environ.get('SECRET_KEY', '')
 
 DEBUG = True
 
@@ -122,3 +125,5 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 DELIVERY_FEE = Decimal('5000')  # 5000 IQD
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
