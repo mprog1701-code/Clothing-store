@@ -227,7 +227,7 @@
 .panel.active{display:block}
 .box{background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;color:#111}
 .box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700}
-.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.actions{display:flex;gap:8px;justify-content:flex-start;margin-top:12px}
 .primary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
 .primary .btn-total{display:none}
 .promo{margin-top:8px;border:1px dashed #ddd;border-radius:12px;padding:10px;background:#fcfcfc}
@@ -238,12 +238,12 @@
 .coupon-note{color:#333;font-size:13px;margin-top:6px}
 .secondary{background:#fff;color:#111;border:1px solid #ddd;border-radius:10px;padding:10px 14px;cursor:pointer}
 .field{display:flex;flex-direction:column;gap:6px;margin:6px 0}
-.field input,.field textarea{border:1px solid #ddd;border-radius:10px;padding:10px}
+.field input,.field textarea{border:1px solid #ddd;border-radius:10px;padding:10px;text-align:right}
 .field .error{color:#b00020;font-size:13px}
 .guest-grid{display:grid;grid-template-columns:1fr;gap:8px}
 .addr-list{display:flex;flex-direction:column;gap:8px}
 .addr-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
-.addr-body{display:flex;flex-direction:column;gap:2px}
+.addr-body{display:flex;flex-direction:column;gap:2px;text-align:right}
 .addr-title{font-weight:700}
 .addr-street{color:#333}
 .addr-sub{color:#777;font-size:13px}
@@ -251,7 +251,7 @@
 .opt-list{display:grid;grid-template-columns:1fr;gap:8px}
 .opt-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
 .opt-item.disabled{opacity:.6;cursor:not-allowed}
-.opt-body{display:flex;flex-direction:column;gap:2px}
+.opt-body{display:flex;flex-direction:column;gap:2px;text-align:right}
 .opt-title{font-weight:700}
 .opt-sub{color:#777;font-size:13px}
 .pill{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:999px;padding:2px 8px;font-size:12px;color:#555;margin-inline-start:6px}
@@ -312,22 +312,15 @@ if(coForm){
       .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, data:j }; }); })
       .then(function(res){
         if(res.ok && res.data && res.data.ok){
-          window.location.assign('/my/orders/' + res.data.order_id + '/');
+          var oid = res.data.order_id || (Array.isArray(res.data.order_ids) ? res.data.order_ids[0] : null);
+          if(oid){ window.location.assign('/my/orders/' + oid + '/'); }
+          else { window.location.assign('/my/orders/'); }
           return;
         }
         if(res.status===409 && res.data && res.data.code==='CHECKOUT_STOCK_FAILED'){
-          var box = document.getElementById('sfList');
-          var modal = document.getElementById('stockFailModal');
-          if(box){
-            var items = Array.isArray(res.data.items)? res.data.items : [];
-            var html = '';
-            items.forEach(function(it){
-              var reason = (it.reason==='OUT_OF_STOCK') ? 'غير متوفر' : 'الكمية غير كافية';
-              html += '<div class="sel-info">' + 'منتج #' + it.productId + ' • نسخة #' + it.variantId + ' • ' + reason + ' • المتاح: ' + it.availableQty + '</div>';
-            });
-            box.innerHTML = html || '<div class="sel-info">تم تحديث السلة</div>';
-          }
-          if(modal){ modal.classList.add('open'); }
+          var items = Array.isArray(res.data.items)? res.data.items : [];
+          showToast('تم تحديث السلة بسبب تغيّر المخزون');
+          window.location.assign('/cart/');
           return;
         }
         showToast('تعذر إتمام الطلب');

@@ -1048,7 +1048,7 @@ def checkout(request):
             if k in request.session:
                 del request.session[k]
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'ok': True, 'order_ids': order_ids, 'count': len(order_ids)})
+            return JsonResponse({'ok': True, 'order_ids': order_ids, 'order_id': (order_ids[0] if order_ids else None), 'count': len(order_ids)})
         if len(order_ids) == 1:
             messages.success(request, f'تم إنشاء الطلب رقم #{order_ids[0]} بنجاح!')
             return redirect('order_detail', order_id=order_ids[0])
