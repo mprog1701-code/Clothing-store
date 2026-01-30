@@ -230,6 +230,9 @@ FEATURE_FLAGS = {
     'bank_transfer': config('FEATURE_BANK_TRANSFER', default=False, cast=bool),
     'card_payment': config('FEATURE_CARD_PAYMENT', default=False, cast=bool),
     'app_icon_customization': config('FEATURE_APP_ICON', default=False, cast=bool),
+    'NEW_ARRIVALS_SECTION': config('FEATURE_NEW_ARRIVALS_SECTION', default=True, cast=bool),
+    'ADS_SECTION': config('FEATURE_ADS_SECTION', default=True, cast=bool),
+    'OWNER_DASHBOARD_REPORTS': config('FEATURE_OWNER_DASHBOARD_REPORTS', default=True, cast=bool),
 }
 
 CORS_ALLOWED_ORIGINS = [
