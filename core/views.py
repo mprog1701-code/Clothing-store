@@ -4638,6 +4638,40 @@ def super_owner_settings(request):
         settings.secondary_color = request.POST.get('secondary_color', '#764ba2')
         
         settings.save()
+
+        try:
+            from .models import FeatureFlag
+            def set_flag(key, enabled_bool):
+                obj, _ = FeatureFlag.objects.get_or_create(key=key, defaults={'enabled': bool(enabled_bool), 'scope': 'global'})
+                obj.enabled = bool(enabled_bool)
+                obj.scope = 'global'
+                obj.store_id = None
+                obj.save()
+            feat_new_arrivals = (request.POST.get('feat_new_arrivals') or '').lower() in ['on','true','1']
+            feat_reports = (request.POST.get('feat_reports') or '').lower() in ['on','true','1']
+            set_flag('NEW_ARRIVALS_SECTION', feat_new_arrivals)
+            set_flag('OWNER_DASHBOARD_REPORTS', feat_reports)
+            feat_cat_women = (request.POST.get('feat_cat_women') or '').lower() in ['on','true','1']
+            feat_cat_men = (request.POST.get('feat_cat_men') or '').lower() in ['on','true','1']
+            feat_cat_kids = (request.POST.get('feat_cat_kids') or '').lower() in ['on','true','1']
+            feat_cat_perfumes = (request.POST.get('feat_cat_perfumes') or '').lower() in ['on','true','1']
+            feat_cat_cosmetics = (request.POST.get('feat_cat_cosmetics') or '').lower() in ['on','true','1']
+            feat_cat_shoes = (request.POST.get('feat_cat_shoes') or '').lower() in ['on','true','1']
+            feat_cat_watches = (request.POST.get('feat_cat_watches') or '').lower() in ['on','true','1']
+            set_flag('CATEGORY_WOMEN', feat_cat_women)
+            set_flag('CATEGORY_MEN', feat_cat_men)
+            set_flag('CATEGORY_KIDS', feat_cat_kids)
+            set_flag('CATEGORY_PERFUMES', feat_cat_perfumes)
+            set_flag('CATEGORY_COSMETICS', feat_cat_cosmetics)
+            set_flag('CATEGORY_SHOES', feat_cat_shoes)
+            set_flag('CATEGORY_WATCHES', feat_cat_watches)
+            try:
+                from django.core.cache import cache
+                cache.delete('feature_flags_cache')
+            except Exception:
+                pass
+        except Exception:
+            pass
         messages.success(request, 'تم تحديث إعدادات الموقع بنجاح!')
         return redirect('super_owner_settings')
     
