@@ -4787,10 +4787,17 @@ def super_owner_owners(request):
                 if not ids:
                     messages.error(request, 'يرجى اختيار ملاك للحذف')
                     return redirect('super_owner_owners')
-                ids = [i for i in ids if User.objects.filter(id=i).exclude(username='super_owner').exclude(id=request.user.id).exists()]
+                target_exists = [i for i in ids if User.objects.filter(id=i, role='admin').exists()]
+                deleted_self = request.user.id in target_exists
                 with transaction.atomic():
-                    User.objects.filter(id__in=ids, role='admin').exclude(username='super_owner').exclude(id=request.user.id).delete()
-                messages.success(request, f'تم حذف {len(ids)} مالكاً')
+                    User.objects.filter(id__in=target_exists, role='admin').delete()
+                messages.success(request, f'تم حذف {len(target_exists)} مالكاً')
+                if deleted_self:
+                    try:
+                        logout(request)
+                    except Exception:
+                        pass
+                    return redirect('home')
                 return redirect('super_owner_owners')
             if action == 'update_phone':
                 owner_id = int(request.POST.get('owner_id'))
