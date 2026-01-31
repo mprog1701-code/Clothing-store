@@ -63,10 +63,17 @@
 
                     <form method="post">
                         {% csrf_token %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-outline-danger btn-sm" id="bulk_delete_selected_variants">حذف المحدد</button>
+                                <button type="button" class="btn btn-danger btn-sm" id="bulk_delete_all_variants">حذف الكل</button>
+                            </div>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-striped table-bordered align-middle">
                                 <thead class="table-light">
                                     <tr>
+                                        <th><input type="checkbox" id="select_all_variants"></th>
                                         <th>المتجر</th>
                                         <th>كود المنتج</th>
                                         <th>اسم المنتج</th>
@@ -79,6 +86,7 @@
                                 <tbody>
                                     {% for v in variants %}
                                     <tr>
+                                        <td><input type="checkbox" class="variant-select" value="{{ v.id }}"></td>
                                         <td>{{ v.product.store.name }}</td>
                                         <td>{{ v.product.id }}</td>
                                         <td>{{ v.product.name }}</td>
@@ -118,6 +126,7 @@
                                 حفظ الكميات
                             </button>
                         </div>
+                        <input type="hidden" name="action" id="inventory_action">
                     </form>
                 </div>
             </div>
@@ -147,6 +156,20 @@ document.addEventListener('DOMContentLoaded', function(){
     var timer=null;
     qInput.addEventListener('input', function(){ clearTimeout(timer); timer=setTimeout(submit, 400); });
   }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var form = document.querySelector('form[method="post"]');
+  var actionInput = document.getElementById('inventory_action');
+  var selectAll = document.getElementById('select_all_variants');
+  var btnSel = document.getElementById('bulk_delete_selected_variants');
+  var btnAll = document.getElementById('bulk_delete_all_variants');
+  if(selectAll){ selectAll.addEventListener('change', function(){ document.querySelectorAll('.variant-select').forEach(function(cb){ cb.checked = selectAll.checked; }); }); }
+  function submitWithIds(ids){ if(!ids.length){ alert('يرجى اختيار عناصر'); return; } actionInput.value = 'bulk_delete_selected'; var existHidden = form.querySelectorAll('input[name="selected_ids"]'); existHidden.forEach(function(h){ h.remove(); }); ids.forEach(function(id){ var h=document.createElement('input'); h.type='hidden'; h.name='selected_ids'; h.value=id; form.appendChild(h); }); form.submit(); }
+  function collectVisibleIds(){ var ids=[]; document.querySelectorAll('.variant-select').forEach(function(cb){ ids.push(cb.value); }); return ids; }
+  if(btnSel){ btnSel.addEventListener('click', function(){ var ids=[]; document.querySelectorAll('.variant-select:checked').forEach(function(cb){ ids.push(cb.value); }); submitWithIds(ids); }); }
+  if(btnAll){ btnAll.addEventListener('click', function(){ if(!confirm('تأكيد حذف كل العناصر المعروضة؟')) return; submitWithIds(collectVisibleIds()); }); }
 });
 </script>
 {% endblock %}

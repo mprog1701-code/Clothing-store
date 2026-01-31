@@ -53,11 +53,18 @@
                             </div>
                         </div>
                     </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="bulk_delete_selected_orders">حذف المحدد</button>
+                            <button type="button" class="btn btn-danger btn-sm" id="bulk_delete_all_orders">حذف الكل</button>
+                        </div>
+                    </div>
 
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
+                                    <th><input type="checkbox" id="select_all_orders"></th>
                                     <th>#</th>
                                     <th>رقم الطلب</th>
                                     <th>العميل</th>
@@ -73,6 +80,7 @@
                                 {% for oi in orders_info %}
                                 {% with order=oi.order %}
                                 <tr>
+                                    <td><input type="checkbox" class="order-select" value="{{ order.id }}"></td>
                                     <td>{{ forloop.counter }}</td>
                                     <td>
                                         <strong>#{{ order.id }}</strong>
@@ -314,6 +322,15 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.wa-owner-btn').forEach(function(a){ a.addEventListener('click', function(ev){ ev.stopPropagation(); }); });
 
   document.querySelectorAll('.delete-order').forEach(function(btn){ btn.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); if(pending) return; var tr = this.closest('tr'); var oid = this.getAttribute('data-order-id'); if(!confirm('تأكيد حذف الطلب #' + oid + '؟')) return; pending = true; fetch('{% url "super_owner_delete_order_json" %}', { method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Content-Type':'application/x-www-form-urlencoded','X-CSRFToken':csrftoken}, body:'order_id='+encodeURIComponent(oid) }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ if(tr) tr.remove(); showSnack('تم حذف الطلب', false); } else { showSnack('فشل حذف الطلب', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }); });
+
+  var selectAllOrders = document.getElementById('select_all_orders');
+  if(selectAllOrders){ selectAllOrders.addEventListener('change', function(){ document.querySelectorAll('.order-select').forEach(function(cb){ cb.checked = selectAllOrders.checked; }); }); }
+  function collectVisibleOrderIds(){ var ids=[]; document.querySelectorAll('.order-select').forEach(function(cb){ ids.push(cb.value); }); return ids; }
+  function deleteBulk(ids){ if(!ids.length){ showSnack('يرجى اختيار طلبات', true); return; } pending = true; var fd = new FormData(); fd.append('action','bulk'); ids.forEach(function(id){ fd.append('selected_ids', id); }); fetch('{% url "super_owner_delete_order_json" %}', { method:'POST', body: fd, headers: {'X-Requested-With':'XMLHttpRequest','X-CSRFToken': csrftoken }, credentials:'same-origin' }).then(function(r){ pending=false; if(!r.ok) throw r; return r.json(); }).then(function(j){ if(j.ok){ location.reload(); } else { showSnack('فشل حذف الطلبات', true); } }).catch(function(){ pending=false; showSnack('خطأ بالخادم', true); }); }
+  var btnSel=document.getElementById('bulk_delete_selected_orders');
+  var btnAll=document.getElementById('bulk_delete_all_orders');
+  if(btnSel){ btnSel.addEventListener('click', function(){ var ids=[]; document.querySelectorAll('.order-select:checked').forEach(function(cb){ ids.push(cb.value); }); deleteBulk(ids); }); }
+  if(btnAll){ btnAll.addEventListener('click', function(){ if(!confirm('تأكيد حذف كل العناصر المعروضة؟')) return; deleteBulk(collectVisibleOrderIds()); }); }
 
   // Auto-refresh statuses
   function pollStatuses(){

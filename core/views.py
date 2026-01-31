@@ -1976,6 +1976,15 @@ def super_owner_announcements(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         try:
+            if action and action.startswith('bulk_delete'):
+                ids = [int(x) for x in request.POST.getlist('selected_ids') if str(x).isdigit()]
+                if ids:
+                    with transaction.atomic():
+                        Campaign.objects.filter(id__in=ids).delete()
+                    messages.success(request, f'تم حذف {len(ids)} إعلاناً')
+                else:
+                    messages.error(request, 'يرجى اختيار إعلانات للحذف')
+                return redirect('super_owner_announcements')
             if action == 'create':
                 title = request.POST.get('title') or ''
                 description = request.POST.get('description') or ''
@@ -2133,6 +2142,9 @@ def super_owner_stores(request):
                             messages.success(request, 'تم تطبيق القالب/الفئة للمتاجر المحددة')
                         else:
                             messages.error(request, 'قالب/فئة غير صالح')
+                    elif action == 'bulk_delete':
+                        Store.objects.filter(id__in=ids).delete()
+                        messages.success(request, f'تم حذف {len(ids)} متجراً')
             return redirect('super_owner_stores')
         except Exception:
             messages.error(request, 'حدث خطأ أثناء تنفيذ العملية')
@@ -2610,6 +2622,16 @@ def super_owner_products(request):
     products_page = paginator.get_page(page)
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
+        if action.startswith('bulk_delete'):
+            ids = [int(x) for x in request.POST.getlist('selected_ids') if str(x).isdigit()]
+            if not ids:
+                messages.error(request, 'يرجى اختيار منتجات للحذف')
+                return redirect('super_owner_products')
+            from django.db import transaction
+            with transaction.atomic():
+                Product.objects.filter(id__in=ids).delete()
+            messages.success(request, f'تم حذف {len(ids)} منتجاً')
+            return redirect('super_owner_products')
 
         product_id = request.POST.get('product_id')
         product = get_object_or_404(Product, id=product_id)
@@ -4412,6 +4434,31 @@ def super_owner_delete_order_json(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'invalid_method'}, status=405)
     try:
+        selected_ids = [int(x) for x in request.POST.getlist('selected_ids') if str(x).isdigit()]
+        if selected_ids:
+            qs = Order.objects.filter(id__in=selected_ids).select_related('user')
+            from .models import AdminAuditLog
+            import json
+            with transaction.atomic():
+                for order in qs:
+                    before = {
+                        'id': order.id,
+                        'status': order.status,
+                        'user': order.user.username,
+                        'phone': order.user.phone,
+                        'total': float(order.total_amount),
+                    }
+                    AdminAuditLog.objects.create(
+                        admin_user=request.user,
+                        action='delete_order',
+                        model='Order',
+                        object_id=str(order.id),
+                        before=json.dumps(before, ensure_ascii=False),
+                        after=json.dumps({}, ensure_ascii=False),
+                        ip=request.META.get('REMOTE_ADDR') or ''
+                    )
+                    order.delete()
+            return JsonResponse({'ok': True, 'count': len(selected_ids)})
         order_id = int(request.POST.get('order_id') or '0')
         order = Order.objects.get(id=order_id)
         before = {
@@ -4735,6 +4782,16 @@ def super_owner_owners(request):
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
         try:
+            if action.startswith('bulk_delete'):
+                ids = [int(x) for x in request.POST.getlist('selected_ids') if str(x).isdigit()]
+                if not ids:
+                    messages.error(request, 'يرجى اختيار ملاك للحذف')
+                    return redirect('super_owner_owners')
+                ids = [i for i in ids if User.objects.filter(id=i).exclude(username='super_owner').exclude(id=request.user.id).exists()]
+                with transaction.atomic():
+                    User.objects.filter(id__in=ids, role='admin').exclude(username='super_owner').exclude(id=request.user.id).delete()
+                messages.success(request, f'تم حذف {len(ids)} مالكاً')
+                return redirect('super_owner_owners')
             if action == 'update_phone':
                 owner_id = int(request.POST.get('owner_id'))
                 phone_raw = (request.POST.get('phone') or '').strip()
@@ -5166,35 +5223,47 @@ def super_owner_inventory(request):
     variants = list(base_qs.order_by('product__store__name', 'product__name', 'color_attr__name', 'size_attr__order', 'size_attr__name'))
 
     if request.method == 'POST':
-        try:
-            from django.db import transaction
-            with transaction.atomic():
-                variant_ids = set()
-                for key, val in request.POST.items():
-                    if key.startswith('qty_'):
+        action = (request.POST.get('action') or '').strip()
+        if action == 'bulk_delete_selected':
+            try:
+                ids = [int(x) for x in request.POST.getlist('selected_ids') if str(x).isdigit()]
+                if not ids:
+                    messages.error(request, 'يرجى اختيار عناصر للحذف')
+                else:
+                    with transaction.atomic():
+                        ProductVariant.objects.filter(id__in=ids).delete()
+                    messages.success(request, f'تم حذف {len(ids)} عنصراً من المخزون')
+            except Exception:
+                messages.error(request, 'حدث خطأ أثناء الحذف')
+        else:
+            try:
+                with transaction.atomic():
+                    variant_ids = set()
+                    for key, val in request.POST.items():
+                        if key.startswith('qty_'):
+                            try:
+                                variant_ids.add(int(key[4:]))
+                            except Exception:
+                                pass
+                    for vid in variant_ids:
                         try:
-                            variant_ids.add(int(key[4:]))
+                            v = ProductVariant.objects.select_related('product').get(id=vid)
+                        except ProductVariant.DoesNotExist:
+                            continue
+                        qty_raw = request.POST.get(f'qty_{vid}', '')
+                        enabled_raw = request.POST.get(f'enabled_{vid}', None)
+                        try:
+                            qty = int((qty_raw or '').strip() or '0')
                         except Exception:
-                            pass
-                for vid in variant_ids:
-                    try:
-                        v = ProductVariant.objects.select_related('product').get(id=vid)
-                    except ProductVariant.DoesNotExist:
-                        continue
-                    qty_raw = request.POST.get(f'qty_{vid}', '')
-                    enabled_raw = request.POST.get(f'enabled_{vid}', None)
-                    try:
-                        qty = int((qty_raw or '').strip() or '0')
-                    except Exception:
-                        qty = 0
-                    if qty < 0:
-                        qty = 0
-                    v.stock_qty = qty
-                    v.is_enabled = bool(enabled_raw) if enabled_raw is not None else (qty > 0)
-                    v.save()
-            messages.success(request, 'تم حفظ الكميات والحالة بنجاح')
-        except Exception:
-            messages.error(request, 'حدث خطأ أثناء الحفظ')
+                            qty = 0
+                        if qty < 0:
+                            qty = 0
+                        v.stock_qty = qty
+                        v.is_enabled = bool(enabled_raw) if enabled_raw is not None else (qty > 0)
+                        v.save()
+                messages.success(request, 'تم حفظ الكميات والحالة بنجاح')
+            except Exception:
+                messages.error(request, 'حدث خطأ أثناء الحفظ')
         params = []
         if store_id:
             params.append(f'store={store_id}')

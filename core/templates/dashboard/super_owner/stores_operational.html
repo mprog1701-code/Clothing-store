@@ -86,6 +86,8 @@
           {% endfor %}
         </select>
         <input type="number" step="0.01" name="delivery_fee" class="form-control form-control-sm" style="max-width:160px" placeholder="رسوم التوصيل">
+        <button type="button" class="btn btn-outline-danger btn-sm" id="bulk_delete_selected_stores">حذف المحدد</button>
+        <button type="button" class="btn btn-danger btn-sm" id="bulk_delete_all_stores">حذف الكل</button>
       </div>
       
     </div>
@@ -170,6 +172,24 @@ function submitRowAction(id, action){
   form.submit();
   return false;
 }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var form=document.querySelector('form[method="post"]');
+  var btnSel=document.getElementById('bulk_delete_selected_stores');
+  var btnAll=document.getElementById('bulk_delete_all_stores');
+  function submitBulkDelete(all){
+    var actionInput=form.querySelector('select[name="action"]');
+    if(actionInput){ actionInput.value='bulk_delete'; }
+    if(all){
+      document.querySelectorAll('.row_select').forEach(function(cb){ cb.checked=true; });
+    }
+    form.submit();
+  }
+  if(btnSel){ btnSel.addEventListener('click', function(){ submitBulkDelete(false); }); }
+  if(btnAll){ btnAll.addEventListener('click', function(){ if(confirm('تأكيد حذف كل العناصر المعروضة؟')) submitBulkDelete(true); }); }
+});
 </script>
 
 <style>

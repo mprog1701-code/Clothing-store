@@ -83,10 +83,17 @@
                         </div>
                     </div>
 
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-danger btn-sm" id="bulk_delete_selected_products">حذف المحدد</button>
+                            <button type="button" class="btn btn-danger btn-sm" id="bulk_delete_all_products">حذف الكل</button>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
+                                    <th><input type="checkbox" id="select_all_products"></th>
                                     <th>#</th>
                                     <th>المنتج</th>
                                     <th>المتجر</th>
@@ -101,6 +108,7 @@
                             <tbody>
                                 {% for product in products %}
                                 <tr>
+                                    <td><input type="checkbox" class="row-select" value="{{ product.id }}"></td>
                                     <td>{{ product.id }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -306,12 +314,47 @@
 .ajax-error-toast { position: fixed; bottom: 20px; left: 20px; z-index: 1055; }
 </style>
 <script>
+    var selectAll = document.getElementById('select_all_products');
+    if(selectAll){
+        selectAll.addEventListener('change', function(){
+            document.querySelectorAll('.row-select').forEach(function(cb){ cb.checked = selectAll.checked; });
+        });
+    }
+    var csrftoken=(function(){var v=document.cookie.match('(^|; )'+'csrftoken'+'=([^;]*)');return v?decodeURIComponent(v[2]):'';})();
+    function collectVisibleIds(){
+        var ids=[];document.querySelectorAll('tbody tr').forEach(function(tr){var cb=tr.querySelector('.row-select');if(cb){ids.push(cb.value);} });return ids;
+    }
+    var btnSel=document.getElementById('bulk_delete_selected_products');
+    var btnAll=document.getElementById('bulk_delete_all_products');
+    if(btnSel){
+        btnSel.addEventListener('click', function(){
+            var ids=[];document.querySelectorAll('.row-select:checked').forEach(function(cb){ids.push(cb.value);});
+            if(!ids.length){
+                var alert=document.createElement('div');alert.className='alert alert-warning ajax-error-toast';alert.textContent='يرجى اختيار منتجات';document.body.appendChild(alert);setTimeout(function(){alert.remove();},3000);return;
+            }
+            var fd=new FormData();fd.append('action','bulk_delete_selected');ids.forEach(function(id){fd.append('selected_ids',id);});
+            fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':csrftoken}}).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(t){ var a=document.createElement('div');a.className='alert alert-danger ajax-error-toast';a.textContent='فشل الحذف';document.body.appendChild(a);setTimeout(function(){a.remove();},3000); }); });
+        });
+    }
+    if(btnAll){
+        btnAll.addEventListener('click', function(){
+            if(!confirm('تأكيد حذف كل العناصر المعروضة؟')) return;
+            var ids=collectVisibleIds();
+            if(!ids.length){ return; }
+            var fd=new FormData();fd.append('action','bulk_delete_all');ids.forEach(function(id){fd.append('selected_ids',id);});
+            fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':csrftoken}}).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(t){ var a=document.createElement('div');a.className='alert alert-danger ajax-error-toast';a.textContent='فشل الحذف';document.body.appendChild(a);setTimeout(function(){a.remove();},3000); }); });
+        });
+    }
 document.addEventListener('DOMContentLoaded', function () {
+    function getCookie(name){
+        var v=document.cookie.match('(^|; )'+name+'=([^;]*)');
+        return v?decodeURIComponent(v[2]):'';
+    }
     document.querySelectorAll('form[data-ajax="true"]').forEach(function(form){
         form.addEventListener('submit', function(e){
             e.preventDefault();
             const formData = new FormData(form);
-            fetch(form.action || window.location.href, { method: form.method || 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            fetch(form.action || window.location.href, { method: form.method || 'POST', body: formData, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') } })
             .then(function(resp){
                 if (resp.ok || (resp.status >= 300 && resp.status < 400)) { window.location.reload(); return; }
                 return resp.text().then(function(text){
@@ -331,5 +374,4 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
-</script>
 {% endblock %}

@@ -32,10 +32,17 @@
         </div>
       </form>
 
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-outline-danger btn-sm" id="bulk_delete_selected_owners">حذف المحدد</button>
+          <button type="button" class="btn btn-danger btn-sm" id="bulk_delete_all_owners">حذف الكل</button>
+        </div>
+      </div>
       <div class="table-responsive">
         <table class="table table-hover align-middle">
           <thead class="table-light">
             <tr>
+              <th><input type="checkbox" id="select_all_owners"></th>
               <th>#</th>
               <th>الاسم</th>
               <th>اسم المستخدم</th>
@@ -49,6 +56,7 @@
             {% for oi in owners_info %}
             {% with o=oi.owner %}
             <tr>
+              <td><input type="checkbox" class="owner-select" value="{{ o.id }}"></td>
               <td>{{ forloop.counter }}</td>
               <td>{{ o.get_full_name|default:o.username }}</td>
               <td>{{ o.username }}</td>
@@ -85,5 +93,18 @@
 .table-hover tbody tr:hover{background-color:rgba(0,0,0,.02)}
 .btn-group-sm .btn{padding:.25rem .4rem;font-size:.8rem}
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var selectAll=document.getElementById('select_all_owners');
+  if(selectAll){ selectAll.addEventListener('change', function(){ document.querySelectorAll('.owner-select').forEach(function(cb){ cb.checked = selectAll.checked; }); }); }
+  function getCookie(name){ var v=document.cookie.match('(^|; )'+name+'=([^;]*)'); return v?decodeURIComponent(v[2]):''; }
+  var csrftoken=getCookie('csrftoken');
+  function collectVisibleOwnerIds(){ var ids=[]; document.querySelectorAll('.owner-select').forEach(function(cb){ ids.push(cb.value); }); return ids; }
+  var btnSel=document.getElementById('bulk_delete_selected_owners');
+  var btnAll=document.getElementById('bulk_delete_all_owners');
+  function submit(ids){ if(!ids.length){ var a=document.createElement('div'); a.className='alert alert-warning'; a.textContent='يرجى اختيار ملاك'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },3000); return; } var fd=new FormData(); fd.append('action','bulk_delete_selected'); ids.forEach(function(id){ fd.append('selected_ids', id); }); fetch(window.location.href,{ method:'POST', body:fd, credentials:'same-origin', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': csrftoken } }).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(){ var a=document.createElement('div'); a.className='alert alert-danger'; a.textContent='فشل الحذف'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },3000); }); }); }
+  if(btnSel){ btnSel.addEventListener('click', function(){ var ids=[]; document.querySelectorAll('.owner-select:checked').forEach(function(cb){ ids.push(cb.value); }); submit(ids); }); }
+  if(btnAll){ btnAll.addEventListener('click', function(){ if(!confirm('تأكيد حذف كل العناصر المعروضة؟')) return; submit(collectVisibleOwnerIds()); }); }
+});
+</script>
 {% endblock %}
-
