@@ -316,15 +316,13 @@ if(coForm){
       .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, data:j }; }); })
       .then(function(res){
         if(res.ok && res.data && res.data.ok){
-          var oid = res.data.order_id || (Array.isArray(res.data.order_ids) ? res.data.order_ids[0] : null);
-          if(oid){ window.location.assign('/my/orders/' + oid + '/'); }
-          else { window.location.assign('/my/orders/'); }
+          window.location.assign('/');
           return;
         }
         if(res.status===409 && res.data && res.data.code==='CHECKOUT_STOCK_FAILED'){
           var items = Array.isArray(res.data.items)? res.data.items : [];
           showToast('تم تحديث السلة بسبب تغيّر المخزون');
-          window.location.assign('/cart/');
+          window.location.assign('/');
           return;
         }
         showToast('تعذر إتمام الطلب');
