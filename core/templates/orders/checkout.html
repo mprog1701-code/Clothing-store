@@ -227,6 +227,7 @@
 .panel.active{display:block}
 .box{background:#fff;border:1px solid #eee;border-radius:12px;padding:12px;color:#111}
 .box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700}
+.box-head > div{text-align:right}
 .actions{display:flex;gap:8px;justify-content:flex-start;margin-top:12px}
 .primary{background:#111;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
 .primary .btn-total{display:none}
@@ -234,15 +235,17 @@
 .promo .pill{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:999px;padding:2px 8px;font-size:12px;color:#555}
 .coupon-box{margin-top:12px;border:1px solid #eee;border-radius:12px;padding:10px;background:#fcfcfc}
 .coupon-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:6px}
-.coupon-row input{border:1px solid #ddd;border-radius:10px;padding:10px}
+.coupon-row input{border:1px solid #ddd;border-radius:10px;padding:10px;text-align:right}
 .coupon-note{color:#333;font-size:13px;margin-top:6px}
 .secondary{background:#fff;color:#111;border:1px solid #ddd;border-radius:10px;padding:10px 14px;cursor:pointer}
 .field{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.field label{text-align:right}
 .field input,.field textarea{border:1px solid #ddd;border-radius:10px;padding:10px;text-align:right}
 .field .error{color:#b00020;font-size:13px}
 .guest-grid{display:grid;grid-template-columns:1fr;gap:8px}
 .addr-list{display:flex;flex-direction:column;gap:8px}
 .addr-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
+.addr-item input[type="radio"]{margin-inline-end:8px;margin-inline-start:0;align-self:center}
 .addr-body{display:flex;flex-direction:column;gap:2px;text-align:right}
 .addr-title{font-weight:700}
 .addr-street{color:#333}
@@ -250,6 +253,7 @@
 .empty-note{color:#777}
 .opt-list{display:grid;grid-template-columns:1fr;gap:8px}
 .opt-item{display:flex;gap:10px;align-items:flex-start;border:1px solid #eee;border-radius:10px;padding:10px}
+.opt-item input[type="radio"]{margin-inline-end:8px;margin-inline-start:0;align-self:center}
 .opt-item.disabled{opacity:.6;cursor:not-allowed}
 .opt-body{display:flex;flex-direction:column;gap:2px;text-align:right}
 .opt-title{font-weight:700}
