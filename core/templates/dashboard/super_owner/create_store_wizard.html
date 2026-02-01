@@ -241,8 +241,13 @@ document.addEventListener('DOMContentLoaded', function(){
   if(mapModalEl){
     mapModalEl.addEventListener('shown.bs.modal', function(){
       initMap();
-      setTimeout(function(){ if(map){ map.invalidateSize(); } }, 50);
-      requestAnimationFrame(function(){ if(map){ map.invalidateSize(); } });
+      function forceInvalidate(){
+        if(map){ map.invalidateSize(); }
+        setTimeout(function(){ if(map){ map.invalidateSize(); } }, 100);
+        setTimeout(function(){ if(map){ map.invalidateSize(); } }, 250);
+        requestAnimationFrame(function(){ if(map){ map.invalidateSize(); } });
+      }
+      forceInvalidate();
     });
     mapModalEl.addEventListener('hidden.bs.modal', function(){ if(map){ try{ map.remove(); }catch(e){} map=null; marker=null; } });
   }
@@ -253,6 +258,8 @@ document.addEventListener('DOMContentLoaded', function(){
     var inst = mapModalEl ? bootstrap.Modal.getInstance(mapModalEl) : null;
     if(inst){ inst.hide(); }
     else if(modal){ modal.hide(); }
+    try{ document.querySelectorAll('.modal-backdrop').forEach(function(el){ el.remove(); }); }catch(e){}
+    try{ document.body.classList.remove('modal-open'); document.body.style.paddingRight=''; }catch(e){}
   }
   if(confirmBtn){ confirmBtn.addEventListener('click', function(){ var fa = document.getElementById('formatted_address').value || ''; if(fa){ document.getElementById('addressInput').value = fa; addrPreview.textContent = fa; } hideModal(); }); }
   if(cancelBtn){ cancelBtn.addEventListener('click', function(){ hideModal(); }); }
