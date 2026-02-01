@@ -184,44 +184,46 @@
 
         .table thead th { color: var(--text-primary); background-color: rgba(255,255,255,0.08); }
         body.theme-light .table thead th { color: #212529; background-color: #f8f9fa; }
-        .table tbody td { color: var(--text-primary); }
+        body:not(.theme-light) .table thead th { color: #fff !important; }
+        /* Table body colors per theme to ensure strong contrast */
+        body:not(.theme-light) .table tbody tr { background-color: rgba(255,255,255,0.06) !important; }
+        body:not(.theme-light) .table tbody td { color: #fff !important; }
+        body.theme-light .table tbody td { color: #111 !important; }
 
-        /* Light surface contrast overrides */
-        .card,
-        .modal-content,
-        .offcanvas,
-        .offcanvas-header,
-        .offcanvas-body,
-        .dropdown-menu,
-        .list-group-item,
-        .bg-white,
-        .table,
-        .toast .toast-body {
+        /* Light surface contrast overrides (scoped to light theme surfaces) */
+        body.theme-light .card,
+        body.theme-light .modal-content,
+        body.theme-light .offcanvas,
+        body.theme-light .offcanvas-header,
+        body.theme-light .offcanvas-body,
+        body.theme-light .dropdown-menu,
+        body.theme-light .list-group-item,
+        body.theme-light .bg-white,
+        body.theme-light .toast .toast-body {
             color: #111 !important;
         }
-        .card .text-muted,
-        .modal-content .text-muted,
-        .dropdown-menu .text-muted,
-        .offcanvas-body .text-muted,
-        .list-group-item .text-muted,
-        .table .text-muted {
+        body.theme-light .card .text-muted,
+        body.theme-light .modal-content .text-muted,
+        body.theme-light .dropdown-menu .text-muted,
+        body.theme-light .offcanvas-body .text-muted,
+        body.theme-light .list-group-item .text-muted {
             color: #6c757d !important;
         }
-        .card .form-label,
-        .modal-content .form-label,
-        .offcanvas-body .form-label,
-        .dropdown-menu .form-label { color: #111 !important; }
-        .card .form-control,
-        .modal-content .form-control,
-        .offcanvas-body .form-control,
-        .dropdown-menu .form-control { background-color: #fff; border-color: #ced4da; color: #212529; }
-        .card .form-control::placeholder,
-        .modal-content .form-control::placeholder,
-        .offcanvas-body .form-control::placeholder,
-        .dropdown-menu .form-control::placeholder { color: #6c757d; }
-        .card .input-group-text,
-        .modal-content .input-group-text,
-        .offcanvas-body .input-group-text { background-color: #f8f9fa; color: #212529; border-color: #ced4da; }
+        body.theme-light .card .form-label,
+        body.theme-light .modal-content .form-label,
+        body.theme-light .offcanvas-body .form-label,
+        body.theme-light .dropdown-menu .form-label { color: #111 !important; }
+        body.theme-light .card .form-control,
+        body.theme-light .modal-content .form-control,
+        body.theme-light .offcanvas-body .form-control,
+        body.theme-light .dropdown-menu .form-control { background-color: #fff; border-color: #ced4da; color: #212529; }
+        body.theme-light .card .form-control::placeholder,
+        body.theme-light .modal-content .form-control::placeholder,
+        body.theme-light .offcanvas-body .form-control::placeholder,
+        body.theme-light .dropdown-menu .form-control::placeholder { color: #6c757d; }
+        body.theme-light .card .input-group-text,
+        body.theme-light .modal-content .input-group-text,
+        body.theme-light .offcanvas-body .input-group-text { background-color: #f8f9fa; color: #212529; border-color: #ced4da; }
 
         .alert { border: none; border-radius: .5rem; }
         .alert-success { background-color: #198754; color: var(--alert-text-light); }

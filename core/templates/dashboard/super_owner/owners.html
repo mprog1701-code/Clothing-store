@@ -38,6 +38,9 @@
           <button type="button" class="btn btn-outline-danger btn-sm" id="bulk_delete_selected_owners">حذف المحدد</button>
           <button type="button" class="btn btn-danger btn-sm" id="bulk_delete_all_owners">حذف الكل</button>
         </div>
+        <div>
+          <button type="button" class="btn btn-success btn-sm" id="open_create_owner_modal">إضافة مالك جديد</button>
+        </div>
       </div>
       <div class="table-responsive">
         <table class="table table-hover align-middle">
@@ -94,6 +97,35 @@
 .table-hover tbody tr:hover{background-color:rgba(0,0,0,.02)}
 .btn-group-sm .btn{padding:.25rem .4rem;font-size:.8rem}
 </style>
+<div class="modal fade" id="createOwnerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">إضافة مالك جديد</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="new_owner_full_name" class="form-label">الاسم الكامل</label>
+          <input type="text" id="new_owner_full_name" class="form-control" placeholder="مثال: أحمد علي" autocomplete="off">
+        </div>
+        <div class="mb-3">
+          <label for="new_owner_phone" class="form-label">رقم الهاتف</label>
+          <input type="text" id="new_owner_phone" class="form-control" placeholder="07xxxxxxxxx" autocomplete="off">
+        </div>
+        <div class="mb-3">
+          <label for="new_owner_email" class="form-label">البريد الإلكتروني (اختياري)</label>
+          <input type="email" id="new_owner_email" class="form-control" placeholder="example@mail.com" autocomplete="off">
+        </div>
+        <div class="text-danger" id="new_owner_error"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="submitCreateOwner">إنشاء</button>
+      </div>
+    </div>
+  </div>
+ </div>
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   var selectAll=document.getElementById('select_all_owners');
@@ -106,6 +138,10 @@ document.addEventListener('DOMContentLoaded', function(){
   function submit(ids){ if(!ids.length){ var a=document.createElement('div'); a.className='alert alert-warning'; a.textContent='يرجى اختيار ملاك'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); return; } var fd=new FormData(); fd.append('action','bulk_delete_selected'); ids.forEach(function(id){ fd.append('selected_ids', id); }); fetch(window.location.href,{ method:'POST', body:fd, credentials:'same-origin', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': csrftoken } }).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(){ var a=document.createElement('div'); a.className='alert alert-danger'; a.textContent='فشل الحذف'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); }); }); }
   if(btnSel){ btnSel.addEventListener('click', function(){ var ids=[]; document.querySelectorAll('.owner-select:checked').forEach(function(cb){ ids.push(cb.value); }); submit(ids); }); }
   if(btnAll){ btnAll.addEventListener('click', function(){ if(!confirm('تأكيد حذف كل العناصر المعروضة؟')) return; submit(collectVisibleOwnerIds()); }); }
+  var openBtn=document.getElementById('open_create_owner_modal');
+  if(openBtn){ openBtn.addEventListener('click', function(){ var mEl=document.getElementById('createOwnerModal'); var m=new bootstrap.Modal(mEl); m.show(); }); }
+  var submitCreate=document.getElementById('submitCreateOwner');
+  if(submitCreate){ submitCreate.addEventListener('click', function(){ var full=document.getElementById('new_owner_full_name').value.trim(); var phone=document.getElementById('new_owner_phone').value.trim(); var email=document.getElementById('new_owner_email').value.trim(); var err=document.getElementById('new_owner_error'); err.textContent=''; if(!full || !phone){ err.textContent='الاسم الكامل ورقم الهاتف مطلوبان'; return; } submitCreate.disabled=true; submitCreate.textContent='جارٍ الإنشاء...'; var fd=new FormData(); fd.append('full_name', full); fd.append('phone', phone); if(email) fd.append('email', email); var headers = csrftoken ? { 'X-CSRFToken': csrftoken } : {}; fetch('{% url "super_owner_create_owner_json" %}',{ method:'POST', body:fd, headers: headers }).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, data:j }; }); }).then(function(res){ submitCreate.disabled=false; submitCreate.textContent='إنشاء'; if(!res.ok){ var msg='فشل إنشاء المالك'; if(res.status===403){ msg='ليس لديك صلاحية الوصول'; } else if(res.status===405){ msg='طريقة غير مدعومة'; } else if(res.status===409 && res.data && res.data.error==='duplicate_phone'){ msg='رقم الهاتف مستخدم مسبقاً'; } else if(res.status===400){ if(res.data && res.data.error==='missing_required'){ msg='الاسم الكامل ورقم الهاتف مطلوبان'; } else if(res.data && res.data.error==='invalid_phone'){ msg='رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'; } } else if(res.status>=500){ msg='خطأ في الخادم أثناء إنشاء المالك'; } err.textContent=msg; return; } var modalEl=document.getElementById('createOwnerModal'); var modal=bootstrap.Modal.getInstance(modalEl); if(modal) modal.hide(); location.reload(); }); }); }
 });
 </script>
 {% endblock %}
