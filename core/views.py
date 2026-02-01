@@ -2406,17 +2406,33 @@ def super_owner_create_store(request):
             city = (request.POST.get('city') or '').strip()
             category = (request.POST.get('category') or '').strip()
             status_choice = (request.POST.get('status') or 'ACTIVE').strip()
+            address = (request.POST.get('address') or '').strip()
+            lat_raw = (request.POST.get('latitude') or '').strip()
+            lon_raw = (request.POST.get('longitude') or '').strip()
+            formatted = (request.POST.get('formatted_address') or '').strip()
             if not name:
                 errors['name'] = 'يرجى إدخال اسم المتجر'
             if not city:
                 errors['city'] = 'يرجى اختيار المدينة'
+            if not address:
+                errors['address'] = 'يرجى إدخال العنوان أو اختياره من الخريطة'
             valid_categories = [c[0] for c in Store.CATEGORY_CHOICES]
             if category and category not in valid_categories:
                 errors['category'] = 'فئة غير صالحة'
             if status_choice not in ['ACTIVE', 'DISABLED']:
                 status_choice = 'ACTIVE'
             if not errors:
-                wizard.update({'name': name, 'city': city, 'category': category or 'clothing', 'status': status_choice})
+                lat_val = None
+                lon_val = None
+                try:
+                    lat_val = float(lat_raw) if lat_raw else None
+                except Exception:
+                    lat_val = None
+                try:
+                    lon_val = float(lon_raw) if lon_raw else None
+                except Exception:
+                    lon_val = None
+                wizard.update({'name': name, 'city': city, 'category': category or 'clothing', 'status': status_choice, 'address': address, 'latitude': lat_val, 'longitude': lon_val, 'formatted_address': formatted})
                 request.session['create_store_wizard'] = wizard
                 step = '3'
             else:
@@ -2468,7 +2484,7 @@ def super_owner_create_store(request):
                         s = Store.objects.create(
                             name=wizard.get('name',''),
                             city=wizard.get('city',''),
-                            address='—',
+                            address=wizard.get('address','—'),
                             description='',
                             owner=owner,
                             category=wizard.get('category') or 'clothing',
@@ -2480,6 +2496,13 @@ def super_owner_create_store(request):
                             status=status_choice,
                             free_delivery_threshold=free_threshold,
                         )
+                        if wizard.get('latitude') is not None:
+                            s.latitude = wizard.get('latitude')
+                        if wizard.get('longitude') is not None:
+                            s.longitude = wizard.get('longitude')
+                        if wizard.get('formatted_address'):
+                            s.formatted_address = wizard.get('formatted_address')
+                        s.save()
                         if logo_file:
                             s.logo = logo_file
                             s.save()

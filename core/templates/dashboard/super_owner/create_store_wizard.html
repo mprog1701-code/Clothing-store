@@ -93,12 +93,46 @@
           </select>
           <div class="form-text">عند اختيار "نشط" يظهر المتجر ويقبل الطلبات؛ "غير نشط" يخفيه ولا يقبل الطلبات.</div>
         </div>
+        <div class="col-12">
+          <label class="form-label">العنوان *</label>
+          <div class="input-group">
+            <input type="text" class="form-control" id="addressInput" name="address" value="{{ wizard.address|default:'' }}" placeholder="مثال: شارع، منطقة، تفاصيل">
+            <button type="button" class="btn btn-outline-secondary" id="openMap">تحديد الموقع بالخريطة</button>
+          </div>
+          {% if errors.address %}<div class="text-danger small mt-1">{{ errors.address }}</div>{% endif %}
+          <div class="small text-muted mt-2" id="addrPreview"></div>
+          <input type="hidden" name="latitude" id="latitude" value="{{ wizard.latitude|default:'' }}">
+          <input type="hidden" name="longitude" id="longitude" value="{{ wizard.longitude|default:'' }}">
+          <input type="hidden" name="formatted_address" id="formatted_address" value="{{ wizard.formatted_address|default:'' }}">
+        </div>
       </div>
       <div class="card-footer d-flex justify-content-between">
         <a class="btn btn-secondary" href="{% url 'super_owner_create_store' %}?step=1">السابق</a>
         <button class="btn btn-primary" name="action" value="next">التالي</button>
       </div>
     </form>
+    <div class="modal fade" id="mapModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">تحديد الموقع</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2 d-flex gap-2">
+              <input id="searchInput" class="form-control" placeholder="ابحث عن مكان">
+              <button id="searchBtn" class="btn btn-outline-secondary" type="button">بحث</button>
+            </div>
+            <div id="list" class="list-group mb-2"></div>
+            <div id="map" style="height:420px"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelMap">إلغاء</button>
+            <button type="button" class="btn btn-primary" id="confirmLocation" data-bs-dismiss="modal">تأكيد الموقع</button>
+          </div>
+        </div>
+      </div>
+    </div>
   {% elif step == '3' %}
     <form method="post" enctype="multipart/form-data" class="card">
       {% csrf_token %}
@@ -155,6 +189,54 @@
   {% endif %}
 </div>
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+#map{background:#f0f0f0}
+.list-group .res{padding:8px;cursor:pointer;border:1px solid #eee;border-radius:8px;margin-bottom:6px}
+.list-group .res:hover{background:#f7f7f7}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var openBtn = document.getElementById('openMap');
+  var addrPreview = document.getElementById('addrPreview');
+  var mapModalEl = document.getElementById('mapModal');
+  var modal = mapModalEl ? new bootstrap.Modal(mapModalEl) : null;
+  var map, marker;
+  function initMap(){
+    if(map) return;
+    map = L.map('map', { attributionControl: false }).setView([33.3152,44.3661], 13);
+    L.control.attribution({ prefix: false }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
+    map.on('click', function(e){ setMarker(e.latlng.lat, e.latlng.lng); reverseGeocode(e.latlng.lat, e.latlng.lng); });
+  }
+  function setMarker(lat,lng){
+    if(!marker){ marker = L.marker([lat,lng], {draggable:true}).addTo(map); marker.on('dragend', function(){ var ll = marker.getLatLng(); updateLatLng(ll.lat, ll.lng); reverseGeocode(ll.lat, ll.lng); }); }
+    marker.setLatLng([lat,lng]); updateLatLng(lat,lng);
+  }
+  function updateLatLng(lat,lng){ document.getElementById('latitude').value = lat; document.getElementById('longitude').value = lng; addrPreview.textContent = '('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')'; }
+  function reverseGeocode(lat,lng){
+    fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=ar&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lng)).then(function(r){return r.json()}).then(function(data){
+      var addr = data.address || {}; var city = addr.city || addr.town || addr.village || addr.state || '';
+      var road = addr.road || ''; var house = addr.house_number || ''; var street = (road + (house?(' '+house):''));
+      document.querySelector('input[name="city"]').value = city || document.querySelector('input[name="city"]').value;
+      document.getElementById('addressInput').value = street || document.getElementById('addressInput').value;
+      document.getElementById('formatted_address').value = data.display_name || '';
+      addrPreview.textContent = data.display_name || addrPreview.textContent;
+    });
+  }
+  var searchInput = document.getElementById('searchInput');
+  var searchBtn = document.getElementById('searchBtn');
+  function doSearch(){ var q = (searchInput.value||'').trim(); if(!q) return; fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=ar&q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(items){ var list = document.getElementById('list'); list.innerHTML=''; items.slice(0,10).forEach(function(it){ var d = document.createElement('div'); d.className='res'; d.textContent = it.display_name; d.addEventListener('click', function(){ if(!map) initMap(); setMarker(parseFloat(it.lat), parseFloat(it.lon)); document.getElementById('formatted_address').value = it.display_name || ''; document.getElementById('addressInput').value = it.display_name || ''; }); list.appendChild(d); }); }); }
+  if(searchBtn){ searchBtn.addEventListener('click', doSearch); }
+  if(openBtn && modal){ openBtn.addEventListener('click', function(){ initMap(); modal.show(); }); }
+});
+</script>
+{% endblock %}
 <script>
 document.addEventListener('DOMContentLoaded', function(){
   const s = document.getElementById('owner_search');
