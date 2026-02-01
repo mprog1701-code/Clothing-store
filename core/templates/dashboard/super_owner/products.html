@@ -330,10 +330,10 @@
         btnSel.addEventListener('click', function(){
             var ids=[];document.querySelectorAll('.row-select:checked').forEach(function(cb){ids.push(cb.value);});
             if(!ids.length){
-                var alert=document.createElement('div');alert.className='alert alert-warning ajax-error-toast';alert.textContent='يرجى اختيار منتجات';document.body.appendChild(alert);setTimeout(function(){alert.remove();},3000);return;
+                var alert=document.createElement('div');alert.className='alert alert-warning ajax-error-toast';alert.textContent='يرجى اختيار منتجات';document.body.appendChild(alert);setTimeout(function(){alert.remove();},6000);return;
             }
             var fd=new FormData();fd.append('action','bulk_delete_selected');ids.forEach(function(id){fd.append('selected_ids',id);});
-            fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':csrftoken}}).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(t){ var a=document.createElement('div');a.className='alert alert-danger ajax-error-toast';a.textContent='فشل الحذف';document.body.appendChild(a);setTimeout(function(){a.remove();},3000); }); });
+            fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':csrftoken}}).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(t){ var a=document.createElement('div');a.className='alert alert-danger ajax-error-toast';a.textContent='فشل الحذف';document.body.appendChild(a);setTimeout(function(){a.remove();},6000); }); });
         });
     }
     if(btnAll){
@@ -342,7 +342,7 @@
             var ids=collectVisibleIds();
             if(!ids.length){ return; }
             var fd=new FormData();fd.append('action','bulk_delete_all');ids.forEach(function(id){fd.append('selected_ids',id);});
-            fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':csrftoken}}).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(t){ var a=document.createElement('div');a.className='alert alert-danger ajax-error-toast';a.textContent='فشل الحذف';document.body.appendChild(a);setTimeout(function(){a.remove();},3000); }); });
+            fetch(window.location.href,{method:'POST',body:fd,credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest','X-CSRFToken':csrftoken}}).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(t){ var a=document.createElement('div');a.className='alert alert-danger ajax-error-toast';a.textContent='فشل الحذف';document.body.appendChild(a);setTimeout(function(){a.remove();},6000); }); });
         });
     }
 document.addEventListener('DOMContentLoaded', function () {

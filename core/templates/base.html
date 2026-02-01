@@ -30,6 +30,13 @@
             --success-color: #00b894;
             --warning-color: #fdcb6e;
             --danger-color: #e17055;
+            --text-primary: #f8f9fa;
+            --text-secondary: rgba(255,255,255,0.92);
+            --text-muted-dark: rgba(255,255,255,0.75);
+            --text-primary-light: #212529;
+            --text-muted-light: #6c757d;
+            --alert-text-light: #ffffff;
+            --alert-text-dark: #111111;
             --bottom-nav-height: 64px;
         }
         
@@ -42,7 +49,9 @@
             background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%);
             min-height: 100vh;
             margin: 0;
-            color: #fff;
+            color: var(--text-primary);
+            direction: rtl;
+            text-align: right;
             padding-bottom: env(safe-area-inset-bottom);
             padding-top: env(safe-area-inset-top);
         }
@@ -55,6 +64,10 @@
             --gold: #B87333;
             --dark-color: #f7f7f7;
             --light-color: #ffffff;
+            --text-primary: var(--text-primary-light);
+            --text-secondary: #343a40;
+            --text-muted-dark: var(--text-muted-light);
+            --alert-text-light: #111111;
         }
         
         .main-container {
@@ -65,7 +78,7 @@
         main { padding-bottom: calc(var(--bottom-nav-height) + 24px); }
         body.theme-light .main-container {
             background: #ffffff;
-            color: #000;
+            color: var(--text-primary-light);
         }
         
         .navbar {
@@ -156,6 +169,29 @@
             transform: translateY(-2px);
         }
         main { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+        input, textarea, select { direction: rtl; text-align: right; }
+        table th, table td { text-align: right; }
+        .ltr, .ltr * { direction: ltr !important; text-align: left !important; }
+
+        body:not(.theme-light) .text-muted { color: var(--text-muted-dark) !important; }
+        body:not(.theme-light) .card .text-muted { color: #6c757d !important; }
+        body.theme-light .text-muted { color: var(--text-muted-light) !important; }
+
+        .form-control { background-color: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.25); color: var(--text-primary); }
+        .form-control::placeholder { color: rgba(255,255,255,0.65); }
+        body.theme-light .form-control { background-color: #fff; border-color: #ced4da; color: #212529; }
+
+        .table thead th { color: var(--text-primary); background-color: rgba(255,255,255,0.08); }
+        body.theme-light .table thead th { color: #212529; background-color: #f8f9fa; }
+        .table tbody td { color: var(--text-primary); }
+
+        .alert { border: none; border-radius: .5rem; }
+        .alert-success { background-color: #198754; color: var(--alert-text-light); }
+        .alert-danger { background-color: #dc3545; color: var(--alert-text-light); }
+        .alert-warning { background-color: #ffc107; color: var(--alert-text-dark); }
+        .alert-info { background-color: #0dcaf0; color: #111111; }
+        body > .alert { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1060; max-width: calc(100vw - 2rem); }
         
         
         .dropdown-item {
@@ -963,13 +999,8 @@
             }
         }
         .form-label,
-        .form-check-label {
-            color: inherit;
-            font-weight: 500;
-            margin-bottom: .25rem;
-            display: block;
-        }
-        .form-text { color: rgba(255,255,255,0.75); }
+        .form-check-label { color: inherit; font-weight: 600; margin-bottom: .25rem; display: block; }
+        .form-text { color: var(--text-muted-dark); }
         body.theme-light .form-text { color: rgba(33,37,41,0.7); }
     </style>
     
@@ -1480,7 +1511,7 @@
                         </div>
                     `;
                     document.body.appendChild(toast);
-                    setTimeout(function(){ toast.remove(); }, 3000);
+                    setTimeout(function(){ toast.remove(); }, 6000);
                 } else {
                     if (res.status === 409 && res.data && res.data.code === 'MULTI_STORE_NOT_ALLOWED') {
                         try { window._pendingAdd = { productId: productId, variantId: variantId, quantity: quantity, storeId: storeId, details: res.data }; } catch(e){}
@@ -1513,7 +1544,7 @@
                         </div>
                     `;
                     document.body.appendChild(toast);
-                    setTimeout(function(){ toast.remove(); }, 3000);
+                    setTimeout(function(){ toast.remove(); }, 6000);
                 }
                 hideLoading();
             })

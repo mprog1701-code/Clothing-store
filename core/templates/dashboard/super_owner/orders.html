@@ -300,7 +300,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   try { var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')); tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); }); } catch (e) {}
   var pending = false;
-  function showSnack(text, error) { var el = document.getElementById('snackbar'); var body = document.getElementById('snackbar-text'); body.textContent = text; var toast = el.querySelector('.toast'); toast.classList.remove('bg-success','bg-danger'); toast.classList.add(error ? 'bg-danger' : 'bg-success'); el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 2500); }
+  function showSnack(text, error) { var el = document.getElementById('snackbar'); var body = document.getElementById('snackbar-text'); body.textContent = text; var toast = el.querySelector('.toast'); toast.classList.remove('bg-success','bg-danger'); toast.classList.add(error ? 'bg-danger' : 'bg-success'); el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 6000); }
   function getCookie(name){ var v = document.cookie.split(';').map(function(s){return s.trim();}).filter(function(s){return s.indexOf(name+'=')===0;}); if(!v.length) return ''; return decodeURIComponent(v[0].split('=')[1]); }
   var csrftoken = getCookie('csrftoken');
   var STATUS_UI = {
