@@ -186,6 +186,43 @@
         body.theme-light .table thead th { color: #212529; background-color: #f8f9fa; }
         .table tbody td { color: var(--text-primary); }
 
+        /* Light surface contrast overrides */
+        .card,
+        .modal-content,
+        .offcanvas,
+        .offcanvas-header,
+        .offcanvas-body,
+        .dropdown-menu,
+        .list-group-item,
+        .bg-white,
+        .table,
+        .toast .toast-body {
+            color: #111 !important;
+        }
+        .card .text-muted,
+        .modal-content .text-muted,
+        .dropdown-menu .text-muted,
+        .offcanvas-body .text-muted,
+        .list-group-item .text-muted,
+        .table .text-muted {
+            color: #6c757d !important;
+        }
+        .card .form-label,
+        .modal-content .form-label,
+        .offcanvas-body .form-label,
+        .dropdown-menu .form-label { color: #111 !important; }
+        .card .form-control,
+        .modal-content .form-control,
+        .offcanvas-body .form-control,
+        .dropdown-menu .form-control { background-color: #fff; border-color: #ced4da; color: #212529; }
+        .card .form-control::placeholder,
+        .modal-content .form-control::placeholder,
+        .offcanvas-body .form-control::placeholder,
+        .dropdown-menu .form-control::placeholder { color: #6c757d; }
+        .card .input-group-text,
+        .modal-content .input-group-text,
+        .offcanvas-body .input-group-text { background-color: #f8f9fa; color: #212529; border-color: #ced4da; }
+
         .alert { border: none; border-radius: .5rem; }
         .alert-success { background-color: #198754; color: var(--alert-text-light); }
         .alert-danger { background-color: #dc3545; color: var(--alert-text-light); }
