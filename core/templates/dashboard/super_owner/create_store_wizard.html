@@ -195,8 +195,8 @@
 #map{background:#f0f0f0}
 .list-group .res{padding:8px;cursor:pointer;border:1px solid #eee;border-radius:8px;margin-bottom:6px}
 .list-group .res:hover{background:#f7f7f7}
-.leaflet-bar.locate-control{box-shadow:0 2px 6px rgba(0,0,0,.2);border-radius:10px;overflow:hidden}
-.leaflet-bar.locate-control .locate-btn{width:38px;height:38px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px}
+.leaflet-bar.locate-control{box-shadow:0 2px 6px rgba(0,0,0,.2);border-radius:10px;overflow:hidden;z-index:1000;pointer-events:auto}
+.leaflet-bar.locate-control .locate-btn{width:38px;height:38px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;text-decoration:none;pointer-events:auto}
 .leaflet-bar.locate-control .locate-btn:hover{background:#f5f5f5}
 #map{width:100%;height:420px}
 .modal .modal-body{overflow:hidden}
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function(){
   if(cancelBtn){ cancelBtn.addEventListener('click', function(){ hideModal(); }); }
   if(closeBtn){ closeBtn.addEventListener('click', function(){ hideModal(); }); }
 
-  function addLocateControl(){ var C = L.Control.extend({ options: { position: 'topright' }, onAdd: function(m){ var wrap = L.DomUtil.create('div','leaflet-bar locate-control'); var btn = L.DomUtil.create('button','locate-btn', wrap); btn.type='button'; btn.title='استخدم موقعي'; btn.textContent='📍'; L.DomEvent.on(btn,'click', function(){ if(!navigator.geolocation){ return; } btn.disabled=true; var old = btn.textContent; btn.textContent='⏳'; navigator.geolocation.getCurrentPosition(function(pos){ btn.disabled=false; btn.textContent=old; var lat=pos.coords.latitude, lng=pos.coords.longitude; setMarker(lat,lng); map.setView([lat,lng],16); reverseGeocode(lat,lng); }, function(){ btn.disabled=false; btn.textContent=old; }, { enableHighAccuracy:true, timeout:8000 }); }); return wrap; } }); map.addControl(new C()); }
+  function addLocateControl(){ var C = L.Control.extend({ options: { position: 'topright' }, onAdd: function(m){ var wrap = L.DomUtil.create('div','leaflet-bar locate-control'); L.DomEvent.disableClickPropagation(wrap); L.DomEvent.disableScrollPropagation(wrap); var btn = L.DomUtil.create('a','locate-btn', wrap); btn.href='#'; btn.setAttribute('role','button'); btn.title='استخدم موقعي'; btn.textContent='📍'; L.DomEvent.on(btn,'click', function(e){ L.DomEvent.preventDefault(e); if(!navigator.geolocation){ return; } var old = btn.textContent; btn.textContent='⏳'; navigator.geolocation.getCurrentPosition(function(pos){ btn.textContent=old; var lat=pos.coords.latitude, lng=pos.coords.longitude; setMarker(lat,lng); map.setView([lat,lng],16); reverseGeocode(lat,lng); }, function(){ btn.textContent=old; }, { enableHighAccuracy:true, timeout:8000 }); }); return wrap; } }); map.addControl(new C()); }
 });
 </script>
 {% endblock %}
