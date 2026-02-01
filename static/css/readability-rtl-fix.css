@@ -12,3 +12,15 @@
 .dashboard{direction:rtl;text-align:right}
 .dashboard .num,.dashboard [data-type="number"],.dashboard input[type="tel"],.dashboard input[type="number"]{direction:ltr;text-align:left}
 .toast,.alert,.snackbar{color:#111}
+html[dir="rtl"] table,html[dir="rtl"] .table,html[dir="rtl"] .data-table{color:#000!important}
+html[dir="rtl"] .card .table thead th,html[dir="rtl"] .card .table tbody td{color:#000!important}
+html[dir="rtl"] .table thead th,html[dir="rtl"] .table tbody td{color:#000!important;text-align:right}
+.table td a,.table th a{color:#000!important}
+.table .badge,.table .btn,.table .input-group-text{color:#000!important}
+.table input,.table select,.table textarea{color:#000!important;background:#fff!important;border-color:#d0d0d0!important}
+.table input::placeholder,.table textarea::placeholder{color:#333!important;opacity:1}
+.table [data-type="number"],.table .num,.table input[type="tel"],.table input[type="number"]{direction:ltr!important;text-align:left!important;color:#000!important}
+/* Force black text inside colored pills/buttons within tables */
+.table .badge,.table .rounded-pill,.table .btn,.table .bg-success,.table .bg-warning,.table .bg-primary,.table .bg-secondary,.table .bg-danger,.table .bg-info,.table .bg-light,.table .bg-dark{color:#000!important}
+.table .bg-success *,.table .bg-warning *,.table .bg-primary *,.table .bg-secondary *,.table .bg-danger *,.table .bg-info *,.table .bg-light *,.table .bg-dark *{color:#000!important}
+.table td span,.table td div,.table td p{color:#000!important}
