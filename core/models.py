@@ -66,7 +66,7 @@ class User(AbstractUser):
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
-    phone = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(max_length=20)
     city = models.CharField(max_length=100)
     owner_key = models.CharField(max_length=50, blank=True, help_text='مفتاح خاص للمالك فقط')
     ADMIN_ROLE_CHOICES = [
@@ -90,7 +90,7 @@ class Store(models.Model):
         ('clothing', 'ملابس عامة'),
     ]
     
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'admin'})
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, limit_choices_to={'role': 'admin'})
     name = models.CharField(max_length=200)
     city = models.CharField(max_length=100)
     address = models.TextField()
@@ -173,6 +173,13 @@ class Product(models.Model):
     @property
     def main_image(self):
         return self.images.filter(is_main=True).first()
+
+
+class PhoneReservation(models.Model):
+    phone = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=100)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class AttributeColor(models.Model):

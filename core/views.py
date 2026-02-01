@@ -2358,12 +2358,21 @@ def super_owner_create_owner_json(request):
     import re
     if not re.fullmatch(r'07\d{9}', phone):
         return JsonResponse({'error': 'invalid_phone', 'message': 'رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'}, status=400)
-    # Prevent duplicate phone
+    reserved_conflict = False
     try:
-        if User.objects.filter(phone__iexact=phone).exists():
-            return JsonResponse({'error': 'duplicate_phone', 'message': 'رقم الهاتف مستخدم مسبقاً'}, status=409)
+        from .models import PhoneReservation
+        if PhoneReservation.objects.filter(phone__iexact=phone).exists():
+            reserved_conflict = True
+    except Exception:
+        reserved_conflict = False
+    try:
+        su = User.objects.filter(username='super_owner', phone__iexact=phone).first()
+        if su:
+            reserved_conflict = True
     except Exception:
         pass
+    if reserved_conflict:
+        return JsonResponse({'error': 'reserved_phone', 'message': 'رقم الهاتف محجوز'}, status=409)
     first, last = '', ''
     parts = full_name.split()
     if parts:
@@ -4810,17 +4819,22 @@ def super_owner_owners(request):
                 if not ids:
                     messages.error(request, 'يرجى اختيار ملاك للحذف')
                     return redirect('super_owner_owners')
-                target_exists = [i for i in ids if User.objects.filter(id=i, role='admin').exists()]
-                deleted_self = request.user.id in target_exists
+                target_ids = [i for i in ids if User.objects.filter(id=i, role='admin').exists()]
+                target_ids = [i for i in target_ids if User.objects.filter(id=i).exclude(username='super_owner').exists()]
+                if not target_ids:
+                    messages.error(request, 'لم يتم العثور على عناصر صالحة للحذف')
+                    return redirect('super_owner_owners')
+                from .models import Store
+                affected = 0
                 with transaction.atomic():
-                    User.objects.filter(id__in=target_exists, role='admin').delete()
-                messages.success(request, f'تم حذف {len(target_exists)} مالكاً')
-                if deleted_self:
-                    try:
-                        logout(request)
-                    except Exception:
-                        pass
-                    return redirect('home')
+                    for oid in target_ids:
+                        o = User.objects.select_for_update().get(id=oid)
+                        Store.objects.filter(owner=o).update(owner=None)
+                        o.role = 'customer'
+                        o.admin_role = ''
+                        o.save()
+                        affected += 1
+                messages.success(request, f'تم تعطيل {affected} مالكاً وفصل المتاجر المرتبطة')
                 return redirect('super_owner_owners')
             if action == 'update_phone':
                 owner_id = int(request.POST.get('owner_id'))
@@ -4838,11 +4852,21 @@ def super_owner_owners(request):
                     messages.error(request, 'رقم هاتف عراقي غير صالح. أمثلة: 07xxxxxxxxx أو +9647xxxxxxxx')
                     return redirect('super_owner_owners')
                 owner = get_object_or_404(User, id=owner_id)
-                # تحقق مسبق من وجود الرقم عند أي مستخدم آخر (عميل أو مالك)
-                conflict = User.objects.filter(phone=phone).exclude(id=owner_id).first()
-                if conflict:
-                    role_label = conflict.get_role_display() if hasattr(conflict, 'get_role_display') else conflict.role
-                    messages.error(request, f'رقم الهاتف مستخدم بالفعل لدى المستخدم: {conflict.username} ({role_label})')
+                reserved_conflict = False
+                try:
+                    from .models import PhoneReservation
+                    if PhoneReservation.objects.filter(phone=phone).exists():
+                        reserved_conflict = True
+                except Exception:
+                    reserved_conflict = False
+                try:
+                    su = User.objects.filter(username='super_owner', phone=phone).first()
+                    if su and su.id != owner.id:
+                        reserved_conflict = True
+                except Exception:
+                    pass
+                if reserved_conflict:
+                    messages.error(request, 'رقم الهاتف محجوز ولا يمكن استخدامه')
                     return redirect('super_owner_owners')
                 before = owner.phone or ''
                 owner.phone = phone
