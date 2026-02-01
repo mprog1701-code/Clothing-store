@@ -24,7 +24,8 @@
 
       <form method="get" class="row g-3 mb-3">
         <div class="col-md-6">
-          <input type="text" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="بحث: الاسم، اسم المستخدم، رقم الهاتف">
+          <label for="owners_search" class="form-label">بحث: الاسم، اسم المستخدم، رقم الهاتف</label>
+          <input id="owners_search" type="text" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="مثال: اسم أو رقم" autocomplete="off">
         </div>
         <div class="col-md-3">
           <button class="btn btn-primary">بحث</button>
