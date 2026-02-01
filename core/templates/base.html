@@ -190,6 +190,85 @@
         body:not(.theme-light) .table tbody td { color: #fff !important; }
         body.theme-light .table tbody td { color: #111 !important; }
 
+        :where(.bg-white,
+               .modal-content,
+               .offcanvas,
+               .offcanvas-header,
+               .offcanvas-body,
+               .dropdown-menu,
+               .list-group-item,
+               [style*="background:#fff"],
+               [style*="background: #fff"],
+               [style*="background:#ffffff"],
+               [style*="background: #ffffff"],
+               [style*="background:white"],
+               [style*="background: white"],
+               [style*="background:rgb(255,255,255)"],
+               [style*="background: rgb(255,255,255)"],
+               [style*="background-color:#fff"],
+               [style*="background-color: #fff"],
+               [style*="background-color:#ffffff"],
+               [style*="background-color: #ffffff"],
+               [style*="background-color:white"],
+               [style*="background-color: white"],
+               [style*="background-color:rgb(255,255,255)"],
+               [style*="background-color: rgb(255,255,255)"])
+        :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,a,label,legend,th,td){
+            color:#000 !important;
+        }
+        :where(.bg-white,
+               .modal-content,
+               .offcanvas,
+               .offcanvas-header,
+               .offcanvas-body,
+               .dropdown-menu,
+               .list-group-item,
+               [style*="background:#fff"],
+               [style*="background: #fff"],
+               [style*="background:#ffffff"],
+               [style*="background: #ffffff"],
+               [style*="background:white"],
+               [style*="background: white"],
+               [style*="background:rgb(255,255,255)"],
+               [style*="background: rgb(255,255,255)"],
+               [style*="background-color:#fff"],
+               [style*="background-color: #fff"],
+               [style*="background-color:#ffffff"],
+               [style*="background-color: #ffffff"],
+               [style*="background-color:white"],
+               [style*="background-color: white"],
+               [style*="background-color:rgb(255,255,255)"],
+               [style*="background-color: rgb(255,255,255)"])
+        :is(input,textarea,select){
+            color:#000 !important;
+            background-color:#fff !important;
+            border-color:#ced4da !important;
+        }
+        :where(.bg-white,
+               .modal-content,
+               .offcanvas,
+               .offcanvas-header,
+               .offcanvas-body,
+               .dropdown-menu,
+               .list-group-item,
+               [style*="background:#fff"],
+               [style*="background: #fff"],
+               [style*="background:#ffffff"],
+               [style*="background: #ffffff"],
+               [style*="background:white"],
+               [style*="background: white"],
+               [style*="background:rgb(255,255,255)"],
+               [style*="background: rgb(255,255,255)"],
+               [style*="background-color:#fff"],
+               [style*="background-color: #fff"],
+               [style*="background-color:#ffffff"],
+               [style*="background-color: #ffffff"],
+               [style*="background-color:white"],
+               [style*="background-color: white"],
+               [style*="background-color:rgb(255,255,255)"],
+               [style*="background-color: rgb(255,255,255)"])
+        .form-control::placeholder{ color:#6c757d !important; }
+
         /* Light surface contrast overrides (scoped to light theme surfaces) */
         body.theme-light .card,
         body.theme-light .modal-content,
