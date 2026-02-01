@@ -4818,11 +4818,15 @@ def super_owner_owners(request):
                 ids = [int(x) for x in request.POST.getlist('selected_ids') if str(x).isdigit()]
                 if not ids:
                     messages.error(request, 'يرجى اختيار ملاك للحذف')
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'ok': False, 'error': 'no_selection'}, status=400)
                     return redirect('super_owner_owners')
                 target_ids = [i for i in ids if User.objects.filter(id=i, role='admin').exists()]
                 target_ids = [i for i in target_ids if User.objects.filter(id=i).exclude(username='super_owner').exists()]
                 if not target_ids:
                     messages.error(request, 'لم يتم العثور على عناصر صالحة للحذف')
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({'ok': False, 'error': 'no_valid_targets'}, status=400)
                     return redirect('super_owner_owners')
                 from .models import Store
                 affected = 0
@@ -4835,6 +4839,8 @@ def super_owner_owners(request):
                         o.save()
                         affected += 1
                 messages.success(request, f'تم تعطيل {affected} مالكاً وفصل المتاجر المرتبطة')
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'ok': True, 'affected': affected})
                 return redirect('super_owner_owners')
             if action == 'update_phone':
                 owner_id = int(request.POST.get('owner_id'))
