@@ -118,7 +118,13 @@
                             {% for store in pending_stores %}
                             <tr>
                                 <td>{{ store.name }}</td>
-                                <td>{{ store.owner.get_full_name|default:store.owner.username }}</td>
+                                <td>
+                                    {% if store.owner %}
+                                        {{ store.owner.get_full_name|default:store.owner.username }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
                                 <td>{{ store.city }}</td>
                                 <td>{{ store.created_at|date:"Y-m-d" }}</td>
                                 <td>

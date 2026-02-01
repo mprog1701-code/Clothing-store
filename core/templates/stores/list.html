@@ -171,7 +171,13 @@
                                     </div>
                                     <div>
                                         <small class="text-muted">مالك المتجر</small>
-                                        <div class="fw-semibold">{{ store.owner.get_full_name|default:store.owner.username }}</div>
+                                        <div class="fw-semibold">
+                                            {% if store.owner %}
+                                                {{ store.owner.get_full_name|default:store.owner.username }}
+                                            {% else %}
+                                                غير مُعيّن
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

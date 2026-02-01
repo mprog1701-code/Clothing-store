@@ -75,14 +75,20 @@
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            {% if store.owner.profile.avatar %}
+                                            {% if store.owner and store.owner.profile and store.owner.profile.avatar %}
                                                 <img src="{{ store.owner.profile.avatar.url }}" alt="{{ store.owner.username }}" class="rounded-circle me-2" width="30" height="30">
                                             {% else %}
                                                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
                                                     <i class="fas fa-user text-white"></i>
                                                 </div>
                                             {% endif %}
-                                            <span>{{ store.owner.get_full_name|default:store.owner.username }}</span>
+                                            <span>
+                                                {% if store.owner %}
+                                                    {{ store.owner.get_full_name|default:store.owner.username }}
+                                                {% else %}
+                                                    غير مُعيّن
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </td>
                                     <td>{{ store.city }}</td>

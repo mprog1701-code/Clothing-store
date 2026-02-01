@@ -124,7 +124,13 @@
               </td>
               <td>{{ store.city }}</td>
               <td>{{ store.get_category_display }}</td>
-              <td>{{ store.owner.get_full_name|default:store.owner.username }}</td>
+              <td>
+                {% if store.owner %}
+                  {{ store.owner.get_full_name|default:store.owner.username }}
+                {% else %}
+                  غير مُعيّن
+                {% endif %}
+              </td>
               <td>
                 {% if store.is_active %}
                   <span class="badge bg-success">نشط</span>

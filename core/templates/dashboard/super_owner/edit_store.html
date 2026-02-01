@@ -62,7 +62,7 @@
                                     <select class="form-select" id="owner" name="owner" required>
                                         <option value="">اختر المالك</option>
                                         {% for owner in store_owners %}
-                                            <option value="{{ owner.id }}" {% if owner.id == store.owner.id %}selected{% endif %}>
+                                            <option value="{{ owner.id }}" {% if store.owner and owner.id == store.owner.id %}selected{% endif %}>
                                                 {{ owner.get_full_name|default:owner.username }} ({{ owner.username }})
                                             </option>
                                         {% endfor %}
