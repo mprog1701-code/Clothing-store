@@ -2150,7 +2150,7 @@ def super_owner_stores(request):
             messages.error(request, 'حدث خطأ أثناء تنفيذ العملية')
             return redirect('super_owner_stores')
     
-    owners = User.objects.filter(role='admin').order_by('username')
+    owners = User.objects.filter(role='admin').exclude(username='super_owner').order_by('username')
     cities = list(Store.objects.values_list('city', flat=True).distinct())
     for s in stores:
         try:
@@ -2337,7 +2337,7 @@ def super_owner_owner_search_json(request):
     if request.user.username != 'super_owner':
         return JsonResponse({'error': 'unauthorized'}, status=403)
     q = (request.GET.get('q') or '').strip()
-    owners = User.objects.filter(role='admin')
+    owners = User.objects.filter(role='admin').exclude(username='super_owner')
     if q:
         owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q))
     owners = owners.order_by('username')[:20]
@@ -2396,7 +2396,7 @@ def super_owner_create_store(request):
     step = (request.POST.get('step') or request.GET.get('step') or '1').strip()
     wizard = request.session.get('create_store_wizard') or {}
     errors = {}
-    owners = User.objects.filter(role='admin').order_by('username')
+    owners = User.objects.filter(role='admin').exclude(username='super_owner').order_by('username')
     categories = Store.CATEGORY_CHOICES
     status_code = 200
     if request.method == 'POST':
