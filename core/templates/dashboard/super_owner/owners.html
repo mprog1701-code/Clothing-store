@@ -59,6 +59,7 @@
           <tbody>
             {% for oi in owners_info %}
             {% with o=oi.owner %}
+            {% if o.username != 'super_owner' %}
             <tr>
               <td><input type="checkbox" class="owner-select" value="{{ o.id }}"></td>
               <td>{{ forloop.counter }}</td>
@@ -78,9 +79,11 @@
               <td>
                 <div class="btn-group btn-group-sm" role="group">
                   <a href="{% url 'super_owner_stores' %}?owner={{ o.id }}" class="btn btn-outline-primary" title="متاجر هذا المالك"><i class="fas fa-store"></i></a>
+                  <button type="button" class="btn btn-outline-danger" data-owner-id="{{ o.id }}" title="تعطيل" onclick="disableOwner(this)"><i class="fas fa-user-slash"></i></button>
                 </div>
               </td>
             </tr>
+            {% endif %}
             {% endwith %}
             {% empty %}
             <tr><td colspan="7" class="text-center py-4">لا يوجد ملاك مطابقين</td></tr>
@@ -147,6 +150,8 @@ document.addEventListener('DOMContentLoaded', function(){
   if(openBtn){ openBtn.addEventListener('click', function(){ var mEl=document.getElementById('createOwnerModal'); var m=new bootstrap.Modal(mEl); m.show(); }); }
   var submitCreate=document.getElementById('submitCreateOwner');
   if(submitCreate){ submitCreate.addEventListener('click', function(){ var full=document.getElementById('new_owner_full_name').value.trim(); var phone=document.getElementById('new_owner_phone').value.trim(); var email=document.getElementById('new_owner_email').value.trim(); var err=document.getElementById('new_owner_error'); err.textContent=''; if(!full || !phone){ err.textContent='الاسم الكامل ورقم الهاتف مطلوبان'; return; } submitCreate.disabled=true; submitCreate.textContent='جارٍ الإنشاء...'; var fd=new FormData(); fd.append('full_name', full); fd.append('phone', phone); if(email) fd.append('email', email); var headers = csrftoken ? { 'X-CSRFToken': csrftoken } : {}; fetch('{% url "super_owner_create_owner_json" %}',{ method:'POST', body:fd, headers: headers }).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, data:j }; }); }).then(function(res){ submitCreate.disabled=false; submitCreate.textContent='إنشاء'; if(!res.ok){ var msg='فشل إنشاء المالك'; if(res.status===403){ msg='ليس لديك صلاحية الوصول'; } else if(res.status===405){ msg='طريقة غير مدعومة'; } else if(res.status===409 && res.data && res.data.error==='duplicate_phone'){ msg='رقم الهاتف مستخدم مسبقاً'; } else if(res.status===400){ if(res.data && res.data.error==='missing_required'){ msg='الاسم الكامل ورقم الهاتف مطلوبان'; } else if(res.data && res.data.error==='invalid_phone'){ msg='رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'; } } else if(res.status>=500){ msg='خطأ في الخادم أثناء إنشاء المالك'; } err.textContent=msg; return; } var modalEl=document.getElementById('createOwnerModal'); var modal=bootstrap.Modal.getInstance(modalEl); if(modal) modal.hide(); location.reload(); }); }); }
+
+  window.disableOwner = function(btn){ var id = btn.getAttribute('data-owner-id'); if(!id) return; if(!confirm('تأكيد تعطيل هذا المالك وفصل متاجره؟')) return; var headers = csrftoken ? { 'X-CSRFToken': csrftoken } : {}; fetch('/dashboard/super-owner/owners/disable/'+id+'/', { method:'POST', headers:headers }).then(function(r){ if(r.ok){ var tr = btn.closest('tr'); if(tr){ tr.remove(); } return; } var a=document.createElement('div'); a.className='alert alert-danger'; a.textContent='فشل التعطيل'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); }); };
 });
 </script>
 {% endblock %}

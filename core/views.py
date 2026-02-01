@@ -4915,6 +4915,28 @@ def super_owner_owners(request):
     }
     return render(request, 'dashboard/super_owner/owners.html', context)
 
+@login_required
+def super_owner_disable_owner_json(request, owner_id):
+    if request.user.username != 'super_owner':
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'method_not_allowed'}, status=405)
+    try:
+        o = User.objects.get(id=owner_id)
+        if o.username == 'super_owner' or o.role != 'admin':
+            return JsonResponse({'error': 'invalid_target'}, status=400)
+        from .models import Store
+        with transaction.atomic():
+            Store.objects.filter(owner=o).update(owner=None)
+            o.role = 'customer'
+            o.admin_role = ''
+            o.save()
+        return JsonResponse({'ok': True})
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'not_found'}, status=404)
+    except Exception:
+        return JsonResponse({'error': 'server_error'}, status=500)
+
 
 def admin_portal_login(request):
     if request.method == 'POST':

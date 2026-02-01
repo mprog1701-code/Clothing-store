@@ -69,6 +69,7 @@ urlpatterns = [
     path('dashboard/super-owner/stores/create/', views.super_owner_create_store, name='super_owner_create_store'),
     path('dashboard/super-owner/owners/search/', views.super_owner_owner_search_json, name='super_owner_owner_search_json'),
     path('dashboard/super-owner/owners/create/', views.super_owner_create_owner_json, name='super_owner_create_owner_json'),
+    path('dashboard/super-owner/owners/disable/<int:owner_id>/', views.super_owner_disable_owner_json, name='super_owner_disable_owner_json'),
     path('dashboard/super-owner/stores/<int:store_id>/', views.super_owner_store_center, name='super_owner_store_center'),
     path('dashboard/super-owner/stores/<int:store_id>/settings/', views.super_owner_edit_store, name='super_owner_store_settings'),
     path('dashboard/super-owner/stores/edit/<int:store_id>/', views.super_owner_edit_store, name='super_owner_edit_store'),
