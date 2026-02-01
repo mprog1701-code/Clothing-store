@@ -1,0 +1,14 @@
+:root{--fix-text-strong:#000;--fix-text-muted:#333;--fix-bg-surface:#fff;--fix-border:#d0d0d0}
+.dashboard,.dashboard *{color:var(--fix-text-strong)}
+.dashboard table{background:var(--fix-bg-surface)}
+.dashboard .table *,.dashboard .data-table *,.table *,.data-table *{color:var(--fix-text-strong)}
+.dashboard table thead th,.table thead th,.data-table thead th{color:var(--fix-text-strong)}
+.dashboard table tbody td,.table tbody td,.data-table tbody td{color:var(--fix-text-strong)}
+.table .text-white{color:var(--fix-text-strong)!important}
+.dashboard .table td a,.table td a{color:var(--fix-text-strong)}
+.dashboard label,.dashboard .form-label{color:var(--fix-text-strong)}
+.dashboard input,.dashboard select,.dashboard textarea{color:var(--fix-text-strong);background:var(--fix-bg-surface);border:1px solid var(--fix-border)}
+.dashboard input::placeholder,.dashboard textarea::placeholder{color:var(--fix-text-muted);opacity:1}
+.dashboard{direction:rtl;text-align:right}
+.dashboard .num,.dashboard [data-type="number"],.dashboard input[type="tel"],.dashboard input[type="number"]{direction:ltr;text-align:left}
+.toast,.alert,.snackbar{color:#111}
