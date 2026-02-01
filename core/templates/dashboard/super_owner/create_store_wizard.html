@@ -198,6 +198,8 @@
 .leaflet-bar.locate-control{box-shadow:0 2px 6px rgba(0,0,0,.2);border-radius:10px;overflow:hidden}
 .leaflet-bar.locate-control .locate-btn{width:38px;height:38px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px}
 .leaflet-bar.locate-control .locate-btn:hover{background:#f5f5f5}
+#map{width:100%;height:420px}
+.modal .modal-body{overflow:hidden}
 </style>
 {% endblock %}
 
@@ -235,9 +237,26 @@ document.addEventListener('DOMContentLoaded', function(){
   var searchBtn = document.getElementById('searchBtn');
   function doSearch(){ var q = (searchInput.value||'').trim(); if(!q) return; fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=ar&q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(items){ var list = document.getElementById('list'); list.innerHTML=''; items.slice(0,10).forEach(function(it){ var d = document.createElement('div'); d.className='res'; d.textContent = it.display_name; d.addEventListener('click', function(){ if(!map) initMap(); setMarker(parseFloat(it.lat), parseFloat(it.lon)); var disp = it.display_name || ''; document.getElementById('formatted_address').value = disp; document.getElementById('addressInput').value = disp; addrPreview.textContent = disp; }); list.appendChild(d); }); }); }
   if(searchBtn){ searchBtn.addEventListener('click', doSearch); }
-  if(openBtn && modal){ openBtn.addEventListener('click', function(){ initMap(); modal.show(); }); }
+  if(openBtn && modal){ openBtn.addEventListener('click', function(){ modal.show(); }); }
+  if(mapModalEl){
+    mapModalEl.addEventListener('shown.bs.modal', function(){
+      initMap();
+      setTimeout(function(){ if(map){ map.invalidateSize(); } }, 50);
+      requestAnimationFrame(function(){ if(map){ map.invalidateSize(); } });
+    });
+    mapModalEl.addEventListener('hidden.bs.modal', function(){ if(map){ try{ map.remove(); }catch(e){} map=null; marker=null; } });
+  }
   var confirmBtn = document.getElementById('confirmLocation');
-  if(confirmBtn){ confirmBtn.addEventListener('click', function(){ var fa = document.getElementById('formatted_address').value || ''; if(fa){ document.getElementById('addressInput').value = fa; addrPreview.textContent = fa; } }); }
+  var cancelBtn = document.getElementById('cancelMap');
+  var closeBtn = mapModalEl ? mapModalEl.querySelector('.btn-close') : null;
+  function hideModal(){
+    var inst = mapModalEl ? bootstrap.Modal.getInstance(mapModalEl) : null;
+    if(inst){ inst.hide(); }
+    else if(modal){ modal.hide(); }
+  }
+  if(confirmBtn){ confirmBtn.addEventListener('click', function(){ var fa = document.getElementById('formatted_address').value || ''; if(fa){ document.getElementById('addressInput').value = fa; addrPreview.textContent = fa; } hideModal(); }); }
+  if(cancelBtn){ cancelBtn.addEventListener('click', function(){ hideModal(); }); }
+  if(closeBtn){ closeBtn.addEventListener('click', function(){ hideModal(); }); }
 
   function addLocateControl(){ var C = L.Control.extend({ options: { position: 'topright' }, onAdd: function(m){ var wrap = L.DomUtil.create('div','leaflet-bar locate-control'); var btn = L.DomUtil.create('button','locate-btn', wrap); btn.type='button'; btn.title='استخدم موقعي'; btn.textContent='📍'; L.DomEvent.on(btn,'click', function(){ if(!navigator.geolocation){ return; } btn.disabled=true; var old = btn.textContent; btn.textContent='⏳'; navigator.geolocation.getCurrentPosition(function(pos){ btn.disabled=false; btn.textContent=old; var lat=pos.coords.latitude, lng=pos.coords.longitude; setMarker(lat,lng); map.setView([lat,lng],16); reverseGeocode(lat,lng); }, function(){ btn.disabled=false; btn.textContent=old; }, { enableHighAccuracy:true, timeout:8000 }); }); return wrap; } }); map.addControl(new C()); }
 });
