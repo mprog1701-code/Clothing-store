@@ -1487,7 +1487,7 @@ def main_dashboard(request):
             'cart_items_count': cart_items_count,
         })
     
-    elif request.user.is_authenticated and request.user.role == 'admin':
+    elif request.user.is_authenticated and (request.user.role == 'store_admin' or request.user.is_staff):
         # Admin dashboard data
         total_stores = Store.objects.count()
         total_users = User.objects.count()
