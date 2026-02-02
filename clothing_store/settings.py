@@ -75,19 +75,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clothing_store.wsgi.application'
 
-from django.core.exceptions import ImproperlyConfigured
-
-DATABASE_URL = config('DATABASE_URL', default='').strip() or os.environ.get('DATABASE_URL', '').strip()
-_IS_COLLECTSTATIC = any(arg.endswith('collectstatic') for arg in sys.argv)
+DATABASE_URL = (os.environ.get('DATABASE_URL', '') or '').strip()
 if not DATABASE_URL:
-    if _IS_COLLECTSTATIC:
-        DATABASES = {}
-    else:
-        raise ImproperlyConfigured('DATABASE_URL is required and SQLite is disabled for this environment')
-else:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
-    }
+    raise RuntimeError('DATABASE_URL is required and must be provided via environment. No SQLite or localhost fallback is allowed.')
+DATABASES = {
+    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
