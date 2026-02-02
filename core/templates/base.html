@@ -1157,10 +1157,17 @@
                                     <i class="bi bi-person-circle"></i> {{ user.username }}
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    {% if user.role == 'admin' %}
+                                    {% if user.role == 'store_admin' or user.is_staff %}
                                     <li>
                                         <a class="dropdown-item" href="{% url 'main_dashboard' %}">
                                             <i class="bi bi-speedometer2"></i> لوحة التحكم
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    {% if user.role == 'customer' and not user.is_staff %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'account_settings' %}">
+                                            <i class="bi bi-person"></i> حسابي
                                         </a>
                                     </li>
                                     {% endif %}

@@ -257,7 +257,7 @@
     </div>
 </section>
 
-{% elif user.role == 'admin' %}
+{% elif user.role == 'store_admin' or user.is_staff %}
 <!-- Admin Dashboard -->
 <section class="dashboard-hero py-5 mb-5" style="background: linear-gradient(135deg, #dc3545 0%, #6610f2 50%, #dc3545 100%);">
     <div class="container">
