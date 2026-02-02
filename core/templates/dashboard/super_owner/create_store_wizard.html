@@ -31,7 +31,7 @@
       </div>
       <div class="card-body">
         <div class="mb-3">
-          <label class="form-label">اختيار مالك *</label>
+          <label class="form-label">اختيار مالك</label>
           <input type="text" class="form-control mb-2" id="owner_search" placeholder="بحث بالاسم/الهاتف">
           <select class="form-select" name="owner_id" id="owner_list">
             <option value="">اختر المالك</option>
@@ -104,6 +104,16 @@
           <input type="hidden" name="latitude" id="latitude" value="{{ wizard.latitude|default:'' }}">
           <input type="hidden" name="longitude" id="longitude" value="{{ wizard.longitude|default:'' }}">
           <input type="hidden" name="formatted_address" id="formatted_address" value="{{ wizard.formatted_address|default:'' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">اسم مالك المتجر (للتواصل)</label>
+          <input type="text" class="form-control" name="owner_contact_name" value="{{ wizard.owner_contact_name|default:'' }}" placeholder="مثال: علي حسن">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">رقم هاتف مالك المتجر (للتواصل)</label>
+          <input type="tel" class="form-control" name="owner_contact_phone" value="{{ wizard.owner_contact_phone|default:'' }}" placeholder="07xxxxxxxxx" pattern="07[0-9]{9}">
+          {% if errors.owner_contact_phone %}<div class="text-danger small mt-1">{{ errors.owner_contact_phone }}</div>{% endif %}
+          <div class="form-text">إن لم تحدد مالكًا من القائمة، سيتم إرسال دعوة لهذا الرقم بعد إنشاء المتجر.</div>
         </div>
       </div>
       <div class="card-footer d-flex justify-content-between">

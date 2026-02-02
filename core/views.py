@@ -248,9 +248,38 @@ def register(request):
             'password_confirm': request.POST.get('password_confirm')
         }
         
+        try:
+            if data.get('phone') and User.objects.filter(phone=data.get('phone')).exists():
+                messages.error(request, 'رقم الجوال لديه حساب. يرجى تسجيل الدخول')
+                serializer = UserRegistrationSerializer()
+                return render(request, 'registration/register.html', {'serializer': serializer})
+        except Exception:
+            pass
         serializer = UserRegistrationSerializer(data=data)
         if serializer.is_valid():
             user = serializer.save()
+            try:
+                from django.utils import timezone
+                from .models import StoreOwnerInvite, Store
+                qs = StoreOwnerInvite.objects.filter(phone=user.phone, status='pending')
+                now = timezone.now()
+                from django.db.models import Q
+                qs = qs.filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+                inv = qs.first()
+                if inv:
+                    user.role = 'admin'
+                    user.is_staff = True
+                    user.save()
+                    try:
+                        st = Store.objects.get(id=inv.store_id)
+                        st.owner = user
+                        st.save()
+                    except Exception:
+                        pass
+                    inv.status = 'claimed'
+                    inv.save()
+            except Exception:
+                pass
             login(request, user, backend='core.backends.PhoneBackend')
             messages.success(request, f'مرحباً {user.first_name}! تم التسجيل بنجاح')
             return redirect('home')
@@ -2358,33 +2387,13 @@ def super_owner_create_owner_json(request):
     import re
     if not re.fullmatch(r'07\d{9}', phone):
         return JsonResponse({'error': 'invalid_phone', 'message': 'رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'}, status=400)
-    reserved_conflict = False
-    try:
-        from .models import PhoneReservation
-        if PhoneReservation.objects.filter(phone__iexact=phone).exists():
-            reserved_conflict = True
-    except Exception:
-        reserved_conflict = False
-    try:
-        su = User.objects.filter(username='super_owner', phone__iexact=phone).first()
-        if su:
-            reserved_conflict = True
-    except Exception:
-        pass
-    if reserved_conflict:
-        return JsonResponse({'error': 'reserved_phone', 'message': 'رقم الهاتف محجوز'}, status=409)
     first, last = '', ''
     parts = full_name.split()
     if parts:
         first = parts[0]
         last = ' '.join(parts[1:])
     try:
-        username = f"owner_{uuid.uuid4().hex[:8]}"
-        owner = User.objects.create(username=username, first_name=first, last_name=last, role='admin', phone=phone, email=email)
-        owner.is_staff = True
-        owner.set_password(uuid.uuid4().hex)
-        owner.save()
-        return JsonResponse({'id': owner.id, 'name': owner.get_full_name() or owner.username, 'phone': owner.phone or ''})
+        return JsonResponse({'id': 0, 'name': full_name, 'phone': phone})
     except Exception:
         return JsonResponse({'error': 'create_failed', 'message': 'فشل إنشاء المالك'}, status=500)
 
@@ -2403,13 +2412,12 @@ def super_owner_create_store(request):
         action = (request.POST.get('action') or '').strip()
         if step == '1':
             owner_id = (request.POST.get('owner_id') or '').strip()
-            if not owner_id or not owner_id.isdigit():
-                errors['owner_id'] = 'يرجى اختيار مالك المتجر'
-                status_code = 400
-            else:
+            if owner_id and owner_id.isdigit():
                 wizard['owner_id'] = int(owner_id)
-                request.session['create_store_wizard'] = wizard
-                step = '2'
+            else:
+                wizard['owner_id'] = None
+            request.session['create_store_wizard'] = wizard
+            step = '2'
         elif step == '2':
             name = (request.POST.get('name') or '').strip()
             city = (request.POST.get('city') or '').strip()
@@ -2419,6 +2427,8 @@ def super_owner_create_store(request):
             lat_raw = (request.POST.get('latitude') or '').strip()
             lon_raw = (request.POST.get('longitude') or '').strip()
             formatted = (request.POST.get('formatted_address') or '').strip()
+            contact_name = (request.POST.get('owner_contact_name') or '').strip()
+            contact_phone = (request.POST.get('owner_contact_phone') or '').strip()
             if not name:
                 errors['name'] = 'يرجى إدخال اسم المتجر'
             if not city:
@@ -2430,6 +2440,10 @@ def super_owner_create_store(request):
                 errors['category'] = 'فئة غير صالحة'
             if status_choice not in ['ACTIVE', 'DISABLED']:
                 status_choice = 'ACTIVE'
+            if not wizard.get('owner_id'):
+                import re
+                if not contact_phone or not re.fullmatch(r'07\d{9}', contact_phone):
+                    errors['owner_contact_phone'] = 'رقم هاتف المالك مطلوب وبصيغة صحيحة 07xxxxxxxxx'
             if not errors:
                 lat_val = None
                 lon_val = None
@@ -2441,7 +2455,7 @@ def super_owner_create_store(request):
                     lon_val = float(lon_raw) if lon_raw else None
                 except Exception:
                     lon_val = None
-                wizard.update({'name': name, 'city': city, 'category': category or 'clothing', 'status': status_choice, 'address': address, 'latitude': lat_val, 'longitude': lon_val, 'formatted_address': formatted})
+                wizard.update({'name': name, 'city': city, 'category': category or 'clothing', 'status': status_choice, 'address': address, 'latitude': lat_val, 'longitude': lon_val, 'formatted_address': formatted, 'owner_contact_name': contact_name, 'owner_contact_phone': contact_phone})
                 request.session['create_store_wizard'] = wizard
                 step = '3'
             else:
@@ -2487,7 +2501,12 @@ def super_owner_create_store(request):
                 })
                 try:
                     with transaction.atomic():
-                        owner = User.objects.get(id=int(wizard['owner_id']))
+                        owner = None
+                        try:
+                            if wizard.get('owner_id') is not None:
+                                owner = User.objects.get(id=int(wizard['owner_id']))
+                        except Exception:
+                            owner = None
                         status_choice = wizard.get('status') or 'ACTIVE'
                         is_active = True if status_choice == 'ACTIVE' else False
                         s = Store.objects.create(
@@ -2511,10 +2530,25 @@ def super_owner_create_store(request):
                             s.longitude = wizard.get('longitude')
                         if wizard.get('formatted_address'):
                             s.formatted_address = wizard.get('formatted_address')
+                        if not owner:
+                            s.owner_contact_name = wizard.get('owner_contact_name','')
+                            s.owner_phone = wizard.get('owner_contact_phone','')
                         s.save()
                         if logo_file:
                             s.logo = logo_file
                             s.save()
+                        if not owner and wizard.get('owner_contact_phone'):
+                            from .models import StoreOwnerInvite
+                            inv = StoreOwnerInvite(store=s, phone=wizard.get('owner_contact_phone'), status='pending')
+                            try:
+                                inv.token = uuid.uuid4().hex
+                            except Exception:
+                                inv.token = ''
+                            try:
+                                inv.expires_at = timezone.now() + timedelta(days=30)
+                            except Exception:
+                                inv.expires_at = None
+                            inv.save()
                         from .models import AdminAuditLog
                         AdminAuditLog.objects.create(admin_user=request.user, action='create', model='Store', object_id=str(s.id), before='', after=json.dumps({'name': s.name}, ensure_ascii=False), ip=request.META.get('REMOTE_ADDR') or '')
                     request.session.pop('create_store_wizard', None)
@@ -4858,22 +4892,6 @@ def super_owner_owners(request):
                     messages.error(request, 'رقم هاتف عراقي غير صالح. أمثلة: 07xxxxxxxxx أو +9647xxxxxxxx')
                     return redirect('super_owner_owners')
                 owner = get_object_or_404(User, id=owner_id)
-                reserved_conflict = False
-                try:
-                    from .models import PhoneReservation
-                    if PhoneReservation.objects.filter(phone=phone).exists():
-                        reserved_conflict = True
-                except Exception:
-                    reserved_conflict = False
-                try:
-                    su = User.objects.filter(username='super_owner', phone=phone).first()
-                    if su and su.id != owner.id:
-                        reserved_conflict = True
-                except Exception:
-                    pass
-                if reserved_conflict:
-                    messages.error(request, 'رقم الهاتف محجوز ولا يمكن استخدامه')
-                    return redirect('super_owner_owners')
                 before = owner.phone or ''
                 owner.phone = phone
                 try:

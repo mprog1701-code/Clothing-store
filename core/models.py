@@ -66,7 +66,7 @@ class User(AbstractUser):
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
-    phone = models.CharField(max_length=20)
+    phone = models.CharField(max_length=20, unique=True)
     city = models.CharField(max_length=100)
     owner_key = models.CharField(max_length=50, blank=True, help_text='مفتاح خاص للمالك فقط')
     ADMIN_ROLE_CHOICES = [
@@ -108,6 +108,7 @@ class Store(models.Model):
     free_delivery_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=10, default='IQD')
     owner_phone = models.CharField(max_length=20, blank=True, default='')
+    owner_contact_name = models.CharField(max_length=100, blank=True, default='')
     delivery_time_value = models.PositiveIntegerField(default=0)
     delivery_time_unit = models.CharField(max_length=10, choices=[('hour','ساعة'),('day','يوم')], blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
@@ -179,6 +180,20 @@ class PhoneReservation(models.Model):
     phone = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100)
     note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class StoreOwnerInvite(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'pending'),
+        ('claimed', 'claimed'),
+        ('expired', 'expired'),
+    ]
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    phone = models.CharField(max_length=20)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    token = models.CharField(max_length=64, blank=True, default='')
+    expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 

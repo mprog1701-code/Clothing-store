@@ -25,9 +25,33 @@ from .permissions import (
 class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[])
     def register(self, request):
+        phone = (request.data.get('phone') or '').strip()
+        if phone and User.objects.filter(phone=phone).exists():
+            return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            try:
+                from django.utils import timezone
+                from .models import StoreOwnerInvite, Store
+                qs = StoreOwnerInvite.objects.filter(phone=user.phone, status='pending')
+                now = timezone.now()
+                qs = qs.filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+                inv = qs.first()
+                if inv:
+                    user.role = 'admin'
+                    user.is_staff = True
+                    user.save()
+                    try:
+                        st = Store.objects.get(id=inv.store_id)
+                        st.owner = user
+                        st.save()
+                    except Exception:
+                        pass
+                    inv.status = 'claimed'
+                    inv.save()
+            except Exception:
+                pass
             refresh = RefreshToken.for_user(user)
             return Response({
                 'user': UserSerializer(user).data,

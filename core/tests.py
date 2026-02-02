@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.test import Client
-from core.models import Store, Product, ProductVariant, AttributeColor, Order, Address
+from core.models import Store, Product, ProductVariant, AttributeColor, Order, Address, StoreOwnerInvite
 
 
 class CartAndCheckoutTests(TestCase):
@@ -166,3 +166,115 @@ class CartAndCheckoutTests(TestCase):
         url = reverse("order_detail", args=[order.id])
         res = self.client.get(url)
         self.assertEqual(res.status_code, 302)
+
+
+class OwnerInviteFlowTests(TestCase):
+    def setUp(self):
+        U = get_user_model()
+        self.super_owner = U.objects.create_user(
+            username='super_owner',
+            password='AdminPass123!',
+            role='admin',
+            phone='07700000000',
+            city='Baghdad',
+            is_staff=True,
+            is_superuser=True,
+        )
+
+    def test_admin_add_store_owner_no_user_created(self):
+        contact_phone = '07712345678'
+        contact_name = 'مالك تجريبي'
+        self.client.force_login(self.super_owner)
+
+        resp1 = self.client.post(
+            reverse('super_owner_create_store'),
+            {'step': '1', 'action': 'next', 'owner_id': ''},
+        )
+        self.assertEqual(resp1.status_code, 200)
+
+        resp2 = self.client.post(
+            reverse('super_owner_create_store'),
+            {
+                'step': '2',
+                'action': 'next',
+                'name': 'متجر الاختبار',
+                'city': 'بغداد',
+                'category': '',
+                'status': 'ACTIVE',
+                'address': 'العنوان التجريبي',
+                'owner_contact_name': contact_name,
+                'owner_contact_phone': contact_phone,
+            },
+        )
+        self.assertEqual(resp2.status_code, 200)
+
+        resp3 = self.client.post(
+            reverse('super_owner_create_store'),
+            {
+                'step': '3',
+                'action': 'finish',
+                'delivery_fee': '1000',
+                'free_delivery_threshold': '0',
+                'delivery_time_value': '24',
+                'delivery_time_unit': 'hour',
+            },
+            follow=True,
+        )
+        self.assertEqual(resp3.status_code, 200)
+
+        U = get_user_model()
+        self.assertFalse(U.objects.filter(phone=contact_phone).exists())
+
+        store = Store.objects.order_by('-created_at').first()
+        self.assertIsNotNone(store)
+        self.assertIsNone(store.owner)
+        self.assertEqual(store.owner_phone, contact_phone)
+        self.assertEqual(store.owner_contact_name, contact_name)
+
+        invite = StoreOwnerInvite.objects.filter(store=store, phone=contact_phone, status='pending').first()
+        self.assertIsNotNone(invite)
+
+    def test_register_claims_invite_and_links_store(self):
+        from django.utils import timezone
+        contact_phone = '07798765432'
+        store = Store.objects.create(
+            name='متجر للربط', city='بغداد', address='test', description='', category='clothing', is_active=True
+        )
+        StoreOwnerInvite.objects.create(store=store, phone=contact_phone, status='pending', expires_at=timezone.now() + timezone.timedelta(days=15))
+
+        resp = self.client.post(
+            '/api/auth/register/',
+            data={
+                'phone': contact_phone,
+                'city': 'بغداد',
+                'full_name': 'صاحب متجر',
+                'password': 'Aa12345678!',
+                'password_confirm': 'Aa12345678!',
+            },
+        )
+        self.assertEqual(resp.status_code, 201)
+
+        U = get_user_model()
+        user = U.objects.filter(phone=contact_phone).first()
+        self.assertIsNotNone(user)
+        store.refresh_from_db()
+        self.assertEqual(store.owner_id, user.id)
+        self.assertEqual(user.role, 'admin')
+        self.assertTrue(user.is_staff)
+
+        invite = StoreOwnerInvite.objects.filter(store=store, phone=contact_phone).first()
+        self.assertIsNotNone(invite)
+        self.assertEqual(invite.status, 'claimed')
+
+        resp2 = self.client.post(
+            '/api/auth/register/',
+            data={
+                'phone': contact_phone,
+                'city': 'بغداد',
+                'full_name': 'مكرر',
+                'password': 'Aa12345678!',
+                'password_confirm': 'Aa12345678!',
+            },
+        )
+        self.assertEqual(resp2.status_code, 409)
+        self.assertIn('PHONE_ALREADY_HAS_ACCOUNT', (resp2.json() or {}).get('code', ''))
