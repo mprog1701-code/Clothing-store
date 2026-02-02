@@ -62,7 +62,7 @@ class SiteSettings(models.Model):
 class User(AbstractUser):
     ROLE_CHOICES = [
         ('customer', 'عميل'),
-        ('admin', 'صاحب متجر'),
+        ('store_admin', 'صاحب متجر'),
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
@@ -90,7 +90,7 @@ class Store(models.Model):
         ('clothing', 'ملابس عامة'),
     ]
     
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, limit_choices_to={'role': 'admin'})
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, limit_choices_to={'role': 'store_admin'})
     name = models.CharField(max_length=200)
     city = models.CharField(max_length=100)
     address = models.TextField()
@@ -109,6 +109,10 @@ class Store(models.Model):
     currency = models.CharField(max_length=10, default='IQD')
     owner_phone = models.CharField(max_length=20, blank=True, default='')
     owner_contact_name = models.CharField(max_length=100, blank=True, default='')
+    
+    # New owner profile/user linkage
+    owner_profile = models.ForeignKey('StoreOwner', on_delete=models.SET_NULL, null=True, blank=True)
+    owner_user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='owned_store')
     delivery_time_value = models.PositiveIntegerField(default=0)
     delivery_time_unit = models.CharField(max_length=10, choices=[('hour','ساعة'),('day','يوم')], blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
@@ -195,6 +199,27 @@ class StoreOwnerInvite(models.Model):
     token = models.CharField(max_length=64, blank=True, default='')
     expires_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    claimed_at = models.DateTimeField(null=True, blank=True)
+
+
+class StoreOwner(models.Model):
+    full_name = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['phone']),
+        ]
+
+    def __str__(self):
+        return f"{self.full_name} ({self.phone})"
+
+    def get_full_name(self):
+        return self.full_name
 
 
 class AttributeColor(models.Model):

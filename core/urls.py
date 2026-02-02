@@ -60,6 +60,7 @@ urlpatterns = [
     
     path('dashboard/admin/', views.admin_overview, name='admin_overview'),
     path('dashboard/admin/stores/', views.admin_stores, name='admin_stores'),
+    path('dashboard/admin/db-diagnostics/', views.admin_db_diagnostics, name='admin_db_diagnostics'),
     
     # Super Owner Dashboard URLs
     path('dashboard/super-owner/', views.super_owner_dashboard, name='super_owner_dashboard'),

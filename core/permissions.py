@@ -11,19 +11,21 @@ class IsCustomer(permissions.BasePermission):
 
 class IsStoreOwner(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role == 'store_owner'
+        return request.user and request.user.is_authenticated and request.user.role == 'store_admin'
 
 
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role == 'admin'
+        return request.user and request.user.is_authenticated and (request.user.is_staff or request.user.role == 'store_admin')
 
 
 class IsStoreOwnerOfStore(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if hasattr(obj, 'store'):
-            return obj.store.owner == request.user
-        return obj.owner == request.user
+            owner_user = getattr(obj.store, 'owner_user', None)
+            return owner_user == request.user
+        owner_user = getattr(obj, 'owner_user', None)
+        return owner_user == request.user
 
 
 class IsOwnerOfOrder(permissions.BasePermission):
@@ -33,7 +35,8 @@ class IsOwnerOfOrder(permissions.BasePermission):
 
 class IsStoreOwnerOfOrder(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        return obj.store.owner == request.user
+        owner_user = getattr(obj.store, 'owner_user', None)
+        return owner_user == request.user
 
 
 def role_required(allowed_roles):
@@ -44,7 +47,7 @@ def role_required(allowed_roles):
             if not user or not user.is_authenticated:
                 return redirect('/admin-portal/login/')
             ar = (user.admin_role or '').upper()
-            has_owner_role = ('OWNER' in allowed_roles) and (user.role == 'admin')
+            has_owner_role = ('OWNER' in allowed_roles) and (user.role == 'store_admin')
             if ar in {r.upper() for r in allowed_roles} or has_owner_role:
                 return view_func(request, *args, **kwargs)
             return HttpResponseForbidden('Forbidden')

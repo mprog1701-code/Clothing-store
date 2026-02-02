@@ -39,16 +39,21 @@ class AuthViewSet(viewsets.ViewSet):
                 qs = qs.filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
                 inv = qs.first()
                 if inv:
-                    user.role = 'admin'
+                    user.role = 'store_admin'
                     user.is_staff = True
                     user.save()
                     try:
                         st = Store.objects.get(id=inv.store_id)
-                        st.owner = user
+                        st.owner_user = user
                         st.save()
                     except Exception:
                         pass
                     inv.status = 'claimed'
+                    try:
+                        from django.utils import timezone as _tz
+                        inv.claimed_at = _tz.now()
+                    except Exception:
+                        inv.claimed_at = None
                     inv.save()
             except Exception:
                 pass

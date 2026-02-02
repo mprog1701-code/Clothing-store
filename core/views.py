@@ -267,16 +267,21 @@ def register(request):
                 qs = qs.filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
                 inv = qs.first()
                 if inv:
-                    user.role = 'admin'
+                    user.role = 'store_admin'
                     user.is_staff = True
                     user.save()
                     try:
                         st = Store.objects.get(id=inv.store_id)
-                        st.owner = user
+                        st.owner_user = user
                         st.save()
                     except Exception:
                         pass
                     inv.status = 'claimed'
+                    try:
+                        from django.utils import timezone as _tz
+                        inv.claimed_at = _tz.now()
+                    except Exception:
+                        inv.claimed_at = None
                     inv.save()
             except Exception:
                 pass
@@ -1591,6 +1596,73 @@ def admin_stores(request):
 
 
 @login_required
+def admin_db_diagnostics(request):
+    if request.user.username != 'super_owner':
+        from django.http import JsonResponse
+        return JsonResponse({'error': 'unauthorized'}, status=403)
+    from django.conf import settings
+    from django.db import connection
+    from django.http import JsonResponse
+    db = settings.DATABASES.get('default', {})
+    engine = db.get('ENGINE') or ''
+    name = db.get('NAME') or ''
+    host = db.get('HOST') or ''
+    port = str(db.get('PORT') or '')
+    user = db.get('USER') or ''
+    url = (getattr(settings, 'DATABASE_URL', '') or '').strip()
+    safe_host = host
+    user_prefix = (user or '')[:3]
+    if not safe_host and url:
+        try:
+            from urllib.parse import urlparse
+            p = urlparse(url)
+            h = p.netloc.split('@')[-1]
+            safe_host = h.split(':')[0]
+            name = (p.path or '').lstrip('/') or name
+            try:
+                cred = p.netloc.split('@')[0]
+                u = cred.split(':')[0]
+                user_prefix = (u or '')[:3]
+            except Exception:
+                pass
+        except Exception:
+            pass
+    data = {
+        'engine': engine,
+        'name': name,
+        'host': safe_host,
+        'port': port,
+        'user_prefix': user_prefix,
+        'has_DATABASE_URL': bool(url),
+        'counts': {},
+        'invites': [],
+    }
+    with connection.cursor() as cur:
+        try:
+            cur.execute('SELECT COUNT(*) FROM core_user')
+            data['counts']['core_user'] = cur.fetchone()[0]
+        except Exception:
+            data['counts']['core_user'] = None
+        try:
+            cur.execute('SELECT COUNT(*) FROM core_store')
+            data['counts']['core_store'] = cur.fetchone()[0]
+        except Exception:
+            data['counts']['core_store'] = None
+        try:
+            cur.execute('SELECT COUNT(*) FROM core_storeownerinvite')
+            data['counts']['core_storeownerinvite'] = cur.fetchone()[0]
+        except Exception:
+            data['counts']['core_storeownerinvite'] = None
+        try:
+            cur.execute('SELECT phone, status, created_at, expires_at, claimed_at FROM core_storeownerinvite ORDER BY id DESC LIMIT 5')
+            rows = cur.fetchall()
+            for r in rows:
+                data['invites'].append({'phone': r[0], 'status': r[1], 'created_at': str(r[2]), 'expires_at': str(r[3]) if r[3] else None, 'claimed_at': str(r[4]) if r[4] else None})
+        except Exception:
+            data['invites'] = []
+    return JsonResponse(data)
+
+@login_required
 def super_owner_dashboard(request):
     if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
@@ -2368,11 +2440,12 @@ def super_owner_owner_search_json(request):
     if request.user.username != 'super_owner':
         return JsonResponse({'error': 'unauthorized'}, status=403)
     q = (request.GET.get('q') or '').strip()
-    owners = User.objects.filter(role='admin').exclude(username='super_owner')
+    from .models import StoreOwner
+    owners = StoreOwner.objects.all()
     if q:
-        owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q))
-    owners = owners.order_by('username')[:20]
-    data = [{'id': o.id, 'name': o.get_full_name() or o.username, 'phone': o.phone or ''} for o in owners]
+        owners = owners.filter(Q(full_name__icontains=q) | Q(phone__icontains=q))
+    owners = owners.order_by('full_name')[:20]
+    data = [{'id': o.id, 'name': o.get_full_name(), 'phone': o.phone or ''} for o in owners]
     return JsonResponse({'results': data})
 
 @login_required
@@ -2383,19 +2456,15 @@ def super_owner_create_owner_json(request):
         return JsonResponse({'error': 'method_not_allowed'}, status=405)
     full_name = (request.POST.get('full_name') or '').strip()
     phone = (request.POST.get('phone') or '').strip()
-    email = (request.POST.get('email') or '').strip()
     if not full_name or not phone:
         return JsonResponse({'error': 'missing_required', 'message': 'الاسم الكامل ورقم الهاتف مطلوبان'}, status=400)
     import re
     if not re.fullmatch(r'07\d{9}', phone):
         return JsonResponse({'error': 'invalid_phone', 'message': 'رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'}, status=400)
-    first, last = '', ''
-    parts = full_name.split()
-    if parts:
-        first = parts[0]
-        last = ' '.join(parts[1:])
+    from .models import StoreOwner, User
     try:
-        return JsonResponse({'id': 0, 'name': full_name, 'phone': phone})
+        owner = StoreOwner.objects.create(full_name=full_name, phone=phone, created_by=request.user if isinstance(request.user, User) else None)
+        return JsonResponse({'id': owner.id, 'name': owner.get_full_name(), 'phone': owner.phone})
     except Exception:
         return JsonResponse({'error': 'create_failed', 'message': 'فشل إنشاء المالك'}, status=500)
 
@@ -2407,7 +2476,8 @@ def super_owner_create_store(request):
     step = (request.POST.get('step') or request.GET.get('step') or '1').strip()
     wizard = request.session.get('create_store_wizard') or {}
     errors = {}
-    owners = User.objects.filter(role='admin').exclude(username='super_owner').order_by('username')
+    from .models import StoreOwner
+    owners = StoreOwner.objects.all().order_by('full_name')
     categories = Store.CATEGORY_CHOICES
     status_code = 200
     if request.method == 'POST':
@@ -2415,9 +2485,9 @@ def super_owner_create_store(request):
         if step == '1':
             owner_id = (request.POST.get('owner_id') or '').strip()
             if owner_id and owner_id.isdigit():
-                wizard['owner_id'] = int(owner_id)
+                wizard['owner_profile_id'] = int(owner_id)
             else:
-                wizard['owner_id'] = None
+                wizard['owner_profile_id'] = None
             request.session['create_store_wizard'] = wizard
             step = '2'
         elif step == '2':
@@ -2442,7 +2512,7 @@ def super_owner_create_store(request):
                 errors['category'] = 'فئة غير صالحة'
             if status_choice not in ['ACTIVE', 'DISABLED']:
                 status_choice = 'ACTIVE'
-            if not wizard.get('owner_id'):
+            if not wizard.get('owner_profile_id'):
                 import re
                 if not contact_phone or not re.fullmatch(r'07\d{9}', contact_phone):
                     errors['owner_contact_phone'] = 'رقم هاتف المالك مطلوب وبصيغة صحيحة 07xxxxxxxxx'
@@ -2503,12 +2573,6 @@ def super_owner_create_store(request):
                 })
                 try:
                     with transaction.atomic():
-                        owner = None
-                        try:
-                            if wizard.get('owner_id') is not None:
-                                owner = User.objects.get(id=int(wizard['owner_id']))
-                        except Exception:
-                            owner = None
                         status_choice = wizard.get('status') or 'ACTIVE'
                         is_active = True if status_choice == 'ACTIVE' else False
                         s = Store.objects.create(
@@ -2516,7 +2580,6 @@ def super_owner_create_store(request):
                             city=wizard.get('city',''),
                             address=wizard.get('address','—'),
                             description='',
-                            owner=owner,
                             category=wizard.get('category') or 'clothing',
                             delivery_time=delivery_time_text,
                             delivery_time_value=dt_value,
@@ -2532,16 +2595,26 @@ def super_owner_create_store(request):
                             s.longitude = wizard.get('longitude')
                         if wizard.get('formatted_address'):
                             s.formatted_address = wizard.get('formatted_address')
-                        if not owner:
-                            s.owner_contact_name = wizard.get('owner_contact_name','')
-                            s.owner_phone = wizard.get('owner_contact_phone','')
+                        owner_profile = None
+                        if wizard.get('owner_profile_id') is not None:
+                            try:
+                                owner_profile = StoreOwner.objects.get(id=int(wizard['owner_profile_id']))
+                            except Exception:
+                                owner_profile = None
+                        if owner_profile is None:
+                            contact_name = (wizard.get('owner_contact_name') or '').strip()
+                            contact_phone = (wizard.get('owner_contact_phone') or '').strip()
+                            if contact_phone:
+                                owner_profile = StoreOwner.objects.create(full_name=(contact_name or ''), phone=contact_phone, created_by=request.user if isinstance(request.user, User) else None)
+                        if owner_profile:
+                            s.owner_profile = owner_profile
                         s.save()
                         if logo_file:
                             s.logo = logo_file
                             s.save()
-                        if not owner and wizard.get('owner_contact_phone'):
+                        if owner_profile and owner_profile.phone:
                             from .models import StoreOwnerInvite
-                            inv = StoreOwnerInvite(store=s, phone=wizard.get('owner_contact_phone'), status='pending')
+                            inv = StoreOwnerInvite(store=s, phone=owner_profile.phone, status='pending')
                             try:
                                 inv.token = uuid.uuid4().hex
                             except Exception:

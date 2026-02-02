@@ -75,16 +75,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clothing_store.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+from django.core.exceptions import ImproperlyConfigured
 
-DATABASE_URL = config('DATABASE_URL', default='')
-if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+DATABASE_URL = config('DATABASE_URL', default='').strip() or os.environ.get('DATABASE_URL', '').strip()
+if not DATABASE_URL:
+    raise ImproperlyConfigured('DATABASE_URL is required and SQLite is disabled for this environment')
+DATABASES = {
+    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -278,5 +276,26 @@ SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 try:
     from django.core.files.storage import default_storage
     print(f"[diagnostic] default_storage backend: {default_storage.__class__.__module__}.{default_storage.__class__.__name__}")
+except Exception:
+    pass
+
+try:
+    _db = DATABASES.get('default', {})
+    _engine = _db.get('ENGINE') or ''
+    _name = str(_db.get('NAME') or '')
+    _host = str(_db.get('HOST') or '')
+    _port = str(_db.get('PORT') or '')
+    _url = (DATABASE_URL or '').strip()
+    if not _host and _url:
+        from urllib.parse import urlparse
+        _p = urlparse(_url)
+        _h = _p.netloc.split('@')[-1]
+        _host = _h.split(':')[0]
+        _name = ( _p.path or '' ).lstrip('/') or _name
+    print(f"[diagnostic] db engine: {_engine}")
+    print(f"[diagnostic] db name: {_name}")
+    print(f"[diagnostic] db host: {_host}")
+    print(f"[diagnostic] db port: {_port}")
+    print(f"[diagnostic] has DATABASE_URL: {bool(_url)}")
 except Exception:
     pass

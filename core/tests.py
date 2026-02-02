@@ -11,7 +11,7 @@ class CartAndCheckoutTests(TestCase):
         self.client = Client()
 
         self.admin = User.objects.create_user(
-            username="admin1", password="pass1234", role="admin", phone="07700000001", city="Baghdad"
+            username="admin1", password="pass1234", role="store_admin", phone="07700000001", city="Baghdad"
         )
         self.customer = User.objects.create_user(
             username="cust1", password="pass1234", role="customer", phone="07700000002", city="Baghdad"
@@ -174,7 +174,7 @@ class OwnerInviteFlowTests(TestCase):
         self.super_owner = U.objects.create_user(
             username='super_owner',
             password='AdminPass123!',
-            role='admin',
+            role='store_admin',
             phone='07700000000',
             city='Baghdad',
             is_staff=True,
@@ -227,9 +227,11 @@ class OwnerInviteFlowTests(TestCase):
 
         store = Store.objects.order_by('-created_at').first()
         self.assertIsNotNone(store)
-        self.assertIsNone(store.owner)
-        self.assertEqual(store.owner_phone, contact_phone)
-        self.assertEqual(store.owner_contact_name, contact_name)
+        self.assertIsNone(store.owner_user)
+        from core.models import StoreOwner
+        self.assertIsNotNone(store.owner_profile)
+        self.assertEqual(store.owner_profile.phone, contact_phone)
+        self.assertEqual(store.owner_profile.full_name, contact_name)
 
         invite = StoreOwnerInvite.objects.filter(store=store, phone=contact_phone, status='pending').first()
         self.assertIsNotNone(invite)
@@ -258,8 +260,8 @@ class OwnerInviteFlowTests(TestCase):
         user = U.objects.filter(phone=contact_phone).first()
         self.assertIsNotNone(user)
         store.refresh_from_db()
-        self.assertEqual(store.owner_id, user.id)
-        self.assertEqual(user.role, 'admin')
+        self.assertEqual(getattr(store, 'owner_user_id'), user.id)
+        self.assertEqual(user.role, 'store_admin')
         self.assertTrue(user.is_staff)
 
         invite = StoreOwnerInvite.objects.filter(store=store, phone=contact_phone).first()
