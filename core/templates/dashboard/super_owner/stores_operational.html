@@ -69,6 +69,13 @@
 
   <form method="post">
     {% csrf_token %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="d-flex align-items-center gap-2">
         <select name="action" class="form-select form-select-sm" style="max-width:200px">
@@ -178,8 +185,14 @@ function submitRowAction(id, action, confirmDelete){
   if(confirmDelete){
     if(!window.confirm('هل أنت متأكد من حذف هذا المتجر نهائياً؟')){ return false; }
   }
-  var actionSelect = form.querySelector('select[name="action"]');
-  if(actionSelect){ actionSelect.value = action; }
+  var existing = form.querySelector('#action_hidden');
+  if(existing){ existing.remove(); }
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'action';
+  input.value = action;
+  input.id = 'action_hidden';
+  form.appendChild(input);
   form.submit();
   return false;
 }
