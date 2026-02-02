@@ -150,6 +150,7 @@
                   {% endif %}
                   <a href="{% url 'super_owner_add_product' %}?store={{ store.id }}" class="btn btn-info" title="إنشاء منتج"><i class="fas fa-plus"></i></a>
                   <a href="{% url 'super_owner_orders' %}?store={{ store.id }}" class="btn btn-secondary" title="مشاهدة الطلبات"><i class="fas fa-list"></i></a>
+                  <button class="btn btn-danger" title="حذف" onclick="return submitRowAction({{ store.id }}, 'delete', true)"><i class="fas fa-trash"></i></button>
                   
                 </div>
               </div>
@@ -171,10 +172,14 @@ document.addEventListener('DOMContentLoaded', function(){
   const rows = document.querySelectorAll('.row_select');
   selectAll && selectAll.addEventListener('change', function(){ rows.forEach(r=>{ r.checked = selectAll.checked; }); });
 });
-function submitRowAction(id, action){
+function submitRowAction(id, action, confirmDelete){
   const form = document.querySelector('form[method="post"]');
   document.getElementById('row_action_store_id').value = id;
-  const input = document.createElement('input'); input.type='hidden'; input.name='action'; input.value=action; form.appendChild(input);
+  if(confirmDelete){
+    if(!window.confirm('هل أنت متأكد من حذف هذا المتجر نهائياً؟')){ return false; }
+  }
+  var actionSelect = form.querySelector('select[name="action"]');
+  if(actionSelect){ actionSelect.value = action; }
   form.submit();
   return false;
 }
