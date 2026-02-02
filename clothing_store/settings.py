@@ -5,7 +5,7 @@ Django settings for clothing_store project.
 from pathlib import Path
 from decimal import Decimal
 from decouple import config
-import os
+import os, sys
 import dj_database_url
 from django.contrib.messages import constants as messages
 
@@ -78,11 +78,16 @@ WSGI_APPLICATION = 'clothing_store.wsgi.application'
 from django.core.exceptions import ImproperlyConfigured
 
 DATABASE_URL = config('DATABASE_URL', default='').strip() or os.environ.get('DATABASE_URL', '').strip()
+_IS_COLLECTSTATIC = any(arg.endswith('collectstatic') for arg in sys.argv)
 if not DATABASE_URL:
-    raise ImproperlyConfigured('DATABASE_URL is required and SQLite is disabled for this environment')
-DATABASES = {
-    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
-}
+    if _IS_COLLECTSTATIC:
+        DATABASES = {}
+    else:
+        raise ImproperlyConfigured('DATABASE_URL is required and SQLite is disabled for this environment')
+else:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
