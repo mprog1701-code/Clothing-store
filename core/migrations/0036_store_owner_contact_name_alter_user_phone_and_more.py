@@ -16,11 +16,9 @@ class Migration(migrations.Migration):
             name="owner_contact_name",
             field=models.CharField(blank=True, default="", max_length=100),
         ),
-        migrations.AlterField(
-            model_name="user",
-            name="phone",
-            field=models.CharField(max_length=20, unique=True),
-        ),
+        # Skip re-adding unique constraint on user.phone in this migration to
+        # avoid crash on environments with duplicate phones. A follow-up
+        # migration will enforce uniqueness after data cleanup.
         migrations.CreateModel(
             name="StoreOwnerInvite",
             fields=[

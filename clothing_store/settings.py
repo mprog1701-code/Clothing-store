@@ -173,7 +173,10 @@ if USE_R2:
             "BACKEND": "core.storage.R2MediaStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": (
+                "whitenoise.storage.CompressedManifestStaticFilesStorage"
+                if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"
+            ),
         },
     }
     R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='').strip()
@@ -192,7 +195,10 @@ else:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+            "BACKEND": (
+                "whitenoise.storage.CompressedManifestStaticFilesStorage"
+                if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"
+            ),
         },
     }
     MEDIA_URL = '/media/'
