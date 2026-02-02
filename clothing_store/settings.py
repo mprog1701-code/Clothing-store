@@ -76,11 +76,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'clothing_store.wsgi.application'
 
 DATABASE_URL = (os.environ.get('DATABASE_URL', '') or '').strip()
+_IS_COLLECTSTATIC = any(arg.endswith('collectstatic') for arg in sys.argv)
 if not DATABASE_URL:
-    raise RuntimeError('DATABASE_URL is required and must be provided via environment. No SQLite or localhost fallback is allowed.')
-DATABASES = {
-    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
-}
+    if _IS_COLLECTSTATIC:
+        DATABASES = {}
+    else:
+        raise RuntimeError('DATABASE_URL is required and must be provided via environment. No SQLite or localhost fallback is allowed.')
+else:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
