@@ -15,18 +15,16 @@ class PhoneBackend(ModelBackend):
         """
         # Try to get user by phone number first
         try:
-            # If username looks like an Iraqi mobile number, try phone authentication
             if username and username.startswith('07'):
-                user = User.objects.get(phone=username)
+                user = User.objects.filter(phone=username).order_by('-is_superuser', '-is_staff', '-date_joined').first()
             else:
-                # Try regular username authentication
-                user = User.objects.get(username=username)
-            
-            # Check password
+                user = User.objects.filter(username=username).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+            if not user:
+                return None
             if user.check_password(password):
                 return user
             return None
-        except User.DoesNotExist:
+        except Exception:
             return None
     
     def get_user(self, user_id):
@@ -34,6 +32,6 @@ class PhoneBackend(ModelBackend):
         Retrieve a user by ID.
         """
         try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
+            return User.objects.filter(pk=user_id).first()
+        except Exception:
             return None

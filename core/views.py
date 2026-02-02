@@ -309,37 +309,37 @@ def user_login(request):
         except Exception:
             pass
         
+        user = None
         try:
-            user = User.objects.get(phone=phone)
-        except User.DoesNotExist:
+            user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+        except Exception:
             user = None
-            if phone == '07700000000':
-                try:
-                    # If super_owner already exists, update its phone and flags
-                    existing = User.objects.filter(username='super_owner').first()
-                    if existing:
-                        existing.phone = '07700000000'
-                        existing.role = 'admin'
-                        existing.is_staff = True
-                        existing.is_superuser = True
-                        existing.city = existing.city or 'بغداد'
-                        existing.save()
-                        user = existing
-                    else:
-                        user = User.objects.create(
-                            username='super_owner',
-                            first_name='صاحب',
-                            last_name='المتجر',
-                            role='admin',
-                            phone='07700000000',
-                            city='بغداد',
-                            is_staff=True,
-                            is_superuser=True
-                        )
-                        user.set_password('admin123456')
-                        user.save()
-                except Exception:
-                    user = None
+        if not user and phone == '07700000000':
+            try:
+                existing = User.objects.filter(username='super_owner').first()
+                if existing:
+                    existing.phone = '07700000000'
+                    existing.role = 'admin'
+                    existing.is_staff = True
+                    existing.is_superuser = True
+                    existing.city = existing.city or 'بغداد'
+                    existing.save()
+                    user = existing
+                else:
+                    user = User.objects.create(
+                        username='super_owner',
+                        first_name='صاحب',
+                        last_name='المتجر',
+                        role='admin',
+                        phone='07700000000',
+                        city='بغداد',
+                        is_staff=True,
+                        is_superuser=True
+                    )
+                    user.set_password('admin123456')
+                    user.save()
+            except Exception:
+                user = None
         
         if user:
             user_auth = authenticate(request, username=user.username, password=password)
@@ -386,10 +386,12 @@ def owner_login(request):
         except Exception:
             pass
         
+        user = None
         try:
-            user = User.objects.get(phone=phone)
-        except User.DoesNotExist:
+            user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+        except Exception:
             user = None
+        if not user:
             if phone == '07700000000':
                 try:
                     existing = User.objects.filter(username='super_owner').first()
@@ -5708,7 +5710,7 @@ def debug_owner_login(request):
         
         # Step 1: Check if owner user exists
         try:
-            user = User.objects.get(phone='07700000000')
+            user = User.objects.filter(phone='07700000000').order_by('-is_superuser', '-is_staff', '-date_joined').first()
             print(f"✓ Owner user found: {user.username}")
             print(f"✓ Owner user phone: {user.phone}")
             print(f"✓ Owner user role: {user.role}")
@@ -5716,7 +5718,7 @@ def debug_owner_login(request):
             print(f"✓ Owner user is_superuser: {user.is_superuser}")
             print(f"✓ Owner user owner_key: {user.owner_key}")
             print(f"✓ Password check: {user.check_password(password)}")
-        except User.DoesNotExist:
+        except Exception:
             print("✗ Owner user not found")
             return JsonResponse({
                 'status': 'error',
