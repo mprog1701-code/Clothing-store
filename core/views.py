@@ -3006,68 +3006,35 @@ def super_owner_add_product(request):
             selected_sizes = list(AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()]))
 
             created = 0
-            if selected_colors and selected_sizes:
-                for c in selected_colors:
-                    for s in selected_sizes:
-                        exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+            with transaction.atomic():
+                if selected_colors and selected_sizes:
+                    for c in selected_colors:
+                        for s in selected_sizes:
+                            exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
+                            if exists:
+                                continue
+                            try:
+                                ProductVariant.objects.create(
+                                    product=product,
+                                    color_attr=c,
+                                    size_attr=s,
+                                    size=s.name,
+                                    stock_qty=0,
+                                    price_override=None,
+                                    is_enabled=False,
+                                )
+                                created += 1
+                            except Exception:
+                                pass
+                elif selected_colors and not selected_sizes and product.size_type == 'none':
+                    for c in selected_colors:
+                        exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr__isnull=True).exists()
                         if exists:
                             continue
                         try:
                             ProductVariant.objects.create(
                                 product=product,
                                 color_attr=c,
-                                size_attr=s,
-                                size=s.name,
-                                stock_qty=0,
-                                price_override=None,
-                                is_enabled=False,
-                            )
-                            created += 1
-                        except Exception:
-                            pass
-            elif selected_colors and not selected_sizes and product.size_type == 'none':
-                for c in selected_colors:
-                    exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr__isnull=True).exists()
-                    if exists:
-                        continue
-                    try:
-                        ProductVariant.objects.create(
-                            product=product,
-                            color_attr=c,
-                            size_attr=None,
-                            size='ONE',
-                            stock_qty=0,
-                            price_override=None,
-                            is_enabled=False,
-                        )
-                        created += 1
-                    except Exception:
-                        pass
-            elif selected_sizes and not selected_colors:
-                for s in selected_sizes:
-                    exists = ProductVariant.objects.filter(product=product, color_attr__isnull=True, size_attr=s).exists()
-                    if exists:
-                        continue
-                    try:
-                        ProductVariant.objects.create(
-                            product=product,
-                            color_attr=None,
-                            size_attr=s,
-                            size=s.name,
-                            stock_qty=0,
-                            price_override=None,
-                            is_enabled=False,
-                        )
-                        created += 1
-                    except Exception:
-                        pass
-            else:
-                if product.size_type == 'none':
-                    if not ProductVariant.objects.filter(product=product).exists():
-                        try:
-                            ProductVariant.objects.create(
-                                product=product,
-                                color_attr=None,
                                 size_attr=None,
                                 size='ONE',
                                 stock_qty=0,
@@ -3077,8 +3044,42 @@ def super_owner_add_product(request):
                             created += 1
                         except Exception:
                             pass
+                elif selected_sizes and not selected_colors:
+                    for s in selected_sizes:
+                        exists = ProductVariant.objects.filter(product=product, color_attr__isnull=True, size_attr=s).exists()
+                        if exists:
+                            continue
+                        try:
+                            ProductVariant.objects.create(
+                                product=product,
+                                color_attr=None,
+                                size_attr=s,
+                                size=s.name,
+                                stock_qty=0,
+                                price_override=None,
+                                is_enabled=False,
+                            )
+                            created += 1
+                        except Exception:
+                            pass
+                else:
+                    if product.size_type == 'none':
+                        if not ProductVariant.objects.filter(product=product).exists():
+                            try:
+                                ProductVariant.objects.create(
+                                    product=product,
+                                    color_attr=None,
+                                    size_attr=None,
+                                    size='ONE',
+                                    stock_qty=0,
+                                    price_override=None,
+                                    is_enabled=False,
+                                )
+                                created += 1
+                            except Exception:
+                                pass
 
-            messages.success(request, f'تم حفظ الخصائص وإنشاء {created} صفوف مخزون')
+            messages.success(request, 'تم حفظ الخصائص بنجاح')
             return redirect(f"{request.path}?pid={product.id}&step=images")
 
         elif action == 'add_global_color':
@@ -3567,6 +3568,16 @@ def super_owner_add_product(request):
             except Exception:
                 messages.error(request, 'حدث خطأ أثناء استخراج اللون')
             return redirect(f"{request.path}?pid={product.id}&step=images")
+
+        elif action == 'finish':
+            pid = request.POST.get('pid')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            messages.success(request, 'تمت إضافة المنتج بنجاح')
+            return redirect('super_owner_products')
 
     product = None
     variants = []
