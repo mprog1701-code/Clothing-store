@@ -2387,19 +2387,10 @@ def super_owner_add_store(request):
                 base_description = src.description or ''
             except (Store.DoesNotExist, ValueError):
                 pass
-        elif store_template in ['clothing','electronics','food']:
-            if store_template == 'clothing':
-                base_category = 'clothing'
-                base_delivery_time = '30-45 دقيقة'
-                base_delivery_fee = 1000.00
-            elif store_template == 'electronics':
-                base_category = 'electronics'
-                base_delivery_time = '60-90 دقيقة'
-                base_delivery_fee = 3000.00
-            elif store_template == 'food':
-                base_category = 'food'
-                base_delivery_time = '20-30 دقيقة'
-                base_delivery_fee = 2000.00
+        elif store_template == 'clothing':
+            base_category = 'clothing'
+            base_delivery_time = '30-45 دقيقة'
+            base_delivery_fee = 1000.00
 
         try:
             store = Store.objects.create(
@@ -2423,10 +2414,15 @@ def super_owner_add_store(request):
     store_owners = User.objects.filter(role='admin').order_by('username')
     stores_all = Store.objects.all().order_by('name')
     last_store = Store.objects.order_by('-created_at').first()
+    iraq_cities = [
+        'بغداد','البصرة','نينوى','أربيل','كركوك','السليمانية','ذي قار','النجف',
+        'كربلاء','واسط','بابل','ديالى','الأنبار','المثنى','ميسان','صلاح الدين','القادسية','دهوك'
+    ]
     context = {
         'store_owners': store_owners,
         'stores_all': stores_all,
         'default_city': last_store.city if last_store else '',
+        'cities': iraq_cities,
     }
     return render(request, 'dashboard/super_owner/add_store.html', context)
 
@@ -2479,6 +2475,10 @@ def super_owner_create_store(request):
     from .models import StoreOwner
     owners = StoreOwner.objects.all().order_by('full_name')
     categories = Store.CATEGORY_CHOICES
+    iraq_cities = [
+        'بغداد','البصرة','نينوى','أربيل','كركوك','السليمانية','ذي قار','النجف',
+        'كربلاء','واسط','بابل','ديالى','الأنبار','المثنى','ميسان','صلاح الدين','القادسية','دهوك'
+    ]
     status_code = 200
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
@@ -2634,7 +2634,7 @@ def super_owner_create_store(request):
                     status_code = 500
             else:
                 status_code = 400
-    context = {'step': step, 'errors': errors, 'owners': owners, 'categories': categories, 'wizard': wizard}
+    context = {'step': step, 'errors': errors, 'owners': owners, 'categories': categories, 'wizard': wizard, 'cities': iraq_cities}
     return render(request, 'dashboard/super_owner/create_store_wizard.html', context, status=status_code)
 
 

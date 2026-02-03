@@ -87,6 +87,10 @@ class Store(models.Model):
         ('women', 'ملابس نسائية'),
         ('men', 'ملابس رجالية'),
         ('kids', 'ملابس أطفال'),
+        ('perfumes', 'عطور'),
+        ('cosmetics', 'كوزمتك'),
+        ('watches', 'ساعات'),
+        ('shoes', 'أحذية'),
         ('clothing', 'ملابس عامة'),
     ]
     

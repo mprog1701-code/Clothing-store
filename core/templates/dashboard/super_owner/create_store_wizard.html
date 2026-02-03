@@ -81,8 +81,13 @@
           {% if errors.category %}<div class="text-danger small mt-1">{{ errors.category }}</div>{% endif %}
         </div>
         <div class="col-md-6">
-          <label class="form-label">المدينة *</label>
-          <input type="text" class="form-control" name="city" value="{{ wizard.city|default:'' }}" placeholder="مثال: بغداد">
+          <label class="form-label">المحافظة *</label>
+          <select class="form-select" name="city">
+            <option value="">اختر المحافظة</option>
+            {% for c in cities %}
+              <option value="{{ c }}" {% if wizard.city == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
           {% if errors.city %}<div class="text-danger small mt-1">{{ errors.city }}</div>{% endif %}
         </div>
         <div class="col-md-6">
@@ -236,17 +241,45 @@ document.addEventListener('DOMContentLoaded', function(){
   }
   function updateLatLng(lat,lng){ document.getElementById('latitude').value = lat; document.getElementById('longitude').value = lng; addrPreview.textContent = '('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')'; }
   function reverseGeocode(lat,lng){
-    fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=ar&lat='+encodeURIComponent(lat)+'&lon='+encodeURIComponent(lng)).then(function(r){return r.json()}).then(function(data){
-      var disp = data.display_name || '';
-      document.getElementById('formatted_address').value = disp;
-      document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
-      addrPreview.textContent = disp || addrPreview.textContent;
-    });
+    fetch('/api/addresses/reverse-geocode/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: lat, lng: lng }) })
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var disp = data.formatted || '';
+        document.getElementById('formatted_address').value = disp;
+        document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
+        addrPreview.textContent = disp || addrPreview.textContent;
+      }).catch(function(){ });
   }
   var searchInput = document.getElementById('searchInput');
   var searchBtn = document.getElementById('searchBtn');
-  function doSearch(){ var q = (searchInput.value||'').trim(); if(!q) return; fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=ar&q='+encodeURIComponent(q)).then(function(r){return r.json()}).then(function(items){ var list = document.getElementById('list'); list.innerHTML=''; items.slice(0,10).forEach(function(it){ var d = document.createElement('div'); d.className='res'; d.textContent = it.display_name; d.addEventListener('click', function(){ if(!map) initMap(); setMarker(parseFloat(it.lat), parseFloat(it.lon)); var disp = it.display_name || ''; document.getElementById('formatted_address').value = disp; document.getElementById('addressInput').value = disp; addrPreview.textContent = disp; }); list.appendChild(d); }); }); }
+  function doSearch(){
+    var q = (searchInput.value||'').trim();
+    if(!q) return;
+    fetch('/api/addresses/autocomplete/?q='+encodeURIComponent(q))
+      .then(function(r){ return r.json(); })
+      .then(function(payload){
+        var items = (payload && payload.results) || [];
+        var list = document.getElementById('list');
+        list.innerHTML='';
+        items.slice(0,10).forEach(function(it){
+          var d = document.createElement('div');
+          d.className='res';
+          d.textContent = it.label || '';
+          d.addEventListener('click', function(){
+            if(!map) initMap();
+            var lat = parseFloat(it.lat), lng = parseFloat(it.lng);
+            if(!isNaN(lat) && !isNaN(lng)){ setMarker(lat, lng); map.setView([lat,lng], 16); }
+            var disp = it.label || '';
+            document.getElementById('formatted_address').value = disp;
+            document.getElementById('addressInput').value = disp;
+            addrPreview.textContent = disp;
+          });
+          list.appendChild(d);
+        });
+      }).catch(function(){ });
+  }
   if(searchBtn){ searchBtn.addEventListener('click', doSearch); }
+  if(searchInput){ searchInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); doSearch(); } }); }
   if(openBtn && modal){ openBtn.addEventListener('click', function(){ modal.show(); }); }
   if(mapModalEl){
     mapModalEl.addEventListener('shown.bs.modal', function(){
