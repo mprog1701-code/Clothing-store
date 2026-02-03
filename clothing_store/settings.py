@@ -5,11 +5,13 @@ Django settings for clothing_store project.
 from pathlib import Path
 from decimal import Decimal
 from decouple import config
+from dotenv import load_dotenv
 import os, sys
 import dj_database_url
 from django.contrib.messages import constants as messages
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
