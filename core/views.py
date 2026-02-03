@@ -3662,7 +3662,7 @@ def super_owner_add_product(request):
                 except Exception:
                     pass
             all_sizes = list(AttributeSize.objects.all())
-            sizes_display = sorted([s for s in all_sizes if s.name in names], key=lambda x: x.order)
+            sizes_display = sorted([s for s in all_sizes if not s.name.isdigit()], key=lambda x: x.order)
         else:
             sizes_display = []
     else:
