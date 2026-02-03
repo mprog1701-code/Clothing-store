@@ -258,32 +258,47 @@ class AddressViewSet(viewsets.ModelViewSet):
             'accept-language': 'ar',
         }
         url = 'https://nominatim.openstreetmap.org/reverse?' + urlencode(params)
+        def _parse(data_json):
+            a = (data_json or {}).get('address') or {}
+            _city = a.get('city') or a.get('town') or a.get('village') or a.get('state') or ''
+            _area = a.get('suburb') or a.get('neighbourhood') or a.get('quarter') or a.get('district') or a.get('county') or ''
+            _street = (a.get('road') or '') + (' ' + a.get('house_number') if a.get('house_number') else '')
+            return _city, _area, _street
         try:
             req = Request(url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
             resp = urlopen(req, timeout=8)
             data = json.loads(resp.read().decode('utf-8'))
-        except URLError as e:
-            logger.error(f"reverse_geocode error: {e}")
-            return Response({'error': 'تعذر التعرف على العنوان'}, status=status.HTTP_502_BAD_GATEWAY)
-        except Exception as e:
-            logger.error(f"reverse_geocode unexpected: {e}")
-            return Response({'error': 'حدث خطأ غير متوقع'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        addr = data.get('address') or {}
-        city = addr.get('city') or addr.get('town') or addr.get('village') or addr.get('state') or ''
-        area = addr.get('suburb') or addr.get('neighbourhood') or addr.get('quarter') or addr.get('district') or addr.get('county') or ''
-        street = (addr.get('road') or '') + (' ' + addr.get('house_number') if addr.get('house_number') else '')
-        result = {
-            'city': city,
-            'area': area,
-            'street': street.strip(),
-            'formatted': data.get('display_name') or '',
-            'provider': 'nominatim',
-            'provider_place_id': str(data.get('place_id') or ''),
-            'lat': lat,
-            'lng': lon,
-        }
-        return Response(result)
+            c,a,s = _parse(data)
+            return Response({
+                'city': c,
+                'area': a,
+                'street': s.strip(),
+                'formatted': (data.get('display_name') or ''),
+                'provider': 'nominatim',
+                'provider_place_id': str(data.get('place_id') or ''),
+                'lat': lat,
+                'lng': lon,
+            })
+        except Exception:
+            try:
+                fb_url = 'https://geocode.maps.co/reverse?' + urlencode({'lat': lat, 'lon': lon})
+                fb_req = Request(fb_url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
+                fb_resp = urlopen(fb_req, timeout=8)
+                fb_data = json.loads(fb_resp.read().decode('utf-8'))
+                c,a,s = _parse(fb_data)
+                return Response({
+                    'city': c,
+                    'area': a,
+                    'street': s.strip(),
+                    'formatted': (fb_data.get('display_name') or fb_data.get('formatted') or ''),
+                    'provider': 'maps.co',
+                    'provider_place_id': str(fb_data.get('place_id') or ''),
+                    'lat': lat,
+                    'lng': lon,
+                })
+            except Exception as e:
+                logger.error(f"reverse_geocode fallback error: {e}")
+                return Response({'error': 'تعذر التعرف على العنوان'}, status=status.HTTP_502_BAD_GATEWAY)
 
     @action(detail=False, methods=['get'], url_path='autocomplete', permission_classes=[])
     def autocomplete(self, request):
@@ -302,35 +317,51 @@ class AddressViewSet(viewsets.ModelViewSet):
             'limit': 6,
         }
         url = 'https://nominatim.openstreetmap.org/search?' + urlencode(params)
-        try:
-            req = Request(url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
-            resp = urlopen(req, timeout=8)
-            items = json.loads(resp.read().decode('utf-8'))
-        except URLError as e:
-            logger.error(f"autocomplete error: {e}")
-            return Response({'results': []}, status=status.HTTP_502_BAD_GATEWAY)
-        except Exception as e:
-            logger.error(f"autocomplete unexpected: {e}")
-            return Response({'results': []}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        results = []
-        for it in (items or [])[:6]:
-            addr = it.get('address') or {}
-            city = addr.get('city') or addr.get('town') or addr.get('village') or addr.get('state') or ''
-            area = addr.get('suburb') or addr.get('neighbourhood') or addr.get('quarter') or addr.get('district') or addr.get('county') or ''
-            road = addr.get('road') or ''
-            hn = addr.get('house_number') or ''
-            street = (road + (' ' + hn if hn else '')).strip()
-            results.append({
-                'label': it.get('display_name') or street or city,
-                'city': city,
-                'area': area,
-                'street': street,
+        def _map_item(it):
+            a = it.get('address') or {}
+            _city = a.get('city') or a.get('town') or a.get('village') or a.get('state') or ''
+            _area = a.get('suburb') or a.get('neighbourhood') or a.get('quarter') or a.get('district') or a.get('county') or ''
+            _road = a.get('road') or ''
+            _hn = a.get('house_number') or ''
+            _street = (_road + (' ' + _hn if _hn else '')).strip()
+            return {
+                'label': it.get('display_name') or _street or _city,
+                'city': _city,
+                'area': _area,
+                'street': _street,
                 'lat': it.get('lat'),
                 'lng': it.get('lon'),
                 'provider': 'nominatim',
                 'provider_place_id': str(it.get('place_id') or ''),
-            })
-        return Response({'results': results})
+            }
+        try:
+            req = Request(url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
+            resp = urlopen(req, timeout=8)
+            items = json.loads(resp.read().decode('utf-8'))
+            results = [_map_item(it) for it in (items or [])[:6]]
+            return Response({'results': results})
+        except Exception:
+            try:
+                fb_url = 'https://geocode.maps.co/search?' + urlencode({'q': q})
+                fb_req = Request(fb_url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
+                fb_resp = urlopen(fb_req, timeout=8)
+                fb_items = json.loads(fb_resp.read().decode('utf-8'))
+                mapped = []
+                for it in (fb_items or [])[:6]:
+                    mapped.append({
+                        'label': it.get('display_name') or '',
+                        'city': '',
+                        'area': '',
+                        'street': '',
+                        'lat': it.get('lat'),
+                        'lng': it.get('lon'),
+                        'provider': 'maps.co',
+                        'provider_place_id': str(it.get('place_id') or ''),
+                    })
+                return Response({'results': mapped})
+            except Exception as e:
+                logger.error(f"autocomplete fallback error: {e}")
+                return Response({'results': []}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 class FeatureFlagAdminList(APIView):
