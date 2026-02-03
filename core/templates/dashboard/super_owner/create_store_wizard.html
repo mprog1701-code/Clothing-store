@@ -36,7 +36,7 @@
           <select class="form-select" name="owner_id" id="owner_list">
             <option value="">اختر المالك</option>
             {% for o in owners %}
-              <option value="{{ o.id }}">{{ o.get_full_name|default:o.username }}{% if o.phone %} - {{ o.phone }}{% endif %}</option>
+              <option value="{{ o.id }}">{% if o.get_full_name %}{{ o.get_full_name }}{% elif o.phone %}{{ o.phone }}{% else %}مالك #{{ o.id }}{% endif %}{% if o.phone and o.get_full_name %} - {{ o.phone }}{% endif %}</option>
             {% endfor %}
           </select>
           {% if errors.owner_id %}<div class="text-danger small mt-1">{{ errors.owner_id }}</div>{% endif %}
