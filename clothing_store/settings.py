@@ -4,7 +4,7 @@ Django settings for clothing_store project.
 
 from pathlib import Path
 from decimal import Decimal
-from decouple import config
+from decouple import AutoConfig
 from dotenv import load_dotenv
 import os, sys
 import dj_database_url
@@ -12,6 +12,7 @@ from django.contrib.messages import constants as messages
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
+config = AutoConfig(search_path=BASE_DIR)
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
@@ -77,7 +78,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clothing_store.wsgi.application'
 
-DATABASE_URL = (os.environ.get('DATABASE_URL', '') or '').strip()
+DATABASE_URL = config('DATABASE_URL', default='').strip()
 _IS_COLLECTSTATIC = any(arg.endswith('collectstatic') for arg in sys.argv)
 if not DATABASE_URL:
     if _IS_COLLECTSTATIC:
