@@ -3005,6 +3005,10 @@ def super_owner_add_product(request):
             selected_colors = list(AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()]))
             selected_sizes = list(AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()]))
 
+            if not selected_colors and not selected_sizes and product.size_type != 'none':
+                messages.error(request, 'يرجى اختيار لون أو قياس قبل الحفظ')
+                return redirect(f"{request.path}?pid={product.id}&step=attributes")
+
             created = 0
             with transaction.atomic():
                 if selected_colors and selected_sizes:
@@ -3078,8 +3082,10 @@ def super_owner_add_product(request):
                                 created += 1
                             except Exception:
                                 pass
-
-            messages.success(request, 'تم حفظ الخصائص بنجاح')
+            if created > 0:
+                messages.success(request, f'تم حفظ الخصائص وإنشاء {created} متغيرات')
+            else:
+                messages.info(request, 'تم حفظ الخصائص دون إنشاء متغيرات جديدة')
             return redirect(f"{request.path}?pid={product.id}&step=images")
 
         elif action == 'add_global_color':

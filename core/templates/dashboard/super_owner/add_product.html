@@ -161,21 +161,22 @@
                                 {% endfor %}
                             </div>
 
-                            <div class="mt-3 d-flex align-items-center gap-2">
-                                <form method="post" class="d-flex align-items-center gap-2" data-ajax="true">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="action" value="add_attribute_size">
-                                    <input type="hidden" name="pid" value="{{ product.id }}">
-                                    <input type="text" name="size_name" class="form-control" placeholder="إضافة قياس" style="max-width:220px;">
-                                    <button class="btn btn-outline-primary">إضافة قياس</button>
-                                </form>
-                            </div>
+                            
 
                             <div class="actions-row">
                                 <button class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ الخصائص</button>
                                 <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images" class="btn btn-outline-secondary">الانتقال إلى الصور</a>
                             </div>
                         </form>
+                        <div class="mt-3 d-flex align-items-center gap-2">
+                            <form method="post" class="d-flex align-items-center gap-2" data-ajax="true">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="add_attribute_size">
+                                <input type="hidden" name="pid" value="{{ product.id }}">
+                                <input type="text" name="size_name" class="form-control" placeholder="إضافة قياس" style="max-width:220px;">
+                                <button class="btn btn-outline-primary">إضافة قياس</button>
+                            </form>
+                        </div>
                         <!-- نماذج الحذف خارج نموذج الحفظ لمنع التداخل -->
                         <div style="display:none">
                             {% for c in colors %}
