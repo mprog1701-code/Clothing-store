@@ -3049,23 +3049,8 @@ def super_owner_add_product(request):
                         except Exception:
                             pass
                 elif selected_sizes and not selected_colors:
-                    for s in selected_sizes:
-                        exists = ProductVariant.objects.filter(product=product, color_attr__isnull=True, size_attr=s).exists()
-                        if exists:
-                            continue
-                        try:
-                            ProductVariant.objects.create(
-                                product=product,
-                                color_attr=None,
-                                size_attr=s,
-                                size=s.name,
-                                stock_qty=0,
-                                price_override=None,
-                                is_enabled=False,
-                            )
-                            created += 1
-                        except Exception:
-                            pass
+                    messages.error(request, 'يرجى اختيار لون مع المقاس')
+                    return redirect(f"{request.path}?pid={product.id}&step=attributes")
                 else:
                     if product.size_type == 'none':
                         if not ProductVariant.objects.filter(product=product).exists():
