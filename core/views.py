@@ -2879,7 +2879,6 @@ def super_owner_add_product(request):
 
             try:
                 store = Store.objects.get(id=store_id)
-                from django.db import transaction
                 with transaction.atomic():
                     product = Product.objects.create(
                         name=name,
