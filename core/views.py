@@ -8,6 +8,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
+import logging
 import re
 import os
 import json
@@ -2842,7 +2843,15 @@ def super_owner_edit_store(request, store_id):
         'store_owners': store_owners,
         'store_categories': Store.CATEGORY_CHOICES,
     }
-    return render(request, 'dashboard/super_owner/edit_store.html', context)
+    try:
+        return render(request, 'dashboard/super_owner/edit_store.html', context)
+    except Exception as e:
+        try:
+            logging.getLogger(__name__).error(f"super_owner_edit_store crash store_id={store_id} err={e.__class__.__name__}: {e}")
+        except Exception:
+            pass
+        messages.error(request, 'حدث خطأ غير متوقع في تحميل صفحة الإعدادات')
+        return redirect('super_owner_stores')
 
 
 @login_required
