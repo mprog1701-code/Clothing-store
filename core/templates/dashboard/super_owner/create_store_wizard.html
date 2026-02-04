@@ -332,7 +332,24 @@ document.addEventListener('DOMContentLoaded', function(){
     try{ document.querySelectorAll('.modal-backdrop').forEach(function(el){ el.remove(); }); }catch(e){}
     try{ document.body.classList.remove('modal-open'); document.body.style.paddingRight=''; }catch(e){}
   }
-  if(confirmBtn){ confirmBtn.addEventListener('click', function(){ var fa = document.getElementById('formatted_address').value || ''; if(fa){ document.getElementById('addressInput').value = fa; addrPreview.textContent = fa; } hideModal(); }); }
+  if(confirmBtn){
+    confirmBtn.addEventListener('click', function(){
+      var fa = document.getElementById('formatted_address').value || '';
+      if(fa){
+        document.getElementById('addressInput').value = fa;
+        addrPreview.textContent = fa;
+      } else {
+        var lat = document.getElementById('latitude').value;
+        var lng = document.getElementById('longitude').value;
+        if(lat && lng){
+          var coordsText = '('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')';
+          document.getElementById('addressInput').value = coordsText;
+          addrPreview.textContent = coordsText;
+        }
+      }
+      hideModal();
+    });
+  }
   if(cancelBtn){ cancelBtn.addEventListener('click', function(){ hideModal(); }); }
   if(closeBtn){ closeBtn.addEventListener('click', function(){ hideModal(); }); }
 
