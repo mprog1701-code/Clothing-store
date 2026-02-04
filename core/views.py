@@ -2765,9 +2765,19 @@ def super_owner_edit_store(request, store_id):
             return redirect('super_owner_edit_store', store_id=store_id)
         
         try:
-            owner = User.objects.get(id=owner_id)
-            if owner.role != 'store_admin':
+            if not owner_id or not str(owner_id).isdigit():
+                messages.error(request, 'يرجى اختيار مالك صالح')
+                return redirect('super_owner_edit_store', store_id=store_id)
+            owner = User.objects.filter(id=int(owner_id)).first()
+            if not owner or owner.role != 'store_admin':
                 messages.error(request, 'يرجى اختيار مستخدم بدور "صاحب متجر"')
+                return redirect('super_owner_edit_store', store_id=store_id)
+            try:
+                existing_store_id = getattr(owner, 'owned_store_id', None)
+            except Exception:
+                existing_store_id = None
+            if existing_store_id and existing_store_id != store.id:
+                messages.error(request, 'المستخدم المختار مرتبط بمتجر آخر. يرجى اختيار مالك آخر.')
                 return redirect('super_owner_edit_store', store_id=store_id)
 
             store.name = name
@@ -2835,6 +2845,9 @@ def super_owner_edit_store(request, store_id):
             
         except User.DoesNotExist:
             messages.error(request, 'المستخدم المختار غير صالح!')
+            return redirect('super_owner_edit_store', store_id=store_id)
+        except Exception:
+            messages.error(request, 'حدث خطأ أثناء تحديث المتجر')
             return redirect('super_owner_edit_store', store_id=store_id)
     
     store_owners = User.objects.filter(role='store_admin').order_by('-id')

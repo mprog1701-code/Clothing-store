@@ -360,3 +360,25 @@ class TestSuperOwnerViews(TestCase):
         owners_info = r.context['owners_info']
         self.assertTrue(len(owners_info) >= 2)
         self.assertEqual(owners_info[0]['owner'].id, u2.id)
+
+    def test_edit_store_owner_already_linked_rejected(self):
+        U = get_user_model()
+        # create owner already linked to another store
+        owner = U.objects.create_user(username='ownerX', password='x', role='store_admin', phone='07700000099', city='Baghdad')
+        other = Store.objects.create(name='Other', city='Baghdad', address='A', owner=owner)
+        other.owner_user = owner
+        other.save()
+        s = Store.objects.create(name='S3', city='Baghdad', address='A')
+        url = reverse('super_owner_store_settings', args=[s.id])
+        payload = {
+            'name': 'S3',
+            'city': 'Baghdad',
+            'address': 'A',
+            'description': '',
+            'owner': str(owner.id),
+            'is_active': 'on',
+            'category': 'clothing',
+        }
+        r = self.client.post(url, data=payload)
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r.url, reverse('super_owner_edit_store', args=[s.id]))
