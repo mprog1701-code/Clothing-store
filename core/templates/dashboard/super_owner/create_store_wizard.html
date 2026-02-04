@@ -134,11 +134,12 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="mb-2 d-flex gap-2">
+          <div class="mb-2 d-flex gap-2">
               <input id="searchInput" class="form-control" placeholder="ابحث عن مكان">
               <button id="searchBtn" class="btn btn-outline-secondary" type="button">بحث</button>
             </div>
-            <div id="list" class="list-group mb-2"></div>
+          <div id="mapDiag" class="text-danger small mb-2"></div>
+          <div id="list" class="list-group mb-2"></div>
             <div id="map" style="height:420px"></div>
           </div>
           <div class="modal-footer">
@@ -240,21 +241,24 @@ document.addEventListener('DOMContentLoaded', function(){
     marker.setLatLng([lat,lng]); updateLatLng(lat,lng);
   }
   function updateLatLng(lat,lng){ document.getElementById('latitude').value = lat; document.getElementById('longitude').value = lng; addrPreview.textContent = '('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')'; }
+  function getCSRF(){ var el = document.querySelector('input[name="csrfmiddlewaretoken"]'); return el ? el.value : ''; }
   function reverseGeocode(lat,lng){
-    fetch('/api/addresses/reverse-geocode/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lat: lat, lng: lng }) })
+    var diag = document.getElementById('mapDiag'); if(diag){ diag.textContent=''; }
+    fetch('/api/addresses/reverse-geocode/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() }, body: JSON.stringify({ lat: lat, lng: lng }) })
       .then(function(r){ return r.json(); })
       .then(function(data){
         var disp = data.formatted || '';
         document.getElementById('formatted_address').value = disp;
         document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
         addrPreview.textContent = disp || addrPreview.textContent;
-      }).catch(function(){ });
+      }).catch(function(){ if(diag){ diag.textContent='تعذّر الاتصال بخدمة العناوين'; } });
   }
   var searchInput = document.getElementById('searchInput');
   var searchBtn = document.getElementById('searchBtn');
   function doSearch(){
     var q = (searchInput.value||'').trim();
     if(!q) return;
+    var diag = document.getElementById('mapDiag'); if(diag){ diag.textContent=''; }
     fetch('/api/addresses/autocomplete/?q='+encodeURIComponent(q))
       .then(function(r){ return r.json(); })
       .then(function(payload){
@@ -276,7 +280,8 @@ document.addEventListener('DOMContentLoaded', function(){
           });
           list.appendChild(d);
         });
-      }).catch(function(){ });
+        if(items.length === 0 && diag){ diag.textContent='لم يتم العثور على نتائج للبحث'; }
+      }).catch(function(){ if(diag){ diag.textContent='تعذّر الاتصال بخدمة البحث عن الأماكن'; } });
   }
   if(searchBtn){ searchBtn.addEventListener('click', doSearch); }
   if(searchInput){ searchInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); doSearch(); } }); }

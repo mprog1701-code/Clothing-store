@@ -238,7 +238,7 @@ class AddressViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @action(detail=False, methods=['post'], url_path='reverse-geocode', permission_classes=[])
+    @action(detail=False, methods=['get','post'], url_path='reverse-geocode', permission_classes=[])
     def reverse_geocode(self, request):
         """
         Accepts lat,lng and returns parsed address using OpenStreetMap Nominatim.
@@ -246,8 +246,8 @@ class AddressViewSet(viewsets.ModelViewSet):
         """
         logger = logging.getLogger('geo')
         try:
-            lat = float(request.data.get('lat') or request.data.get('latitude'))
-            lon = float(request.data.get('lng') or request.data.get('longitude'))
+            lat = float((request.data.get('lat') or request.query_params.get('lat') or request.data.get('latitude') or request.query_params.get('latitude')))
+            lon = float((request.data.get('lng') or request.query_params.get('lng') or request.data.get('longitude') or request.query_params.get('longitude')))
         except Exception:
             return Response({'error': 'إحداثيات غير صالحة'}, status=status.HTTP_400_BAD_REQUEST)
 
