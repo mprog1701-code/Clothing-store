@@ -2372,12 +2372,11 @@ def super_owner_add_store(request):
                     username=new_owner_username,
                     first_name='',
                     last_name='',
-                    role='admin',
+                    role='store_admin',
                     phone=new_owner_phone,
                     city=city,
                     email=new_owner_email or ''
                 )
-                owner.is_staff = True
                 owner.set_password(new_owner_password)
                 owner.save()
                 messages.success(request, 'تم إنشاء مالك متجر جديد وربطه بالمتجر')
@@ -2433,6 +2432,9 @@ def super_owner_add_store(request):
                 delivery_fee=base_delivery_fee,
                 is_active=is_active
             )
+            if owner:
+                store.owner_user = owner
+                store.save(update_fields=['owner_user'])
             _cache_bump('stores_metrics')
             messages.success(request, f'تم إنشاء المتجر "{store.name}" بنجاح!')
             return redirect('super_owner_edit_store', store_id=store.id)
@@ -2441,7 +2443,7 @@ def super_owner_add_store(request):
             messages.error(request, f'خطأ في إنشاء المتجر: {str(e)}')
             return redirect('super_owner_add_store')
 
-    store_owners = User.objects.filter(role='admin').order_by('username')
+    store_owners = User.objects.filter(role='store_admin').order_by('-id')
     stores_all = Store.objects.all().order_by('name')
     last_store = Store.objects.order_by('-created_at').first()
     iraq_cities = [
@@ -2502,10 +2504,14 @@ def super_owner_create_owner_json(request):
         while User.objects.filter(username__iexact=username).exists():
             username = f"{base}{idx}"
             idx += 1
+        # Split full name into first and last for proper display
+        parts = [p for p in re.split(r"\s+", full_name) if p]
+        first_name = parts[0] if parts else ''
+        last_name = ' '.join(parts[1:]) if len(parts) > 1 else ''
         u = User.objects.create(
             username=username,
-            first_name='',
-            last_name='',
+            first_name=first_name,
+            last_name=last_name,
             role='store_admin',
             phone=phone,
             city='Baghdad',
@@ -2665,6 +2671,38 @@ def super_owner_create_store(request):
                                 owner_profile = StoreOwner.objects.create(full_name=(contact_name or ''), phone=contact_phone, created_by=request.user if isinstance(request.user, User) else None)
                         if owner_profile:
                             s.owner_profile = owner_profile
+                            # Link to a store_admin user by phone if available; create if missing
+                            try:
+                                from .models import User as U
+                                linked_user = U.objects.filter(role='store_admin', phone=owner_profile.phone).first()
+                                if linked_user is None and owner_profile.phone:
+                                    base = 'owner' + re.sub(r'\D+', '', owner_profile.phone)[-4:]
+                                    username = base
+                                    idx = 1
+                                    while U.objects.filter(username__iexact=username).exists():
+                                        username = f"{base}{idx}"
+                                        idx += 1
+                                    # Derive first/last from full name for display
+                                    parts = [p for p in re.split(r"\s+", (owner_profile.full_name or '')) if p]
+                                    first_name = parts[0] if parts else ''
+                                    last_name = ' '.join(parts[1:]) if len(parts) > 1 else ''
+                                    linked_user = U.objects.create(
+                                        username=username,
+                                        first_name=first_name,
+                                        last_name=last_name,
+                                        role='store_admin',
+                                        phone=owner_profile.phone,
+                                        city=(wizard.get('city') or 'Baghdad'),
+                                        email='',
+                                    )
+                                    linked_user.set_unusable_password()
+                                    linked_user.admin_role = 'OWNER'
+                                    linked_user.save()
+                                if linked_user:
+                                    s.owner = linked_user
+                                    s.owner_user = linked_user
+                            except Exception:
+                                pass
                         s.save()
                         _cache_bump('stores_metrics')
                         if logo_file:
@@ -2726,13 +2764,17 @@ def super_owner_edit_store(request, store_id):
             return redirect('super_owner_edit_store', store_id=store_id)
         
         try:
-            owner = User.objects.get(id=owner_id)  # Any user can be assigned as store manager
-            
+            owner = User.objects.get(id=owner_id)
+            if owner.role != 'store_admin':
+                messages.error(request, 'يرجى اختيار مستخدم بدور "صاحب متجر"')
+                return redirect('super_owner_edit_store', store_id=store_id)
+
             store.name = name
             store.city = city
             store.address = address
             store.description = description
             store.owner = owner
+            store.owner_user = owner
             store.is_active = is_active
             if owner_phone:
                 p = owner_phone.replace(' ', '')
@@ -2775,6 +2817,17 @@ def super_owner_edit_store(request, store_id):
             
             store.save()
             _cache_bump('stores_metrics')
+
+            # Link owner_profile by phone when available
+            try:
+                if store.owner_profile_id is None and store.owner_phone:
+                    from .models import StoreOwner
+                    op = StoreOwner.objects.filter(phone=store.owner_phone).order_by('id').first()
+                    if op:
+                        store.owner_profile = op
+                        store.save(update_fields=['owner_profile'])
+            except Exception:
+                pass
             
             messages.success(request, f'تم تحديث المتجر "{store.name}" بنجاح!')
             return redirect('super_owner_stores')
@@ -2783,7 +2836,7 @@ def super_owner_edit_store(request, store_id):
             messages.error(request, 'المستخدم المختار غير صالح!')
             return redirect('super_owner_edit_store', store_id=store_id)
     
-    store_owners = User.objects.filter(role='admin').order_by('username')
+    store_owners = User.objects.filter(role='store_admin').order_by('-id')
     context = {
         'store': store,
         'store_owners': store_owners,
