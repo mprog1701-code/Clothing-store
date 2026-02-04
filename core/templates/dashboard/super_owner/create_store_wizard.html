@@ -245,13 +245,36 @@ document.addEventListener('DOMContentLoaded', function(){
   function reverseGeocode(lat,lng){
     var diag = document.getElementById('mapDiag'); if(diag){ diag.textContent=''; }
     fetch('/api/addresses/reverse-geocode/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() }, body: JSON.stringify({ lat: lat, lng: lng }) })
-      .then(function(r){ return r.json(); })
-      .then(function(data){
-        var disp = data.formatted || '';
-        document.getElementById('formatted_address').value = disp;
-        document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
-        addrPreview.textContent = disp || addrPreview.textContent;
-      }).catch(function(){ if(diag){ diag.textContent='تعذّر الاتصال بخدمة العناوين'; } });
+      .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, status: r.status, data: j }; }); })
+      .then(function(res){
+        if(res.ok && res.data){
+          var disp = res.data.formatted || '';
+          document.getElementById('formatted_address').value = disp;
+          document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
+          addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')');
+        } else {
+          return fetch('/api/addresses/reverse-geocode/?lat='+encodeURIComponent(lat)+'&lng='+encodeURIComponent(lng))
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+              var disp = data.formatted || '';
+              document.getElementById('formatted_address').value = disp;
+              document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
+              addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')');
+              if(diag && !disp){ diag.textContent = 'تم تحديد الإحداثيات ولكن تعذّر توليد عنوان نصّي'; }
+            }).catch(function(){ if(diag){ diag.textContent='تعذّر الاتصال بخدمة العناوين'; } });
+        }
+      })
+      .catch(function(){
+        fetch('/api/addresses/reverse-geocode/?lat='+encodeURIComponent(lat)+'&lng='+encodeURIComponent(lng))
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            var disp = data.formatted || '';
+            document.getElementById('formatted_address').value = disp;
+            document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
+            addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')');
+            if(diag && !disp){ diag.textContent = 'تم تحديد الإحداثيات ولكن تعذّر توليد عنوان نصّي'; }
+          }).catch(function(){ if(diag){ diag.textContent='تعذّر الاتصال بخدمة العناوين'; } });
+      });
   }
   var searchInput = document.getElementById('searchInput');
   var searchBtn = document.getElementById('searchBtn');
