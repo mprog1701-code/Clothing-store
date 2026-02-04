@@ -247,9 +247,15 @@ class AddressViewSet(viewsets.ModelViewSet):
         Restricted to Iraq and Arabic language.
         """
         logger = logging.getLogger('geo')
+        def _f(v):
+            s = str(v).strip()
+            s = s.replace('،', ',')
+            if ('.' not in s) and (s.count(',') == 1):
+                s = s.replace(',', '.')
+            return float(s)
         try:
-            lat = float((request.data.get('lat') or request.query_params.get('lat') or request.data.get('latitude') or request.query_params.get('latitude')))
-            lon = float((request.data.get('lng') or request.query_params.get('lng') or request.data.get('longitude') or request.query_params.get('longitude')))
+            lat = _f((request.data.get('lat') or request.query_params.get('lat') or request.data.get('latitude') or request.query_params.get('latitude')))
+            lon = _f((request.data.get('lng') or request.query_params.get('lng') or request.data.get('longitude') or request.query_params.get('longitude')))
         except Exception:
             return Response({'error': 'إحداثيات غير صالحة'}, status=status.HTTP_400_BAD_REQUEST)
 
