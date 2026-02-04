@@ -5070,6 +5070,50 @@ def super_owner_owners(request):
 
     q = (request.GET.get('q') or '').strip()
     page = int((request.GET.get('page') or '1') or 1)
+    # Backfill: ensure each StoreOwner has a corresponding User with role store_admin
+    try:
+        from .models import StoreOwner
+        import re
+        owners_profiles = list(StoreOwner.objects.all())
+        for p in owners_profiles:
+            phone = (p.phone or '').strip()
+            if not phone:
+                continue
+            ph = phone.replace(' ', '')
+            if ph.startswith('+'):
+                ph = ph[1:]
+            if re.fullmatch(r'9647\d{9}', ph):
+                ph = '0' + ph[3:]
+            elif re.fullmatch(r'07\d{9}', ph):
+                pass
+            else:
+                continue
+            if not User.objects.filter(phone=ph).exists():
+                base = 'owner' + re.sub(r'\D+', '', ph)[-4:]
+                username = base
+                idx = 1
+                while User.objects.filter(username__iexact=username).exists():
+                    username = f"{base}{idx}"
+                    idx += 1
+                first, last = '', ''
+                parts = (p.full_name or '').strip().split()
+                if parts:
+                    first = parts[0]
+                    last = ' '.join(parts[1:])
+                u = User.objects.create(
+                    username=username,
+                    first_name=first,
+                    last_name=last,
+                    role='store_admin',
+                    phone=ph,
+                    city='',
+                    email='',
+                )
+                u.set_unusable_password()
+                u.admin_role = 'OWNER'
+                u.save()
+    except Exception:
+        pass
     owners = User.objects.filter(role='store_admin').exclude(username='super_owner').order_by('username')
     if q:
         from django.db.models import Q
@@ -5085,7 +5129,7 @@ def super_owner_owners(request):
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({'ok': False, 'error': 'no_selection'}, status=400)
                     return redirect('super_owner_owners')
-                target_ids = [i for i in ids if User.objects.filter(id=i, role='admin').exists()]
+                target_ids = [i for i in ids if User.objects.filter(id=i, role='store_admin').exists()]
                 target_ids = [i for i in target_ids if User.objects.filter(id=i).exclude(username='super_owner').exists()]
                 if not target_ids:
                     messages.error(request, 'لم يتم العثور على عناصر صالحة للحذف')
