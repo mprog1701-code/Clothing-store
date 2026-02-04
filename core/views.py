@@ -2259,7 +2259,7 @@ def super_owner_stores(request):
     paginator = Paginator(stores, 20)
     stores_page = paginator.get_page(page)
 
-    owners = User.objects.filter(role='admin').exclude(username='super_owner').order_by('username')
+    owners = User.objects.filter(role='store_admin').exclude(username='super_owner').order_by('username')
     cities = list(Store.objects.values_list('city', flat=True).distinct())
     from django.db.models import Count
     from .models import Product, Order
@@ -2477,7 +2477,31 @@ def super_owner_create_owner_json(request):
         return JsonResponse({'error': 'invalid_phone', 'message': 'رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'}, status=400)
     from .models import StoreOwner, User
     try:
+        # Ensure phone uniqueness across User accounts
+        if User.objects.filter(phone=phone).exists():
+            return JsonResponse({'error': 'duplicate_phone'}, status=409)
+        # Create owner profile
         owner = StoreOwner.objects.create(full_name=full_name, phone=phone, created_by=request.user if isinstance(request.user, User) else None)
+        # Create corresponding login user (store_admin)
+        import re
+        base = 'owner' + re.sub(r'\D+', '', phone)[-4:]
+        username = base
+        idx = 1
+        while User.objects.filter(username__iexact=username).exists():
+            username = f"{base}{idx}"
+            idx += 1
+        u = User.objects.create(
+            username=username,
+            first_name='',
+            last_name='',
+            role='store_admin',
+            phone=phone,
+            city='Baghdad',
+            email=(request.POST.get('email') or ''),
+        )
+        u.set_unusable_password()
+        u.admin_role = 'OWNER'
+        u.save()
         return JsonResponse({'id': owner.id, 'name': owner.get_full_name(), 'phone': owner.phone})
     except Exception:
         return JsonResponse({'error': 'create_failed', 'message': 'فشل إنشاء المالك'}, status=500)
@@ -5046,7 +5070,7 @@ def super_owner_owners(request):
 
     q = (request.GET.get('q') or '').strip()
     page = int((request.GET.get('page') or '1') or 1)
-    owners = User.objects.filter(role='admin').order_by('username')
+    owners = User.objects.filter(role='store_admin').exclude(username='super_owner').order_by('username')
     if q:
         from django.db.models import Q
         owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q))
@@ -5150,7 +5174,7 @@ def super_owner_disable_owner_json(request, owner_id):
         return JsonResponse({'error': 'method_not_allowed'}, status=405)
     try:
         o = User.objects.get(id=owner_id)
-        if o.username == 'super_owner' or o.role != 'admin':
+        if o.username == 'super_owner' or o.role != 'store_admin':
             return JsonResponse({'error': 'invalid_target'}, status=400)
         from .models import Store
         with transaction.atomic():
