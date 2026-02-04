@@ -2195,14 +2195,18 @@ def super_owner_stores(request):
                     store.is_active = True
                     store.save()
                     messages.success(request, f'تم تفعيل المتجر {store.name}!')
+                    _cache_bump('stores_metrics')
+                    _cache_bump('stores_metrics')
                 elif action == 'deactivate':
                     store.is_active = False
                     store.save()
                     messages.success(request, f'تم تعطيل المتجر {store.name}!')
+                    _cache_bump('stores_metrics')
                 elif action == 'delete':
                     store_name = store.name
                     store.delete()
                     messages.success(request, f'تم حذف المتجر {store_name}!')
+                    _cache_bump('stores_metrics')
             elif action == 'copy':
                 store_id = int(request.POST.get('store_id'))
                 store = get_object_or_404(Store, id=store_id)
@@ -2213,6 +2217,7 @@ def super_owner_stores(request):
                     is_active=False, logo=store.logo
                 )
                 messages.success(request, f'تم نسخ المتجر {store.name}!')
+                _cache_bump('stores_metrics')
                 return redirect('super_owner_store_center', store_id=new_store.id)
             elif action.startswith('bulk_'):
                 selected_ids = request.POST.getlist('selected_ids')
@@ -2224,9 +2229,11 @@ def super_owner_stores(request):
                     if action == 'bulk_activate':
                         Store.objects.filter(id__in=ids).update(is_active=True)
                         messages.success(request, 'تم تفعيل المتاجر المحددة')
+                        _cache_bump('stores_metrics')
                     elif action == 'bulk_deactivate':
                         Store.objects.filter(id__in=ids).update(is_active=False)
                         messages.success(request, 'تم تعطيل المتاجر المحددة')
+                        _cache_bump('stores_metrics')
                     elif action == 'bulk_set_delivery_fee':
                         fee_raw = request.POST.get('delivery_fee')
                         try:
@@ -2236,6 +2243,7 @@ def super_owner_stores(request):
                                 s.delivery_fee = fee
                                 s.save()
                             messages.success(request, 'تم تحديث رسوم التوصيل')
+                            _cache_bump('stores_metrics')
                         except Exception:
                             messages.error(request, 'رسوم توصيل غير صالحة')
                     elif action == 'bulk_set_category':
@@ -2244,11 +2252,13 @@ def super_owner_stores(request):
                         if cat in valid:
                             Store.objects.filter(id__in=ids).update(category=cat)
                             messages.success(request, 'تم تطبيق القالب/الفئة للمتاجر المحددة')
+                            _cache_bump('stores_metrics')
                         else:
                             messages.error(request, 'قالب/فئة غير صالح')
                     elif action == 'bulk_delete':
                         Store.objects.filter(id__in=ids).delete()
                         messages.success(request, f'تم حذف {len(ids)} متجراً')
+                        _cache_bump('stores_metrics')
             return redirect('super_owner_stores')
         except Exception:
             messages.error(request, 'حدث خطأ أثناء تنفيذ العملية')
@@ -2265,7 +2275,7 @@ def super_owner_stores(request):
     from .models import Product, Order
     today = timezone.now().date()
     store_ids = [s.id for s in stores_page]
-    key = f"stores_metrics:{page}:{q}:{city}:{owner_id}:{category}:{is_active}:{today.isoformat()}"
+    key = f"stores_metrics:v{_cache_ver('stores_metrics')}:{page}:{q}:{city}:{owner_id}:{category}:{is_active}:{today.isoformat()}"
     cached = cache.get(key)
     if cached is None:
         prod_counts = Product.objects.filter(store_id__in=store_ids).values('store_id').annotate(c=Count('id'))
@@ -2308,6 +2318,7 @@ def super_owner_store_center(request, store_id):
                 store.is_active = False
                 store.save()
                 messages.success(request, 'تم تعطيل المتجر')
+                _cache_bump('stores_metrics')
             
         except Exception:
             messages.error(request, 'حدث خطأ في العملية')
@@ -2422,6 +2433,7 @@ def super_owner_add_store(request):
                 delivery_fee=base_delivery_fee,
                 is_active=is_active
             )
+            _cache_bump('stores_metrics')
             messages.success(request, f'تم إنشاء المتجر "{store.name}" بنجاح!')
             return redirect('super_owner_edit_store', store_id=store.id)
 
@@ -2547,7 +2559,7 @@ def super_owner_create_store(request):
                 errors['name'] = 'يرجى إدخال اسم المتجر'
             if not city:
                 errors['city'] = 'يرجى اختيار المدينة'
-            if not address:
+            if not address and not (lat_raw and lon_raw):
                 errors['address'] = 'يرجى إدخال العنوان أو اختياره من الخريطة'
             valid_categories = [c[0] for c in Store.CATEGORY_CHOICES]
             if category and category not in valid_categories:
@@ -2617,10 +2629,13 @@ def super_owner_create_store(request):
                     with transaction.atomic():
                         status_choice = wizard.get('status') or 'ACTIVE'
                         is_active = True if status_choice == 'ACTIVE' else False
+                        fallback_addr = wizard.get('formatted_address') or wizard.get('address') or (
+                            (f"({wizard.get('latitude')},{wizard.get('longitude')})" if (wizard.get('latitude') is not None and wizard.get('longitude') is not None) else '—')
+                        )
                         s = Store.objects.create(
                             name=wizard.get('name',''),
                             city=wizard.get('city',''),
-                            address=wizard.get('address','—'),
+                            address=fallback_addr,
                             description='',
                             category=wizard.get('category') or 'clothing',
                             delivery_time=delivery_time_text,
@@ -2651,6 +2666,7 @@ def super_owner_create_store(request):
                         if owner_profile:
                             s.owner_profile = owner_profile
                         s.save()
+                        _cache_bump('stores_metrics')
                         if logo_file:
                             s.logo = logo_file
                             s.save()
@@ -2758,6 +2774,7 @@ def super_owner_edit_store(request, store_id):
                 store.logo = logo
             
             store.save()
+            _cache_bump('stores_metrics')
             
             messages.success(request, f'تم تحديث المتجر "{store.name}" بنجاح!')
             return redirect('super_owner_stores')
@@ -4620,7 +4637,7 @@ def super_owner_orders(request):
     from django.core.cache import cache
     paginator = Paginator(orders, 25)
     orders_page = paginator.get_page(page)
-    key = f"orders_info:{page}:{store_filter}:{q}:{group}:{recent_hours}"
+    key = f"orders_info:v{_cache_ver('orders_info')}:{page}:{store_filter}:{q}:{group}:{recent_hours}"
     cached_info = cache.get(key)
     orders_info = []
     site_url = request.build_absolute_uri('/')
@@ -4753,6 +4770,7 @@ def super_owner_delete_order_json(request):
                         ip=request.META.get('REMOTE_ADDR') or ''
                     )
                     order.delete()
+            _cache_bump('orders_info')
             return JsonResponse({'ok': True, 'count': len(selected_ids)})
         order_id = int(request.POST.get('order_id') or '0')
         order = Order.objects.get(id=order_id)
@@ -4797,6 +4815,7 @@ def super_owner_update_order_status_json(request):
         before = {'status': order.status}
         order.status = new_status
         order.save()
+        _cache_bump('orders_info')
         try:
             from .models import AdminAuditLog
             import json
@@ -4890,6 +4909,7 @@ def super_owner_update_delivery_json(request):
             import secrets
             order.tracking_token = secrets.token_urlsafe(16)
         order.save()
+        _cache_bump('orders_info')
         try:
             from .models import AdminAuditLog
             import json
@@ -5055,6 +5075,26 @@ def healthz(request):
 
 
 from django.core.cache import cache
+def _cache_ver(prefix):
+    k = f"{prefix}:ver"
+    v = cache.get(k)
+    try:
+        return int(v) if v is not None else 1
+    except Exception:
+        return 1
+def _cache_bump(prefix):
+    k = f"{prefix}:ver"
+    v = cache.get(k)
+    if v is None:
+        cache.set(k, 2)
+    else:
+        try:
+            cache.incr(k)
+        except Exception:
+            try:
+                cache.set(k, int(v) + 1)
+            except Exception:
+                cache.set(k, 2)
 from django.contrib.auth import logout
 from .permissions import role_required, admin_required
 from django.db import transaction
@@ -5114,7 +5154,7 @@ def super_owner_owners(request):
                 u.save()
     except Exception:
         pass
-    owners = User.objects.filter(role='store_admin').exclude(username='super_owner').order_by('username')
+    owners = User.objects.filter(role='store_admin').exclude(username='super_owner').order_by('-id')
     if q:
         from django.db.models import Q
         owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q))

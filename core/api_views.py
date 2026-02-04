@@ -13,7 +13,7 @@ import json
 import os
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
-from urllib.error import URLError
+from urllib.error import URLError, HTTPError
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, StoreSerializer, 
     ProductSerializer, AddressSerializer, OrderSerializer, OrderCreateSerializer
@@ -259,11 +259,12 @@ class AddressViewSet(viewsets.ModelViewSet):
         except Exception:
             return Response({'error': 'إحداثيات غير صالحة'}, status=status.HTTP_400_BAD_REQUEST)
 
-        key = (os.environ.get('MAPS_API_KEY') or '').strip()
-        prov = ((os.environ.get('MAPS_PROVIDER') or '').strip().lower())
-        if key and prov == 'mapbox':
+        mb_token = (os.environ.get('MAPBOX_ACCESS_TOKEN') or '').strip()
+        g_key = (os.environ.get('MAPS_API_KEY') or '').strip()
+        did_log = False
+        if mb_token:
             try:
-                mb_url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/{},{}.json?'.format(lon, lat) + urlencode({'access_token': key, 'language': 'ar', 'limit': 1})
+                mb_url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/{},{}.json?'.format(lon, lat) + urlencode({'access_token': mb_token, 'language': 'ar', 'limit': 1})
                 mb_req = Request(mb_url, headers={'User-Agent': 'clothing-store/1.0'})
                 mb_resp = urlopen(mb_req, timeout=8)
                 mb_data = json.loads(mb_resp.read().decode('utf-8'))
@@ -283,14 +284,39 @@ class AddressViewSet(viewsets.ModelViewSet):
                             area = c.get('text') or ''
                         elif tid.startswith('neighborhood') and not area:
                             area = c.get('text') or ''
+                    if not did_log:
+                        try:
+                            logger.info(f"reverse_geocode provider=mapbox status=200")
+                            did_log = True
+                        except Exception:
+                            pass
                     return Response({'city': city, 'area': area, 'street': street, 'formatted': label, 'provider': 'mapbox', 'provider_place_id': str(it.get('id') or ''), 'lat': lat, 'lng': lon})
-                return Response({'error': 'لا نتائج من Mapbox', 'lat': lat, 'lng': lon}, status=status.HTTP_502_BAD_GATEWAY)
+                if not did_log:
+                    try:
+                        logger.info(f"reverse_geocode provider=mapbox status=200")
+                        did_log = True
+                    except Exception:
+                        pass
+                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'mapbox', 'provider_place_id': '', 'lat': lat, 'lng': lon})
+            except HTTPError as e:
+                if not did_log:
+                    try:
+                        logger.info(f"reverse_geocode provider=mapbox status={getattr(e, 'code', 0)}")
+                        did_log = True
+                    except Exception:
+                        pass
+                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'mapbox', 'provider_place_id': '', 'lat': lat, 'lng': lon})
             except Exception as e:
-                logger.error(f"mapbox reverse error: {e}")
-                return Response({'error': 'تعذر الاتصال بـ Mapbox', 'lat': lat, 'lng': lon}, status=status.HTTP_502_BAD_GATEWAY)
-        if key and (prov == '' or prov == 'google'):
+                if not did_log:
+                    try:
+                        logger.info(f"reverse_geocode provider=mapbox status=0")
+                        did_log = True
+                    except Exception:
+                        pass
+                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'mapbox', 'provider_place_id': '', 'lat': lat, 'lng': lon})
+        if g_key:
             try:
-                g_url = 'https://maps.googleapis.com/maps/api/geocode/json?' + urlencode({'latlng': f'{lat},{lon}', 'key': key, 'language': 'ar'})
+                g_url = 'https://maps.googleapis.com/maps/api/geocode/json?' + urlencode({'latlng': f'{lat},{lon}', 'key': g_key, 'language': 'ar'})
                 g_req = Request(g_url, headers={'User-Agent': 'clothing-store/1.0'})
                 g_resp = urlopen(g_req, timeout=8)
                 g_data = json.loads(g_resp.read().decode('utf-8'))
@@ -313,11 +339,28 @@ class AddressViewSet(viewsets.ModelViewSet):
                             street = c.get('long_name') or street
                         elif 'street_number' in ts and street:
                             street = (street + ' ' + c.get('long_name'))
+                    if not did_log:
+                        try:
+                            logger.info(f"reverse_geocode provider=google status=OK")
+                            did_log = True
+                        except Exception:
+                            pass
                     return Response({'city': city, 'area': area, 'street': (street or '').strip(), 'formatted': (res.get('formatted_address') or ''), 'provider': 'google', 'provider_place_id': str(res.get('place_id') or ''), 'lat': lat, 'lng': lon})
-                return Response({'error': f'Google status {status_code}', 'lat': lat, 'lng': lon}, status=status.HTTP_502_BAD_GATEWAY)
+                if not did_log:
+                    try:
+                        logger.info(f"reverse_geocode provider=google status={status_code}")
+                        did_log = True
+                    except Exception:
+                        pass
+                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'google', 'provider_place_id': '', 'lat': lat, 'lng': lon})
             except Exception as e:
-                logger.error(f"google reverse error: {e}")
-                return Response({'error': 'تعذر الاتصال بـ Google', 'lat': lat, 'lng': lon}, status=status.HTTP_502_BAD_GATEWAY)
+                if not did_log:
+                    try:
+                        logger.info(f"reverse_geocode provider=google status=0")
+                        did_log = True
+                    except Exception:
+                        pass
+                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'google', 'provider_place_id': '', 'lat': lat, 'lng': lon})
         params = {'format': 'jsonv2', 'lat': lat, 'lon': lon, 'accept-language': 'ar'}
         url = 'https://nominatim.openstreetmap.org/reverse?' + urlencode(params)
         def _parse(data_json):
@@ -331,6 +374,12 @@ class AddressViewSet(viewsets.ModelViewSet):
             resp = urlopen(req, timeout=8)
             data = json.loads(resp.read().decode('utf-8'))
             c,a,s = _parse(data)
+            if not did_log:
+                try:
+                    logger.info(f"reverse_geocode provider=nominatim status=200")
+                    did_log = True
+                except Exception:
+                    pass
             return Response({'city': c, 'area': a, 'street': s.strip(), 'formatted': (data.get('display_name') or ''), 'provider': 'nominatim', 'provider_place_id': str(data.get('place_id') or ''), 'lat': lat, 'lng': lon})
         except Exception:
             try:
@@ -341,8 +390,13 @@ class AddressViewSet(viewsets.ModelViewSet):
                 c,a,s = _parse(fb_data)
                 return Response({'city': c, 'area': a, 'street': s.strip(), 'formatted': (fb_data.get('display_name') or fb_data.get('formatted') or ''), 'provider': 'maps.co', 'provider_place_id': str(fb_data.get('place_id') or ''), 'lat': lat, 'lng': lon})
             except Exception as e:
-                logger.error(f"reverse_geocode fallback error: {e}")
-                return Response({'error': 'تعذر التعرف على العنوان', 'lat': lat, 'lng': lon}, status=status.HTTP_502_BAD_GATEWAY)
+                if not did_log:
+                    try:
+                        logger.info(f"reverse_geocode provider=fallback status=0")
+                        did_log = True
+                    except Exception:
+                        pass
+                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'fallback', 'provider_place_id': '', 'lat': lat, 'lng': lon})
 
     @action(detail=False, methods=['get'], url_path='autocomplete', permission_classes=[AllowAny], authentication_classes=[])
     def autocomplete(self, request):
@@ -353,11 +407,11 @@ class AddressViewSet(viewsets.ModelViewSet):
         q = (request.query_params.get('q') or '').strip()
         if not q:
             return Response({'results': []})
-        key = (os.environ.get('MAPS_API_KEY') or '').strip()
-        prov = ((os.environ.get('MAPS_PROVIDER') or '').strip().lower())
-        if key and prov == 'mapbox':
+        mb_token = (os.environ.get('MAPBOX_ACCESS_TOKEN') or '').strip()
+        g_key = (os.environ.get('MAPS_API_KEY') or '').strip()
+        if mb_token:
             try:
-                mb_url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/{}.json?'.format(q) + urlencode({'access_token': key, 'language': 'ar', 'limit': 6})
+                mb_url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/{}.json?'.format(q) + urlencode({'access_token': mb_token, 'language': 'ar', 'limit': 6})
                 mb_req = Request(mb_url, headers={'User-Agent': 'clothing-store/1.0'})
                 mb_resp = urlopen(mb_req, timeout=8)
                 mb_data = json.loads(mb_resp.read().decode('utf-8'))
@@ -368,9 +422,9 @@ class AddressViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 logger.error(f"mapbox search error: {e}")
                 return Response({'results': []}, status=status.HTTP_502_BAD_GATEWAY)
-        if key and (prov == '' or prov == 'google'):
+        if g_key:
             try:
-                g_url = 'https://maps.googleapis.com/maps/api/geocode/json?' + urlencode({'address': q, 'key': key, 'language': 'ar'})
+                g_url = 'https://maps.googleapis.com/maps/api/geocode/json?' + urlencode({'address': q, 'key': g_key, 'language': 'ar'})
                 g_req = Request(g_url, headers={'User-Agent': 'clothing-store/1.0'})
                 g_resp = urlopen(g_req, timeout=8)
                 g_data = json.loads(g_resp.read().decode('utf-8'))
