@@ -174,7 +174,7 @@ def store_detail(request, store_id):
 
 def product_detail(request, product_id):
     product = Product.objects.filter(id=product_id).first()
-    if not product or not product.is_active:
+    if not product or not product.is_active or getattr(product, 'status', 'ACTIVE') != 'ACTIVE':
         messages.error(request, 'المنتج غير متوفر أو تم إيقافه')
         return redirect('home')
     variants = product.variants.all()
@@ -2163,8 +2163,9 @@ def super_owner_stores(request):
     owner_id = (request.GET.get('owner') or '').strip()
     category = (request.GET.get('category') or '').strip()
     is_active = (request.GET.get('active') or '').strip()
+    page = int((request.GET.get('page') or '1') or 1)
 
-    stores = Store.objects.all().order_by('-created_at')
+    stores = Store.objects.all().select_related('owner').order_by('-created_at')
     if q:
         from django.db.models import Q
         stores = stores.filter(
@@ -2253,18 +2254,35 @@ def super_owner_stores(request):
             messages.error(request, 'حدث خطأ أثناء تنفيذ العملية')
             return redirect('super_owner_stores')
     
+    from django.core.paginator import Paginator
+    from django.core.cache import cache
+    paginator = Paginator(stores, 20)
+    stores_page = paginator.get_page(page)
+
     owners = User.objects.filter(role='admin').exclude(username='super_owner').order_by('username')
     cities = list(Store.objects.values_list('city', flat=True).distinct())
-    for s in stores:
-        try:
-            from .models import Product, Order
-            s.products_count = Product.objects.filter(store=s).count()
-            s.orders_today = Order.objects.filter(store=s, created_at__date=timezone.now().date()).count()
-        except Exception:
-            s.products_count = 0
-            s.orders_today = 0
+    from django.db.models import Count
+    from .models import Product, Order
+    today = timezone.now().date()
+    store_ids = [s.id for s in stores_page]
+    key = f"stores_metrics:{page}:{q}:{city}:{owner_id}:{category}:{is_active}:{today.isoformat()}"
+    cached = cache.get(key)
+    if cached is None:
+        prod_counts = Product.objects.filter(store_id__in=store_ids).values('store_id').annotate(c=Count('id'))
+        prod_map = {row['store_id']: row['c'] for row in prod_counts}
+        ord_counts = Order.objects.filter(store_id__in=store_ids, created_at__date=today).values('store_id').annotate(c=Count('id'))
+        ord_map = {row['store_id']: row['c'] for row in ord_counts}
+        cache.set(key, {'prod_map': prod_map, 'ord_map': ord_map}, getattr(settings, 'CACHE_TTL_SHORT', 45))
+    else:
+        prod_map = cached.get('prod_map', {})
+        ord_map = cached.get('ord_map', {})
+    for s in stores_page:
+        s.products_count = prod_map.get(s.id, 0)
+        s.orders_today = ord_map.get(s.id, 0)
     context = {
-        'stores': stores,
+        'stores': stores_page,
+        'page_obj': stores_page,
+        'paginator': paginator,
         'owners': owners,
         'cities': cities,
         'categories': Store.CATEGORY_CHOICES,
@@ -2830,8 +2848,18 @@ def super_owner_products(request):
             messages.success(request, f'تم إنشاء نسخة من المنتج {product.name}!')
         elif action == 'delete':
             product_name = product.name
-            product.delete()
-            messages.success(request, f'تم حذف المنتج {product_name}!')
+            try:
+                product.delete()
+                messages.success(request, f'تم حذف المنتج {product_name}!')
+            except Exception as e:
+                try:
+                    from django.db.models.deletion import ProtectedError
+                    if isinstance(e, ProtectedError):
+                        messages.error(request, 'لا يمكن حذف المنتج المرتبط بطلبات')
+                    else:
+                        messages.error(request, 'تعذر حذف المنتج')
+                except Exception:
+                    messages.error(request, 'تعذر حذف المنتج')
         
         return redirect('super_owner_products')
     
@@ -2857,6 +2885,44 @@ def super_owner_add_product(request):
 
     from .models import AttributeColor, AttributeSize
 
+    # Auto-create draft product on first visit
+    if request.method == 'GET' and (not pid or not str(pid).isdigit()):
+        draft_id = request.session.get('draft_product_id')
+        current_product = None
+        if draft_id:
+            current_product = Product.objects.filter(id=draft_id, status='DRAFT').first()
+        if not current_product:
+            store_for_draft = None
+            try:
+                if preselect_store and str(preselect_store).isdigit():
+                    store_for_draft = Store.objects.filter(id=int(preselect_store)).first()
+            except Exception:
+                store_for_draft = None
+            if not store_for_draft:
+                store_for_draft = stores.first()
+            if store_for_draft:
+                try:
+                    with transaction.atomic():
+                        current_product = Product.objects.create(
+                            store=store_for_draft,
+                            name='—',
+                            description='—',
+                            base_price=0,
+                            category='men',
+                            size_type='symbolic',
+                            is_active=False,
+                            status='DRAFT',
+                        )
+                        request.session['draft_product_id'] = int(current_product.id)
+                        try:
+                            request.session.modified = True
+                        except Exception:
+                            pass
+                except Exception:
+                    current_product = None
+        if current_product:
+            return redirect(f"{request.path}?pid={current_product.id}&step={step}")
+
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
 
@@ -2879,21 +2945,41 @@ def super_owner_add_product(request):
 
             try:
                 store = Store.objects.get(id=store_id)
+                draft_id = request.session.get('draft_product_id')
+                product = None
+                if draft_id:
+                    product = Product.objects.filter(id=draft_id).first()
+                if not product:
+                    product = Product.objects.filter(id__in=[int(pid or 0)], status='DRAFT').first() if pid else None
                 with transaction.atomic():
-                    product = Product.objects.create(
-                        name=name,
-                        store=store,
-                        category=category,
-                        base_price=base_price,
-                        description=description,
-                        size_type=size_type,
-                        is_active=is_active,
-                        is_featured=is_featured
-                    )
+                    if not product:
+                        product = Product.objects.create(
+                            name=name,
+                            store=store,
+                            category=category,
+                            base_price=base_price,
+                            description=description,
+                            size_type=size_type,
+                            is_active=is_active,
+                            is_featured=is_featured,
+                            status='DRAFT',
+                        )
+                        request.session['draft_product_id'] = int(product.id)
+                    else:
+                        product.name = name
+                        product.store = store
+                        product.category = category
+                        product.base_price = base_price
+                        product.description = description
+                        product.size_type = size_type
+                        product.is_active = is_active
+                        product.is_featured = is_featured
+                        product.save()
 
                     if images:
                         for idx, image in enumerate(images):
-                            ProductImage.objects.create(product=product, image=image, is_main=(idx == 0))
+                            has_main = product.images.filter(is_main=True).exists()
+                            ProductImage.objects.create(product=product, image=image, is_main=(not has_main and idx == 0))
 
                     try:
                         selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
@@ -3566,6 +3652,36 @@ def super_owner_add_product(request):
             except (Product.DoesNotExist, ValueError, TypeError):
                 messages.error(request, 'المنتج غير موجود')
                 return redirect('super_owner_add_product')
+            errors = []
+            if not product.name or product.name.strip() == '—':
+                errors.append('اسم المنتج مطلوب')
+            try:
+                if float(product.base_price) <= 0:
+                    errors.append('السعر الأساسي يجب أن يكون أكبر من 0')
+            except Exception:
+                errors.append('السعر الأساسي غير صالح')
+            if not product.images.exists():
+                errors.append('يرجى رفع صورة واحدة على الأقل')
+            if product.size_type == 'none':
+                if not product.variants.exists():
+                    try:
+                        ProductVariant.objects.create(product=product, size='ONE', stock_qty=0, is_enabled=True)
+                    except Exception:
+                        errors.append('تعذر إنشاء نسخة افتراضية')
+            else:
+                if not product.variants.exists():
+                    errors.append('يرجى إنشاء متغيرات للقياسات/الألوان')
+            if errors:
+                for e in errors:
+                    messages.error(request, e)
+                return redirect(f"{request.path}?pid={product.id}&step=info")
+            product.status = 'ACTIVE'
+            product.is_active = True
+            product.save()
+            try:
+                request.session.pop('draft_product_id', None)
+            except Exception:
+                pass
             messages.success(request, 'تمت إضافة المنتج بنجاح')
             return redirect('super_owner_products')
 
@@ -4430,6 +4546,7 @@ def super_owner_orders(request):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
+    page = int((request.GET.get('page') or '1') or 1)
     store_filter = (request.GET.get('store') or '').strip()
     q = (request.GET.get('q') or '').strip()
     group = (request.GET.get('group') or 'active').strip()
@@ -4448,7 +4565,7 @@ def super_owner_orders(request):
         output_field=IntegerField(),
     )
 
-    orders = Order.objects.all().annotate(_status_order=status_order).order_by('_status_order', '-created_at')
+    orders = Order.objects.all().select_related('user', 'store').prefetch_related('items', 'items__product', 'items__variant').annotate(_status_order=status_order).order_by('_status_order', '-created_at')
     if store_filter and store_filter.isdigit():
         orders = orders.filter(store_id=int(store_filter))
     if q:
@@ -4475,78 +4592,90 @@ def super_owner_orders(request):
     
     import urllib.parse
     from django.urls import reverse
+    from django.core.paginator import Paginator
+    from django.core.cache import cache
+    paginator = Paginator(orders, 25)
+    orders_page = paginator.get_page(page)
+    key = f"orders_info:{page}:{store_filter}:{q}:{group}:{recent_hours}"
+    cached_info = cache.get(key)
     orders_info = []
     site_url = request.build_absolute_uri('/')
-    for o in orders:
-        lines = []
-        for it in o.items.all():
-            color = ''
-            size = ''
-            if it.variant:
-                color = it.variant.color or ''
-                size = it.variant.size or ''
-            price = it.price
-            lines.append(f"• {it.product.name} | {color} | {size} | الكمية: {it.quantity} | السعر: {int(price)} د.ع")
-        total_iqd_val = int(o.total_amount)
-        total_iqd = f"{total_iqd_val:,} د.ع"
-        pm = 'الدفع عند الاستلام' if o.payment_method == 'cod' else 'بطاقة ائتمان'
-        st_lbl = {
-            'pending': 'قيد الانتظار',
-            'accepted': 'تم القبول',
-            'packed': 'تم التعبئة',
-            'delivered': 'تم التسليم',
-            'canceled': 'ملغي',
-        }.get(o.status, o.status)
-        cust_name = o.user.get_full_name() or o.user.username
-        cust_phone = o.user.phone or ''
-        store_link = ''
-        try:
-            store_link = request.build_absolute_uri(reverse('store_detail', args=[o.store.id]))
-        except Exception:
-            store_link = site_url
-        order_link = ''
-        try:
-            order_link = request.build_absolute_uri(reverse('order_detail', args=[o.id]))
-        except Exception:
-            order_link = site_url
-        store_city = ''
-        store_category = ''
-        store_delivery_time = ''
-        store_delivery_fee = ''
-        try:
-            store_city = o.store.city or ''
-            store_category = o.store.get_category_display() if hasattr(o.store, 'get_category_display') else o.store.category
-            store_delivery_time = o.store.delivery_time or ''
-            store_delivery_fee = f"{int(o.store.delivery_fee):,} د.ع"
-        except Exception:
-            pass
-        share_token_store = _share_sign(o.id, 'store')
-        share_url_store = request.build_absolute_uri(reverse('share_store', args=[share_token_store]))
-        text = f"طلب #{o.id} — الإجمالي: {total_iqd}\n{share_url_store}"
-        wa_text = urllib.parse.quote(text)
-        phone = ''
-        try:
-            if o.store.owner_phone:
-                phone = o.store.owner_phone
-            elif o.store_phone:
-                phone = o.store_phone
-            else:
-                phone = o.store.owner.phone or ''
-        except Exception:
-            phone = o.store_phone or ''
-        p = ''.join([ch for ch in (phone or '') if ch.isdigit()])
-        if p.startswith('00964'):
-            p = p[2:]
-        if p.startswith('07') and len(p) == 11:
-            p = '964' + p[1:]
-        if p.startswith('9647') and len(p) == 13:
-            pass
-        elif p.startswith('9647'):
-            p = ''
-        orders_info.append({'order': o, 'wa_text': wa_text, 'wa_number': p})
+    if cached_info is not None:
+        orders_info = cached_info
+    else:
+        for o in orders_page:
+            lines = []
+            for it in o.items.all():
+                color = ''
+                size = ''
+                if it.variant:
+                    color = it.variant.color or ''
+                    size = it.variant.size or ''
+                price = it.price
+                lines.append(f"• {it.product.name} | {color} | {size} | الكمية: {it.quantity} | السعر: {int(price)} د.ع")
+            total_iqd_val = int(o.total_amount)
+            total_iqd = f"{total_iqd_val:,} د.ع"
+            pm = 'الدفع عند الاستلام' if o.payment_method == 'cod' else 'بطاقة ائتمان'
+            st_lbl = {
+                'pending': 'قيد الانتظار',
+                'accepted': 'تم القبول',
+                'packed': 'تم التعبئة',
+                'delivered': 'تم التسليم',
+                'canceled': 'ملغي',
+            }.get(o.status, o.status)
+            cust_name = o.user.get_full_name() or o.user.username
+            cust_phone = o.user.phone or ''
+            store_link = ''
+            try:
+                store_link = request.build_absolute_uri(reverse('store_detail', args=[o.store.id]))
+            except Exception:
+                store_link = site_url
+            order_link = ''
+            try:
+                order_link = request.build_absolute_uri(reverse('order_detail', args=[o.id]))
+            except Exception:
+                order_link = site_url
+            store_city = ''
+            store_category = ''
+            store_delivery_time = ''
+            store_delivery_fee = ''
+            try:
+                store_city = o.store.city or ''
+                store_category = o.store.get_category_display() if hasattr(o.store, 'get_category_display') else o.store.category
+                store_delivery_time = o.store.delivery_time or ''
+                store_delivery_fee = f"{int(o.store.delivery_fee):,} د.ع"
+            except Exception:
+                pass
+            share_token_store = _share_sign(o.id, 'store')
+            share_url_store = request.build_absolute_uri(reverse('share_store', args=[share_token_store]))
+            text = f"طلب #{o.id} — الإجمالي: {total_iqd}\n{share_url_store}"
+            wa_text = urllib.parse.quote(text)
+            phone = ''
+            try:
+                if o.store.owner_phone:
+                    phone = o.store.owner_phone
+                elif o.store_phone:
+                    phone = o.store_phone
+                else:
+                    phone = o.store.owner.phone or ''
+            except Exception:
+                phone = o.store_phone or ''
+            p = ''.join([ch for ch in (phone or '') if ch.isdigit()])
+            if p.startswith('00964'):
+                p = p[2:]
+            if p.startswith('07') and len(p) == 11:
+                p = '964' + p[1:]
+            if p.startswith('9647') and len(p) == 13:
+                pass
+            elif p.startswith('9647'):
+                p = ''
+            orders_info.append({'order': o, 'wa_text': wa_text, 'wa_number': p})
+        cache.set(key, orders_info, getattr(settings, 'CACHE_TTL_SHORT', 45))
 
     context = {
         'orders_info': orders_info,
+        'page_obj': orders_page,
+        'paginator': paginator,
         'store_filter': int(store_filter) if store_filter.isdigit() else None,
         'q': q,
         'group': group,
@@ -4916,6 +5045,7 @@ def super_owner_owners(request):
         return redirect('home')
 
     q = (request.GET.get('q') or '').strip()
+    page = int((request.GET.get('page') or '1') or 1)
     owners = User.objects.filter(role='admin').order_by('username')
     if q:
         from django.db.models import Q
@@ -4994,17 +5124,20 @@ def super_owner_owners(request):
             messages.error(request, 'حدث خطأ أثناء التحديث')
             return redirect('super_owner_owners')
 
+    from django.core.paginator import Paginator
+    paginator = Paginator(owners, 25)
+    owners_page = paginator.get_page(page)
+    from django.db.models import Count
     from .models import Store
-    owners_info = []
-    for o in owners:
-        try:
-            store_count = Store.objects.filter(owner=o).count()
-        except Exception:
-            store_count = 0
-        owners_info.append({'owner': o, 'store_count': store_count})
+    owner_ids = [o.id for o in owners_page]
+    store_counts = Store.objects.filter(owner_id__in=owner_ids).values('owner_id').annotate(c=Count('id'))
+    store_map = {row['owner_id']: row['c'] for row in store_counts}
+    owners_info = [{'owner': o, 'store_count': store_map.get(o.id, 0)} for o in owners_page]
 
     context = {
         'owners_info': owners_info,
+        'page_obj': owners_page,
+        'paginator': paginator,
         'q': q,
     }
     return render(request, 'dashboard/super_owner/owners.html', context)

@@ -279,6 +279,34 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 
+# Session hardening
+SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', default=1209600, cast=int)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = config('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=False, cast=bool)
+
+# Cache backend (Redis if available, else LocMem)
+REDIS_URL = config('REDIS_URL', default='').strip()
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'TIMEOUT': 60,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'default-cache',
+            'TIMEOUT': 60,
+        }
+    }
+
+CACHE_TTL_SHORT = config('CACHE_TTL_SHORT', default=45, cast=int)
+
 try:
     from django.core.files.storage import default_storage
     print(f"[diagnostic] default_storage backend: {default_storage.__class__.__module__}.{default_storage.__class__.__name__}")
@@ -305,3 +333,41 @@ try:
     print(f"[diagnostic] has DATABASE_URL: {bool(_url)}")
 except Exception:
     pass
+
+# Sentry integration
+SENTRY_DSN = config('SENTRY_DSN', default='').strip()
+SENTRY_ENABLED = bool(SENTRY_DSN)
+SENTRY_TRACES_SAMPLE_RATE = config('SENTRY_TRACES_SAMPLE_RATE', default=0.1, cast=float)
+if SENTRY_ENABLED:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        def _sentry_before_send(event, hint):
+            try:
+                req = event.get('request') or {}
+                hdrs = req.get('headers') or {}
+                # redact sensitive headers
+                for k in list(hdrs.keys()):
+                    lk = str(k).lower()
+                    if lk in ('authorization', 'x-api-key', 'x-access-token', 'cookie'):
+                        hdrs[k] = '[redacted]'
+                req['headers'] = hdrs
+                # redact request body
+                if 'data' in req and req['data']:
+                    req['data'] = '[redacted]'
+                event['request'] = req
+            except Exception:
+                pass
+            return event
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+            send_default_pii=False,
+            before_send=_sentry_before_send,
+            environment=config('ENVIRONMENT', default='production'),
+        )
+    except Exception:
+        pass

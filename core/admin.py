@@ -11,6 +11,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ('Additional Info', {'fields': ('phone', 'role', 'city')}),
     )
+    list_per_page = 25
 
 
 @admin.register(Store)
@@ -18,6 +19,8 @@ class StoreAdmin(admin.ModelAdmin):
     list_display = ['name', 'owner', 'city', 'is_active', 'created_at']
     list_filter = ['is_active', 'city', 'created_at']
     search_fields = ['name', 'owner__username']
+    list_select_related = ('owner', 'owner_profile', 'owner_user')
+    list_per_page = 25
 
 
 @admin.register(Product)
@@ -26,6 +29,8 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ['category', 'size_type', 'is_active', 'created_at']
     search_fields = ['name', 'store__name']
     inlines = []
+    list_select_related = ('store',)
+    list_per_page = 25
 
 class ProductColorInline(admin.TabularInline):
     model = ProductColor
@@ -40,6 +45,8 @@ class ProductColorAdmin(admin.ModelAdmin):
     list_filter = ['product']
     search_fields = ['product__name', 'name']
     inlines = []
+    list_select_related = ('product',)
+    list_per_page = 25
 
 class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
@@ -53,6 +60,8 @@ ProductColorAdmin.inlines = [ProductVariantInline]
 class ProductImageAdmin(admin.ModelAdmin):
     list_display = ['product', 'color', 'variant', 'is_main']
     list_filter = ['is_main', 'color', 'variant']
+    list_select_related = ('product', 'color', 'variant')
+    list_per_page = 25
 
 
 @admin.register(ProductVariant)
@@ -60,6 +69,8 @@ class ProductVariantAdmin(admin.ModelAdmin):
     list_display = ['product', 'color_attr', 'size_attr', 'size', 'stock_qty', 'price_override', 'is_enabled']
     list_filter = ['size', 'color_attr', 'size_attr', 'is_enabled']
     search_fields = ['product__name']
+    list_select_related = ('product', 'color_attr', 'size_attr')
+    list_per_page = 25
 
 
 @admin.register(AttributeColor)
@@ -78,6 +89,8 @@ class AttributeSizeAdmin(admin.ModelAdmin):
 class AddressAdmin(admin.ModelAdmin):
     list_display = ['user', 'city', 'area', 'street']
     search_fields = ['user__username', 'city', 'area']
+    list_select_related = ('user',)
+    list_per_page = 25
 
 
 class OrderItemInline(admin.TabularInline):
@@ -91,12 +104,16 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ['status', 'payment_method', 'created_at']
     search_fields = ['user__username', 'store__name']
     inlines = [OrderItemInline]
+    list_select_related = ('user', 'store')
+    list_per_page = 25
 
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ['order', 'product', 'variant', 'quantity', 'price']
     search_fields = ['order__id', 'product__name']
+    list_select_related = ('order', 'product', 'variant')
+    list_per_page = 25
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
@@ -116,3 +133,4 @@ class CampaignAdmin(admin.ModelAdmin):
     list_display = ['title', 'discount_percent', 'is_active', 'start_date', 'end_date']
     list_filter = ['is_active', 'start_date', 'end_date']
     search_fields = ['title']
+    list_per_page = 25

@@ -172,9 +172,16 @@ class Product(models.Model):
     ]
     size_type = models.CharField(max_length=10, choices=SIZE_TYPE_CHOICES, default='symbolic')
     is_active = models.BooleanField(default=True)
+    status = models.CharField(max_length=10, choices=[('DRAFT','مسودة'),('ACTIVE','نشط'),('DISABLED','غير نشط')], default='DRAFT', db_index=True)
     is_featured = models.BooleanField(default=False)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['store']),
+        ]
     
     def __str__(self):
         return f"{self.name} - {self.store.name}"
@@ -269,6 +276,11 @@ class ProductImage(models.Model):
     is_main = models.BooleanField(default=False)
     order = models.IntegerField(default=0)
     
+    class Meta:
+        indexes = [
+            models.Index(fields=['product']),
+        ]
+    
     def __str__(self):
         return f"Image for {self.product.name}"
     
@@ -309,6 +321,9 @@ class ProductVariant(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['product', 'color_obj', 'size'], name='uniq_product_color_size')
+        ]
+        indexes = [
+            models.Index(fields=['product']),
         ]
 
     def clean(self):
@@ -407,6 +422,13 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['store']),
+            models.Index(fields=['user']),
+        ]
+    
     def __str__(self):
         return f"طلب #{self.id} - {self.user.username}"
     
@@ -431,7 +453,7 @@ class ImportLog(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
     variant = models.ForeignKey(ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
     price = models.DecimalField(max_digits=10, decimal_places=2)

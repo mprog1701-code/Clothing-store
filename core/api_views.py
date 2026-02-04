@@ -159,7 +159,7 @@ class StoreViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Product.objects.filter(is_active=True)
+    queryset = Product.objects.filter(is_active=True, status='ACTIVE')
     serializer_class = ProductSerializer
     permission_classes = []
     
