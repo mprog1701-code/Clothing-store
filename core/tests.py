@@ -1,8 +1,12 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.test import Client
 from core.models import Store, Product, ProductVariant, AttributeColor, Order, Address, StoreOwnerInvite
+from unittest.mock import patch
+from urllib.error import HTTPError
+from io import BytesIO
+import os
 
 
 class CartAndCheckoutTests(TestCase):
@@ -280,3 +284,79 @@ class OwnerInviteFlowTests(TestCase):
         )
         self.assertEqual(resp2.status_code, 409)
         self.assertIn('PHONE_ALREADY_HAS_ACCOUNT', (resp2.json() or {}).get('code', ''))
+
+
+@override_settings(ALLOWED_HOSTS=['testserver'])
+class TestReverseGeocode(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_mapbox_401_fallback(self):
+        os.environ['MAPBOX_ACCESS_TOKEN'] = 'bad'
+        def _raise(req, timeout=8):
+            raise HTTPError(req.full_url, 401, 'Unauthorized', hdrs={}, fp=None)
+        with patch('core.api_views.urlopen', side_effect=_raise):
+            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()['provider'], 'mapbox')
+        self.assertEqual(r.json()['formatted'], '')
+        os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
+
+    def test_nominatim_success(self):
+        os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
+        os.environ.pop('MAPS_API_KEY', None)
+        payload = {
+            'address': {
+                'city': 'Baghdad',
+                'suburb': 'Karrada',
+                'road': 'Street',
+                'house_number': '10'
+            },
+            'display_name': 'Baghdad, Iraq'
+        }
+        body = BytesIO()
+        body.write(str.encode(__import__('json').dumps(payload)))
+        body.seek(0)
+        class _Resp:
+            def __init__(self, b): self._b=b
+            def read(self): return self._b.read()
+        with patch('core.api_views.urlopen', return_value=_Resp(body)):
+            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'})
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data['provider'], 'nominatim')
+        self.assertEqual(data['city'], 'Baghdad')
+
+
+@override_settings(ALLOWED_HOSTS=['testserver'])
+class TestSuperOwnerViews(TestCase):
+    def setUp(self):
+        self.client = Client()
+        U = get_user_model()
+        self.super_owner = U.objects.create_user(username='super_owner', password='x', role='store_admin', phone='07700000000', city='Baghdad')
+        self.client.login(username='super_owner', password='x')
+
+    def test_edit_store_get(self):
+        s = Store.objects.create(name='S', city='Baghdad', address='A')
+        url = reverse('super_owner_store_settings', args=[s.id])
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+    def test_edit_store_render_exception_redirect(self):
+        s = Store.objects.create(name='S2', city='Baghdad', address='A')
+        url = reverse('super_owner_store_settings', args=[s.id])
+        with patch('core.views.render', side_effect=Exception('x')):
+            r = self.client.get(url)
+        self.assertEqual(r.status_code, 302)
+        self.assertEqual(r.url, reverse('super_owner_stores'))
+
+    def test_owners_ordering_newest_first(self):
+        U = get_user_model()
+        u1 = U.objects.create_user(username='owner1', password='x', role='store_admin', phone='07700000001', city='Baghdad')
+        u2 = U.objects.create_user(username='owner2', password='x', role='store_admin', phone='07700000002', city='Baghdad')
+        url = reverse('super_owner_owners')
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        owners_info = r.context['owners_info']
+        self.assertTrue(len(owners_info) >= 2)
+        self.assertEqual(owners_info[0]['owner'].id, u2.id)
