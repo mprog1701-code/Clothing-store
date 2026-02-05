@@ -116,7 +116,7 @@ class Store(models.Model):
     
     # New owner profile/user linkage
     owner_profile = models.ForeignKey('StoreOwner', on_delete=models.SET_NULL, null=True, blank=True)
-    owner_user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='owned_store')
+    owner_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='owned_store')
     delivery_time_value = models.PositiveIntegerField(default=0)
     delivery_time_unit = models.CharField(max_length=10, choices=[('hour','ساعة'),('day','يوم')], blank=True, default='')
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)

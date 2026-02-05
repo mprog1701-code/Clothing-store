@@ -2772,13 +2772,7 @@ def super_owner_edit_store(request, store_id):
             if not owner or owner.role != 'store_admin':
                 messages.error(request, 'يرجى اختيار مستخدم بدور "صاحب متجر"')
                 return redirect('super_owner_edit_store', store_id=store_id)
-            try:
-                existing_store_id = getattr(owner, 'owned_store_id', None)
-            except Exception:
-                existing_store_id = None
-            if existing_store_id and existing_store_id != store.id:
-                messages.error(request, 'المستخدم المختار مرتبط بمتجر آخر. يرجى اختيار مالك آخر.')
-                return redirect('super_owner_edit_store', store_id=store_id)
+            # يسمح النظام بربط نفس المالك مع عدة متاجر بدون نقل
 
             store.name = name
             store.city = city
