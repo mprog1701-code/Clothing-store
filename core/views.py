@@ -5520,7 +5520,12 @@ def share_delivery(request, token):
     maps_cust = ''
     try:
         if order.address and order.address.latitude and order.address.longitude:
-            maps_cust = f"https://www.google.com/maps?q={order.address.latitude},{order.address.longitude}"
+            try:
+                la = float(order.address.latitude)
+                lo = float(order.address.longitude)
+                maps_cust = f"https://www.google.com/maps/search/?api=1&query={la:.6f},{lo:.6f}"
+            except Exception:
+                maps_cust = ''
         elif order.address:
             q = f"{order.address.city} {order.address.area} {order.address.street}"
             maps_cust = f"https://www.google.com/maps/search/{urllib.parse.quote(q)}"
