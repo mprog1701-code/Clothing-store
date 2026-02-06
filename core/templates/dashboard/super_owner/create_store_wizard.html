@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if(!marker){ marker = L.marker([lat,lng], {draggable:true}).addTo(map); marker.on('dragend', function(){ var ll = marker.getLatLng(); updateLatLng(ll.lat, ll.lng); reverseGeocode(ll.lat, ll.lng); }); }
     marker.setLatLng([lat,lng]); updateLatLng(lat,lng);
   }
-  function updateLatLng(lat,lng){ document.getElementById('latitude').value = lat; document.getElementById('longitude').value = lng; addrPreview.textContent = '('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')'; }
+  function updateLatLng(lat,lng){ document.getElementById('latitude').value = lat; document.getElementById('longitude').value = lng; addrPreview.textContent = '('+parseFloat(lat).toFixed(6)+', '+parseFloat(lng).toFixed(6)+')'; }
   function getCSRF(){ var el = document.querySelector('input[name="csrfmiddlewaretoken"]'); return el ? el.value : ''; }
   function reverseGeocode(lat,lng){
     var diag = document.getElementById('mapDiag'); if(diag){ diag.textContent=''; }
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function(){
           var disp = res.data.formatted || '';
           document.getElementById('formatted_address').value = disp;
           document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
-          addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')');
+          addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(6)+', '+parseFloat(lng).toFixed(6)+')');
         } else {
           return fetch('/api/addresses/reverse-geocode/?lat='+encodeURIComponent(lat)+'&lng='+encodeURIComponent(lng))
             .then(function(r){ return r.json(); })
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function(){
               var disp = data.formatted || '';
               document.getElementById('formatted_address').value = disp;
               document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
-              addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')');
+              addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(6)+', '+parseFloat(lng).toFixed(6)+')');
               if(diag && !disp){ diag.textContent = 'تم تحديد الإحداثيات ولكن تعذّر توليد عنوان نصّي'; }
             }).catch(function(){ if(diag){ diag.textContent='تعذّر الاتصال بخدمة العناوين'; } });
         }
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function(){
             var disp = data.formatted || '';
             document.getElementById('formatted_address').value = disp;
             document.getElementById('addressInput').value = disp || document.getElementById('addressInput').value;
-            addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(5)+', '+parseFloat(lng).toFixed(5)+')');
+            addrPreview.textContent = disp || ('('+parseFloat(lat).toFixed(6)+', '+parseFloat(lng).toFixed(6)+')');
             if(diag && !disp){ diag.textContent = 'تم تحديد الإحداثيات ولكن تعذّر توليد عنوان نصّي'; }
           }).catch(function(){ if(diag){ diag.textContent='تعذّر الاتصال بخدمة العناوين'; } });
       });

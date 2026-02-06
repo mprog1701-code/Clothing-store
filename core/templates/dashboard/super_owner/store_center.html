@@ -121,10 +121,10 @@
         <div class="col-md-6">
           <div class="p-3 bg-light rounded-3">
             <div class="text-muted small">الإحداثيات</div>
-            {% if store.latitude and store.longitude %}
+            {% if store.latitude and store.longitude and coords_valid %}
               <div class="d-flex align-items-center">
-                <span class="fw-bold" dir="ltr">{{ store.latitude }}, {{ store.longitude }}</span>
-                <a class="btn btn-sm btn-outline-success ms-2" target="_blank" href="https://www.google.com/maps/search/?api=1&query={% if store.formatted_address %}{{ store.formatted_address|urlencode }}{% else %}{{ store.latitude }},{{ store.longitude }}{% endif %}">افتح على خرائط Google</a>
+                <span class="fw-bold" dir="ltr">{{ store.latitude|floatformat:6 }}, {{ store.longitude|floatformat:6 }}</span>
+                <a class="btn btn-sm btn-outline-success ms-2" target="_blank" href="https://www.google.com/maps/search/?api=1&query={{ maps_query }}">افتح على خرائط Google</a>
               </div>
             {% else %}
               <div class="text-muted">لم يتم تحديد الإحداثيات</div>

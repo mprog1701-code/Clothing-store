@@ -284,7 +284,7 @@
     function setFromCoords(lat, lon, acc){
         latIn.value = lat; lonIn.value = lon; accIn.value = acc || '';
         if(map){ marker.setLatLng([lat, lon]); map.setView([lat, lon], map.getZoom()||15); }
-        reverseGeocode(lat, lon).then(function(place){ setSummary(place); }).catch(function(){ if(summaryEl){ summaryEl.textContent = '('+parseFloat(lat).toFixed(5)+', '+parseFloat(lon).toFixed(5)+')'; } });
+        reverseGeocode(lat, lon).then(function(place){ setSummary(place); }).catch(function(){ if(summaryEl){ summaryEl.textContent = '('+parseFloat(lat).toFixed(6)+', '+parseFloat(lon).toFixed(6)+')'; } });
     }
 
     if(gpsFab){ gpsFab.addEventListener('click', function(){ if(!navigator.geolocation){ if(diagEl){ diagEl.textContent = 'المتصفح لا يدعم GPS'; } return; } var secure = (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1'); if(!secure){ if(diagEl){ diagEl.textContent = 'يتطلب GPS اتصالاً آمناً (HTTPS)'; } return; } gpsFab.disabled=true; diagEl.textContent='جارٍ تحديد الموقع...'; navigator.geolocation.getCurrentPosition(function(pos){ var lat = pos.coords.latitude, lon = pos.coords.longitude, acc = pos.coords.accuracy||''; gpsFab.disabled=false; diagEl.textContent=''; setFromCoords(lat, lon, acc); }, function(err){ gpsFab.disabled=false; var msg='تعذر تحديد الموقع'; if(err && err.code===1){ msg='تم رفض الإذن لتحديد الموقع'; } else if(err && err.code===2){ msg='الموقع غير متاح حالياً'; } else if(err && err.code===3){ msg='انتهت مهلة تحديد الموقع'; } if(diagEl){ diagEl.textContent = msg; } }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }); }); }

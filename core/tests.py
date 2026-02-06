@@ -386,3 +386,18 @@ class TestSuperOwnerViews(TestCase):
         s.refresh_from_db()
         self.assertEqual(getattr(other, 'owner_user_id'), owner.id)
         self.assertEqual(getattr(s, 'owner_user_id'), owner.id)
+
+    def test_store_center_google_link_precise_lat_lon(self):
+        s = Store.objects.create(name='S4', city='Baghdad', address='(44.32454, 33.32993)')
+        s.latitude = 33.329926
+        s.longitude = 44.324535
+        s.save()
+        url = reverse('super_owner_store_center', args=[s.id])
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        import re
+        content = r.content.decode('utf-8')
+        m = re.search(r'query=([0-9\.\-]+),([0-9\.\-]+)', content)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1), '33.329926')
+        self.assertEqual(m.group(2), '44.324535')

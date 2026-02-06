@@ -79,8 +79,8 @@
                                             {% if order.address.latitude and order.address.longitude %}
                                             <div class="mt-2">
                                                 <strong>الإحداثيات:</strong>
-                                                <span dir="ltr">{{ order.address.latitude }}, {{ order.address.longitude }}</span>
-                                            <a class="btn btn-sm btn-outline-success ms-2" target="_blank" href="https://www.google.com/maps/search/?api=1&query={% if order.address.formatted_address %}{{ order.address.formatted_address|urlencode }}{% else %}{{ order.address.latitude }},{{ order.address.longitude }}{% endif %}">افتح على خرائط Google</a>
+                                                <span dir="ltr">{{ order.address.latitude|floatformat:6 }}, {{ order.address.longitude|floatformat:6 }}</span>
+                                            <a class="btn btn-sm btn-outline-success ms-2" target="_blank" href="https://www.google.com/maps/search/?api=1&query={{ order.address.latitude|floatformat:6 }},{{ order.address.longitude|floatformat:6 }}">افتح على خرائط Google</a>
                                             </div>
                                             {% endif %}
                                         </div>

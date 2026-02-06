@@ -2329,12 +2329,22 @@ def super_owner_store_center(request, store_id):
     products_count = Product.objects.filter(store=store).count()
     orders_today = Order.objects.filter(store=store, created_at__date=timezone.now().date()).count()
     last_update = store.created_at
+    def _maps_query():
+        try:
+            if store.latitude is not None and store.longitude is not None:
+                return f"{float(store.latitude):.6f},{float(store.longitude):.6f}"
+        except Exception:
+            pass
+        return ''
+    coords_valid = (store.latitude is not None and store.longitude is not None and -90.0 <= float(store.latitude) <= 90.0 and -180.0 <= float(store.longitude) <= 180.0)
     context = {
         'store': store,
         'products_count': products_count,
         'orders_today': orders_today,
         'last_update': last_update,
         'stores_all': Store.objects.exclude(id=store.id).order_by('name'),
+        'maps_query': _maps_query(),
+        'coords_valid': coords_valid,
     }
     return render(request, 'dashboard/super_owner/store_center.html', context)
 
@@ -2578,16 +2588,22 @@ def super_owner_create_store(request):
                 if not contact_phone or not re.fullmatch(r'07\d{9}', contact_phone):
                     errors['owner_contact_phone'] = 'رقم هاتف المالك مطلوب وبصيغة صحيحة 07xxxxxxxxx'
             if not errors:
-                lat_val = None
-                lon_val = None
-                try:
-                    lat_val = float(lat_raw) if lat_raw else None
-                except Exception:
-                    lat_val = None
-                try:
-                    lon_val = float(lon_raw) if lon_raw else None
-                except Exception:
-                    lon_val = None
+                def _parse_num(s):
+                    s = (s or '').strip()
+                    if not s:
+                        return None
+                    s = s.replace('،', ',')
+                    if ('.' not in s) and (s.count(',') == 1):
+                        s = s.replace(',', '.')
+                    try:
+                        return float(s)
+                    except Exception:
+                        return None
+                lat_val = _parse_num(lat_raw)
+                lon_val = _parse_num(lon_raw)
+                if lat_val is not None and lon_val is not None:
+                    if not (-90.0 <= lat_val <= 90.0 and -180.0 <= lon_val <= 180.0):
+                        lat_val, lon_val = None, None
                 wizard.update({'name': name, 'city': city, 'category': category or 'clothing', 'status': status_choice, 'address': address, 'latitude': lat_val, 'longitude': lon_val, 'formatted_address': formatted, 'owner_contact_name': contact_name, 'owner_contact_phone': contact_phone})
                 request.session['create_store_wizard'] = wizard
                 step = '3'
@@ -2637,7 +2653,7 @@ def super_owner_create_store(request):
                         status_choice = wizard.get('status') or 'ACTIVE'
                         is_active = True if status_choice == 'ACTIVE' else False
                         fallback_addr = wizard.get('formatted_address') or wizard.get('address') or (
-                            (f"({wizard.get('latitude')},{wizard.get('longitude')})" if (wizard.get('latitude') is not None and wizard.get('longitude') is not None) else '—')
+                            (f"({float(wizard.get('latitude')):.6f}, {float(wizard.get('longitude')):.6f})" if (wizard.get('latitude') is not None and wizard.get('longitude') is not None) else '—')
                         )
                         s = Store.objects.create(
                             name=wizard.get('name',''),

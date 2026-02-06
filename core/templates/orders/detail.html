@@ -94,8 +94,8 @@
                     <p><strong>تفاصيل إضافية:</strong> {{ order.address.details }}</p>
                     {% endif %}
                     {% if order.address.latitude and order.address.longitude %}
-                    <p class="mb-0"><strong>الإحداثيات:</strong> <span dir="ltr">{{ order.address.latitude }}, {{ order.address.longitude }}</span></p>
-                    <a class="btn btn-sm btn-outline-success mt-2" target="_blank" href="https://www.google.com/maps/search/?api=1&query={% if order.address.formatted_address %}{{ order.address.formatted_address|urlencode }}{% else %}{{ order.address.latitude }},{{ order.address.longitude }}{% endif %}">افتح على خرائط Google</a>
+                    <p class="mb-0"><strong>الإحداثيات:</strong> <span dir="ltr">{{ order.address.latitude|floatformat:6 }}, {{ order.address.longitude|floatformat:6 }}</span></p>
+                    <a class="btn btn-sm btn-outline-success mt-2" target="_blank" href="https://www.google.com/maps/search/?api=1&query={{ order.address.latitude|floatformat:6 }},{{ order.address.longitude|floatformat:6 }}">افتح على خرائط Google</a>
                     {% endif %}
                 </div>
             </div>
