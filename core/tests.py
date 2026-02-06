@@ -401,3 +401,22 @@ class TestSuperOwnerViews(TestCase):
         self.assertIsNotNone(m)
         self.assertEqual(m.group(1), '33.329926')
         self.assertEqual(m.group(2), '44.324535')
+
+class ProductDetailVisibilityTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.client = Client()
+        self.admin = User.objects.create_user(username='ownerP', password='x', role='store_admin', phone='07700000020', city='Baghdad')
+        self.store = Store.objects.create(owner=self.admin, name='S5', city='Baghdad', address='addr')
+
+    def test_product_detail_active_draft_allowed(self):
+        p = Product.objects.create(store=self.store, name='D1', description='x', base_price=1000, category='men', size_type='none', is_active=True, status='DRAFT')
+        url = reverse('product_detail', args=[p.id])
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+
+    def test_product_detail_disabled_redirect(self):
+        p = Product.objects.create(store=self.store, name='X1', description='x', base_price=1000, category='men', size_type='none', is_active=True, status='DISABLED')
+        url = reverse('product_detail', args=[p.id])
+        r = self.client.get(url)
+        self.assertIn(r.status_code, [302, 301])

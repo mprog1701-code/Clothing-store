@@ -175,8 +175,8 @@ def store_detail(request, store_id):
 
 def product_detail(request, product_id):
     product = Product.objects.filter(id=product_id).first()
-    if not product or not product.is_active or getattr(product, 'status', 'ACTIVE') != 'ACTIVE':
-        messages.error(request, 'المنتج غير متوفر أو تم إيقافه')
+    if not product or not product.is_active or getattr(product, 'status', 'ACTIVE') == 'DISABLED':
+        messages.error(request, 'المنتج غير موجود أو تم إيقافه')
         return redirect('home')
     variants = product.variants.all()
     images = product.images.select_related('color', 'variant').all()

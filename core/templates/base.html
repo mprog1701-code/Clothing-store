@@ -1648,7 +1648,7 @@
                     }
                     const code = res.data && res.data.code;
                     const msgMap = {
-                        'VARIANT_REQUIRED': 'اختر اللون/القياس قبل الإضافة للسلة.',
+                        'VARIANT_REQUIRED': 'اختر اللون/القياس قبل الإضافة للسلة. سيتم فتح صفحة المنتج لاختيار الخصائص.',
                         'INVALID_VARIANT': 'الخيار المختار غير صالح. اختر مرة أخرى.',
                         'OUT_OF_STOCK': 'المنتج نفد حالياً.',
                         'INSUFFICIENT_STOCK': 'الكمية المطلوبة غير متوفرة.',
@@ -1670,7 +1670,15 @@
                         </div>
                     `;
                     document.body.appendChild(toast);
-                    setTimeout(function(){ toast.remove(); }, 6000);
+                    setTimeout(function(){ toast.remove(); }, 3500);
+                    if (code === 'VARIANT_REQUIRED' && productId) {
+                        try {
+                            setTimeout(function(){
+                                const url = '/products/' + String(productId) + '/';
+                                try { window.location.assign(url); } catch(e) { window.location.href = url; }
+                            }, 1000);
+                        } catch(e) {}
+                    }
                 }
                 hideLoading();
             })
