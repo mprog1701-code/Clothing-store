@@ -1648,7 +1648,7 @@
                     }
                     const code = res.data && res.data.code;
                     const msgMap = {
-                        'VARIANT_REQUIRED': 'اختر اللون/القياس قبل الإضافة للسلة. سيتم فتح صفحة المنتج لاختيار الخصائص.',
+                        'VARIANT_REQUIRED': 'اختر اللون/القياس قبل الإضافة للسلة.',
                         'INVALID_VARIANT': 'الخيار المختار غير صالح. اختر مرة أخرى.',
                         'OUT_OF_STOCK': 'المنتج نفد حالياً.',
                         'INSUFFICIENT_STOCK': 'الكمية المطلوبة غير متوفرة.',
@@ -1670,14 +1670,9 @@
                         </div>
                     `;
                     document.body.appendChild(toast);
-                    setTimeout(function(){ toast.remove(); }, 3500);
+                    setTimeout(function(){ toast.remove(); }, 3000);
                     if (code === 'VARIANT_REQUIRED' && productId) {
-                        try {
-                            setTimeout(function(){
-                                const url = '/products/' + String(productId) + '/';
-                                try { window.location.assign(url); } catch(e) { window.location.href = url; }
-                            }, 1000);
-                        } catch(e) {}
+                        try { openQuickVariantPicker(productId); } catch(e) {}
                     }
                 }
                 hideLoading();
@@ -1725,6 +1720,99 @@
                 badge.style.display = (!inCartPage && count > 0) ? 'flex' : 'none';
             }catch(e){}
         }
+
+        // Quick Variant Picker (global, lightweight, mobile-friendly)
+        (function(){
+            var qpOverlay = null, qpSheet = null, qpCloseBtn = null;
+            var qpColor = null, qpSize = null, qpQty = null, qpAddBtn = null;
+            var qpCurrent = { productId: null, storeId: null, variants: [] };
+            function ensureQuickPicker(){
+                if(qpOverlay) return;
+                qpOverlay = document.createElement('div');
+                qpOverlay.id = 'qpOverlay';
+                qpOverlay.style.cssText = 'position:fixed;inset:0;display:none;align-items:flex-end;z-index:1060;background:rgba(0,0,0,.35)';
+                qpSheet = document.createElement('div');
+                qpSheet.id = 'qpSheet';
+                qpSheet.style.cssText = 'background:#fff;color:#111;width:100%;max-width:540px;margin:0 auto;border-top-left-radius:16px;border-top-right-radius:16px;box-shadow:0 -6px 24px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .18s ease;';
+                qpSheet.innerHTML = '<div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center"><strong>اختيار النسخة</strong><button type="button" id="qpClose" class="btn btn-sm btn-outline-secondary">إغلاق</button></div>'+
+                    '<div style="padding:12px 16px">'+
+                    '<div class="mb-2"><label class="form-label">اللون</label><select id="qpColor" class="form-select"><option value="">اختر اللون</option></select></div>'+
+                    '<div class="mb-2"><label class="form-label">المقاس</label><select id="qpSize" class="form-select" disabled><option value="">اختر المقاس</option></select></div>'+
+                    '<div class="mb-3"><label class="form-label">الكمية</label><input id="qpQty" type="number" class="form-control" value="1" min="1" style="max-width:120px"></div>'+
+                    '<div class="text-end"><button type="button" id="qpAdd" class="btn btn-primary">أضف للسلة</button></div>'+
+                    '</div>';
+                qpOverlay.appendChild(qpSheet);
+                document.body.appendChild(qpOverlay);
+                qpCloseBtn = qpSheet.querySelector('#qpClose');
+                qpColor = qpSheet.querySelector('#qpColor');
+                qpSize = qpSheet.querySelector('#qpSize');
+                qpQty = qpSheet.querySelector('#qpQty');
+                qpAddBtn = qpSheet.querySelector('#qpAdd');
+                qpOverlay.addEventListener('click', function(e){ if(e.target===qpOverlay) closeQuickPicker(); });
+                qpCloseBtn.addEventListener('click', closeQuickPicker);
+                qpColor.addEventListener('change', updateSizes);
+                qpSize.addEventListener('change', function(){
+                    var opt = qpSize.options[qpSize.selectedIndex];
+                    var stock = opt ? parseInt(opt.getAttribute('data-stock')||'0') : 0;
+                    qpQty.value = 1;
+                    qpQty.max = stock>0 ? stock : 1;
+                });
+                qpAddBtn.addEventListener('click', function(){
+                    var color = qpColor.value;
+                    var size = qpSize.value;
+                    if(!color || !size) return;
+                    var v = qpCurrent.variants.find(function(x){ return x.color===color && x.size===size; });
+                    if(!v || !v.id) return;
+                    var qty = parseInt(qpQty.value||'1')||1;
+                    try{ addToCart(qpCurrent.productId, v.id, qty, qpCurrent.storeId); }catch(e){}
+                    // auto close after 3s
+                    try{ setTimeout(closeQuickPicker, 3000); }catch(e){}
+                });
+            }
+            function openQuickVariantPicker(productId){
+                ensureQuickPicker();
+                qpCurrent.productId = productId; qpCurrent.storeId = null; qpCurrent.variants = [];
+                qpColor.innerHTML = '<option value="">اختر اللون</option>';
+                qpSize.innerHTML = '<option value="">اختر المقاس</option>';
+                qpSize.disabled = true;
+                qpQty.value = 1; qpQty.removeAttribute('max');
+                // show instantly
+                qpOverlay.style.display = 'flex';
+                setTimeout(function(){ qpSheet.style.transform = 'translateY(0)'; }, 10);
+                // load product variants
+                fetch('/api/products/'+String(productId)+'/', { credentials:'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(p){
+                    try{
+                        var variants = Array.isArray(p.variants) ? p.variants : [];
+                        qpCurrent.storeId = (p.store && p.store.id) ? p.store.id : null;
+                        qpCurrent.variants = variants.map(function(v){ return { id:v.id, color:v.color, size:v.size, stock_qty:parseInt(v.stock_qty||'0'), price:parseFloat(v.price||p.base_price||0) }; });
+                        var colors = Array.from(new Set(qpCurrent.variants.map(function(v){ return v.color; }).filter(Boolean)));
+                        colors.forEach(function(c){ var opt=document.createElement('option'); opt.value=c; opt.textContent=c; qpColor.appendChild(opt); });
+                        // auto select first color with stock
+                        var firstWithStock = qpCurrent.variants.find(function(v){ return v.stock_qty>0; });
+                        if(firstWithStock){ qpColor.value = firstWithStock.color; updateSizes(); }
+                    }catch(e){}
+                }).catch(function(){ /* fallback: keep sheet open for manual selection */ });
+            }
+            function updateSizes(){
+                var color = qpColor.value;
+                qpSize.innerHTML = '<option value="">اختر المقاس</option>';
+                qpSize.disabled = true;
+                qpQty.value = 1; qpQty.removeAttribute('max');
+                if(!color) return;
+                var sizes = qpCurrent.variants.filter(function(v){ return v.color===color; }).map(function(v){ return { size:v.size, id:v.id, stock:v.stock_qty }; });
+                sizes.forEach(function(s){ var out = !s.stock || s.stock<=0; var opt=document.createElement('option'); opt.value=s.size; opt.textContent= out ? (s.size+' (غير متاح)') : s.size; opt.setAttribute('data-id', s.id); opt.setAttribute('data-stock', String(s.stock||0)); qpSize.appendChild(opt); });
+                qpSize.disabled = sizes.length===0;
+                var firstAvail = sizes.find(function(s){ return s.stock>0; });
+                if(firstAvail){ qpSize.value = firstAvail.size; qpSize.dispatchEvent(new Event('change')); }
+            }
+            function closeQuickPicker(){
+                try{ qpSheet.style.transform = 'translateY(100%)'; setTimeout(function(){ qpOverlay.style.display='none'; }, 180); }catch(e){ qpOverlay.style.display='none'; }
+            }
+            // expose globally
+            window.openQuickVariantPicker = openQuickVariantPicker;
+        })();
         </script>
     
     {% block extra_js %}{% endblock %}
