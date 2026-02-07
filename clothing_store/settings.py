@@ -86,9 +86,14 @@ if not DATABASE_URL:
     else:
         raise RuntimeError('DATABASE_URL is required and must be provided via environment. No SQLite or localhost fallback is allowed.')
 else:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
-    }
+    if DATABASE_URL.lower().startswith('sqlite'):
+        DATABASES = {
+            'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=False)
+        }
+    else:
+        DATABASES = {
+            'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+        }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -285,7 +290,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = config('SESSION_EXPIRE_AT_BROWSER_CLOSE', defa
 
 # Cache backend (Redis if available, else LocMem)
 REDIS_URL = config('REDIS_URL', default='').strip()
-if REDIS_URL:
+DISABLE_CACHE = config('DISABLE_CACHE', default=False, cast=bool)
+if REDIS_URL and not DISABLE_CACHE:
     CACHES = {
         'default': {
             'BACKEND': 'django_redis.cache.RedisCache',
@@ -301,11 +307,11 @@ else:
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
             'LOCATION': 'default-cache',
-            'TIMEOUT': 60,
+            'TIMEOUT': 0 if (DISABLE_CACHE or DEBUG) else 60,
         }
     }
 
-CACHE_TTL_SHORT = config('CACHE_TTL_SHORT', default=45, cast=int)
+CACHE_TTL_SHORT = 0 if DISABLE_CACHE else config('CACHE_TTL_SHORT', default=45, cast=int)
 
 try:
     from django.core.files.storage import default_storage

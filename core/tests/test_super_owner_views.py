@@ -76,3 +76,4 @@ class TestSuperOwnerViews(TestCase):
         self.assertTrue(len(imgs) >= 1)
         self.assertIsNotNone(imgs[0].color_attr)
         self.assertEqual(imgs[0].color_attr.name, 'Red')
+        self.assertTrue(imgs[0].image_hash)

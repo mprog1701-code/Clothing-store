@@ -32,3 +32,11 @@ class ProductDetailRedesignTests(TestCase):
         self.assertContains(res, 'id="pdThumbs"')
         self.assertContains(res, 'id="images-data"')
         self.assertContains(res, 'id="colors-data"')
+
+    def test_product_detail_updates_after_new_image_with_nocache(self):
+        ProductImage.objects.create(product=self.prod, color_attr=None, image_url='https://placehold.co/600x600?text=NewDefault', order=0)
+        url = reverse('product_detail', args=[self.prod.id]) + '?nocache=1'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('default_main_image_url', res.context)
+        self.assertTrue(res.context['default_main_image_url'])

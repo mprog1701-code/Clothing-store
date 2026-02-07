@@ -268,8 +268,9 @@ def product_detail(request, product_id):
 
     similar_ids_key = f"similar:{product.id}"
     same_store_ids_key = f"similar_same:{product.id}"
-    similar_ids = cache.get(similar_ids_key)
-    same_store_ids = cache.get(same_store_ids_key)
+    nocache = (request.GET.get('nocache') or '').strip() in ('1','true','yes')
+    similar_ids = None if nocache else cache.get(similar_ids_key)
+    same_store_ids = None if nocache else cache.get(same_store_ids_key)
     if not similar_ids:
         base_qs = Product.objects.filter(is_active=True, status='ACTIVE').exclude(id=product.id)
         try:
@@ -289,14 +290,16 @@ def product_detail(request, product_id):
         except Exception:
             similar = list(base_qs.order_by('-created_at').values_list('id', flat=True)[:12])
         similar_ids = similar
-        cache.set(similar_ids_key, similar_ids, timeout=120)
+        if not nocache:
+            cache.set(similar_ids_key, similar_ids, timeout=120)
     if not same_store_ids:
         try:
             same_store_qs = Product.objects.filter(is_active=True, status='ACTIVE', store_id=product.store_id).exclude(id=product.id).order_by('-created_at')
             same_store_ids = list(same_store_qs.values_list('id', flat=True)[:8])
         except Exception:
             same_store_ids = []
-        cache.set(same_store_ids_key, same_store_ids, timeout=120)
+        if not nocache:
+            cache.set(same_store_ids_key, same_store_ids, timeout=120)
 
     def fetch_products_by_ids(ids, limit):
         if not ids:
@@ -3701,6 +3704,12 @@ def super_owner_add_product(request):
                 default_color_attr_id = ProductVariant.objects.filter(product=product, color_attr__isnull=False).values_list('color_attr_id', flat=True).order_by('id').first()
             except Exception:
                 default_color_attr_id = None
+            try:
+                from django.conf import settings as _settings
+                if hasattr(_settings, 'MEDIA_ROOT') and _settings.MEDIA_ROOT:
+                    os.makedirs(_settings.MEDIA_ROOT, exist_ok=True)
+            except Exception:
+                pass
             import hashlib
             skipped = 0
             for idx, f in enumerate(files):
@@ -3712,7 +3721,11 @@ def super_owner_add_product(request):
                     duplicate = False
                     for img in existing_images:
                         try:
-                            if img.image:
+                            if img.image_hash:
+                                if img.image_hash == new_digest:
+                                    duplicate = True
+                                    break
+                            elif img.image:
                                 with img.image.open('rb') as ef:
                                     h = hashlib.sha1()
                                     while True:
@@ -3733,10 +3746,15 @@ def super_owner_add_product(request):
                         image=f,
                         is_main=False,
                         order=max_order + idx + 1,
+                        image_hash=new_digest,
                         color_attr_id=default_color_attr_id if default_color_attr_id else None,
                     )
-                except Exception:
-                    messages.error(request, 'فشل رفع صورة')
+                except Exception as e:
+                    try:
+                        logging.exception('رفع الصور فشل: %s', str(e))
+                    except Exception:
+                        pass
+                    messages.error(request, 'تعذر حفظ الصورة، تحقق من صلاحيات التخزين أو نوع الملف')
             if skipped:
                 messages.info(request, f'تم تجاهل {skipped} صورة مكررة')
             messages.success(request, 'تم رفع الصور')
@@ -3880,9 +3898,21 @@ def super_owner_add_product(request):
                 img.color_attr = color_obj
                 img.save()
                 messages.success(request, f'تم استخراج اللون {hex_code} وربط الصورة به')
-            except Exception:
+            except Exception as e:
+                try:
+                    logging.exception('استخراج اللون فشل: %s', str(e))
+                except Exception:
+                    pass
                 messages.error(request, 'حدث خطأ أثناء استخراج اللون')
             return redirect(f"{request.path}?pid={product.id}&step=images")
+
+        elif action == 'clear_cache':
+            try:
+                cache.clear()
+                messages.success(request, 'تم مسح الكاش بنجاح')
+            except Exception:
+                messages.error(request, 'تعذر مسح الكاش')
+            return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=images")
 
         elif action == 'finish':
             pid = request.POST.get('pid')
