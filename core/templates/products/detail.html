@@ -17,6 +17,11 @@
     .product-description p { line-height: 1.9; }
     .product-category .badge { background: linear-gradient(45deg, #667eea, #764ba2); }
     .store-info-section { border: 1px dashed rgba(0,0,0,0.1); }
+    .swatch { width: 44px; height: 44px; border-radius: 8px; border: 2px solid transparent; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); cursor: pointer; }
+    .swatch.selected { border-color: #111; outline: 2px solid var(--gold); }
+    .size-btn { min-width: 56px; height: 40px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; padding: 0 12px; }
+    .size-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+    .size-btn.selected { border-color: var(--gold); background: #fff7e6; font-weight: 700; }
 </style>
 <!-- Hero Section -->
 <section class="product-hero bg-gradient-primary py-5 mb-5">
@@ -117,9 +122,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold"><i class="bi bi-rulers me-2"></i>المقاس</label>
-                                    <select class="form-select" id="sizeSelect" disabled>
-                                        <option value="">اختر المقاس</option>
-                                    </select>
+                                    <div id="sizeButtons" class="d-flex flex-wrap gap-2" style="display:none;"></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold">الكمية</label>
@@ -139,6 +142,7 @@
                                     <i class="bi bi-cart-plus me-2"></i>
                                     أضف للسلة
                                 </button>
+                                <div id="inlineMsg" class="text-danger mt-2" style="display:none;">يرجى اختيار اللون والمقاس قبل الإضافة إلى السلة</div>
                             </div>
                         </form>
                         <script type="application/json" id="variant-data">{{ variant_data|safe }}</script>
@@ -153,7 +157,7 @@
                             const DEFAULT_COLOR = {{ default_color|default:'null'|safe }};
                             const DEFAULT_MAIN_IMAGE = '{{ default_main_image_url }}';
                             const colorSelect = document.getElementById('colorSelect');
-                            const sizeSelect = document.getElementById('sizeSelect');
+                            const sizeButtons = document.getElementById('sizeButtons');
                             const selColor = document.getElementById('selColor');
                             const selSize = document.getElementById('selSize');
                             const qtyInput = document.getElementById('qtyInput');
@@ -163,20 +167,25 @@
                             const hiddenVariantId = document.getElementById('selectedVariantId');
                             const pdMain = document.getElementById('pdMain');
                             const pdThumbs = document.getElementById('pdThumbs');
+                            const inlineMsg = document.getElementById('inlineMsg');
+                            let selectedColor = null;
+                            let selectedSize = null;
 
                             function renderColorSwatches(){
                                 colorSelect.innerHTML = '';
                                 AVAILABLE_COLORS.forEach(c => {
-                                    const btn = document.createElement('button');
-                                    btn.type = 'button';
-                                    btn.className = 'btn p-0 border rounded-circle';
-                                    btn.style.cssText = 'width:36px;height:36px;';
-                                    btn.setAttribute('data-color', c.name);
+                                    const sw = document.createElement('button');
+                                    sw.type = 'button';
+                                    sw.className = 'swatch';
+                                    sw.setAttribute('title', c.name);
+                                    sw.setAttribute('aria-label', c.name);
+                                    sw.setAttribute('data-color', c.name);
                                     const hex = (c.hex || '').trim();
-                                    if (hex) btn.style.backgroundColor = hex;
-                                    else btn.style.background = 'linear-gradient(45deg,#999,#bbb)';
-                                    btn.addEventListener('click', function(){ selectColor(c.name); });
-                                    colorSelect.appendChild(btn);
+                                    if (hex) sw.style.backgroundColor = hex;
+                                    else sw.style.background = 'linear-gradient(45deg,#999,#bbb)';
+                                    if (selectedColor && selectedColor === c.name) sw.classList.add('selected');
+                                    sw.addEventListener('click', function(){ selectColor(c.name); });
+                                    colorSelect.appendChild(sw);
                                 });
                             }
                             function updateGallery(color){
@@ -194,59 +203,56 @@
                                 });
                             }
                             function resetSize(){
-                                sizeSelect.innerHTML = '<option value="">اختر المقاس</option>';
-                                sizeSelect.disabled = true;
+                                sizeButtons.innerHTML = '';
+                                sizeButtons.style.display = 'none';
                                 hiddenVariantId.value = '';
                                 addBtn.disabled = true;
                                 stockInfo.textContent = '';
                                 variantPrice.textContent = '';
                                 qtyInput.value = 1;
                                 qtyInput.removeAttribute('max');
+                                selectedSize = null;
+                                selSize.textContent = 'غير محدد';
                             }
                             function selectColor(color){
                                 resetSize();
                                 const sizes = SIZES_BY_COLOR[color] || [];
                                 let availableCount = 0;
-                                sizeSelect.innerHTML = '<option value="">اختر المقاس</option>';
+                                // mark selected color
+                                selectedColor = color;
+                                Array.from(colorSelect.children || []).forEach(el => {
+                                    el.classList.toggle('selected', el.getAttribute('data-color') === color);
+                                });
+                                // build size buttons
                                 sizes.forEach(s => {
-                                    const opt = document.createElement('option');
-                                    opt.value = s;
                                     const v = VARIANTS.find(x => x.color === color && x.size === s);
                                     const out = !v || v.stock_qty <= 0;
-                                    opt.textContent = out ? `${s} (غير متاح)` : s;
+                                    const b = document.createElement('button');
+                                    b.type = 'button';
+                                    b.className = 'size-btn' + (out ? ' disabled' : '');
+                                    b.textContent = s;
+                                    b.setAttribute('data-size', s);
                                     if (!out) availableCount++;
-                                    sizeSelect.appendChild(opt);
+                                    if (!out) {
+                                        b.addEventListener('click', function(){ selectSize(color, s); });
+                                    }
+                                    sizeButtons.appendChild(b);
                                 });
-                                sizeSelect.disabled = sizes.length === 0;
+                                sizeButtons.style.display = sizes.length > 0 ? '' : 'none';
                                 updateGallery(color);
                                 stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
                                 selColor.textContent = color || 'غير محدد';
                                 selSize.textContent = 'غير محدد';
                                 const firstAvail = VARIANTS.find(x => x.color === color && x.stock_qty > 0);
-                                if (firstAvail){
-                                    sizeSelect.value = firstAvail.size;
-                                    sizeSelect.dispatchEvent(new Event('change'));
-                                }
+                                if (firstAvail){ selectSize(color, firstAvail.size); }
+                                updateCTAState();
                             }
 
-                            function initPage(){
-                                renderColorSwatches();
-                                updateGallery(DEFAULT_COLOR);
-                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0){
-                                    const initialColor = DEFAULT_COLOR || (AVAILABLE_COLORS[0] ? AVAILABLE_COLORS[0].name : null);
-                                    if (initialColor) selectColor(initialColor);
-                                } else {
-                                    sizeSelect.disabled = true;
-                                    hiddenVariantId.value = '';
-                                    addBtn.disabled = false;
-                                    stockInfo.textContent = '';
-                                    variantPrice.textContent = `${parseFloat({{ product.discount_price|default:product.base_price }}).toLocaleString('ar-IQ')} دينار`;
-                                }
-                            }
-
-                            sizeSelect.addEventListener('change', () => {
-                                const color = colorSelect.value;
-                                const size = sizeSelect.value;
+                            function selectSize(color, size){
+                                selectedSize = size;
+                                Array.from(sizeButtons.children || []).forEach(el => {
+                                    el.classList.toggle('selected', el.getAttribute('data-size') === size);
+                                });
                                 const v = VARIANTS.find(x => x.color === color && x.size === size);
                                 if (!v){
                                     hiddenVariantId.value = '';
@@ -256,6 +262,7 @@
                                     qtyInput.value = 1;
                                     qtyInput.removeAttribute('max');
                                     selSize.textContent = size || 'غير محدد';
+                                    updateCTAState();
                                     return;
                                 }
                                 hiddenVariantId.value = v.id;
@@ -263,12 +270,43 @@
                                 stockInfo.textContent = v.stock_qty > 0 ? `متاح (${v.stock_qty} قطعة)` : 'هذا القياس غير متوفر';
                                 qtyInput.value = 1;
                                 qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
-                            variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
-                            selColor.textContent = color || 'غير محدد';
-                            selSize.textContent = size || 'غير محدد';
-                        });
+                                variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
+                                selColor.textContent = color || 'غير محدد';
+                                selSize.textContent = size || 'غير محدد';
+                                updateCTAState();
+                            }
 
-                        // Initialize default selection on page load if variants exist
+                            function initPage(){
+                                renderColorSwatches();
+                                updateGallery(DEFAULT_COLOR);
+                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0){
+                                    const initialColor = DEFAULT_COLOR || (AVAILABLE_COLORS[0] ? AVAILABLE_COLORS[0].name : null);
+                                    if (initialColor) selectColor(initialColor);
+                                } else {
+                                    hiddenVariantId.value = '';
+                                    addBtn.disabled = false;
+                                    stockInfo.textContent = '';
+                                    variantPrice.textContent = `${parseFloat({{ product.discount_price|default:product.base_price }}).toLocaleString('ar-IQ')} دينار`;
+                                    inlineMsg.style.display = 'none';
+                                }
+                            }
+
+                            function updateCTAState(){
+                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && addBtn.disabled){
+                                    inlineMsg.style.display = 'block';
+                                } else {
+                                    inlineMsg.style.display = 'none';
+                                }
+                            }
+
+                            document.getElementById('variantPickerForm').addEventListener('submit', function(e){
+                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVariantId.value){
+                                    e.preventDefault();
+                                    inlineMsg.style.display = 'block';
+                                }
+                            });
+
+                                // Initialize default selection on page load if variants exist
                             document.addEventListener('DOMContentLoaded', initPage);
                         </script>
                         <script></script>
