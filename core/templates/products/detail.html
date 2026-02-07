@@ -4,14 +4,7 @@
 {% block title %}{{ product.name }} - متجر الملابس{% endblock %}
 
 {% block content %}
-<!-- PD_PATCH_V1_2026-02-07 -->
-<div class="container">
-    <div class="text-center my-2">
-        <span class="badge bg-warning text-dark" style="font-size: 2rem;">PD_PATCH_V1_2026-02-07</span>
-    </div>
-    <hr class="my-3" />
-    
-</div>
+<!-- PD_UI_V2 | core/templates/products/detail.html | 2026-02-07 -->
 <style>
     .product-hero {
         background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%);
@@ -126,11 +119,11 @@
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold"><i class="bi bi-palette me-2"></i>اللون</label>
-                                    <div id="colorSelect" class="d-flex flex-wrap gap-2"></div>
+                                    <div id="pdSwatches" class="d-flex flex-wrap gap-2"></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold"><i class="bi bi-rulers me-2"></i>المقاس</label>
-                                    <div id="sizeButtons" class="d-flex flex-wrap gap-2" style="display:none;"></div>
+                                    <div id="pdSizes" class="d-flex flex-wrap gap-2" style="display:none;"></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold">الكمية</label>
@@ -145,7 +138,7 @@
                                     <div id="variantPrice" class="h5 text-primary fw-bold"></div>
                                 </div>
                             </div>
-                            <div class="mt-3">
+                            <div class="mt-3" id="pdAddBtn">
                                 <button type="submit" class="btn btn-gradient btn-lg w-100" id="addToCartBtn" disabled>
                                     <i class="bi bi-cart-plus me-2"></i>
                                     أضف للسلة
@@ -164,8 +157,8 @@
                             const AVAILABLE_COLORS = JSON.parse(document.getElementById('colors-data').textContent || '[]');
                             const DEFAULT_COLOR = {{ default_color|default:'null'|safe }};
                             const DEFAULT_MAIN_IMAGE = '{{ default_main_image_url }}';
-                            const colorSelect = document.getElementById('colorSelect');
-                            const sizeButtons = document.getElementById('sizeButtons');
+                            const swatchesEl = document.getElementById('pdSwatches');
+                            const sizesEl = document.getElementById('pdSizes');
                             const selColor = document.getElementById('selColor');
                             const selSize = document.getElementById('selSize');
                             const qtyInput = document.getElementById('qtyInput');
@@ -180,7 +173,7 @@
                             let selectedSize = null;
 
                             function renderColorSwatches(){
-                                colorSelect.innerHTML = '';
+                                swatchesEl.innerHTML = '';
                                 AVAILABLE_COLORS.forEach(c => {
                                     const sw = document.createElement('button');
                                     sw.type = 'button';
@@ -193,7 +186,7 @@
                                     else sw.style.background = 'linear-gradient(45deg,#999,#bbb)';
                                     if (selectedColor && selectedColor === c.name) sw.classList.add('selected');
                                     sw.addEventListener('click', function(){ selectColor(c.name); });
-                                    colorSelect.appendChild(sw);
+                                    swatchesEl.appendChild(sw);
                                 });
                             }
                             function updateGallery(color){
@@ -211,8 +204,8 @@
                                 });
                             }
                             function resetSize(){
-                                sizeButtons.innerHTML = '';
-                                sizeButtons.style.display = 'none';
+                                sizesEl.innerHTML = '';
+                                sizesEl.style.display = 'none';
                                 hiddenVariantId.value = '';
                                 addBtn.disabled = true;
                                 stockInfo.textContent = '';
@@ -228,7 +221,7 @@
                                 let availableCount = 0;
                                 // mark selected color
                                 selectedColor = color;
-                                Array.from(colorSelect.children || []).forEach(el => {
+                                Array.from(swatchesEl.children || []).forEach(el => {
                                     el.classList.toggle('selected', el.getAttribute('data-color') === color);
                                 });
                                 // build size buttons
@@ -244,9 +237,9 @@
                                     if (!out) {
                                         b.addEventListener('click', function(){ selectSize(color, s); });
                                     }
-                                    sizeButtons.appendChild(b);
+                                    sizesEl.appendChild(b);
                                 });
-                                sizeButtons.style.display = sizes.length > 0 ? '' : 'none';
+                                sizesEl.style.display = sizes.length > 0 ? '' : 'none';
                                 updateGallery(color);
                                 stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
                                 selColor.textContent = color || 'غير محدد';
@@ -257,7 +250,7 @@
 
                             function selectSize(color, size){
                                 selectedSize = size;
-                                Array.from(sizeButtons.children || []).forEach(el => {
+                                Array.from(sizesEl.children || []).forEach(el => {
                                     el.classList.toggle('selected', el.getAttribute('data-size') === size);
                                 });
                                 const v = VARIANTS.find(x => x.color === color && x.size === size);
