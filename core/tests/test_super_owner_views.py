@@ -77,3 +77,29 @@ class TestSuperOwnerViews(TestCase):
         self.assertIsNotNone(imgs[0].color_attr)
         self.assertEqual(imgs[0].color_attr.name, 'Red')
         self.assertTrue(imgs[0].image_hash)
+
+    def test_upload_images_multiple_formats_and_product_detail_visibility(self):
+        s = Store.objects.create(name='S4', city='Baghdad', address='A')
+        p = Product.objects.create(store=s, name='P4', description='D', base_price=1000, category='men', size_type='none', status='ACTIVE', is_active=True)
+        url = reverse('super_owner_add_product')
+        up_jpg = SimpleUploadedFile('imgA.jpg', b'bytes-jpg', content_type='image/jpeg')
+        up_png = SimpleUploadedFile('imgB.png', b'bytes-png', content_type='image/png')
+        up_webp = SimpleUploadedFile('imgC.webp', b'bytes-webp', content_type='image/webp')
+        r = self.client.post(url, {
+            'action': 'upload_images',
+            'pid': str(p.id),
+        }, format='multipart', follow=True)
+        # Upload files via FILES list
+        r = self.client.post(url, {
+            'action': 'upload_images',
+            'pid': str(p.id),
+            'images': [up_jpg, up_png, up_webp],
+        })
+        self.assertEqual(r.status_code, 302)
+        imgs = list(ProductImage.objects.filter(product=p))
+        self.assertTrue(len(imgs) >= 3)
+        # Now load product detail without cache
+        pd_url = reverse('product_detail', args=[p.id]) + '?nocache=1'
+        res = self.client.get(pd_url)
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('default_main_image_url', res.context)

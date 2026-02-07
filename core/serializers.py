@@ -79,9 +79,18 @@ class StoreSerializer(serializers.ModelSerializer):
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    image_url = serializers.CharField(read_only=True)
+
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'is_main']
+        fields = ['id', 'image', 'image_url', 'is_main', 'url']
+
+    def get_url(self, obj):
+        try:
+            return obj.get_image_url()
+        except Exception:
+            return ''
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):
