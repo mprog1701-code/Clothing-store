@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, IntegerField, Case, When, Max
 from django.conf import settings
 from django.utils import timezone
+from django.core.cache import cache
 from datetime import timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -174,66 +175,152 @@ def store_detail(request, store_id):
 
 
 def product_detail(request, product_id):
-    product = Product.objects.filter(id=product_id).first()
+    product = Product.objects.select_related('store').prefetch_related('images', 'variants').filter(id=product_id).first()
     if not product or not product.is_active or getattr(product, 'status', 'ACTIVE') == 'DISABLED':
         messages.error(request, 'المنتج غير موجود أو تم إيقافه')
         return redirect('home')
-    variants = product.variants.all()
-    images = product.images.select_related('color', 'variant').all()
+    images = list(product.images.select_related('color', 'color_attr', 'variant'))
+    variants = list(product.variants.select_related('color_obj', 'color_attr', 'size_attr'))
+
     variant_data = [
         {
             'id': v.id,
             'color': v.color,
             'size': getattr(v, 'size_display', v.size),
-            'stock_qty': v.stock_qty,
+            'stock_qty': int(v.stock_qty),
             'price': float(v.price),
         }
         for v in variants
     ]
-    variant_colors = sorted({v.color for v in variants})
-    images_by_color = {}
-    for c in variant_colors:
-        images_by_color[c] = []
-    default_images = []
+
+    colors_set = []
+    try:
+        for v in variants:
+            name = v.color
+            if not name:
+                continue
+            hexcode = ''
+            try:
+                if v.color_attr and v.color_attr.code:
+                    hexcode = v.color_attr.code
+                elif v.color_obj and v.color_obj.code:
+                    hexcode = v.color_obj.code
+            except Exception:
+                hexcode = ''
+            if not any(c['name'] == name for c in colors_set):
+                colors_set.append({'name': name, 'hex': hexcode})
+    except Exception:
+        pass
+
+    images_by_color = {'__default__': []}
+    for c in colors_set:
+        images_by_color[c['name']] = []
     for img in images:
         url = img.get_image_url()
         if not url:
             continue
-        default_images.append(url)
-        if img.color and img.color.name in images_by_color:
-            images_by_color[img.color.name].append(url)
-        elif img.variant and img.variant.color_obj and img.variant.color_obj.name in images_by_color:
-            images_by_color[img.variant.color_obj.name].append(url)
+        color_name = ''
+        try:
+            if img.color and img.color.name:
+                color_name = img.color.name
+            elif img.color_attr and img.color_attr.name:
+                color_name = img.color_attr.name
+            elif img.variant and img.variant.color_obj and img.variant.color_obj.name:
+                color_name = img.variant.color_obj.name
+        except Exception:
+            color_name = ''
+        if color_name and color_name in images_by_color:
+            images_by_color[color_name].append(url)
+        else:
+            images_by_color['__default__'].append(url)
+
     sizes_by_color = {}
-    for c in variant_colors:
-        sizes_by_color[c] = sorted({getattr(v, 'size_display', v.size) for v in variants if v.color == c})
-    # Determine default variant to initialize UI
+    for c in colors_set:
+        sizes_by_color[c['name']] = sorted({getattr(v, 'size_display', v.size) for v in variants if v.color == c['name']})
+    if not sizes_by_color and variants:
+        sizes_by_color['__no_color__'] = sorted({getattr(v, 'size_display', v.size) for v in variants})
+
+    default_color = None
+    for c in colors_set:
+        if images_by_color.get(c['name']):
+            default_color = c['name']
+            break
+    if not default_color:
+        default_color = colors_set[0]['name'] if colors_set else None
+    default_images = images_by_color.get(default_color) or images_by_color.get('__default__') or []
+    default_main_image_url = (default_images[0] if default_images else (os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/500x500?text=Image'))
+
     default_variant_dict = None
     try:
         default_v = next((v for v in variants if v.stock_qty > 0), None)
-        if not default_v:
-            default_v = variants.first()
+        if not default_v and variants:
+            default_v = variants[0]
         if default_v:
             default_variant_dict = {
                 'id': default_v.id,
                 'color': default_v.color,
-            'size': getattr(default_v, 'size_display', default_v.size),
-                'stock_qty': default_v.stock_qty,
+                'size': getattr(default_v, 'size_display', default_v.size),
+                'stock_qty': int(default_v.stock_qty),
                 'price': float(default_v.price),
             }
     except Exception:
         default_variant_dict = None
+
+    similar_ids_key = f"similar:{product.id}"
+    same_store_ids_key = f"similar_same:{product.id}"
+    similar_ids = cache.get(similar_ids_key)
+    same_store_ids = cache.get(same_store_ids_key)
+    if not similar_ids:
+        base_qs = Product.objects.filter(is_active=True, status='ACTIVE').exclude(id=product.id)
+        try:
+            if product.category:
+                base_qs = base_qs.filter(category=product.category)
+            elif product.store and product.store.category:
+                base_qs = base_qs.filter(store__category=product.store.category)
+        except Exception:
+            pass
+        try:
+            other_stores_qs = base_qs.exclude(store_id=product.store_id)
+            similar = list(other_stores_qs.order_by('-rating', '-created_at').values_list('id', flat=True)[:12])
+            if len(similar) < 12:
+                fill_qs = base_qs.filter(store_id=product.store_id).order_by('-rating', '-created_at')
+                need = 12 - len(similar)
+                similar += list(fill_qs.values_list('id', flat=True)[:need])
+        except Exception:
+            similar = list(base_qs.order_by('-created_at').values_list('id', flat=True)[:12])
+        similar_ids = similar
+        cache.set(similar_ids_key, similar_ids, timeout=120)
+    if not same_store_ids:
+        try:
+            same_store_qs = Product.objects.filter(is_active=True, status='ACTIVE', store_id=product.store_id).exclude(id=product.id).order_by('-created_at')
+            same_store_ids = list(same_store_qs.values_list('id', flat=True)[:8])
+        except Exception:
+            same_store_ids = []
+        cache.set(same_store_ids_key, same_store_ids, timeout=120)
+
+    def fetch_products_by_ids(ids, limit):
+        if not ids:
+            return []
+        qs = Product.objects.filter(id__in=ids).select_related('store').prefetch_related('images')
+        items = {p.id: p for p in qs}
+        ordered = [items[i] for i in ids if i in items]
+        return ordered[:limit]
+
+    similar_products = fetch_products_by_ids(similar_ids, 12)
+    same_store_products = fetch_products_by_ids(same_store_ids, 8)
+
     context = {
         'product': product,
         'variants': variants,
         'variant_data': variant_data,
-        'variant_colors': variant_colors,
+        'available_colors': colors_set,
         'sizes_by_color': sizes_by_color,
-        'images': images,
         'images_by_color': images_by_color,
-        'default_images': default_images,
-        'default_variant': default_variant_dict,
+        'default_color': default_color,
+        'default_main_image_url': default_main_image_url,
         'placeholder_image_url': os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/500x500?text=Image',
+        'similar_products': similar_products,
+        'same_store_products': same_store_products,
     }
     return render(request, 'products/detail.html', context)
 
