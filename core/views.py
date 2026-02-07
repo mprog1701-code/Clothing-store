@@ -7,7 +7,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
 from datetime import timedelta
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import ensure_csrf_cookie
 import logging
 import re
@@ -3697,6 +3697,12 @@ def super_owner_add_product(request):
                 messages.error(request, 'المنتج غير موجود')
                 return redirect('super_owner_add_product')
             files = request.FILES.getlist('images')
+            if not files:
+                try:
+                    logging.exception('upload_failed', extra={'product_id': pid, 'store_id': getattr(product, 'store_id', None), 'filename': None, 'size': 0})
+                except Exception:
+                    pass
+                return HttpResponseBadRequest('لم يتم تحديد أي ملف للرفع')
             max_order = product.images.aggregate(m=Max('order')).get('m') or 0
             existing_images = list(product.images.all())
             default_color_attr_id = None
@@ -3751,10 +3757,11 @@ def super_owner_add_product(request):
                     )
                 except Exception as e:
                     try:
-                        logging.exception('رفع الصور فشل: %s', str(e))
+                        logging.exception('upload_failed', extra={'product_id': pid, 'store_id': getattr(product, 'store_id', None), 'filename': getattr(f, 'name', None), 'size': getattr(f, 'size', 0)})
                     except Exception:
                         pass
-                    messages.error(request, 'تعذر حفظ الصورة، تحقق من صلاحيات التخزين أو نوع الملف')
+                    # Fail input-caused issues with 400 for better diagnostics
+                    return HttpResponseBadRequest('تعذر حفظ الصورة: تحقق من نوع الملف أو السعة')
             if skipped:
                 messages.info(request, f'تم تجاهل {skipped} صورة مكررة')
             messages.success(request, 'تم رفع الصور')

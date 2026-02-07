@@ -88,16 +88,17 @@ class TestSuperOwnerViews(TestCase):
         r = self.client.post(url, {
             'action': 'upload_images',
             'pid': str(p.id),
-        }, format='multipart', follow=True)
-        # Upload files via FILES list
-        r = self.client.post(url, {
-            'action': 'upload_images',
-            'pid': str(p.id),
             'images': [up_jpg, up_png, up_webp],
         })
         self.assertEqual(r.status_code, 302)
         imgs = list(ProductImage.objects.filter(product=p))
         self.assertTrue(len(imgs) >= 3)
+        # Bad request when no files provided
+        r2 = self.client.post(url, {
+            'action': 'upload_images',
+            'pid': str(p.id),
+        })
+        self.assertEqual(r2.status_code, 400)
         # Now load product detail without cache
         pd_url = reverse('product_detail', args=[p.id]) + '?nocache=1'
         res = self.client.get(pd_url)

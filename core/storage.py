@@ -32,7 +32,12 @@ class R2MediaStorage(S3Boto3Storage):
         self.addressing_style = getattr(settings, 'AWS_S3_ADDRESSING_STYLE', 'path')
         self.querystring_auth = getattr(settings, 'AWS_QUERYSTRING_AUTH', False)
 
-        super().__init__(*args, **kwargs)
+        try:
+            super().__init__(*args, **kwargs)
+        except Exception as e:
+            import logging as _log
+            _log.exception('r2_storage_init_failed', extra={'bucket': self.bucket_name, 'endpoint': self.endpoint_url})
+            raise
 
     def url(self, name, parameters=None, expire=None):
         cd = (
