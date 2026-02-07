@@ -253,7 +253,6 @@
                                 selSize.textContent = 'غير محدد';
                                 const firstAvail = VARIANTS.find(x => x.color === color && x.stock_qty > 0);
                                 if (firstAvail){ selectSize(color, firstAvail.size); }
-                                updateCTAState();
                             }
 
                             function selectSize(color, size){
@@ -270,7 +269,6 @@
                                     qtyInput.value = 1;
                                     qtyInput.removeAttribute('max');
                                     selSize.textContent = size || 'غير محدد';
-                                    updateCTAState();
                                     return;
                                 }
                                 hiddenVariantId.value = v.id;
@@ -281,7 +279,6 @@
                                 variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
                                 selColor.textContent = color || 'غير محدد';
                                 selSize.textContent = size || 'غير محدد';
-                                updateCTAState();
                             }
 
                             function initPage(){
@@ -298,15 +295,6 @@
                                     inlineMsg.style.display = 'none';
                                 }
                             }
-
-                            function updateCTAState(){
-                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && addBtn.disabled){
-                                    inlineMsg.style.display = 'block';
-                                } else {
-                                    inlineMsg.style.display = 'none';
-                                }
-                            }
-
                             document.getElementById('variantPickerForm').addEventListener('submit', function(e){
                                 if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVariantId.value){
                                     e.preventDefault();
@@ -343,33 +331,55 @@
 <!-- Similar Products -->
 <section class="mb-5">
     <div class="container">
-        {% if similar_products %}
+        {% if similar_products or same_store_products %}
         <h4 class="fw-bold mb-3">منتجات مشابهة</h4>
         <div class="row g-3">
-            {% for p in similar_products %}
-            <div class="col-6 col-md-3">
-                <a href="{% url 'product_detail' p.id %}" class="card h-100 text-decoration-none">
-                    <div class="ratio ratio-1x1">
-                        {% with img=p.images.all|first %}
-                            {% if img %}
-                                <img src="{{ img.get_image_url }}" alt="{{ p.name }}" class="card-img-top" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
-                            {% else %}
-                                <img src="{{ placeholder_image_url }}" alt="{{ p.name }}" class="card-img-top">
-                            {% endif %}
-                        {% endwith %}
-                    </div>
-                    <div class="card-body">
-                        <div class="small text-muted">{{ p.store.name }}</div>
-                        <div class="fw-semibold">{{ p.name }}</div>
-                        <div class="text-primary">{{ p.discount_price|default:p.base_price|iqd }}</div>
-                    </div>
-                </a>
-            </div>
-            {% endfor %}
+            {% if similar_products %}
+                {% for p in similar_products %}
+                <div class="col-6 col-md-3">
+                    <a href="{% url 'product_detail' p.id %}" class="card h-100 text-decoration-none">
+                        <div class="ratio ratio-1x1">
+                            {% with img=p.images.all|first %}
+                                {% if img %}
+                                    <img src="{{ img.get_image_url }}" alt="{{ p.name }}" class="card-img-top" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
+                                {% else %}
+                                    <img src="{{ placeholder_image_url }}" alt="{{ p.name }}" class="card-img-top">
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div class="card-body">
+                            <div class="small text-muted">{{ p.store.name }}</div>
+                            <div class="fw-semibold">{{ p.name }}</div>
+                            <div class="text-primary">{{ p.discount_price|default:p.base_price|iqd }}</div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            {% elif same_store_products %}
+                {% for p in same_store_products %}
+                <div class="col-6 col-md-3">
+                    <a href="{% url 'product_detail' p.id %}" class="card h-100 text-decoration-none">
+                        <div class="ratio ratio-1x1">
+                            {% with img=p.images.all|first %}
+                                {% if img %}
+                                    <img src="{{ img.get_image_url }}" alt="{{ p.name }}" class="card-img-top" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
+                                {% else %}
+                                    <img src="{{ placeholder_image_url }}" alt="{{ p.name }}" class="card-img-top">
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                        <div class="card-body">
+                            <div class="small text-muted">{{ p.store.name }}</div>
+                            <div class="fw-semibold">{{ p.name }}</div>
+                            <div class="text-primary">{{ p.discount_price|default:p.base_price|iqd }}</div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            {% endif %}
         </div>
         {% endif %}
-
-        {% if same_store_products %}
+        {% if similar_products and same_store_products %}
         <h5 class="fw-bold mt-4 mb-3">منتجات من نفس المتجر</h5>
         <div class="row g-3">
             {% for p in same_store_products %}
@@ -395,5 +405,6 @@
         </div>
         {% endif %}
     </div>
+    
 </section>
 {% endblock %}
