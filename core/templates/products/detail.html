@@ -27,6 +27,9 @@
 <!-- Hero Section -->
 <section class="product-hero bg-gradient-primary py-5 mb-5">
     <div class="container">
+        <div class="d-flex justify-content-end mb-2">
+            <span class="badge bg-dark text-white">PD_V1_SIMPLE_{% now "Y-m-d" %}</span>
+        </div>
         <div class="row align-items-center">
             <div class="col-lg-8">
                 <nav aria-label="breadcrumb" class="mb-4">
@@ -170,6 +173,9 @@
                             const pdMain = document.getElementById('pdMain');
                             const pdThumbs = document.getElementById('pdThumbs');
                             const inlineMsg = document.getElementById('inlineMsg');
+                            const REQUIRES_SIZE = '{{ product.size_type }}' !== 'none';
+                            const REQUIRED_MSG = REQUIRES_SIZE ? 'يرجى اختيار اللون والمقاس قبل الإضافة إلى السلة' : 'يرجى اختيار اللون قبل الإضافة إلى السلة';
+                            inlineMsg.textContent = REQUIRED_MSG;
                             let selectedColor = null;
                             let selectedSize = null;
 
@@ -193,19 +199,22 @@
                                 console.log('pd:renderColorSwatches:end', {count: (AVAILABLE_COLORS || []).length});
                             }
                             function updateGallery(color){
-                                const urls = (color && IMAGES_BY_COLOR[color] && IMAGES_BY_COLOR[color].length > 0) ? IMAGES_BY_COLOR[color] : (IMAGES_BY_COLOR['__default__'] || []);
-                                console.log('pd:updateGallery', {color, urlsLen: (urls || []).length});
-                                const first = urls && urls.length ? urls[0] : DEFAULT_MAIN_IMAGE;
+                                const list = (color && IMAGES_BY_COLOR[color] && IMAGES_BY_COLOR[color].length > 0) ? IMAGES_BY_COLOR[color] : (IMAGES_BY_COLOR['__default__'] || []);
+                                const limited = (list || []).slice(0, 3);
+                                console.log('pd:updateGallery', {color, urlsLen: limited.length});
+                                const first = limited.length ? limited[0] : DEFAULT_MAIN_IMAGE;
                                 pdMain.src = first;
                                 pdThumbs.innerHTML = '';
-                                (urls || []).forEach(function(u){
-                                    const t = document.createElement('img');
-                                    t.src = u;
-                                    t.alt = '{{ product.name }}';
-                                    t.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #eee;';
-                                    t.addEventListener('click', function(){ pdMain.src = u; });
-                                    pdThumbs.appendChild(t);
-                                });
+                                if (limited.length > 1) {
+                                    limited.forEach(function(u){
+                                        const t = document.createElement('img');
+                                        t.src = u;
+                                        t.alt = '{{ product.name }}';
+                                        t.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #eee;';
+                                        t.addEventListener('click', function(){ pdMain.src = u; });
+                                        pdThumbs.appendChild(t);
+                                    });
+                                }
                             }
                             function resetSize(){
                                 console.log('pd:resetSize');
@@ -213,6 +222,7 @@
                                 sizesEl.style.display = 'none';
                                 hiddenVariantId.value = '';
                                 addBtn.disabled = true;
+                                inlineMsg.style.display = 'block';
                                 stockInfo.textContent = '';
                                 variantPrice.textContent = '';
                                 qtyInput.value = 1;
@@ -252,6 +262,7 @@
                                 selSize.textContent = 'غير محدد';
                                 const firstAvail = VARIANTS.find(x => x.color === color && x.stock_qty > 0);
                                 if (firstAvail){ selectSize(color, firstAvail.size); }
+                                inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
                             }
 
                             function selectSize(color, size){
@@ -281,6 +292,7 @@
                                 variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
                                 selColor.textContent = color || 'غير محدد';
                                 selSize.textContent = size || 'غير محدد';
+                                inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
                             }
 
                             function initPage(){
@@ -368,7 +380,7 @@
         <h4 class="fw-bold mb-3">منتجات مشابهة</h4>
         <div class="row g-3">
             {% if similar_products %}
-                {% for p in similar_products %}
+                {% for p in similar_products|slice:"8" %}
                 <div class="col-6 col-md-3">
                     <a href="{% url 'product_detail' p.id %}" class="card h-100 text-decoration-none">
                         <div class="ratio ratio-1x1">
@@ -389,7 +401,7 @@
                 </div>
                 {% endfor %}
             {% elif same_store_products %}
-                {% for p in same_store_products %}
+                {% for p in same_store_products|slice:"8" %}
                 <div class="col-6 col-md-3">
                     <a href="{% url 'product_detail' p.id %}" class="card h-100 text-decoration-none">
                         <div class="ratio ratio-1x1">
