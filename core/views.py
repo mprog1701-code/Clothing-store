@@ -3699,10 +3699,11 @@ def super_owner_add_product(request):
             files = request.FILES.getlist('images')
             if not files:
                 try:
-                    logging.exception('upload_failed', extra={'product_id': pid, 'store_id': getattr(product, 'store_id', None), 'filename': None, 'size': 0})
+                    logging.exception('upload_failed_no_files', extra={'product_id': pid, 'store_id': getattr(product, 'store_id', None)})
                 except Exception:
                     pass
-                return HttpResponseBadRequest('لم يتم تحديد أي ملف للرفع')
+                messages.error(request, 'لم يتم تحديد أي ملف للرفع')
+                return redirect(f"{request.path}?pid={product.id}&step=images")
             max_order = product.images.aggregate(m=Max('order')).get('m') or 0
             existing_images = list(product.images.all())
             default_color_attr_id = None
@@ -3724,6 +3725,11 @@ def super_owner_add_product(request):
                     for chunk in f.chunks():
                         sha1.update(chunk)
                     new_digest = sha1.hexdigest()
+                    try:
+                        if hasattr(f, 'seek'):
+                            f.seek(0)
+                    except Exception:
+                        pass
                     duplicate = False
                     for img in existing_images:
                         try:
@@ -3757,11 +3763,11 @@ def super_owner_add_product(request):
                     )
                 except Exception as e:
                     try:
-                        logging.exception('upload_failed', extra={'product_id': pid, 'store_id': getattr(product, 'store_id', None), 'filename': getattr(f, 'name', None), 'size': getattr(f, 'size', 0)})
+                        logging.exception('upload_failed', extra={'product_id': pid, 'store_id': getattr(product, 'store_id', None), 'filename': getattr(f, 'name', None), 'size': getattr(f, 'size', 0), 'error': str(e)})
                     except Exception:
                         pass
-                    # Fail input-caused issues with 400 for better diagnostics
-                    return HttpResponseBadRequest('تعذر حفظ الصورة: تحقق من نوع الملف أو السعة')
+                    messages.error(request, 'تعذر حفظ الصورة، تحقق من نوع الملف أو السعة')
+                    continue
             if skipped:
                 messages.info(request, f'تم تجاهل {skipped} صورة مكررة')
             messages.success(request, 'تم رفع الصور')
