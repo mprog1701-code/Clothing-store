@@ -157,6 +157,7 @@
                             const AVAILABLE_COLORS = JSON.parse(document.getElementById('colors-data').textContent || '[]');
                             const DEFAULT_COLOR = {{ default_color|default:'null'|safe }};
                             const DEFAULT_MAIN_IMAGE = '{{ default_main_image_url }}';
+                                console.log('pd:init:data', {variantsLen: VARIANTS.length, colorsLen: AVAILABLE_COLORS.length, sizesKeys: Object.keys(SIZES_BY_COLOR), defaultColor: DEFAULT_COLOR});
                             const swatchesEl = document.getElementById('pdSwatches');
                             const sizesEl = document.getElementById('pdSizes');
                             const selColor = document.getElementById('selColor');
@@ -173,6 +174,7 @@
                             let selectedSize = null;
 
                             function renderColorSwatches(){
+                                console.log('pd:renderColorSwatches:start', {availableColors: AVAILABLE_COLORS});
                                 swatchesEl.innerHTML = '';
                                 AVAILABLE_COLORS.forEach(c => {
                                     const sw = document.createElement('button');
@@ -188,9 +190,11 @@
                                     sw.addEventListener('click', function(){ selectColor(c.name); });
                                     swatchesEl.appendChild(sw);
                                 });
+                                console.log('pd:renderColorSwatches:end', {count: (AVAILABLE_COLORS || []).length});
                             }
                             function updateGallery(color){
                                 const urls = (color && IMAGES_BY_COLOR[color] && IMAGES_BY_COLOR[color].length > 0) ? IMAGES_BY_COLOR[color] : (IMAGES_BY_COLOR['__default__'] || []);
+                                console.log('pd:updateGallery', {color, urlsLen: (urls || []).length});
                                 const first = urls && urls.length ? urls[0] : DEFAULT_MAIN_IMAGE;
                                 pdMain.src = first;
                                 pdThumbs.innerHTML = '';
@@ -204,6 +208,7 @@
                                 });
                             }
                             function resetSize(){
+                                console.log('pd:resetSize');
                                 sizesEl.innerHTML = '';
                                 sizesEl.style.display = 'none';
                                 hiddenVariantId.value = '';
@@ -218,6 +223,7 @@
                             function selectColor(color){
                                 resetSize();
                                 const sizes = SIZES_BY_COLOR[color] || [];
+                                console.log('pd:selectColor', {color, sizesLen: sizes.length});
                                 let availableCount = 0;
                                 // mark selected color
                                 selectedColor = color;
@@ -250,11 +256,13 @@
 
                             function selectSize(color, size){
                                 selectedSize = size;
+                                console.log('pd:selectSize:start', {color, size});
                                 Array.from(sizesEl.children || []).forEach(el => {
                                     el.classList.toggle('selected', el.getAttribute('data-size') === size);
                                 });
-                                const v = VARIANTS.find(x => x.color === color && x.size === size);
+                                const v = VARIANTS.find(x => x.color === (color || '') && x.size === size);
                                 if (!v){
+                                    console.log('pd:selectSize:notFound', {color, size});
                                     hiddenVariantId.value = '';
                                     addBtn.disabled = true;
                                     stockInfo.textContent = '';
@@ -264,6 +272,7 @@
                                     selSize.textContent = size || 'غير محدد';
                                     return;
                                 }
+                                console.log('pd:selectSize:found', {id: v.id, stock_qty: v.stock_qty, price: v.price});
                                 hiddenVariantId.value = v.id;
                                 addBtn.disabled = v.stock_qty <= 0;
                                 stockInfo.textContent = v.stock_qty > 0 ? `متاح (${v.stock_qty} قطعة)` : 'هذا القياس غير متوفر';
@@ -275,24 +284,55 @@
                             }
 
                             function initPage(){
+                                console.log('pd:initPage:start');
                                 renderColorSwatches();
                                 updateGallery(DEFAULT_COLOR);
                                 if (Array.isArray(VARIANTS) && VARIANTS.length > 0){
-                                    const initialColor = DEFAULT_COLOR || (AVAILABLE_COLORS[0] ? AVAILABLE_COLORS[0].name : null);
-                                    if (initialColor) selectColor(initialColor);
+                                    const hasColors = Array.isArray(AVAILABLE_COLORS) && AVAILABLE_COLORS.length > 0;
+                                    const initialColor = DEFAULT_COLOR || (hasColors && AVAILABLE_COLORS[0] ? AVAILABLE_COLORS[0].name : null);
+                                    console.log('pd:initPage:variants', {hasColors, initialColor});
+                                    if (initialColor) {
+                                        selectColor(initialColor);
+                                    } else {
+                                        const nocSizes = SIZES_BY_COLOR['__no_color__'] || Array.from(new Set(VARIANTS.map(x => x.size)));
+                                        sizesEl.innerHTML = '';
+                                        nocSizes.forEach(s => {
+                                            const v = VARIANTS.find(x => (x.color || '') === '' && x.size === s) || VARIANTS.find(x => x.size === s);
+                                            const out = !v || v.stock_qty <= 0;
+                                            const b = document.createElement('button');
+                                            b.type = 'button';
+                                            b.className = 'size-btn' + (out ? ' disabled' : '');
+                                            b.textContent = s;
+                                            b.setAttribute('data-size', s);
+                                            if (!out) {
+                                                b.addEventListener('click', function(){ selectSize('', s); });
+                                            }
+                                            sizesEl.appendChild(b);
+                                        });
+                                        sizesEl.style.display = nocSizes.length > 0 ? '' : 'none';
+                                        selColor.textContent = 'غير محدد';
+                                        selSize.textContent = 'غير محدد';
+                                        hiddenVariantId.value = '';
+                                        addBtn.disabled = true;
+                                        inlineMsg.style.display = 'none';
+                                        console.log('pd:initPage:noColor', {sizesLen: nocSizes.length});
+                                    }
                                 } else {
                                     hiddenVariantId.value = '';
                                     addBtn.disabled = false;
                                     stockInfo.textContent = '';
                                     variantPrice.textContent = `${parseFloat({{ product.discount_price|default:product.base_price }}).toLocaleString('ar-IQ')} دينار`;
                                     inlineMsg.style.display = 'none';
+                                    console.log('pd:initPage:noVariants');
                                 }
                             }
                             document.getElementById('variantPickerForm').addEventListener('submit', function(e){
                                 if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVariantId.value){
                                     e.preventDefault();
+                                    console.log('pd:submit:blocked', {variantId: hiddenVariantId.value});
                                     inlineMsg.style.display = 'block';
                                 }
+                                console.log('pd:submit:ok', {variantId: hiddenVariantId.value});
                             });
 
                                 // Initialize default selection on page load if variants exist

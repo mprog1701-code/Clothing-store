@@ -3374,6 +3374,17 @@ def super_owner_add_product(request):
         elif action == 'add_global_color':
             cname = (request.POST.get('color_name') or '').strip()
             ccode = (request.POST.get('color_code') or '').strip()
+            def _normalize_hex(h):
+                s = (h or '').strip().upper()
+                if not s:
+                    return ''
+                if s.startswith('#'):
+                    s = s[1:]
+                if len(s) == 3 and all(ch in '0123456789ABCDEF' for ch in s):
+                    s = ''.join(ch * 2 for ch in s)
+                if len(s) == 6 and all(ch in '0123456789ABCDEF' for ch in s):
+                    return '#' + s
+                return ''
             def _hex_to_rgb(h):
                 try:
                     return (int(h[1:3],16), int(h[3:5],16), int(h[5:7],16))
@@ -3394,10 +3405,14 @@ def super_owner_add_product(request):
                         bd = d
                         best = name
                 return best or h
+            normalized = _normalize_hex(ccode)
+            if not normalized:
+                messages.error(request, 'رمز اللون HEX غير صالح (يجب أن يكون بشكل #RRGGBB أو #RGB)')
+                return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
             if not cname:
-                cname = _nearest_name(ccode or '#000000')
+                cname = _nearest_name(normalized)
             try:
-                AttributeColor.objects.get_or_create(name=cname, defaults={'code': ccode})
+                AttributeColor.objects.get_or_create(name=cname, defaults={'code': normalized})
                 messages.success(request, 'تمت إضافة اللون إلى القائمة العامة')
             except Exception:
                 messages.error(request, 'تعذر إضافة اللون')
@@ -3681,6 +3696,11 @@ def super_owner_add_product(request):
             files = request.FILES.getlist('images')
             max_order = product.images.aggregate(m=Max('order')).get('m') or 0
             existing_images = list(product.images.all())
+            default_color_attr_id = None
+            try:
+                default_color_attr_id = ProductVariant.objects.filter(product=product, color_attr__isnull=False).values_list('color_attr_id', flat=True).order_by('id').first()
+            except Exception:
+                default_color_attr_id = None
             import hashlib
             skipped = 0
             for idx, f in enumerate(files):
@@ -3708,7 +3728,13 @@ def super_owner_add_product(request):
                     if duplicate:
                         skipped += 1
                         continue
-                    ProductImage.objects.create(product=product, image=f, is_main=False, order=max_order+idx+1)
+                    ProductImage.objects.create(
+                        product=product,
+                        image=f,
+                        is_main=False,
+                        order=max_order + idx + 1,
+                        color_attr_id=default_color_attr_id if default_color_attr_id else None,
+                    )
                 except Exception:
                     messages.error(request, 'فشل رفع صورة')
             if skipped:
