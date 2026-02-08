@@ -266,6 +266,29 @@ def product_detail(request, product_id):
     except Exception:
         default_variant_dict = None
 
+    pd_simple = (request.GET.get('simple') or '').strip().lower() in ('1','true','yes')
+    simple_images = []
+    try:
+        for img in images:
+            url = img.get_image_url()
+            if url:
+                simple_images.append(url)
+    except Exception:
+        simple_images = []
+    simple_images = simple_images[:3]
+    preselected_variant_id = None
+    add_disabled = False
+    if pd_simple:
+        try:
+            if default_variant_dict and default_variant_dict.get('id'):
+                preselected_variant_id = int(default_variant_dict['id'])
+                add_disabled = int(default_variant_dict.get('stock_qty') or 0) <= 0
+            else:
+                add_disabled = product.variants.exists()
+        except Exception:
+            preselected_variant_id = None
+            add_disabled = product.variants.exists()
+
     similar_ids_key = f"similar:{product.id}"
     same_store_ids_key = f"similar_same:{product.id}"
     nocache = (request.GET.get('nocache') or '').strip() in ('1','true','yes')
@@ -324,6 +347,10 @@ def product_detail(request, product_id):
         'placeholder_image_url': os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/500x500?text=Image',
         'similar_products': similar_products,
         'same_store_products': same_store_products,
+        'pd_simple': pd_simple,
+        'simple_images': simple_images,
+        'preselected_variant_id': preselected_variant_id,
+        'add_disabled': add_disabled,
     }
     return render(request, 'products/detail.html', context)
 
