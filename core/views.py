@@ -6375,4 +6375,3 @@ def store_orders(request):
         'orders': orders,
     }
     return render(request, 'dashboard/store/orders.html', context)
-
