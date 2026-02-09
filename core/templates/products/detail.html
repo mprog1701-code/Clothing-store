@@ -13,6 +13,7 @@
   #pdMain{width:100%;height:auto;background:#ffffff}
   #pdThumbs{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin-top:8px}
   .thumb{width:72px;height:72px;border:1px solid #e5e7eb;background:#ffffff}
+  .thumb.selected{border-color:#000}
   .thumb img{width:100%;height:100%;object-fit:cover}
   .title{font-size:22px;font-weight:700;margin-bottom:8px}
   .price{display:flex;gap:12px;align-items:baseline;margin:8px 0}
@@ -28,6 +29,20 @@
   .product-details-section{display:none}
   section.mb-5{display:none}
   .modal{display:none}
+  .pdWrap, .pdMedia, .pdInfo, .title, .fit, .price-new, .sz, .btn{color:#1a1a1a}
+  #addBtn{background:#ff6a00;color:#ffffff;border-color:#ff6a00}
+  #addBtn:hover{filter:brightness(0.95)}
+  .thumb{cursor:pointer}
+  .related-wrap{margin:24px 16px;background:#ffffff}
+  .relTitle{font-size:18px;font-weight:800;color:#1a1a1a;margin-bottom:8px}
+  .relList{display:flex;gap:12px;flex-wrap:wrap}
+  .relCard{display:block;width:180px;border:1px solid #e5e7eb;border-radius:10px;background:#ffffff;text-decoration:none}
+  .relImg{width:100%;height:160px;background:#ffffff;border-bottom:1px solid #e5e7eb}
+  .relImg img{width:100%;height:100%;object-fit:cover}
+  .relBody{padding:10px;background:#ffffff}
+  .relStore{font-size:12px;color:#555}
+  .relName{font-size:13px;color:#1a1a1a;margin:4px 0;height:34px;overflow:hidden}
+  .relPrice{font-size:14px;font-weight:800;color:#1a1a1a}
 </style>
 <div class="pdWrap">
   <div class="pdMedia">
@@ -72,6 +87,31 @@
     </form>
   </div>
 </div>
+{% if similar_products %}
+<section class="related-wrap">
+  <div class="relTitle">متوفر في متاجر أخرى - قارن الأسعار</div>
+  <div class="relList">
+    {% for p in similar_products %}
+    <a href="{% url 'product_detail' p.id %}" class="relCard">
+      <div class="relImg">
+        {% with img=p.images.all|first %}
+          {% if img %}
+            <img src="{{ img.get_image_url }}" alt="{{ p.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
+          {% else %}
+            <img src="{{ placeholder_image_url }}" alt="{{ p.name }}">
+          {% endif %}
+        {% endwith %}
+      </div>
+      <div class="relBody">
+        <div class="relStore">{{ p.store.name }}</div>
+        <div class="relName">{{ p.name }}</div>
+        <div class="relPrice">{{ p.discount_price|default:p.base_price|iqd }}</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 <script type="application/json" id="variant-data">{{ variant_data|safe }}</script>
 <script type="application/json" id="images-data">{{ images_by_color|safe }}</script>
 <script type="application/json" id="colors-data">{{ available_colors|safe }}</script>
@@ -119,7 +159,11 @@
       if (!b) return;
       const src = b.getAttribute('data-src');
       if (src) pdMain.src = src;
+      Array.from(pdThumbs.querySelectorAll('.thumb')).forEach(t => t.classList.remove('selected'));
+      b.classList.add('selected');
     });
+    const firstThumb = pdThumbs.querySelector('.thumb');
+    if (firstThumb) firstThumb.classList.add('selected');
     const form = addBtn.closest('form');
     form.addEventListener('submit', function(e){
       if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); }
