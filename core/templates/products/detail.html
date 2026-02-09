@@ -135,6 +135,20 @@
   let pdThumbs = (pdWrap ? pdWrap.querySelector('#pdThumbs') : document.getElementById('pdThumbs'));
   const IMAGES_BY_COLOR = (function(){ try { return JSON.parse(document.getElementById('images-data').textContent || '{}'); } catch(e){ return {}; } })();
   const DEFAULT_IMAGE = '{{ default_main_image_url }}';
+  function getAllImages(){
+    const acc = [];
+    try {
+      const keys = Object.keys(IMAGES_BY_COLOR || {});
+      keys.forEach(function(k){
+        const arr = IMAGES_BY_COLOR[k];
+        if (Array.isArray(arr)) { arr.forEach(function(u){ if (u) acc.push(u); }); }
+      });
+    } catch(e){}
+    if (acc.length === 0 && Array.isArray(IMAGES_BY_COLOR['__default__'])) {
+      IMAGES_BY_COLOR['__default__'].forEach(function(u){ if (u) acc.push(u); });
+    }
+    return acc;
+  }
   function getImagesForColorId(colorId){
     const key = String(colorId);
     const arr = (IMAGES_BY_COLOR && (IMAGES_BY_COLOR[key] || IMAGES_BY_COLOR[colorId])) || IMAGES_BY_COLOR['__default__'] || [];
@@ -196,13 +210,10 @@
     const v = bestVariantForSize(size);
     hiddenVar.value = v && v.id ? String(v.id) : '';
     addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
-    try {
-      const urls = v && v.color_id ? getImagesForColorId(v.color_id) : (IMAGES_BY_COLOR['__default__'] || []);
-      renderThumbs(urls);
-    } catch(e){}
   }
   document.addEventListener('DOMContentLoaded', function(){
     updateButtonsState();
+    try { renderThumbs(getAllImages()); } catch(e){}
     sizesEl.addEventListener('click', function(e){
       const b = e.target.closest('.sz');
       if (!b || b.disabled) return;
@@ -562,7 +573,7 @@
                             function initPage(){
                                 console.log('pd:initPage:start');
                                 renderColorSwatches();
-                                updateGallery(DEFAULT_COLOR);
+                                updateGallery('');
                                 if (Array.isArray(VARIANTS) && VARIANTS.length > 0){
                                     const hasColors = Array.isArray(AVAILABLE_COLORS) && AVAILABLE_COLORS.length > 0;
                                     const initialColor = DEFAULT_COLOR || (hasColors && AVAILABLE_COLORS[0] ? String(AVAILABLE_COLORS[0].id) : null);
