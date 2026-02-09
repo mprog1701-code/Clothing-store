@@ -253,6 +253,20 @@ def product_detail(request, product_id):
         else:
             images_by_color['__default__'].append(url)
 
+    gallery_empty = True
+    try:
+        for k in images_by_color:
+            if images_by_color.get(k):
+                gallery_empty = False
+                break
+    except Exception:
+        gallery_empty = False
+    if gallery_empty:
+        try:
+            images_by_color['__default__'] = [i.get_image_url() for i in images if i.get_image_url()]
+        except Exception:
+            images_by_color['__default__'] = []
+
     sizes_by_color = {}
     for c in colors_set:
         sizes_by_color[c['name']] = sorted({getattr(v, 'size_display', v.size) for v in variants if v.color == c['name']})
@@ -3184,9 +3198,31 @@ def super_owner_add_product(request):
             image_formset = ImageFormSet(request.POST, request.FILES, instance=product, prefix='images')
             if product_form.is_valid() and variant_formset.is_valid() and image_formset.is_valid():
                 with transaction.atomic():
-                    product_form.save()
-                    variant_formset.save()
-                    image_formset.save()
+                    product_obj = product_form.save(commit=False)
+                    product_obj.save()
+                    variants_to_save = variant_formset.save(commit=False)
+                    for v in variants_to_save:
+                        v.product = product_obj
+                        v.save()
+                    for vdel in getattr(variant_formset, 'deleted_objects', []):
+                        try:
+                            vdel.delete()
+                        except Exception:
+                            pass
+                    images_to_save = image_formset.save(commit=False)
+                    for im in images_to_save:
+                        im.product = product_obj
+                        if getattr(im, 'variant_id', None) is None and getattr(im, 'color_attr_id', None):
+                            try:
+                                im.variant_id = ProductVariant.objects.filter(product_id=product_obj.id, color_attr_id=im.color_attr_id).values_list('id', flat=True).first()
+                            except Exception:
+                                pass
+                        im.save()
+                    for imdel in getattr(image_formset, 'deleted_objects', []):
+                        try:
+                            imdel.delete()
+                        except Exception:
+                            pass
                     if request.POST.get('finish') == '1':
                         errors = []
                         if not product.name or product.name.strip() == '—':

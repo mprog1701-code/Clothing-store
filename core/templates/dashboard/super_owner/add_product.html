@@ -439,8 +439,17 @@
                 e.stopImmediatePropagation();
                 const fd = new FormData(form);
                 const url = form.getAttribute('action') || window.location.href;
+                const imageId = (form.querySelector('input[name="image_id"]') || {}).value || '';
+                const colorId = (form.querySelector('select[name="color_id"]') || {}).value || '';
                 fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') } })
-                .then(function(resp){ window.location.reload(); });
+                .then(function(resp){
+                    console.log('assign_image_color', { image_id: imageId, color_id: colorId, ok: resp.ok, status: resp.status });
+                    window.location.reload();
+                })
+                .catch(function(err){
+                    console.error('assign_image_color_failed', { image_id: imageId, color_id: colorId, error: String(err) });
+                    alert('فشل ربط اللون بالصورة');
+                });
             });
             const sel = form.querySelector('select[name="color_id"]');
             if (sel) {
