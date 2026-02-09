@@ -216,26 +216,33 @@ def product_detail(request, product_id):
 
     colors_set = []
     try:
+        seen_ids = set()
         for v in variants:
-            name = v.color
-            if not name:
-                continue
-            hexcode = ''
+            cid = None
+            cname = ''
+            chex = ''
             try:
-                if v.color_attr and v.color_attr.code:
-                    hexcode = v.color_attr.code
-                elif v.color_obj and v.color_obj.code:
-                    hexcode = v.color_obj.code
+                if getattr(v, 'color_obj_id', None):
+                    cid = int(v.color_obj_id)
+                    cname = getattr(v.color_obj, 'name', '') if hasattr(v, 'color_obj') else (v.color or '')
+                    chex = getattr(v.color_obj, 'code', '') if hasattr(v, 'color_obj') else ''
+                else:
+                    cname = v.color or ''
+                    if v.color_attr and v.color_attr.code:
+                        chex = v.color_attr.code
             except Exception:
-                hexcode = ''
-            if not any(c['name'] == name for c in colors_set):
-                colors_set.append({'name': name, 'hex': hexcode})
+                cid = None
+                cname = v.color or ''
+                chex = ''
+            if cid is not None and cid not in seen_ids:
+                colors_set.append({'id': cid, 'name': cname, 'hex': chex})
+                seen_ids.add(cid)
     except Exception:
         pass
 
     images_by_color = {'__default__': []}
     for c in colors_set:
-        images_by_color[c['name']] = []
+        images_by_color[str(c['id'])] = []
     primary_video_url = None
     for img in images:
         vurl = None
@@ -248,20 +255,16 @@ def product_detail(request, product_id):
         url = img.get_image_url()
         if not url:
             continue
-        color_name = ''
+        color_id = None
         try:
-            if img.color and img.color.name:
-                color_name = img.color.name
-            elif img.color_attr and img.color_attr.name:
-                color_name = img.color_attr.name
-            elif img.variant and img.variant.color_obj and img.variant.color_obj.name:
-                color_name = img.variant.color_obj.name
+            if getattr(img, 'color_id', None):
+                color_id = int(img.color_id)
+            elif img.variant and getattr(img.variant, 'color_obj_id', None):
+                color_id = int(img.variant.color_obj_id)
         except Exception:
-            color_name = ''
-        if color_name and color_name in images_by_color:
-            images_by_color[color_name].append(url)
-        else:
-            images_by_color['__default__'].append(url)
+            color_id = None
+        key = str(color_id) if (color_id is not None and str(color_id) in images_by_color) else '__default__'
+        images_by_color[key].append(url)
 
     gallery_empty = True
     try:
@@ -279,17 +282,18 @@ def product_detail(request, product_id):
 
     sizes_by_color = {}
     for c in colors_set:
-        sizes_by_color[c['name']] = sorted({getattr(v, 'size_display', v.size) for v in variants if v.color == c['name']})
+        cid = c.get('id')
+        sizes_by_color[str(cid)] = sorted({getattr(v, 'size_display', v.size) for v in variants if getattr(v, 'color_obj_id', None) == cid})
     if not sizes_by_color and variants:
         sizes_by_color['__no_color__'] = sorted({getattr(v, 'size_display', v.size) for v in variants})
 
     default_color = None
     for c in colors_set:
-        if images_by_color.get(c['name']):
-            default_color = c['name']
+        if images_by_color.get(str(c['id'])):
+            default_color = str(c['id'])
             break
     if not default_color:
-        default_color = colors_set[0]['name'] if colors_set else None
+        default_color = str(colors_set[0]['id']) if colors_set else None
     default_images = images_by_color.get(default_color) or images_by_color.get('__default__') or []
     default_main_image_url = (default_images[0] if default_images else (os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/500x500?text=Image'))
 

@@ -134,6 +134,31 @@
   const pdMain = (pdWrap ? pdWrap.querySelector('#pdMain') : document.getElementById('pdMain'));
   let pdThumbs = (pdWrap ? pdWrap.querySelector('#pdThumbs') : document.getElementById('pdThumbs'));
   const IMAGES_BY_COLOR = (function(){ try { return JSON.parse(document.getElementById('images-data').textContent || '{}'); } catch(e){ return {}; } })();
+  const DEFAULT_IMAGE = '{{ default_main_image_url }}';
+  function getImagesForColorId(colorId){
+    const key = String(colorId);
+    const arr = (IMAGES_BY_COLOR && (IMAGES_BY_COLOR[key] || IMAGES_BY_COLOR[colorId])) || IMAGES_BY_COLOR['__default__'] || [];
+    return Array.isArray(arr) ? arr : [];
+  }
+  function renderThumbs(urls){
+    if (!pdThumbs) return;
+    const list = (Array.isArray(urls) ? urls : []).slice(0, 24);
+    pdThumbs.innerHTML = '';
+    const first = list[0] || DEFAULT_IMAGE;
+    if (pdMain && first) pdMain.src = first;
+    list.forEach(function(u,i){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'thumb' + (i === 0 ? ' selected' : '');
+      btn.setAttribute('data-src', u);
+      const img = document.createElement('img');
+      img.src = u;
+      img.alt = '{{ product.name }}';
+      img.onerror = function(){ this.onerror=null; this.src='{{ placeholder_image_url }}'; };
+      btn.appendChild(img);
+      pdThumbs.appendChild(btn);
+    });
+  }
   function bestVariantForSize(size){
     const same = VARIANTS.filter(v => String(v.size || '') === String(size || ''));
     if (same.length === 0) return null;
@@ -159,6 +184,9 @@
     } else {
       hiddenVar.value='';
       addBtn.disabled = true;
+      if (chips.length === 0) {
+        sizesEl.innerHTML = '<div class="fit">نفذت الكمية</div>';
+      }
     }
   }
   function selectSize(chip){
@@ -168,6 +196,10 @@
     const v = bestVariantForSize(size);
     hiddenVar.value = v && v.id ? String(v.id) : '';
     addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
+    try {
+      const urls = v && v.color_id ? getImagesForColorId(v.color_id) : (IMAGES_BY_COLOR['__default__'] || []);
+      renderThumbs(urls);
+    } catch(e){}
   }
   document.addEventListener('DOMContentLoaded', function(){
     updateButtonsState();
