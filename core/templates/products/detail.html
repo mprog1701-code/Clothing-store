@@ -403,6 +403,11 @@
                             const IMAGES_BY_COLOR = JSON.parse(document.getElementById('images-data').textContent || '{}');
                             const AVAILABLE_COLORS = JSON.parse(document.getElementById('colors-data').textContent || '[]');
                             const DEFAULT_COLOR = {{ default_color|default:'null'|safe }};
+                            const COLOR_NAME_BY_ID = (function(){
+                                const map = {};
+                                (AVAILABLE_COLORS||[]).forEach(c=>{ map[String(c.id)] = c.name; });
+                                return map;
+                            })();
                             const DEFAULT_MAIN_IMAGE = '{{ default_main_image_url }}';
                                 console.log('pd:init:data', {variantsLen: VARIANTS.length, colorsLen: AVAILABLE_COLORS.length, sizesKeys: Object.keys(SIZES_BY_COLOR), defaultColor: DEFAULT_COLOR});
                             const swatchesEl = document.getElementById('pdSwatches');
@@ -432,18 +437,19 @@
                                     sw.className = 'swatch';
                                     sw.setAttribute('title', c.name);
                                     sw.setAttribute('aria-label', c.name);
-                                    sw.setAttribute('data-color', c.name);
+                                    sw.setAttribute('data-color', String(c.id));
                                     const hex = (c.hex || '').trim();
                                     if (hex) sw.style.backgroundColor = hex;
                                     else sw.style.background = 'linear-gradient(45deg,#999,#bbb)';
-                                    if (selectedColor && selectedColor === c.name) sw.classList.add('selected');
-                                    sw.addEventListener('click', function(){ selectColor(c.name); });
+                                    if (selectedColor && String(selectedColor) === String(c.id)) sw.classList.add('selected');
+                                    sw.addEventListener('click', function(){ selectColor(String(c.id)); });
                                     swatchesEl.appendChild(sw);
                                 });
                                 console.log('pd:renderColorSwatches:end', {count: (AVAILABLE_COLORS || []).length});
                             }
                             function updateGallery(color){
-                                const list = (color && IMAGES_BY_COLOR[color] && IMAGES_BY_COLOR[color].length > 0) ? IMAGES_BY_COLOR[color] : (IMAGES_BY_COLOR['__default__'] || []);
+                                const key = String(color);
+                                const list = (key && IMAGES_BY_COLOR[key] && IMAGES_BY_COLOR[key].length > 0) ? IMAGES_BY_COLOR[key] : (IMAGES_BY_COLOR['__default__'] || []);
                                 const limited = (list || []).slice(0, 3);
                                 console.log('pd:updateGallery', {color, urlsLen: limited.length});
                                 const first = limited.length ? limited[0] : DEFAULT_MAIN_IMAGE;
@@ -479,17 +485,17 @@
                             }
                             function selectColor(color){
                                 resetSize();
-                                const sizes = SIZES_BY_COLOR[color] || [];
+                                const sizes = SIZES_BY_COLOR[String(color)] || [];
                                 console.log('pd:selectColor', {color, sizesLen: sizes.length});
                                 let availableCount = 0;
                                 // mark selected color
-                                selectedColor = color;
+                                selectedColor = String(color);
                                 Array.from(swatchesEl.children || []).forEach(el => {
-                                    el.classList.toggle('selected', el.getAttribute('data-color') === color);
+                                    el.classList.toggle('selected', el.getAttribute('data-color') === String(color));
                                 });
                                 // build size buttons
                                 sizes.forEach(s => {
-                                    const v = VARIANTS.find(x => x.color === color && x.size === s);
+                                    const v = VARIANTS.find(x => String(x.color_id || '') === String(color) && x.size === s);
                                     const out = !v || v.stock_qty <= 0;
                                     const b = document.createElement('button');
                                     b.type = 'button';
@@ -499,16 +505,16 @@
                                     b.setAttribute('data-size', s);
                                     if (!out) availableCount++;
                                     if (!out) {
-                                        b.addEventListener('click', function(){ selectSize(color, s); });
+                                        b.addEventListener('click', function(){ selectSize(String(color), s); });
                                     }
                                     sizesEl.appendChild(b);
                                 });
                                 sizesEl.style.display = sizes.length > 0 ? '' : 'none';
                                 updateGallery(color);
                                 stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
-                                selColor.textContent = color || 'غير محدد';
+                                selColor.textContent = COLOR_NAME_BY_ID[String(color)] || 'غير محدد';
                                 selSize.textContent = 'غير محدد';
-                                const firstAvail = VARIANTS.find(x => x.color === color && x.stock_qty > 0);
+                                const firstAvail = VARIANTS.find(x => String(x.color_id || '') === String(color) && x.stock_qty > 0);
                                 if (firstAvail){ selectSize(color, firstAvail.size); }
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
                             }
@@ -519,7 +525,7 @@
                                 Array.from(sizesEl.children || []).forEach(el => {
                                     el.classList.toggle('selected', el.getAttribute('data-size') === size);
                                 });
-                                const v = VARIANTS.find(x => x.color === (color || '') && x.size === size);
+                                const v = VARIANTS.find(x => String(x.color_id || '') === String(color || '') && x.size === size);
                                 if (!v){
                                     console.log('pd:selectSize:notFound', {color, size});
                                     hiddenVariantId.value = '';
@@ -538,7 +544,7 @@
                                 qtyInput.value = 1;
                                 qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
                                 variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
-                                selColor.textContent = color || 'غير محدد';
+                                selColor.textContent = COLOR_NAME_BY_ID[String(color)] || 'غير محدد';
                                 selSize.textContent = size || 'غير محدد';
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
                             }
@@ -549,7 +555,7 @@
                                 updateGallery(DEFAULT_COLOR);
                                 if (Array.isArray(VARIANTS) && VARIANTS.length > 0){
                                     const hasColors = Array.isArray(AVAILABLE_COLORS) && AVAILABLE_COLORS.length > 0;
-                                    const initialColor = DEFAULT_COLOR || (hasColors && AVAILABLE_COLORS[0] ? AVAILABLE_COLORS[0].name : null);
+                                    const initialColor = DEFAULT_COLOR || (hasColors && AVAILABLE_COLORS[0] ? String(AVAILABLE_COLORS[0].id) : null);
                                     console.log('pd:initPage:variants', {hasColors, initialColor});
                                     if (initialColor) {
                                         selectColor(initialColor);
@@ -557,7 +563,7 @@
                                         const nocSizes = SIZES_BY_COLOR['__no_color__'] || Array.from(new Set(VARIANTS.map(x => x.size)));
                                         sizesEl.innerHTML = '';
                                         nocSizes.forEach(s => {
-                                            const v = VARIANTS.find(x => (x.color || '') === '' && x.size === s) || VARIANTS.find(x => x.size === s);
+                                            const v = VARIANTS.find(x => (x.color_id == null) && x.size === s) || VARIANTS.find(x => x.size === s);
                                             const out = !v || v.stock_qty <= 0;
                                             const b = document.createElement('button');
                                             b.type = 'button';
