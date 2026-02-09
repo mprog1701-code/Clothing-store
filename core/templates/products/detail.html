@@ -126,6 +126,7 @@
 <script type="application/json" id="colors-data">{{ available_colors|safe }}</script>
 <script>
   const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
+  console.log('VARIANTS:', VARIANTS);
   const sizesEl = document.getElementById('sizes');
   const addBtn = document.getElementById('addBtn');
   const hiddenVar = document.getElementById('variantId');
@@ -141,14 +142,24 @@
   }
   function updateButtonsState(){
     const chips = Array.from(sizesEl.querySelectorAll('.sz'));
+    const noVariants = !(Array.isArray(VARIANTS) && VARIANTS.length > 0);
     chips.forEach(chip => {
       const size = chip.dataset.size;
+      if (noVariants) {
+        chip.disabled = false;
+        return;
+      }
       const v = bestVariantForSize(size);
       const out = !v || (v.stock_qty || 0) <= 0;
       chip.disabled = !!out;
     });
     const firstAvail = chips.find(ch => !ch.disabled);
-    if (firstAvail){ selectSize(firstAvail); } else { hiddenVar.value=''; addBtn.disabled = VARIANTS.length > 0; }
+    if (firstAvail){
+      selectSize(firstAvail);
+    } else {
+      hiddenVar.value='';
+      addBtn.disabled = true;
+    }
   }
   function selectSize(chip){
     Array.from(sizesEl.querySelectorAll('.sz')).forEach(c => c.classList.remove('selected'));

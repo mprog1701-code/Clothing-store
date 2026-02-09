@@ -193,16 +193,26 @@ def product_detail(request, product_id):
     except Exception:
         fit_advice = ''
 
-    variant_data = [
-        {
-            'id': v.id,
-            'color': v.color,
-            'size': getattr(v, 'size_display', v.size),
-            'stock_qty': int(v.stock_qty),
-            'price': float(v.price),
-        }
-        for v in variants
-    ]
+    variant_data = []
+    for v in variants:
+        try:
+            variant_data.append({
+                'id': v.id,
+                'size': v.size,
+                'color_id': getattr(v, 'color_obj_id', None),
+                'stock_qty': int(getattr(v, 'stock_qty', 0)),
+                'price': float(getattr(v, 'price', product.base_price)),
+            })
+        except Exception:
+            try:
+                variant_data.append({
+                    'id': v.id,
+                    'size': getattr(v, 'size_display', v.size),
+                    'color_id': getattr(v, 'color_obj_id', None),
+                    'stock_qty': int(getattr(v, 'stock_qty', 0)),
+                })
+            except Exception:
+                continue
 
     colors_set = []
     try:
