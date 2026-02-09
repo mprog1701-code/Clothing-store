@@ -6,24 +6,126 @@
 {% block content %}
 <!-- PD_UI_V2 | core/templates/products/detail.html | 2026-02-07 -->
 <style>
-    .product-hero {
-        background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%);
-    }
-    .product-gallery-card img { height: 420px; object-fit: cover; }
-    .product-info-card { min-height: 420px; }
-    .price-old { text-decoration: line-through; color: #888; font-size: 1.25rem; }
-    .price-new { color: var(--gold); font-weight: 800; font-size: 2rem; }
-    .variant-card { border-color: rgba(0,0,0,0.08); }
-    .add-to-cart-form .btn { border-radius: 12px; }
-    .product-description p { line-height: 1.9; }
-    .product-category .badge { background: linear-gradient(45deg, #667eea, #764ba2); }
-    .store-info-section { border: 1px dashed rgba(0,0,0,0.1); }
-    .swatch { width: 44px; height: 44px; border-radius: 8px; border: 2px solid transparent; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); cursor: pointer; }
-    .swatch.selected { border-color: #111; outline: 2px solid var(--gold); }
-    .size-btn { min-width: 56px; height: 40px; border: 1px solid #ddd; border-radius: 8px; background: #fff; cursor: pointer; padding: 0 12px; }
-    .size-btn.disabled { opacity: 0.5; cursor: not-allowed; }
-    .size-btn.selected { border-color: var(--gold); background: #fff7e6; font-weight: 700; }
+  .pdWrap{display:flex;flex-direction:row;gap:16px;background:#ffffff;padding:16px}
+  @media (max-width:768px){.pdWrap{flex-direction:column}}
+  .pdMedia{flex:1;background:#ffffff}
+  .pdInfo{flex:1;background:#ffffff}
+  #pdMain{width:100%;height:auto;background:#ffffff}
+  #pdThumbs{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin-top:8px}
+  .thumb{width:72px;height:72px;border:1px solid #e5e7eb;background:#ffffff}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .title{font-size:22px;font-weight:700;margin-bottom:8px}
+  .price{display:flex;gap:12px;align-items:baseline;margin:8px 0}
+  .price-new{font-size:20px;font-weight:800}
+  .price-old{font-size:14px;color:#888;text-decoration:line-through}
+  .fit{border:1px solid #e5e7eb;background:#ffffff;border-radius:8px;padding:10px;margin:8px 0;font-size:14px}
+  .sizes{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff}
+  .sz{min-width:52px;padding:10px 12px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
+  .sz:disabled{opacity:.5;cursor:not-allowed}
+  .btn{padding:12px 18px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .product-hero{display:none}
+  .product-details-section{display:none}
+  section.mb-5{display:none}
+  .modal{display:none}
 </style>
+<div class="pdWrap">
+  <div class="pdMedia">
+    {% if primary_video_url %}
+    <video id="pdVideo" src="{{ primary_video_url }}" controls playsinline style="width:100%;height:auto;background:#ffffff"></video>
+    {% endif %}
+    <img id="pdMain" src="{{ default_main_image_url }}" alt="{{ product.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
+    <div id="pdThumbs">
+      {% for img in product.images.all %}
+      <button type="button" class="thumb" data-src="{{ img.get_image_url }}">
+        <img src="{{ img.get_image_url }}" alt="{{ product.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="pdInfo">
+    <div class="title">{{ product.name }}</div>
+    <div class="price">
+      {% if product.discount_price %}
+        <span class="price-old">{{ product.base_price|iqd }}</span>
+        <span class="price-new">{{ product.discount_price|iqd }}</span>
+      {% else %}
+        <span class="price-new">{{ product.base_price|iqd }}</span>
+      {% endif %}
+    </div>
+    {% if fit_advice %}
+    <div class="fit">{{ fit_advice }}</div>
+    {% endif %}
+    <form method="post" action="{% url 'cart_items_json' %}">
+      {% csrf_token %}
+      <input type="hidden" name="productId" value="{{ product.id }}">
+      <input type="hidden" name="storeId" value="{{ product.store.id }}">
+      <input type="hidden" name="variantId" id="variantId">
+      <input type="hidden" name="quantity" id="qty" value="1">
+      <div class="sizes" id="sizes">
+        {% regroup variants by size as size_groups %}
+        {% for g in size_groups %}
+          <button type="button" class="sz" data-size="{{ g.grouper }}">{{ g.grouper }}</button>
+        {% endfor %}
+      </div>
+      <div style="margin-top:12px"><button class="btn" id="addBtn">أضف للسلة</button></div>
+    </form>
+  </div>
+</div>
+<script type="application/json" id="variant-data">{{ variant_data|safe }}</script>
+<script type="application/json" id="images-data">{{ images_by_color|safe }}</script>
+<script type="application/json" id="colors-data">{{ available_colors|safe }}</script>
+<script>
+  const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
+  const sizesEl = document.getElementById('sizes');
+  const addBtn = document.getElementById('addBtn');
+  const hiddenVar = document.getElementById('variantId');
+  const pdMain = document.getElementById('pdMain');
+  const pdThumbs = document.getElementById('pdThumbs');
+  function bestVariantForSize(size){
+    const same = VARIANTS.filter(v => String(v.size || '') === String(size || ''));
+    if (same.length === 0) return null;
+    const inStock = same.find(v => (v.stock_qty || 0) > 0);
+    return inStock || same[0];
+  }
+  function updateButtonsState(){
+    const chips = Array.from(sizesEl.querySelectorAll('.sz'));
+    chips.forEach(chip => {
+      const size = chip.dataset.size;
+      const v = bestVariantForSize(size);
+      const out = !v || (v.stock_qty || 0) <= 0;
+      chip.disabled = !!out;
+    });
+    const firstAvail = chips.find(ch => !ch.disabled);
+    if (firstAvail){ selectSize(firstAvail); } else { hiddenVar.value=''; addBtn.disabled = VARIANTS.length > 0; }
+  }
+  function selectSize(chip){
+    Array.from(sizesEl.querySelectorAll('.sz')).forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    const size = chip.dataset.size;
+    const v = bestVariantForSize(size);
+    hiddenVar.value = v && v.id ? String(v.id) : '';
+    addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    updateButtonsState();
+    sizesEl.addEventListener('click', function(e){
+      const b = e.target.closest('.sz');
+      if (!b || b.disabled) return;
+      selectSize(b);
+    });
+    pdThumbs.addEventListener('click', function(e){
+      const b = e.target.closest('.thumb');
+      if (!b) return;
+      const src = b.getAttribute('data-src');
+      if (src) pdMain.src = src;
+    });
+    const form = addBtn.closest('form');
+    form.addEventListener('submit', function(e){
+      if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); }
+    });
+  });
+</script>
 <!-- Hero Section -->
 <section class="product-hero bg-gradient-primary py-5 mb-5">
     <div class="container">
