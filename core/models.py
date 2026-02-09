@@ -291,6 +291,13 @@ class ProductImage(models.Model):
     
     def __str__(self):
         return f"Image for {self.product.name}"
+
+    def save(self, *args, **kwargs):
+        try:
+            print(f"[ProductImage.save] product_id={self.product_id} color_id={getattr(self, 'color_id', None)} color_attr_id={getattr(self, 'color_attr_id', None)} variant_id={getattr(self, 'variant_id', None)} is_main={self.is_main} order={self.order}")
+        except Exception:
+            pass
+        super().save(*args, **kwargs)
     
     def get_image_url(self):
         try:

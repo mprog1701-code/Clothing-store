@@ -404,6 +404,9 @@
     }
     document.querySelectorAll('form[data-ajax="true"]').forEach(function(form){
         form.addEventListener('submit', function(e){
+            const isAssign = !!form.querySelector('input[name="action"][value="assign_image_color"]');
+            const isExtract = !!form.querySelector('input[name="action"][value="extract_color_from_image"]');
+            if (isAssign || isExtract) { return; }
             e.preventDefault();
             const formData = new FormData(form);
             const url = form.getAttribute('action') || window.location.href;
@@ -426,6 +429,31 @@
                 setTimeout(function(){ alert.remove(); }, 6000);
             });
         });
+    });
+
+    document.querySelectorAll('form').forEach(function(form){
+        const isAssign = !!form.querySelector('input[name="action"][value="assign_image_color"]');
+        if (isAssign) {
+            form.addEventListener('submit', function(e){
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const fd = new FormData(form);
+                const url = form.getAttribute('action') || window.location.href;
+                fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') } })
+                .then(function(resp){ window.location.reload(); });
+            });
+        }
+        const isExtract = !!form.querySelector('input[name="action"][value="extract_color_from_image"]');
+        if (isExtract) {
+            form.addEventListener('submit', function(e){
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const fd = new FormData(form);
+                const url = form.getAttribute('action') || window.location.href;
+                fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') } })
+                .then(function(resp){ window.location.reload(); });
+            });
+        }
     });
 
     document.querySelectorAll('.color-chip').forEach(function(chip){

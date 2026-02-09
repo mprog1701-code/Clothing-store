@@ -62,6 +62,26 @@ class ProductImageAdmin(admin.ModelAdmin):
     list_filter = ['is_main', 'color', 'variant']
     list_select_related = ('product', 'color', 'variant')
     list_per_page = 25
+    
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name in ('variant', 'color', 'color_attr'):
+            product_id = None
+            if request.method == 'POST':
+                product_id = request.POST.get('product')
+            else:
+                product_id = request.GET.get('product')
+            try:
+                product_id = int(product_id)
+            except (TypeError, ValueError):
+                product_id = None
+            if db_field.name == 'variant':
+                kwargs['queryset'] = ProductVariant.objects.filter(product_id=product_id) if product_id else ProductVariant.objects.none()
+            elif db_field.name == 'color':
+                kwargs['queryset'] = ProductColor.objects.filter(product_id=product_id) if product_id else ProductColor.objects.none()
+            elif db_field.name == 'color_attr':
+                kwargs['queryset'] = AttributeColor.objects.all()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(ProductVariant)
