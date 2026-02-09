@@ -392,6 +392,10 @@ def product_detail(request, product_id):
 
 def register(request):
     if request.method == 'POST':
+        try:
+            print(request.FILES)
+        except Exception:
+            pass
         action = (request.POST.get('action') or '').strip()
         # Prepare data for serializer
         data = {
@@ -3196,6 +3200,10 @@ def super_owner_add_product(request):
             product_form = ProductForm(request.POST, instance=product)
             variant_formset = VariantFormSet(request.POST, instance=product, prefix='variants')
             image_formset = ImageFormSet(request.POST, request.FILES, instance=product, prefix='images')
+            try:
+                print(request.FILES)
+            except Exception:
+                pass
             if product_form.is_valid() and variant_formset.is_valid() and image_formset.is_valid():
                 with transaction.atomic():
                     product_obj = product_form.save(commit=False)
@@ -3803,21 +3811,54 @@ def super_owner_add_product(request):
             return redirect(f"{request.path}?pid={product.id}&step=images")
 
         elif action == 'assign_image_color':
-            pid = request.POST.get('pid')
-            image_id = request.POST.get('image_id')
-            color_id = request.POST.get('color_id')
+            raw_body = None
+            try:
+                if request.content_type and 'application/json' in request.content_type.lower():
+                    raw_body = request.body.decode('utf-8') if request.body else None
+            except Exception:
+                raw_body = None
+            payload = {}
+            if raw_body:
+                try:
+                    import json
+                    payload = json.loads(raw_body)
+                except Exception:
+                    payload = {}
+            pid = payload.get('pid') or request.POST.get('pid')
+            image_id = payload.get('image_id') or request.POST.get('image_id')
+            color_id = payload.get('color_id') or request.POST.get('color_id')
+            product = None
+            img = None
             try:
                 product = Product.objects.get(id=int(pid))
-                img = ProductImage.objects.get(id=int(image_id), product=product)
-            except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
-                messages.error(request, 'الصورة غير موجودة')
+            except Exception as e:
+                print(f"[assign_image_color/add] product lookup failed pid={pid} err={e}")
+                messages.error(request, 'المنتج غير موجود')
                 return redirect('super_owner_add_product')
             try:
-                cid = int(color_id)
-            except (ValueError, TypeError):
+                img = ProductImage.objects.get(id=int(image_id), product=product)
+            except Exception as e:
+                print(f"[assign_image_color/add] image lookup failed image_id={image_id} product_id={getattr(product,'id',None)} owner_id={getattr(product.store,'owner_id',None)} err={e}")
+                messages.error(request, 'الصورة غير موجودة')
+                return redirect('super_owner_add_product')
+            cid = None
+            try:
+                cid = int(color_id) if color_id and str(color_id).isdigit() else None
+            except Exception:
                 cid = None
-            img.color_attr_id = cid
-            img.save()
+            try:
+                if cid is None:
+                    img.color_id = None
+                else:
+                    from django.shortcuts import get_object_or_404
+                    pc = get_object_or_404(ProductColor, id=cid, product=product)
+                    img.color_id = pc.id
+                    img.color_attr_id = None
+                img.save()
+            except Exception as e:
+                print(f"[assign_image_color/add] save failed image_id={image_id} cid={cid} err={e}")
+                messages.error(request, 'فشل حفظ الصورة')
+                return redirect(f"{request.path}?pid={product.id}&step=images")
             messages.success(request, 'تم ربط الصورة باللون')
             return redirect(f"{request.path}?pid={product.id}&step=images")
 
@@ -3830,11 +3871,11 @@ def super_owner_add_product(request):
             except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
                 messages.error(request, 'الصورة غير موجودة')
                 return redirect('super_owner_add_product')
-            if not img.color_attr_id:
+            if not img.color_id:
                 messages.error(request, 'يجب ربط الصورة بلون أولاً')
                 return redirect(f"{request.path}?pid={product.id}&step=images")
-            # lowest order within this color becomes default
-            product.images.filter(color_attr_id=img.color_attr_id).update(order=F('order') + 1)
+            from django.db.models import F
+            product.images.filter(color_id=img.color_id).update(order=F('order') + 1)
             img.order = 0
             img.save()
             messages.success(request, 'تم تعيين الصورة كافتراضية لهذا اللون')
@@ -4750,19 +4791,46 @@ def super_owner_edit_product(request, product_id):
             return redirect('super_owner_edit_product', product_id=product_id)
 
         elif action == 'assign_image_color':
-            image_id = request.POST.get('image_id')
-            color_id = request.POST.get('color_id')
+            raw_body = None
+            try:
+                if request.content_type and 'application/json' in request.content_type.lower():
+                    raw_body = request.body.decode('utf-8') if request.body else None
+            except Exception:
+                raw_body = None
+            payload = {}
+            if raw_body:
+                try:
+                    import json
+                    payload = json.loads(raw_body)
+                except Exception:
+                    payload = {}
+            image_id = payload.get('image_id') or request.POST.get('image_id')
+            color_id = payload.get('color_id') or request.POST.get('color_id')
+            img = None
             try:
                 img = ProductImage.objects.get(id=int(image_id), product=product)
-            except (ProductImage.DoesNotExist, ValueError, TypeError):
+            except Exception as e:
+                print(f"[assign_image_color/edit] image lookup failed image_id={image_id} product_id={product_id} owner_id={getattr(product.store,'owner_id',None)} err={e}")
                 messages.error(request, 'الصورة غير موجودة')
                 return redirect('super_owner_edit_product', product_id=product_id)
+            cid = None
             try:
-                cid = int(color_id)
-            except (ValueError, TypeError):
+                cid = int(color_id) if color_id and str(color_id).isdigit() else None
+            except Exception:
                 cid = None
-            img.color_id = cid
-            img.save()
+            try:
+                if cid is None:
+                    img.color_id = None
+                else:
+                    from django.shortcuts import get_object_or_404
+                    pc = get_object_or_404(ProductColor, id=cid, product=product)
+                    img.color_id = pc.id
+                    img.color_attr_id = None
+                img.save()
+            except Exception as e:
+                print(f"[assign_image_color/edit] save failed image_id={image_id} cid={cid} err={e}")
+                messages.error(request, 'فشل حفظ الصورة')
+                return redirect('super_owner_edit_product', product_id=product_id)
             messages.success(request, 'تم ربط الصورة باللون')
             return redirect('super_owner_edit_product', product_id=product_id)
 
@@ -6411,3 +6479,76 @@ def store_orders(request):
         'orders': orders,
     }
     return render(request, 'dashboard/store/orders.html', context)
+
+def bind_image_to_color(request):
+    try:
+        from django.http import JsonResponse
+        from django.db.models import Q
+        from .models import ProductImage, AttributeColor, ProductColor
+        import json
+        if request.method != 'POST':
+            return JsonResponse({'ok': False, 'error': 'method_not_allowed'}, status=405)
+        data = {}
+        try:
+            if request.content_type and 'application/json' in request.content_type.lower():
+                body = request.body.decode('utf-8') if request.body else '{}'
+                data = json.loads(body or '{}')
+        except Exception:
+            data = {}
+        image_id_raw = data.get('image_id') or request.POST.get('image_id')
+        color_id_raw = data.get('color_id') or request.POST.get('color_id')
+        try:
+            image_id = int(str(image_id_raw))
+        except (TypeError, ValueError):
+            return JsonResponse({'ok': False, 'error': 'invalid_image_id'}, status=400)
+        color_id = None
+        try:
+            if color_id_raw is not None and str(color_id_raw).isdigit():
+                color_id = int(str(color_id_raw))
+        except Exception:
+            color_id = None
+        img = None
+        try:
+            owner_filter = Q(product__store__owner=request.user) | Q(product__store__owner_user=request.user)
+            if getattr(request.user, 'is_staff', False) or getattr(request.user, 'username', '') == 'super_owner':
+                img = ProductImage.objects.filter(id=image_id).first()
+            else:
+                img = ProductImage.objects.filter(owner_filter, id=image_id).first()
+            if not img:
+                print(f"[bind_image_to_color] image not found or unauthorized: image_id={image_id} user={getattr(request.user,'id',None)} username={getattr(request.user,'username','')} is_staff={getattr(request.user,'is_staff',False)}")
+                return JsonResponse({'ok': False, 'error': 'image_not_found_or_unauthorized'}, status=404)
+        except Exception as e:
+            print(f"[bind_image_to_color] image lookup failed: image_id={image_id} user={getattr(request.user,'id',None)} err={e}")
+            return JsonResponse({'ok': False, 'error': 'image_lookup_failed'}, status=500)
+
+        try:
+            if color_id is None:
+                img.color_attr_id = None
+                img.color_id = None
+            else:
+                ac = AttributeColor.objects.filter(id=color_id).first()
+                if ac:
+                    img.color_attr = ac
+                    img.color = None
+                else:
+                    pc = ProductColor.objects.filter(id=color_id, product_id=img.product_id).first()
+                    if pc:
+                        img.color = pc
+                        img.color_attr = None
+                    else:
+                        print(f"[bind_image_to_color] color not found: color_id={color_id} product_id={img.product_id}")
+                        return JsonResponse({'ok': False, 'error': 'color_not_found'}, status=400)
+            img.save()
+            print(f"[bind_image_to_color] ok product_id={img.product_id} owner_id={getattr(img.product.store,'owner_id',None)} image_id={img.id} set_color_attr_id={getattr(img,'color_attr_id',None)} set_color_id={getattr(img,'color_id',None)}")
+            return JsonResponse({'ok': True, 'image_id': img.id, 'color_id': img.color_attr_id or img.color_id})
+        except Exception as e:
+            print(f"[bind_image_to_color] save failed: image_id={image_id} color_id={color_id} err={e}")
+            return JsonResponse({'ok': False, 'error': 'save_failed'}, status=500)
+    except Exception as e:
+        try:
+            import logging
+            logging.exception('bind_image_to_color_failed: %s', str(e))
+        except Exception:
+            pass
+        from django.http import JsonResponse
+        return JsonResponse({'ok': False, 'error': 'server_error'}, status=500)

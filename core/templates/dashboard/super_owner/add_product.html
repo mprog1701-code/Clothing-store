@@ -453,8 +453,28 @@
             });
             const sel = form.querySelector('select[name="color_id"]');
             if (sel) {
+                const BIND_URL = '{% url "bind_image_to_color" %}';
+                function getCookie(name){ var v=document.cookie.match('(^|; )'+name+'=([^;]*)'); return v?decodeURIComponent(v[2]):''; }
+                function bindColor(imageId, colorId){
+                  try{
+                    fetch(BIND_URL, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                      },
+                      body: JSON.stringify({ image_id: imageId, color_id: colorId })
+                    }).then(function(resp){ return resp.json(); })
+                      .then(function(data){ if(!data.ok){ throw new Error(data.error||'bind_failed'); } location.reload(); })
+                      .catch(function(err){ alert('فشل ربط اللون بالصورة'); });
+                  }catch(e){ alert('فشل ربط اللون بالصورة'); }
+                }
                 sel.addEventListener('change', function(){
-                    form.requestSubmit();
+                    const imageId = (form.querySelector('input[name="image_id"]')||{}).value||'';
+                    const colorId = sel.value||'';
+                    if(!imageId){ alert('صورة غير معروفة'); return; }
+                    bindColor(imageId, colorId);
                 });
             }
         }
