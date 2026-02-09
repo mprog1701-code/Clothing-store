@@ -6576,4 +6576,4 @@ def bind_image_to_color(request):
             pass
         from django.http import JsonResponse
         return JsonResponse({'ok': False, 'error': 'server_error'}, status=500)
-                    س2  
+                    
