@@ -19,7 +19,7 @@ from .models import User, Store, Product, ProductVariant, ProductImage, Address,
 from django.db.utils import OperationalError, ProgrammingError
 from django.db import transaction
 from .serializers import UserRegistrationSerializer
-from .forms import AddressForm
+from .forms import AddressForm, ProductForm, VariantFormSet, ImageFormSet
 from .templatetags.math_filters import cart_count
 # Fashion marketplace view
 @ensure_csrf_cookie
@@ -182,6 +182,17 @@ def product_detail(request, product_id):
     images = list(product.images.select_related('color', 'color_attr', 'variant'))
     variants = list(product.variants.select_related('color_obj', 'color_attr', 'size_attr'))
 
+    fit_advice = ''
+    try:
+        if product.fit_type == 'small':
+            fit_advice = 'القالب صغير، ننصح باختيار قياس أكبر.'
+        elif product.fit_type == 'oversized':
+            fit_advice = 'القالب واسع، قد يلزم اختيار قياس أصغر حسب الرغبة.'
+        else:
+            fit_advice = 'القالب قياسي، اختر قياسك المعتاد.'
+    except Exception:
+        fit_advice = ''
+
     variant_data = [
         {
             'id': v.id,
@@ -215,7 +226,15 @@ def product_detail(request, product_id):
     images_by_color = {'__default__': []}
     for c in colors_set:
         images_by_color[c['name']] = []
+    primary_video_url = None
     for img in images:
+        vurl = None
+        try:
+            vurl = img.get_video_url()
+        except Exception:
+            vurl = None
+        if not primary_video_url and vurl:
+            primary_video_url = vurl
         url = img.get_image_url()
         if not url:
             continue
@@ -344,6 +363,7 @@ def product_detail(request, product_id):
         'images_by_color': images_by_color,
         'default_color': default_color,
         'default_main_image_url': default_main_image_url,
+        'primary_video_url': primary_video_url,
         'placeholder_image_url': os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL') or 'https://placehold.co/500x500?text=Image',
         'similar_products': similar_products,
         'same_store_products': same_store_products,
@@ -351,12 +371,14 @@ def product_detail(request, product_id):
         'simple_images': simple_images,
         'preselected_variant_id': preselected_variant_id,
         'add_disabled': add_disabled,
+        'fit_advice': fit_advice,
     }
     return render(request, 'products/detail.html', context)
 
 
 def register(request):
     if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
         # Prepare data for serializer
         data = {
             'phone': request.POST.get('phone'),
@@ -3128,144 +3150,73 @@ def super_owner_add_product(request):
 
     from .models import AttributeColor, AttributeSize
 
-    # Auto-create draft product on first visit
-    if request.method == 'GET' and (not pid or not str(pid).isdigit()):
-        draft_id = request.session.get('draft_product_id')
-        current_product = None
-        if draft_id:
-            current_product = Product.objects.filter(id=draft_id, status='DRAFT').first()
-        if not current_product:
-            store_for_draft = None
-            try:
-                if preselect_store and str(preselect_store).isdigit():
-                    store_for_draft = Store.objects.filter(id=int(preselect_store)).first()
-            except Exception:
-                store_for_draft = None
-            if not store_for_draft:
-                store_for_draft = stores.first()
-            if store_for_draft:
-                try:
-                    with transaction.atomic():
-                        current_product = Product.objects.create(
-                            store=store_for_draft,
-                            name='—',
-                            description='—',
-                            base_price=0,
-                            category='men',
-                            size_type='symbolic',
-                            is_active=False,
-                            status='DRAFT',
-                        )
-                        request.session['draft_product_id'] = int(current_product.id)
-                        try:
-                            request.session.modified = True
-                        except Exception:
-                            pass
-                except Exception:
-                    current_product = None
-        if current_product:
-            return redirect(f"{request.path}?pid={current_product.id}&step={step}")
+    product = None
+    if pid and str(pid).isdigit():
+        product = Product.objects.filter(id=int(pid)).first()
 
     if request.method == 'POST':
-        action = (request.POST.get('action') or '').strip()
-
-        if action == 'create_product':
-            name = request.POST.get('name')
-            store_id = request.POST.get('store')
-            category = request.POST.get('category')
-            base_price = request.POST.get('base_price')
-            description = request.POST.get('description')
-            is_active = request.POST.get('is_active') == 'on'
-            is_featured = request.POST.get('is_featured') == 'on'
-            size_type = (request.POST.get('size_type') or 'symbolic').strip()
-            images = request.FILES.getlist('images')
-            color_ids = request.POST.getlist('color_ids')
-            size_ids = request.POST.getlist('size_ids')
-
-            if not all([name, store_id, category, base_price, description]):
-                messages.error(request, 'يرجى ملء جميع الحقول المطلوبة!')
-                return redirect('super_owner_add_product')
-
-            try:
-                store = Store.objects.get(id=store_id)
-                draft_id = request.session.get('draft_product_id')
-                product = None
-                if draft_id:
-                    product = Product.objects.filter(id=draft_id).first()
-                if not product:
-                    product = Product.objects.filter(id__in=[int(pid or 0)], status='DRAFT').first() if pid else None
+        if step == 'info':
+            form = ProductForm(request.POST)
+            if form.is_valid():
+                cd = form.cleaned_data
+                store_for_product = None
+                posted_store_id = (request.POST.get('store') or '').strip()
+                if posted_store_id and posted_store_id.isdigit():
+                    store_for_product = Store.objects.filter(id=int(posted_store_id)).first()
+                elif preselect_store and str(preselect_store).isdigit():
+                    store_for_product = Store.objects.filter(id=int(preselect_store)).first()
+                if not store_for_product and getattr(request.user, 'role', '') == 'store_admin':
+                    store_for_product = Store.objects.filter(owner_user=request.user).first() or Store.objects.filter(owner=request.user).first()
+                if not store_for_product:
+                    store_for_product = stores.first()
+                if not store_for_product:
+                    messages.error(request, 'لا يوجد متجر متاح لإنشاء المنتج')
+                    return redirect('super_owner_products')
                 with transaction.atomic():
-                    if not product:
-                        product = Product.objects.create(
-                            name=name,
-                            store=store,
-                            category=category,
-                            base_price=base_price,
-                            description=description,
-                            size_type=size_type,
-                            is_active=is_active,
-                            is_featured=is_featured,
-                            status='DRAFT',
-                        )
-                        request.session['draft_product_id'] = int(product.id)
-                    else:
-                        product.name = name
-                        product.store = store
-                        product.category = category
-                        product.base_price = base_price
-                        product.description = description
-                        product.size_type = size_type
-                        product.is_active = is_active
-                        product.is_featured = is_featured
-                        product.save()
-
-                    if images:
-                        for idx, image in enumerate(images):
-                            has_main = product.images.filter(is_main=True).exists()
-                            ProductImage.objects.create(product=product, image=image, is_main=(not has_main and idx == 0))
-
-                    try:
-                        selected_colors = AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()])
-                    except Exception:
-                        selected_colors = []
-                    try:
-                        selected_sizes = AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()])
-                    except Exception:
-                        selected_sizes = []
-
-                    created = 0
-                    for c in selected_colors:
-                        for s in selected_sizes:
-                            exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
-                            if exists:
-                                continue
-                            ProductVariant.objects.create(
-                                product=product,
-                                color_attr=c,
-                                size_attr=s,
-                                size=s.name,
-                                stock_qty=0,
-                                price_override=None,
-                                is_enabled=product.is_active,
-                            )
-                            created += 1
-
-                    if created == 0:
-                        if not ProductVariant.objects.filter(product=product).exists() and size_type == 'none':
-                            ProductVariant.objects.create(
-                                product=product,
-                                color_attr=None,
-                                size_attr=None,
-                                size='ONE',
-                                stock_qty=0,
-                                price_override=None,
-                                is_enabled=product.is_active,
-                            )
-
+                    product = form.save(commit=False)
+                    product.store = store_for_product
+                    product.status = 'DRAFT'
+                    product.save()
                 return redirect(f"{request.path}?pid={product.id}&step=attributes")
-            except Store.DoesNotExist:
-                messages.error(request, 'المتجر المختار غير صالح!')
-                return redirect('super_owner_add_product')
+        elif step in ('attributes', 'variants', 'images') and product:
+            product_form = ProductForm(request.POST, instance=product)
+            variant_formset = VariantFormSet(request.POST, instance=product, prefix='variants')
+            image_formset = ImageFormSet(request.POST, request.FILES, instance=product, prefix='images')
+            if product_form.is_valid() and variant_formset.is_valid() and image_formset.is_valid():
+                with transaction.atomic():
+                    product_form.save()
+                    variant_formset.save()
+                    image_formset.save()
+                    if request.POST.get('finish') == '1':
+                        errors = []
+                        if not product.name or product.name.strip() == '—':
+                            errors.append('اسم المنتج مطلوب')
+                        try:
+                            if float(product.base_price) <= 0:
+                                errors.append('السعر الأساسي يجب أن يكون أكبر من 0')
+                        except Exception:
+                            errors.append('السعر الأساسي غير صالح')
+                        if not product.images.exists():
+                            errors.append('يرجى رفع صورة واحدة على الأقل')
+                        if product.size_type == 'none':
+                            if not product.variants.exists():
+                                try:
+                                    ProductVariant.objects.create(product=product, size='ONE', stock_qty=0, is_enabled=True)
+                                except Exception:
+                                    errors.append('تعذر إنشاء نسخة افتراضية')
+                        else:
+                            if not product.variants.exists():
+                                errors.append('يرجى إنشاء متغيرات للقياسات/الألوان')
+                        if errors:
+                            for e in errors:
+                                messages.error(request, e)
+                        else:
+                            product.status = 'ACTIVE'
+                            product.is_active = True
+                            product.save()
+                            messages.success(request, 'تمت إضافة المنتج بنجاح')
+                            return redirect('super_owner_products')
+                return redirect(f"{request.path}?pid={product.id}&step={step}")
 
         elif action == 'generate_variants':
             pid = request.POST.get('pid')
@@ -3994,12 +3945,9 @@ def super_owner_add_product(request):
             messages.success(request, 'تمت إضافة المنتج بنجاح')
             return redirect('super_owner_products')
 
-    product = None
     variants = []
-    if pid and pid.isdigit():
-        product = Product.objects.filter(id=int(pid)).first()
-        if product:
-            variants = list(ProductVariant.objects.filter(product=product).select_related('color_attr', 'size_attr'))
+    if product:
+        variants = list(ProductVariant.objects.filter(product=product).select_related('color_attr', 'size_attr'))
     color_attrs = []
     size_attrs = []
     variant_map = {}
@@ -4083,6 +4031,15 @@ def super_owner_add_product(request):
     else:
         sizes_display = list(AttributeSize.objects.all())
 
+    if step == 'info':
+        form = ProductForm(instance=product) if product else ProductForm()
+        variant_formset = None
+        image_formset = None
+    else:
+        form = ProductForm(instance=product) if product else ProductForm()
+        variant_formset = VariantFormSet(instance=product, prefix='variants') if product else None
+        image_formset = ImageFormSet(instance=product, prefix='images') if product else None
+
     context = {
         'stores': stores,
         'selected_store_id': int(preselect_store) if preselect_store and preselect_store.isdigit() else None,
@@ -4098,6 +4055,9 @@ def super_owner_add_product(request):
         'existing_color_ids': existing_color_ids,
         'existing_size_ids': existing_size_ids,
         'images': list(product.images.order_by('order', '-is_main')) if product else [],
+        'product_form': form,
+        'variant_formset': variant_formset,
+        'image_formset': image_formset,
     }
     return render(request, 'dashboard/super_owner/add_product.html', context)
 

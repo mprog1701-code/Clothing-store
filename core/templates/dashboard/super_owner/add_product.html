@@ -44,11 +44,6 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="name" class="form-label">اسم المنتج</label>
-                                    <input type="text" class="form-control" id="name" name="name" required>
-                                    <small class="text-muted">اسم واضح وقابل للبحث</small>
-                                </div>
-                                <div class="mb-3">
                                     <label for="store" class="form-label">المتجر</label>
                                     <select class="form-select" id="store" name="store" required>
                                         <option value="">اختر المتجر</option>
@@ -58,54 +53,18 @@
                                     </select>
                                     <small class="text-muted">المتجر الذي يملك المنتج</small>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="category" class="form-label">الفئة</label>
-                                    <select class="form-select" id="category" name="category" required>
-                                        <option value="">اختر الفئة</option>
-                                        <option value="men">رجالي</option>
-                                        <option value="women">نسائي</option>
-                                        <option value="kids">أطفال</option>
-                                        <option value="shoes">أحذية</option>
-                                        <option value="accessories">إكسسوارات</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="size_type" class="form-label">نوع القياس</label>
-                                    <select class="form-select" id="size_type" name="size_type" required>
-                                        <option value="symbolic" selected>رمزية</option>
-                                        <option value="numeric">رقمية</option>
-                                        <option value="none">بدون</option>
-                                    </select>
-                                    <small class="text-muted">يحدد صلاحية المقاسات</small>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="base_price" class="form-label">السعر الأساسي</label>
-                                    <input type="number" class="form-control" id="base_price" name="base_price" min="0" step="0.01" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="description" class="form-label">الوصف</label>
-                                    <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-                                </div>
+                                {{ product_form.non_field_errors }}
+                                <div class="mb-3">{{ product_form.name.label_tag }}{{ product_form.name }}</div>
+                                <div class="mb-3">{{ product_form.description.label_tag }}{{ product_form.description }}</div>
+                                <div class="mb-3">{{ product_form.category.label_tag }}{{ product_form.category }}</div>
+                                <div class="mb-3">{{ product_form.base_price.label_tag }}{{ product_form.base_price }}</div>
+                                <div class="mb-3">{{ product_form.discount_price.label_tag }}{{ product_form.discount_price }}</div>
+                                <div class="mb-3">{{ product_form.size_type.label_tag }}{{ product_form.size_type }}</div>
+                                <div class="mb-3">{{ product_form.fit_type.label_tag }}{{ product_form.fit_type }}</div>
+                                <div class="mb-3 form-check">{{ product_form.is_featured }} {{ product_form.is_featured.label_tag }}</div>
+                                <div class="mb-3 form-check">{{ product_form.is_active }} {{ product_form.is_active.label_tag }}</div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="images" class="form-label">صور المنتج</label>
-                                    <input type="file" class="form-control" id="images" name="images" multiple accept="image/*">
-                                    <small class="text-muted">يمكنك رفع عدة صور</small>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="is_featured" name="is_featured">
-                                        <label class="form-check-label" for="is_featured">تمييز المنتج</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" checked>
-                                        <label class="form-check-label" for="is_active">تفعيل المنتج فوراً</label>
-                                    </div>
-                                </div>
-                                
                                 <div class="d-flex justify-content-between">
                                     <button type="submit" class="btn btn-success"><i class="fas fa-plus me-2"></i>إنشاء المنتج</button>
                                     <a href="{% url 'super_owner_products' %}" class="btn btn-secondary"><i class="fas fa-times me-2"></i>إلغاء</a>
@@ -116,6 +75,55 @@
                     {% endif %}
 
                     {% if product and step == 'attributes' %}
+                    <form method="post" enctype="multipart/form-data" class="mb-4">
+                        {% csrf_token %}
+                        {{ product_form.non_field_errors }}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">{{ product_form.name.label_tag }}{{ product_form.name }}</div>
+                                <div class="mb-3">{{ product_form.description.label_tag }}{{ product_form.description }}</div>
+                                <div class="mb-3">{{ product_form.size_type.label_tag }}{{ product_form.size_type }}</div>
+                                <div class="mb-3">{{ product_form.fit_type.label_tag }}{{ product_form.fit_type }}</div>
+                                <div class="mb-3">{{ product_form.discount_price.label_tag }}{{ product_form.discount_price }}</div>
+                                <div class="mb-3 form-check">{{ product_form.is_active }} {{ product_form.is_active.label_tag }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ variant_formset.management_form }}
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>اللون</th>
+                                                <th>المقاس</th>
+                                                <th>اسم المقاس</th>
+                                                <th>الكمية</th>
+                                                <th>سعر خاص</th>
+                                                <th>مفعل</th>
+                                                <th>حذف</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for vf in variant_formset %}
+                                            <tr>
+                                                <td>{{ vf.color_attr }}</td>
+                                                <td>{{ vf.size_attr }}</td>
+                                                <td>{{ vf.size }}</td>
+                                                <td>{{ vf.stock_qty }}</td>
+                                                <td>{{ vf.price_override }}</td>
+                                                <td class="text-center">{{ vf.is_enabled }}</td>
+                                                <td class="text-center">{% if vf.DELETE %}{{ vf.DELETE }}{% endif %}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-success" name="finish" value="0"><i class="fas fa-save me-2"></i>حفظ</button>
+                                    <button type="submit" class="btn btn-primary" name="finish" value="1"><i class="fas fa-check me-2"></i>إنهاء</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                     <div class="section-block">
                         <div class="section-title">ألوان المنتج</div>
                         <div class="mb-3 d-flex align-items-center gap-2 color-add-row">
@@ -204,6 +212,51 @@
                     
 
                     {% if product and step == 'images' %}
+                    <form method="post" enctype="multipart/form-data" class="mb-4">
+                        {% csrf_token %}
+                        {{ product_form.non_field_errors }}
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                {{ image_formset.management_form }}
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>صورة</th>
+                                                <th>رابط الصورة</th>
+                                                <th>فيديو</th>
+                                                <th>رابط الفيديو</th>
+                                                <th>لون</th>
+                                                <th>متغير</th>
+                                                <th>رئيسية</th>
+                                                <th>ترتيب</th>
+                                                <th>حذف</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for iform in image_formset %}
+                                            <tr>
+                                                <td>{{ iform.image }}</td>
+                                                <td>{{ iform.image_url }}</td>
+                                                <td>{{ iform.video_file }}</td>
+                                                <td>{{ iform.video_url }}</td>
+                                                <td>{{ iform.color_attr }}</td>
+                                                <td>{{ iform.variant }}</td>
+                                                <td class="text-center">{{ iform.is_main }}</td>
+                                                <td>{{ iform.order }}</td>
+                                                <td class="text-center">{% if iform.DELETE %}{{ iform.DELETE }}{% endif %}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-success" name="finish" value="0"><i class="fas fa-save me-2"></i>حفظ</button>
+                                    <button type="submit" class="btn btn-primary" name="finish" value="1"><i class="fas fa-check me-2"></i>إنهاء</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                     <div class="mb-3">
                         <form method="post" enctype="multipart/form-data" data-ajax="true" class="d-inline-block">
                             {% csrf_token %}

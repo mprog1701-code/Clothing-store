@@ -171,6 +171,12 @@ class Product(models.Model):
         ('none', 'بدون'),
     ]
     size_type = models.CharField(max_length=10, choices=SIZE_TYPE_CHOICES, default='symbolic')
+    FIT_TYPE_CHOICES = [
+        ('small', 'قالب صغير'),
+        ('standard', 'قالب قياسي'),
+        ('oversized', 'قالب واسع'),
+    ]
+    fit_type = models.CharField(max_length=10, choices=FIT_TYPE_CHOICES, default='standard')
     is_active = models.BooleanField(default=True)
     status = models.CharField(max_length=10, choices=[('DRAFT','مسودة'),('ACTIVE','نشط'),('DISABLED','غير نشط')], default='DRAFT', db_index=True)
     is_featured = models.BooleanField(default=False)
@@ -272,6 +278,8 @@ class ProductImage(models.Model):
     variant = models.ForeignKey('ProductVariant', on_delete=models.CASCADE, related_name='images', null=True, blank=True)
     image = models.ImageField(upload_to='products/', blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
+    video_file = models.FileField(upload_to='products/videos/', blank=True, null=True)
+    video_url = models.URLField(blank=True, null=True)
     image_hash = models.CharField(max_length=64, blank=True, null=True)
     is_main = models.BooleanField(default=False)
     order = models.IntegerField(default=0)
@@ -299,6 +307,19 @@ class ProductImage(models.Model):
             return 'https://placehold.co/300x300?text=Image'
         except Exception:
             return 'https://placehold.co/300x300?text=Image'
+
+    def get_video_url(self):
+        try:
+            if self.video_url:
+                return self.video_url
+            if self.video_file:
+                try:
+                    return self.video_file.url
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return ''
 
     def clean(self):
         # Ensure consistency with product

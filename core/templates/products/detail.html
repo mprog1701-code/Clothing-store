@@ -63,6 +63,11 @@
             <!-- Product Images -->
             <div class="col-lg-6">
                 <div class="product-gallery-card p-4 bg-white rounded-4 shadow-lg">
+                    {% if primary_video_url %}
+                    <div class="rounded-3 overflow-hidden mb-3">
+                        <video id="pdVideo" src="{{ primary_video_url }}" class="w-100" style="height: 500px; object-fit: cover;" controls playsinline></video>
+                    </div>
+                    {% endif %}
                     <div class="rounded-3 overflow-hidden">
                         <img id="pdMain" src="{{ default_main_image_url }}" alt="{{ product.name }}" class="w-100" style="height: 500px; object-fit: cover;" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
                     </div>
@@ -89,6 +94,38 @@
                                 </div>
                             {% else %}
                                 <span class="price-new">{{ product.base_price|iqd }}</span>
+                            {% endif %}
+                        </div>
+                        {% if fit_advice %}
+                        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                {{ fit_advice }}
+                            </div>
+                            <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#sizeChartModal">جدول القياسات</button>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="rating-stars me-2">
+                                {% with r=product.rating|default:0 %}
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= r|floatformat:0 %}
+                                        <i class="bi bi-star-fill"></i>
+                                    {% else %}
+                                        <i class="bi bi-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                {% endwith %}
+                            </div>
+                            <div class="text-muted">({{ reviews_count|default:0 }} مراجعة)</div>
+                        </div>
+                        <div class="cta-group d-flex gap-2 mb-3">
+                            {% if not pd_simple %}
+                            <button type="button" class="btn btn-primary flex-grow-1" id="quickAddBtn">أضف للسلة</button>
+                            <button type="button" class="btn cta-buy" id="buyNowBtn">شراء الآن</button>
+                            {% else %}
+                            <button type="button" class="btn btn-primary flex-grow-1" id="quickAddSimpleBtn" {% if add_disabled %}disabled{% endif %}>أضف للسلة</button>
+                            <button type="button" class="btn cta-buy" id="buyNowSimpleBtn" {% if add_disabled %}disabled{% endif %}>شراء الآن</button>
                             {% endif %}
                         </div>
                     </div>
@@ -128,6 +165,9 @@
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold"><i class="bi bi-rulers me-2"></i>المقاس</label>
                                     <div id="pdSizes" class="d-flex flex-wrap gap-2" style="display:none;"></div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#sizeChartModal">جدول القياسات</button>
+                                    </div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold">الكمية</label>
@@ -205,13 +245,16 @@
                                 console.log('pd:updateGallery', {color, urlsLen: limited.length});
                                 const first = limited.length ? limited[0] : DEFAULT_MAIN_IMAGE;
                                 pdMain.src = first;
+                                pdMain.setAttribute('fetchpriority','high');
                                 pdThumbs.innerHTML = '';
                                 if (limited.length > 1) {
                                     limited.forEach(function(u){
                                         const t = document.createElement('img');
                                         t.src = u;
                                         t.alt = '{{ product.name }}';
-                                        t.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:8px;cursor:pointer;border:1px solid #eee;';
+                                        t.className = 'thumb';
+                                        t.loading = 'lazy';
+                                        t.decoding = 'async';
                                         t.addEventListener('click', function(){ pdMain.src = u; });
                                         pdThumbs.appendChild(t);
                                     });
@@ -248,6 +291,7 @@
                                     const b = document.createElement('button');
                                     b.type = 'button';
                                     b.className = 'size-btn' + (out ? ' disabled' : '');
+                                    b.disabled = !!out;
                                     b.textContent = s;
                                     b.setAttribute('data-size', s);
                                     if (!out) availableCount++;
@@ -315,6 +359,7 @@
                                             const b = document.createElement('button');
                                             b.type = 'button';
                                             b.className = 'size-btn' + (out ? ' disabled' : '');
+                                        b.disabled = !!out;
                                             b.textContent = s;
                                             b.setAttribute('data-size', s);
                                             if (!out) {
@@ -351,11 +396,36 @@
                                 // Initialize default selection on page load if variants exist
                             document.addEventListener('DOMContentLoaded', initPage);
                         </script>
-                        <script></script>
+                        <script>
+                            const quickAddBtn = document.getElementById('quickAddBtn');
+                            if (quickAddBtn) {
+                                quickAddBtn.addEventListener('click', function(){
+                                    const form = document.getElementById('variantPickerForm');
+                                    const hiddenVariantId = document.getElementById('selectedVariantId');
+                                    const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
+                                    const inlineMsg = document.getElementById('inlineMsg');
+                                    if (!hiddenVariantId.value && VARIANTS.length > 0) { inlineMsg.style.display = 'block'; return; }
+                                    form.requestSubmit();
+                                });
+                            }
+                            const buyNowBtn = document.getElementById('buyNowBtn');
+                            if (buyNowBtn) {
+                                buyNowBtn.addEventListener('click', async function(){
+                                    const form = document.getElementById('variantPickerForm');
+                                    const hiddenVariantId = document.getElementById('selectedVariantId');
+                                    const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
+                                    const inlineMsg = document.getElementById('inlineMsg');
+                                    if (!hiddenVariantId.value && VARIANTS.length > 0) { inlineMsg.style.display = 'block'; return; }
+                                    const fd = new FormData(form);
+                                    const resp = await fetch(form.action, { method: 'POST', body: fd });
+                                    if (resp.ok) { window.location.href = '{% url "checkout" %}'; }
+                                });
+                            }
+                        </script>
                     </div>
                     {% else %}
                     <div class="product-variants mb-4">
-                        <form method="post" action="{% url 'cart_items_json' %}" class="add-to-cart-form">
+                        <form method="post" action="{% url 'cart_items_json' %}" class="add-to-cart-form" id="simpleAddForm">
                             {% csrf_token %}
                             <input type="hidden" name="productId" value="{{ product.id }}">
                             <input type="hidden" name="storeId" value="{{ product.store.id }}">
@@ -370,9 +440,27 @@
                                         <i class="bi bi-cart-plus me-2"></i>
                                         أضف للسلة
                                     </button>
+                                    <div class="mt-2 d-flex gap-2 justify-content-end">
+                                        <button type="button" class="btn btn-primary" id="quickAddSimpleBtn" {% if add_disabled %}disabled{% endif %}>أضف بسرعة</button>
+                                        <button type="button" class="btn cta-buy" id="buyNowSimpleBtn" {% if add_disabled %}disabled{% endif %}>شراء الآن</button>
+                                    </div>
                                 </div>
                             </div>
                         </form>
+                        <script>
+                            const quickAddSimpleBtn = document.getElementById('quickAddSimpleBtn');
+                            const buyNowSimpleBtn = document.getElementById('buyNowSimpleBtn');
+                            function _submitSimple(){ const f=document.getElementById('simpleAddForm'); if(f) f.requestSubmit(); }
+                            if (quickAddSimpleBtn) quickAddSimpleBtn.addEventListener('click', _submitSimple);
+                            async function _buyNowSimple(){
+                                const form = document.getElementById('simpleAddForm');
+                                if (!form) return;
+                                const fd = new FormData(form);
+                                const resp = await fetch(form.action, { method: 'POST', body: fd });
+                                if (resp.ok) { window.location.href = '{% url "checkout" %}'; }
+                            }
+                            if (buyNowSimpleBtn) buyNowSimpleBtn.addEventListener('click', _buyNowSimple);
+                        </script>
                     </div>
                     {% endif %}
                 </div>
@@ -392,11 +480,90 @@
                             زيارة المتجر
                         </a>
                     </div>
+                    <div class="specs-card p-4 bg-white rounded-3 mt-4">
+                        <h6 class="fw-bold mb-3">المواصفات التقنية</h6>
+                        <div class="spec-row"><div class="text-muted">الفئة</div><div>{{ product.get_category_display }}</div></div>
+                        <div class="spec-row"><div class="text-muted">نوع المقاس</div><div>{{ product.get_size_type_display|default:product.size_type }}</div></div>
+                        <div class="spec-row"><div class="text-muted">المتجر</div><div>{{ product.store.name }}</div></div>
+                        <div class="spec-row"><div class="text-muted">الحالة</div><div>{% if product.is_active %}نشط{% else %}غير نشط{% endif %}</div></div>
+                        <div class="spec-row"><div class="text-muted">أضيف في</div><div>{{ product.created_at|date:"Y/m/d" }}</div></div>
+                    </div>
+                    <div class="reviews-card p-4 bg-white rounded-3 mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0">مراجعات العملاء</h6>
+                            <div class="d-flex gap-2">
+                                <select id="reviewsSort" class="form-select form-select-sm" style="width:160px">
+                                    <option value="recent">الأحدث</option>
+                                    <option value="rating_desc">الأعلى تقييماً</option>
+                                    <option value="rating_asc">الأقل تقييماً</option>
+                                </select>
+                                <select id="reviewsFilter" class="form-select form-select-sm" style="width:160px">
+                                    <option value="all">الكل</option>
+                                    <option value="5">5 نجوم</option>
+                                    <option value="4">4 نجوم</option>
+                                    <option value="3">3 نجوم</option>
+                                    <option value="2">2 نجوم</option>
+                                    <option value="1">1 نجمة</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="reviewsList" class="text-muted">لا توجد مراجعات بعد</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
+<div class="modal fade" id="sizeChartModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">جدول القياسات بالسنتيمتر</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {% if product.size_type == 'numeric' %}
+        <div class="table-responsive">
+          <table class="table">
+            <thead><tr><th>المقاس</th><th>الطول</th><th>العرض</th></tr></thead>
+            <tbody>
+              <tr><td>28</td><td>62 سم</td><td>36 سم</td></tr>
+              <tr><td>30</td><td>63 سم</td><td>37 سم</td></tr>
+              <tr><td>32</td><td>64 سم</td><td>38 سم</td></tr>
+              <tr><td>34</td><td>65 سم</td><td>39 سم</td></tr>
+              <tr><td>36</td><td>66 سم</td><td>40 سم</td></tr>
+              <tr><td>38</td><td>67 سم</td><td>41 سم</td></tr>
+              <tr><td>40</td><td>68 سم</td><td>42 سم</td></tr>
+              <tr><td>42</td><td>69 سم</td><td>43 سم</td></tr>
+              <tr><td>44</td><td>70 سم</td><td>44 سم</td></tr>
+              <tr><td>46</td><td>71 سم</td><td>45 سم</td></tr>
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="table-responsive">
+          <table class="table">
+            <thead><tr><th>المقاس</th><th>الصدر</th><th>الطول</th></tr></thead>
+            <tbody>
+              <tr><td>XS</td><td>82 سم</td><td>62 سم</td></tr>
+              <tr><td>S</td><td>86 سم</td><td>63 سم</td></tr>
+              <tr><td>M</td><td>90 سم</td><td>64 سم</td></tr>
+              <tr><td>L</td><td>96 سم</td><td>66 سم</td></tr>
+              <tr><td>XL</td><td>102 سم</td><td>68 سم</td></tr>
+              <tr><td>XXL</td><td>108 سم</td><td>70 سم</td></tr>
+              <tr><td>3XL</td><td>114 سم</td><td>72 سم</td></tr>
+              <tr><td>4XL</td><td>120 سم</td><td>74 سم</td></tr>
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
 <!-- Similar Products -->
 <section class="mb-5">
     <div class="container">
