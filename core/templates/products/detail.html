@@ -13,7 +13,7 @@
   #pdMain{width:100%;height:auto;background:#ffffff}
   #pdThumbs{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin-top:8px}
   .thumb{width:72px;height:72px;border:1px solid #e5e7eb;background:#ffffff}
-  .thumb.selected{border-color:#000}
+  .thumb.selected{border:2px solid #000 !important}
   .thumb img{width:100%;height:100%;object-fit:cover}
   .title{font-size:22px;font-weight:700;margin-bottom:8px}
   .price{display:flex;gap:12px;align-items:baseline;margin:8px 0}
@@ -121,8 +121,10 @@
   const sizesEl = document.getElementById('sizes');
   const addBtn = document.getElementById('addBtn');
   const hiddenVar = document.getElementById('variantId');
-  const pdMain = document.getElementById('pdMain');
-  const pdThumbs = document.getElementById('pdThumbs');
+  const pdWrap = document.querySelector('.pdWrap');
+  const pdMain = (pdWrap ? pdWrap.querySelector('#pdMain') : document.getElementById('pdMain'));
+  let pdThumbs = (pdWrap ? pdWrap.querySelector('#pdThumbs') : document.getElementById('pdThumbs'));
+  const IMAGES_BY_COLOR = (function(){ try { return JSON.parse(document.getElementById('images-data').textContent || '{}'); } catch(e){ return {}; } })();
   function bestVariantForSize(size){
     const same = VARIANTS.filter(v => String(v.size || '') === String(size || ''));
     if (same.length === 0) return null;
@@ -155,16 +157,37 @@
       if (!b || b.disabled) return;
       selectSize(b);
     });
-    pdThumbs.addEventListener('click', function(e){
-      const b = e.target.closest('.thumb');
-      if (!b) return;
-      const src = b.getAttribute('data-src');
-      if (src) pdMain.src = src;
-      Array.from(pdThumbs.querySelectorAll('.thumb')).forEach(t => t.classList.remove('selected'));
-      b.classList.add('selected');
-    });
-    const firstThumb = pdThumbs.querySelector('.thumb');
-    if (firstThumb) firstThumb.classList.add('selected');
+    function ensureThumbs(){
+      if (!pdThumbs) return;
+      if (pdThumbs.querySelector('.thumb')) return;
+      const defaults = (IMAGES_BY_COLOR['__default__'] || []);
+      const imgs = defaults.length ? defaults : (IMAGES_BY_COLOR[Object.keys(IMAGES_BY_COLOR)[0]] || []);
+      imgs.slice(0, 8).forEach(function(url){
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'thumb';
+        btn.setAttribute('data-src', url);
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = (pdMain && pdMain.alt) || 'image';
+        img.onerror = function(){ this.onerror=null; this.src='https://placehold.co/120x120?text=Image'; };
+        btn.appendChild(img);
+        pdThumbs.appendChild(btn);
+      });
+    }
+    ensureThumbs();
+    if (pdThumbs) {
+      pdThumbs.addEventListener('click', function(e){
+        const b = e.target.closest('.thumb');
+        if (!b) return;
+        const src = b.getAttribute('data-src');
+        if (src && pdMain) pdMain.src = src;
+        Array.from(pdThumbs.querySelectorAll('.thumb')).forEach(t => t.classList.remove('selected'));
+        b.classList.add('selected');
+      });
+      const firstThumb = pdThumbs.querySelector('.thumb');
+      if (firstThumb) firstThumb.classList.add('selected');
+    }
     const form = addBtn.closest('form');
     form.addEventListener('submit', function(e){
       if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); }

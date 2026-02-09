@@ -442,6 +442,12 @@
                 fetch(url, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') } })
                 .then(function(resp){ window.location.reload(); });
             });
+            const sel = form.querySelector('select[name="color_id"]');
+            if (sel) {
+                sel.addEventListener('change', function(){
+                    form.requestSubmit();
+                });
+            }
         }
         const isExtract = !!form.querySelector('input[name="action"][value="extract_color_from_image"]');
         if (isExtract) {

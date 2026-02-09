@@ -80,7 +80,11 @@ class ProductImageAdmin(admin.ModelAdmin):
             elif db_field.name == 'color':
                 kwargs['queryset'] = ProductColor.objects.filter(product_id=product_id) if product_id else ProductColor.objects.none()
             elif db_field.name == 'color_attr':
-                kwargs['queryset'] = AttributeColor.objects.all()
+                if product_id:
+                    color_ids = ProductVariant.objects.filter(product_id=product_id, color_attr__isnull=False).values_list('color_attr_id', flat=True).distinct()
+                    kwargs['queryset'] = AttributeColor.objects.filter(id__in=list(color_ids))
+                else:
+                    kwargs['queryset'] = AttributeColor.objects.none()
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 

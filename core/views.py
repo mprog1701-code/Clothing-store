@@ -4048,7 +4048,7 @@ def super_owner_add_product(request):
         'colors': list(AttributeColor.objects.all()),
         'sizes': sizes_display,
         'variants': variants,
-        'color_attrs': list(AttributeColor.objects.all()),
+        'color_attrs': color_attrs,
         'size_attrs': size_attrs,
         'variant_map': variant_map,
         'variant_grid': variant_grid,
