@@ -382,13 +382,23 @@ def product_detail(request, product_id):
     similar_products = fetch_products_by_ids(similar_ids, 12)
     same_store_products = fetch_products_by_ids(same_store_ids, 8)
 
+    try:
+        import json
+        variant_data_json = json.dumps(variant_data, ensure_ascii=False)
+        available_colors_json = json.dumps(colors_set, ensure_ascii=False)
+        images_by_color_json = json.dumps(images_by_color, ensure_ascii=False)
+    except Exception:
+        variant_data_json = '[]'
+        available_colors_json = '[]'
+        images_by_color_json = '{}'
+
     context = {
         'product': product,
         'variants': variants,
-        'variant_data': variant_data,
-        'available_colors': colors_set,
+        'variant_data': variant_data_json,
+        'available_colors': available_colors_json,
         'sizes_by_color': sizes_by_color,
-        'images_by_color': images_by_color,
+        'images_by_color': images_by_color_json,
         'default_color': default_color,
         'default_main_image_url': default_main_image_url,
         'primary_video_url': primary_video_url,
