@@ -448,26 +448,34 @@
                                 console.log('pd:renderColorSwatches:end', {count: (AVAILABLE_COLORS || []).length});
                             }
                             function updateGallery(color){
-                                const key = String(color);
-                                const list = (key && IMAGES_BY_COLOR[key] && IMAGES_BY_COLOR[key].length > 0) ? IMAGES_BY_COLOR[key] : (IMAGES_BY_COLOR['__default__'] || []);
-                                const limited = (list || []).slice(0, 3);
-                                console.log('pd:updateGallery', {color, urlsLen: limited.length});
-                                const first = limited.length ? limited[0] : DEFAULT_MAIN_IMAGE;
+                                const key = (color != null && color !== '') ? String(color) : '';
+                                let list = [];
+                                if (key && Array.isArray(IMAGES_BY_COLOR[key]) && IMAGES_BY_COLOR[key].length > 0) {
+                                    list = IMAGES_BY_COLOR[key];
+                                } else {
+                                    // عرض كل صور المنتج عند عدم اختيار لون أو عدم توفر صور لهذا اللون
+                                    const all = [];
+                                    Object.keys(IMAGES_BY_COLOR || {}).forEach(k => {
+                                        const arr = IMAGES_BY_COLOR[k];
+                                        if (Array.isArray(arr)) { arr.forEach(u => { if (u) all.push(u); }); }
+                                    });
+                                    list = (all.length > 0 ? all : (IMAGES_BY_COLOR['__default__'] || []));
+                                }
+                                console.log('pd:updateGallery', {color, urlsLen: (list || []).length});
+                                const first = (list && list.length) ? list[0] : DEFAULT_MAIN_IMAGE;
                                 pdMain.src = first;
                                 pdMain.setAttribute('fetchpriority','high');
                                 pdThumbs.innerHTML = '';
-                                if (limited.length > 1) {
-                                    limited.forEach(function(u){
-                                        const t = document.createElement('img');
-                                        t.src = u;
-                                        t.alt = '{{ product.name }}';
-                                        t.className = 'thumb';
-                                        t.loading = 'lazy';
-                                        t.decoding = 'async';
-                                        t.addEventListener('click', function(){ pdMain.src = u; });
-                                        pdThumbs.appendChild(t);
-                                    });
-                                }
+                                (list || []).forEach(function(u){
+                                    const t = document.createElement('img');
+                                    t.src = u;
+                                    t.alt = '{{ product.name }}';
+                                    t.className = 'thumb';
+                                    t.loading = 'lazy';
+                                    t.decoding = 'async';
+                                    t.addEventListener('click', function(){ pdMain.src = u; });
+                                    pdThumbs.appendChild(t);
+                                });
                             }
                             function resetSize(){
                                 console.log('pd:resetSize');
@@ -547,6 +555,8 @@
                                 selColor.textContent = COLOR_NAME_BY_ID[String(color)] || 'غير محدد';
                                 selSize.textContent = size || 'غير محدد';
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
+                                // تحديث المعرض حسب اللون فقط بغض النظر عن المقاس
+                                updateGallery(v.color_id);
                             }
 
                             function initPage(){
