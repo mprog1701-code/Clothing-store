@@ -20,20 +20,21 @@
   .price-new{font-size:20px;font-weight:800}
   .price-old{font-size:14px;color:#888;text-decoration:line-through}
   .fit{border:1px solid #e5e7eb;background:#ffffff;border-radius:8px;padding:10px;margin:8px 0;font-size:14px}
-  .swatches{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin:10px 0}
-  .swatch{width:28px;height:28px;border:2px solid #ccc;border-radius:6px;cursor:pointer}
-  .swatch.selected{border-color:#000}
+  .swatches{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+  .swatch{width:35px;height:35px;border:1px solid #ccc;border-radius:6px;cursor:pointer;transition:transform .15s ease, border-color .15s ease}
+  .swatch.selected{border:2px solid #000;transform:scale(1.05)}
   .sizes{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin-top:8px}
   .sz{min-width:52px;padding:10px 12px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
   .sz:disabled{opacity:.5;cursor:not-allowed}
-  .btn{padding:12px 18px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
+  .btn{padding:12px 18px;border:none;border-radius:10px;background:#ff6a00;color:#fff;font-weight:700;width:100%}
   .btn:disabled{opacity:.6;cursor:not-allowed}
   .product-hero{display:none}
   .product-details-section{display:none}
   .modal{display:none}
   .pdWrap, .pdMedia, .pdInfo, .title, .fit, .price-new, .sz, .btn{color:#1a1a1a}
-  #addBtn{background:#ff6a00;color:#ffffff;border-color:#ff6a00}
   #addBtn:hover{filter:brightness(0.95)}
+  #negPrice{background:#f3f4f6;border:1px solid #ddd;border-radius:10px;padding:10px;width:180px}
+  .hint{font-size:13px;color:#666;margin-top:8px}
   .thumb{cursor:pointer}
   .related-wrap{margin:24px 16px;background:#ffffff}
   .related-wrap, .related-wrap *{color:#000000 !important;background-color:#ffffff !important}
@@ -88,13 +89,14 @@
       <input type="hidden" name="storeId" value="{{ product.store.id }}">
       <input type="hidden" name="variantId" id="variantId">
       <input type="hidden" name="quantity" id="qty" value="1">
-      <div class="sizes" id="sizes"></div>
       <div class="swatches" id="swatches"></div>
+      <div class="sizes" id="sizes"></div>
       <div class="negRow" style="display:flex;align-items:center;gap:12px;margin:12px 0;">
         <input type="number" step="0.01" min="0" id="negPrice" name="negotiatedPrice" placeholder="Negotiated Price" style="max-width:180px;">
         <div id="storeRating">⭐ {{ product.rating|default:"0.0" }}</div>
       </div>
-      <div style="margin-top:16px"><button class="btn" id="addBtn">Add to Cart</button></div>
+      <div style="margin-top:16px"><button class="btn" id="addBtn" disabled>Add to Cart</button></div>
+      <div id="inlineMsg" class="hint">Please select a color and size</div>
     </form>
   </div>
 </div>
@@ -114,7 +116,9 @@
   const pdMain = document.getElementById('pdMain');
   const pdThumbs = document.getElementById('pdThumbs');
   const DEFAULT_IMAGE = '{{ default_main_image_url }}';
+  const inlineMsg = document.getElementById('inlineMsg');
   let selectedColorId = null;
+  let selectedSizeVal = null;
 
   function getAllImages(){
     const acc = [];
@@ -161,7 +165,6 @@
   function renderSizesForColor(colorId){
     sizesEl.innerHTML = '';
     const sizes = Array.from(new Set(VARIANTS.filter(v => String(v.color_id || '') === String(colorId)).map(v => v.size)));
-    if (sizes.length === 0){ sizesEl.innerHTML = '<div class="fit">No sizes for this color</div>'; return; }
     sizes.forEach(function(s){
       const v = VARIANTS.find(x => String(x.color_id || '') === String(colorId) && String(x.size || '') === String(s || ''));
       const out = !v || (v.stock_qty || 0) <= 0;
@@ -171,32 +174,46 @@
       b.disabled = !!out;
       b.textContent = s;
       b.setAttribute('data-size', s);
-      if (!out){ b.addEventListener('click', function(){ selectSizeByColor(s, colorId); }); }
+      b.addEventListener('click', function(){ selectSize(s); });
       sizesEl.appendChild(b);
     });
   }
-  function selectSizeByColor(size, colorId){
+  function renderSizesAll(){
+    sizesEl.innerHTML = '';
+    const sizes = Array.from(new Set(VARIANTS.map(v => v.size)));
+    sizes.forEach(function(s){
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sz';
+      b.textContent = s;
+      b.setAttribute('data-size', s);
+      b.addEventListener('click', function(){ selectSize(s); });
+      sizesEl.appendChild(b);
+    });
+  }
+  function selectSize(size){
+    selectedSizeVal = String(size);
     Array.from(sizesEl.querySelectorAll('.sz')).forEach(c => c.classList.remove('selected'));
     const btn = Array.from(sizesEl.querySelectorAll('.sz')).find(c => c.getAttribute('data-size') === String(size));
     if (btn) btn.classList.add('selected');
-    const v = VARIANTS.find(x => String(x.color_id || '') === String(colorId || '') && String(x.size || '') === String(size || ''));
+    const v = VARIANTS.find(x => String(x.color_id || '') === String(selectedColorId || '') && String(x.size || '') === String(size || ''));
     hiddenVar.value = v && v.id ? String(v.id) : '';
     addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
+    if (inlineMsg) inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
   }
   function onColorSelect(colorId){
     selectedColorId = String(colorId);
     renderSwatches();
     renderThumbs(getImagesForColorId(selectedColorId));
     renderSizesForColor(selectedColorId);
-    hiddenVar.value = '';
-    addBtn.disabled = true;
+    if (selectedSizeVal){ selectSize(selectedSizeVal); } else { hiddenVar.value = ''; addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
   }
 
   document.addEventListener('DOMContentLoaded', function(){
     renderSwatches();
     renderThumbs(getAllImages());
     sizesEl.innerHTML = '';
-    if (Array.isArray(VARIANTS) && VARIANTS.length > 0) { addBtn.disabled = true; }
+    if (Array.isArray(VARIANTS) && VARIANTS.length > 0) { addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
     pdThumbs.addEventListener('click', function(e){
       const b = e.target.closest('.thumb');
       if (!b) return;
@@ -206,7 +223,7 @@
       b.classList.add('selected');
     });
     const form = addBtn.closest('form');
-    form.addEventListener('submit', function(e){ if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); } });
+    form.addEventListener('submit', function(e){ if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); inlineMsg.style.display='block'; } });
   });
 </script>
 <!-- Hero Section -->
