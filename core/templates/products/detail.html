@@ -171,7 +171,7 @@
     }
   }
   function renderSizesForColor(colorId){
-    renderSizesAll();
+    sizesEl.innerHTML = '';
     const sizes = Array.from(new Set(VARIANTS.filter(v => String(v.color_id || '') === String(colorId)).map(v => v.size)));
     sizes.forEach(function(s){
       const v = VARIANTS.find(x => String(x.color_id || '') === String(colorId) && String(x.size || '') === String(s || ''));
