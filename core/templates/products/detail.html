@@ -215,14 +215,26 @@
     renderSwatches(true);
     renderThumbs(getImagesForColorId(selectedColorId));
     renderSizesForColor(selectedColorId);
-    if (selectedSizeVal){ selectSize(selectedSizeVal); } else { hiddenVar.value = ''; addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
+    const firstAvail = VARIANTS.find(x => String(x.color_id || '') === String(selectedColorId) && (x.stock_qty || 0) > 0);
+    if (firstAvail){ selectSize(firstAvail.size); }
+    else { selectedSizeVal = null; hiddenVar.value = ''; addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
   }
 
   document.addEventListener('DOMContentLoaded', function(){
     renderSwatches(false);
     renderThumbs(getAllImages());
     sizesEl.innerHTML = '';
-    if (Array.isArray(VARIANTS) && VARIANTS.length > 0) { addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
+    if (Array.isArray(VARIANTS) && VARIANTS.length > 0) {
+      addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block';
+      const colors = Array.isArray(AVAILABLE_COLORS) ? AVAILABLE_COLORS : [];
+      const initialColor = (colors.length > 0) ? String(colors[0].id) : null;
+      if (initialColor) { onColorSelect(initialColor); }
+      else {
+        renderSizesAll();
+        const firstAvail = VARIANTS.find(x => (x.stock_qty || 0) > 0);
+        if (firstAvail){ selectSize(firstAvail.size); }
+      }
+    }
     pdThumbs.addEventListener('click', function(e){
       const b = e.target.closest('.thumb');
       if (!b) return;
@@ -247,7 +259,7 @@
         addBtn.disabled = false;
         if (resp.ok && data && (data.ok === true || data.status === 'ok')){ alert('Added to Cart Successfully!'); window.location.href = '/cart/'; }
         else{
-          const msg = (data && (data.detail || data.error || data.message)) || 'حدث خطأ أثناء الإضافة إلى السلة';
+          const msg = (resp.status === 401 || resp.status === 403) ? 'يرجى تسجيل الدخول أولاً' : (data && (data.detail || data.error || data.message)) || 'حدث خطأ أثناء الإضافة إلى السلة';
           if (inlineMsg){ inlineMsg.textContent = msg; inlineMsg.style.display = 'block'; } else { alert(msg); }
         }
       }catch(_){
