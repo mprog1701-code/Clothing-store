@@ -193,13 +193,23 @@ def product_detail(request, product_id):
     except Exception:
         fit_advice = ''
 
+    def _color_key_from_variant(v):
+        try:
+            if getattr(v, 'color_obj_id', None):
+                return str(int(v.color_obj_id))
+            if getattr(v, 'color_attr_id', None):
+                return f"A{int(v.color_attr_id)}"
+        except Exception:
+            pass
+        return None
+
     variant_data = []
     for v in variants:
         try:
             variant_data.append({
                 'id': v.id,
                 'size': getattr(v, 'size', None) or getattr(v, 'size_display', None),
-                'color_id': getattr(v, 'color_obj_id', None),
+                'color_id': _color_key_from_variant(v),
                 'stock_qty': int(getattr(v, 'stock_qty', 0)),
             })
         except Exception:
@@ -209,25 +219,23 @@ def product_detail(request, product_id):
     try:
         seen_ids = set()
         for v in variants:
-            cid = None
+            cid_key = _color_key_from_variant(v)
+            if not cid_key:
+                continue
             cname = ''
             chex = ''
             try:
-                if getattr(v, 'color_obj_id', None):
-                    cid = int(v.color_obj_id)
-                    cname = getattr(v.color_obj, 'name', '') if hasattr(v, 'color_obj') else (v.color or '')
-                    chex = getattr(v.color_obj, 'code', '') if hasattr(v, 'color_obj') else ''
-                else:
-                    cname = v.color or ''
-                    if v.color_attr and v.color_attr.code:
-                        chex = v.color_attr.code
+                cname = v.color or ''
+                if getattr(v, 'color_obj', None) and hasattr(v.color_obj, 'code'):
+                    chex = v.color_obj.code or ''
+                elif getattr(v, 'color_attr', None) and hasattr(v.color_attr, 'code'):
+                    chex = v.color_attr.code or ''
             except Exception:
-                cid = None
                 cname = v.color or ''
                 chex = ''
-            if cid is not None and cid not in seen_ids:
-                colors_set.append({'id': cid, 'name': cname, 'hex': chex})
-                seen_ids.add(cid)
+            if cid_key not in seen_ids:
+                colors_set.append({'id': cid_key, 'name': cname, 'hex': chex})
+                seen_ids.add(cid_key)
     except Exception:
         pass
 
@@ -235,6 +243,18 @@ def product_detail(request, product_id):
     for c in colors_set:
         images_by_color[str(c['id'])] = []
     primary_video_url = None
+    def _color_key_from_image(img):
+        try:
+            if getattr(img, 'color_id', None):
+                return str(int(img.color_id))
+            if getattr(img, 'color_attr_id', None):
+                return f"A{int(img.color_attr_id)}"
+            if getattr(img, 'variant', None) and getattr(img.variant, 'color_obj_id', None):
+                return str(int(img.variant.color_obj_id))
+        except Exception:
+            pass
+        return None
+
     for img in images:
         vurl = None
         try:
@@ -246,15 +266,9 @@ def product_detail(request, product_id):
         url = img.get_image_url()
         if not url:
             continue
-        color_id = None
-        try:
-            if getattr(img, 'color_id', None):
-                color_id = int(img.color_id)
-            elif img.variant and getattr(img.variant, 'color_obj_id', None):
-                color_id = int(img.variant.color_obj_id)
-        except Exception:
-            color_id = None
-        key = str(color_id) if (color_id is not None and str(color_id) in images_by_color) else '__default__'
+        key = _color_key_from_image(img)
+        if key is None or key not in images_by_color:
+            key = '__default__'
         images_by_color[key].append(url)
 
     gallery_empty = True
@@ -273,8 +287,11 @@ def product_detail(request, product_id):
 
     sizes_by_color = {}
     for c in colors_set:
-        cid = c.get('id')
-        sizes_by_color[str(cid)] = sorted({getattr(v, 'size_display', v.size) for v in variants if getattr(v, 'color_obj_id', None) == cid})
+        cid_key = str(c.get('id'))
+        def _match(v):
+            k = _color_key_from_variant(v)
+            return str(k) == cid_key
+        sizes_by_color[cid_key] = sorted({getattr(v, 'size_display', v.size) for v in variants if _match(v)})
     if not sizes_by_color and variants:
         sizes_by_color['__no_color__'] = sorted({getattr(v, 'size_display', v.size) for v in variants})
 
