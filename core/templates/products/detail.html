@@ -232,7 +232,31 @@
       b.classList.add('selected');
     });
     const form = addBtn.closest('form');
-    form.addEventListener('submit', function(e){ if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); inlineMsg.style.display='block'; } });
+    form.addEventListener('submit', async function(e){
+      e.preventDefault();
+      if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ inlineMsg.style.display='block'; return; }
+      const prev = addBtn.textContent;
+      addBtn.disabled = true;
+      addBtn.textContent = 'Adding...';
+      if (inlineMsg) inlineMsg.style.display='none';
+      try{
+        const fd = new FormData(form);
+        const resp = await fetch(form.action, { method: 'POST', body: fd });
+        let data = null; try{ data = await resp.json(); }catch(_){ data = null; }
+        addBtn.textContent = prev;
+        addBtn.disabled = false;
+        if (resp.ok && data && (data.ok === true || data.status === 'ok')){ alert('Added to Cart Successfully!'); window.location.href = '/cart/'; }
+        else{
+          const msg = (data && (data.detail || data.error || data.message)) || 'حدث خطأ أثناء الإضافة إلى السلة';
+          if (inlineMsg){ inlineMsg.textContent = msg; inlineMsg.style.display = 'block'; } else { alert(msg); }
+        }
+      }catch(_){
+        addBtn.textContent = prev;
+        addBtn.disabled = false;
+        const msg = 'تعذر الاتصال بالسيرفر. حاول مرة أخرى.';
+        if (inlineMsg){ inlineMsg.textContent = msg; inlineMsg.style.display = 'block'; } else { alert(msg); }
+      }
+    });
   });
 </script>
 <!-- Hero Section -->
@@ -611,13 +635,29 @@
                                     console.log('pd:initPage:noVariants');
                                 }
                             }
-                            document.getElementById('variantPickerForm').addEventListener('submit', function(e){
-                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVariantId.value){
-                                    e.preventDefault();
-                                    console.log('pd:submit:blocked', {variantId: hiddenVariantId.value});
-                                    inlineMsg.style.display = 'block';
+                            document.getElementById('variantPickerForm').addEventListener('submit', async function(e){
+                                e.preventDefault();
+                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVariantId.value){ inlineMsg.style.display = 'block'; return; }
+                                const prev = addBtn.innerHTML || addBtn.textContent;
+                                addBtn.disabled = true;
+                                addBtn.textContent = 'Adding...';
+                                inlineMsg.style.display = 'none';
+                                try{
+                                    const fd = new FormData(this);
+                                    const resp = await fetch(this.action, { method: 'POST', body: fd });
+                                    let data = null; try{ data = await resp.json(); }catch(_){ data = null; }
+                                    addBtn.textContent = prev;
+                                    addBtn.disabled = false;
+                                    if (resp.ok && data && (data.ok === true || data.status === 'ok')){ alert('Added to Cart Successfully!'); window.location.href = '/cart/'; }
+                                    else{
+                                        const msg = (data && (data.detail || data.error || data.message)) || 'حدث خطأ أثناء الإضافة إلى السلة';
+                                        inlineMsg.textContent = msg; inlineMsg.style.display = 'block';
+                                    }
+                                }catch(_){
+                                    addBtn.textContent = prev;
+                                    addBtn.disabled = false;
+                                    inlineMsg.textContent = 'تعذر الاتصال بالسيرفر. حاول مرة أخرى.'; inlineMsg.style.display = 'block';
                                 }
-                                console.log('pd:submit:ok', {variantId: hiddenVariantId.value});
                             });
 
                                 // Initialize default selection on page load if variants exist
@@ -679,6 +719,26 @@
                             const buyNowSimpleBtn = document.getElementById('buyNowSimpleBtn');
                             function _submitSimple(){ const f=document.getElementById('simpleAddForm'); if(f) f.requestSubmit(); }
                             if (quickAddSimpleBtn) quickAddSimpleBtn.addEventListener('click', _submitSimple);
+                            document.getElementById('simpleAddForm').addEventListener('submit', async function(e){
+                                e.preventDefault();
+                                const btn = this.querySelector('button[type="submit"]');
+                                const prev = btn ? (btn.textContent || btn.innerHTML) : '';
+                                if (btn){ btn.disabled = true; btn.textContent = 'Adding...'; }
+                                try{
+                                    const fd = new FormData(this);
+                                    const resp = await fetch(this.action, { method: 'POST', body: fd });
+                                    let data = null; try{ data = await resp.json(); }catch(_){ data = null; }
+                                    if (btn){ btn.textContent = prev; btn.disabled = false; }
+                                    if (resp.ok && data && (data.ok === true || data.status === 'ok')){ alert('Added to Cart Successfully!'); window.location.href = '/cart/'; }
+                                    else{
+                                        const msg = (data && (data.detail || data.error || data.message)) || 'حدث خطأ أثناء الإضافة إلى السلة';
+                                        alert(msg);
+                                    }
+                                }catch(_){
+                                    if (btn){ btn.textContent = prev; btn.disabled = false; }
+                                    alert('تعذر الاتصال بالسيرفر. حاول مرة أخرى.');
+                                }
+                            });
                             async function _buyNowSimple(){
                                 const form = document.getElementById('simpleAddForm');
                                 if (!form) return;
