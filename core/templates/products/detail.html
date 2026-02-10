@@ -27,7 +27,7 @@
   .sz{min-width:52px;padding:10px 12px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
   .sz:disabled{opacity:.5;cursor:not-allowed}
   .btn{padding:12px 18px;border:none;border-radius:10px;background:#ff6a00;color:#fff;font-weight:700;width:100%}
-  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .btn:disabled{background:#ff6a00;opacity:.6;cursor:not-allowed}
   .product-hero{display:none}
   .product-details-section{display:none}
   .modal{display:none}
@@ -35,6 +35,7 @@
   #addBtn:hover{filter:brightness(0.95)}
   #negPrice{background:#f3f4f6;border:1px solid #ddd;border-radius:10px;padding:10px;width:180px}
   .hint{font-size:13px;color:#666;margin-top:8px}
+  .negRow{display:flex;align-items:center;gap:12px;margin:12px 0;background:#f3f4f6;padding:10px;border-radius:10px}
   .thumb{cursor:pointer}
   .related-wrap{margin:24px 16px;background:#ffffff}
   .related-wrap, .related-wrap *{color:#000000 !important;background-color:#ffffff !important}
@@ -54,21 +55,7 @@
     <video id="pdVideo" src="{{ primary_video_url }}" controls playsinline style="width:100%;height:auto;background:#ffffff"></video>
     {% endif %}
     <img id="pdMain" src="{{ default_main_image_url }}" alt="{{ product.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
-    <div id="pdThumbs">
-      {% if images_by_color %}
-        {% for img in product.images.all %}
-        <button type="button" class="thumb" data-src="{{ img.get_image_url }}">
-          <img src="{{ img.get_image_url }}" alt="{{ product.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
-        </button>
-        {% endfor %}
-      {% else %}
-        {% for img in product.images.all %}
-        <button type="button" class="thumb" data-src="{{ img.get_image_url }}">
-          <img src="{{ img.get_image_url }}" alt="{{ product.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
-        </button>
-        {% endfor %}
-      {% endif %}
-    </div>
+    <div id="pdThumbs"></div>
   </div>
   <div class="pdInfo">
     <div class="title">{{ product.name }}</div>
@@ -149,18 +136,39 @@
       pdThumbs.appendChild(btn);
     });
   }
-  function renderSwatches(){
-    swatchesEl.innerHTML = '';
-    (AVAILABLE_COLORS || []).forEach(function(c){
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'swatch' + (String(selectedColorId) === String(c.id) ? ' selected' : '');
-      b.setAttribute('data-color', String(c.id));
-      const hex = (c.hex || '').trim();
-      if (hex) b.style.backgroundColor = hex;
-      b.addEventListener('click', function(){ onColorSelect(String(c.id)); });
-      swatchesEl.appendChild(b);
-    });
+  function renderSwatches(clear){
+    var shouldClear = (typeof clear === 'boolean') ? clear : true;
+    if (shouldClear) {
+      swatchesEl.innerHTML = '';
+      (AVAILABLE_COLORS || []).forEach(function(c){
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'swatch' + (String(selectedColorId) === String(c.id) ? ' selected' : '');
+        b.setAttribute('data-color', String(c.id));
+        const hex = (c.hex || '').trim();
+        if (hex) b.style.backgroundColor = hex;
+        b.addEventListener('click', function(){ onColorSelect(String(c.id)); });
+        swatchesEl.appendChild(b);
+      });
+    } else {
+      if (swatchesEl.childElementCount === 0) {
+        (AVAILABLE_COLORS || []).forEach(function(c){
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'swatch' + (String(selectedColorId) === String(c.id) ? ' selected' : '');
+          b.setAttribute('data-color', String(c.id));
+          const hex = (c.hex || '').trim();
+          if (hex) b.style.backgroundColor = hex;
+          b.addEventListener('click', function(){ onColorSelect(String(c.id)); });
+          swatchesEl.appendChild(b);
+        });
+      } else {
+        Array.from(swatchesEl.children).forEach(function(b){
+          const id = b.getAttribute('data-color');
+          if (String(id) === String(selectedColorId)) { b.classList.add('selected'); } else { b.classList.remove('selected'); }
+        });
+      }
+    }
   }
   function renderSizesForColor(colorId){
     renderSizesAll();
@@ -179,9 +187,10 @@
     });
   }
   function renderSizesAll(){
-    sizesEl.innerHTML = '';
+    if (sizesEl.childElementCount > 0) return;
     const sizes = Array.from(new Set(VARIANTS.map(v => v.size)));
     sizes.forEach(function(s){
+      if (sizesEl.querySelector('[data-size="' + String(s) + '"]')) return;
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'sz';
@@ -203,14 +212,14 @@
   }
   function onColorSelect(colorId){
     selectedColorId = String(colorId);
-    renderSwatches();
+    renderSwatches(true);
     renderThumbs(getImagesForColorId(selectedColorId));
     renderSizesForColor(selectedColorId);
     if (selectedSizeVal){ selectSize(selectedSizeVal); } else { hiddenVar.value = ''; addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
   }
 
   document.addEventListener('DOMContentLoaded', function(){
-    renderSwatches();
+    renderSwatches(false);
     renderThumbs(getAllImages());
     sizesEl.innerHTML = '';
     if (Array.isArray(VARIANTS) && VARIANTS.length > 0) { addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
