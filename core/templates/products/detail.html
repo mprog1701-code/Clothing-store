@@ -20,7 +20,10 @@
   .price-new{font-size:20px;font-weight:800}
   .price-old{font-size:14px;color:#888;text-decoration:line-through}
   .fit{border:1px solid #e5e7eb;background:#ffffff;border-radius:8px;padding:10px;margin:8px 0;font-size:14px}
-  .sizes{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin:10px 0}
+  .swatch{width:28px;height:28px;border:2px solid #ccc;border-radius:6px;cursor:pointer}
+  .swatch.selected{border-color:#000}
+  .sizes{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin-top:8px}
   .sz{min-width:52px;padding:10px 12px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
   .sz:disabled{opacity:.5;cursor:not-allowed}
   .btn{padding:12px 18px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
@@ -36,8 +39,8 @@
   .related-wrap{margin:24px 16px;background:#ffffff}
   .related-wrap, .related-wrap *{color:#000000 !important;background-color:#ffffff !important}
   .relTitle{font-size:18px;font-weight:800;color:#1a1a1a;margin-bottom:8px}
-  .relList{display:flex;gap:12px;flex-wrap:wrap}
-  .relCard{display:block;width:180px;border:1px solid #e5e7eb;border-radius:10px;background:#ffffff;text-decoration:none;color:#000000 !important}
+  .relList{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;width:100%}
+  .relCard{display:block;border:1px solid #e5e7eb;border-radius:10px;background:#ffffff;text-decoration:none;color:#000000 !important}
   .relImg{width:100%;height:160px;background:#ffffff;border-bottom:1px solid #e5e7eb}
   .relImg img{width:100%;height:100%;object-fit:cover}
   .relBody{padding:10px;background:#ffffff}
@@ -80,19 +83,21 @@
     {% if fit_advice %}
     <div class="fit">{{ fit_advice }}</div>
     {% endif %}
+    <div class="negRow" style="display:flex;align-items:center;gap:12px;margin:12px 0;">
+      <input type="number" step="0.01" min="0" id="negPrice" name="negotiatedPrice" placeholder="Negotiated Price" style="max-width:180px;">
+      <div id="storeRating">⭐ {{ product.rating|default:"0.0" }}</div>
+    </div>
     <form method="post" action="{% url 'cart_items_json' %}">
       {% csrf_token %}
       <input type="hidden" name="productId" value="{{ product.id }}">
       <input type="hidden" name="storeId" value="{{ product.store.id }}">
       <input type="hidden" name="variantId" id="variantId">
       <input type="hidden" name="quantity" id="qty" value="1">
+      <div class="swatches" id="swatches"></div>
       <div class="sizes" id="sizes">
-        {% regroup variants by size as size_groups %}
-        {% for g in size_groups %}
-          <button type="button" class="sz" data-size="{{ g.grouper }}">{{ g.grouper }}</button>
-        {% endfor %}
+        <div class="fit">Select Color first</div>
       </div>
-      <div style="margin-top:12px"><button class="btn" id="addBtn">أضف للسلة</button></div>
+      <div style="margin-top:16px"><button class="btn" id="addBtn">Add to Cart</button></div>
     </form>
   </div>
 </div>
@@ -126,36 +131,30 @@
 <script type="application/json" id="colors-data">{{ available_colors|safe }}</script>
 <script>
   const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
-  console.log('VARIANTS:', VARIANTS);
+  console.log('VARIANTS', VARIANTS);
+  const IMAGES_BY_COLOR = JSON.parse(document.getElementById('images-data').textContent || '{}');
+  const AVAILABLE_COLORS = JSON.parse(document.getElementById('colors-data').textContent || '[]');
   const sizesEl = document.getElementById('sizes');
+  const swatchesEl = document.getElementById('swatches');
   const addBtn = document.getElementById('addBtn');
   const hiddenVar = document.getElementById('variantId');
-  const pdWrap = document.querySelector('.pdWrap');
-  const pdMain = (pdWrap ? pdWrap.querySelector('#pdMain') : document.getElementById('pdMain'));
-  let pdThumbs = (pdWrap ? pdWrap.querySelector('#pdThumbs') : document.getElementById('pdThumbs'));
-  const IMAGES_BY_COLOR = (function(){ try { return JSON.parse(document.getElementById('images-data').textContent || '{}'); } catch(e){ return {}; } })();
+  const pdMain = document.getElementById('pdMain');
+  const pdThumbs = document.getElementById('pdThumbs');
   const DEFAULT_IMAGE = '{{ default_main_image_url }}';
+  let selectedColorId = null;
+
   function getAllImages(){
     const acc = [];
-    try {
-      const keys = Object.keys(IMAGES_BY_COLOR || {});
-      keys.forEach(function(k){
-        const arr = IMAGES_BY_COLOR[k];
-        if (Array.isArray(arr)) { arr.forEach(function(u){ if (u) acc.push(u); }); }
-      });
-    } catch(e){}
-    if (acc.length === 0 && Array.isArray(IMAGES_BY_COLOR['__default__'])) {
-      IMAGES_BY_COLOR['__default__'].forEach(function(u){ if (u) acc.push(u); });
-    }
+    try { Object.keys(IMAGES_BY_COLOR || {}).forEach(k => { const arr = IMAGES_BY_COLOR[k]; if (Array.isArray(arr)) arr.forEach(u => { if (u) acc.push(u); }); }); } catch(e){}
+    if (acc.length === 0 && Array.isArray(IMAGES_BY_COLOR['__default__'])) { IMAGES_BY_COLOR['__default__'].forEach(u => { if (u) acc.push(u); }); }
     return acc;
   }
   function getImagesForColorId(colorId){
     const key = String(colorId);
-    const arr = (IMAGES_BY_COLOR && (IMAGES_BY_COLOR[key] || IMAGES_BY_COLOR[colorId])) || IMAGES_BY_COLOR['__default__'] || [];
+    const arr = (IMAGES_BY_COLOR && IMAGES_BY_COLOR[key]) || [];
     return Array.isArray(arr) ? arr : [];
   }
   function renderThumbs(urls){
-    if (!pdThumbs) return;
     const list = (Array.isArray(urls) ? urls : []).slice(0, 24);
     pdThumbs.innerHTML = '';
     const first = list[0] || DEFAULT_IMAGE;
@@ -173,69 +172,68 @@
       pdThumbs.appendChild(btn);
     });
   }
-  function bestVariantForSize(size){
-    const same = VARIANTS.filter(v => String(v.size || '') === String(size || ''));
-    if (same.length === 0) return null;
-    const inStock = same.find(v => (v.stock_qty || 0) > 0);
-    return inStock || same[0];
-  }
-  function updateButtonsState(){
-    const chips = Array.from(sizesEl.querySelectorAll('.sz'));
-    const noVariants = !(Array.isArray(VARIANTS) && VARIANTS.length > 0);
-    chips.forEach(chip => {
-      const size = chip.dataset.size;
-      if (noVariants) {
-        chip.disabled = false;
-        return;
-      }
-      const v = bestVariantForSize(size);
-      const out = !v || (v.stock_qty || 0) <= 0;
-      chip.disabled = !!out;
+  function renderSwatches(){
+    swatchesEl.innerHTML = '';
+    (AVAILABLE_COLORS || []).forEach(function(c){
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch' + (String(selectedColorId) === String(c.id) ? ' selected' : '');
+      b.setAttribute('data-color', String(c.id));
+      const hex = (c.hex || '').trim();
+      if (hex) b.style.backgroundColor = hex;
+      b.addEventListener('click', function(){ onColorSelect(String(c.id)); });
+      swatchesEl.appendChild(b);
     });
-    const firstAvail = chips.find(ch => !ch.disabled);
-    if (firstAvail){
-      selectSize(firstAvail);
-    } else {
-      hiddenVar.value='';
-      addBtn.disabled = true;
-      if (chips.length === 0) {
-        sizesEl.innerHTML = '<div class="fit">نفذت الكمية</div>';
-      }
-    }
   }
-  function selectSize(chip){
+  function renderSizesForColor(colorId){
+    sizesEl.innerHTML = '';
+    const sizes = Array.from(new Set(VARIANTS.filter(v => String(v.color_id || '') === String(colorId)).map(v => v.size)));
+    if (sizes.length === 0){ sizesEl.innerHTML = '<div class="fit">No sizes for this color</div>'; return; }
+    sizes.forEach(function(s){
+      const v = VARIANTS.find(x => String(x.color_id || '') === String(colorId) && String(x.size || '') === String(s || ''));
+      const out = !v || (v.stock_qty || 0) <= 0;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'sz' + (out ? '' : '');
+      b.disabled = !!out;
+      b.textContent = s;
+      b.setAttribute('data-size', s);
+      if (!out){ b.addEventListener('click', function(){ selectSizeByColor(s, colorId); }); }
+      sizesEl.appendChild(b);
+    });
+  }
+  function selectSizeByColor(size, colorId){
     Array.from(sizesEl.querySelectorAll('.sz')).forEach(c => c.classList.remove('selected'));
-    chip.classList.add('selected');
-    const size = chip.dataset.size;
-    const v = bestVariantForSize(size);
+    const btn = Array.from(sizesEl.querySelectorAll('.sz')).find(c => c.getAttribute('data-size') === String(size));
+    if (btn) btn.classList.add('selected');
+    const v = VARIANTS.find(x => String(x.color_id || '') === String(colorId || '') && String(x.size || '') === String(size || ''));
     hiddenVar.value = v && v.id ? String(v.id) : '';
     addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
   }
+  function onColorSelect(colorId){
+    selectedColorId = String(colorId);
+    renderSwatches();
+    renderThumbs(getImagesForColorId(selectedColorId));
+    renderSizesForColor(selectedColorId);
+    hiddenVar.value = '';
+    addBtn.disabled = true;
+  }
+
   document.addEventListener('DOMContentLoaded', function(){
-    updateButtonsState();
-    try { renderThumbs(getAllImages()); } catch(e){}
-    sizesEl.addEventListener('click', function(e){
-      const b = e.target.closest('.sz');
-      if (!b || b.disabled) return;
-      selectSize(b);
+    renderSwatches();
+    renderThumbs(getAllImages());
+    sizesEl.innerHTML = '<div class="fit">Select Color first</div>';
+    if (Array.isArray(VARIANTS) && VARIANTS.length > 0) { addBtn.disabled = true; }
+    pdThumbs.addEventListener('click', function(e){
+      const b = e.target.closest('.thumb');
+      if (!b) return;
+      const src = b.getAttribute('data-src');
+      if (src && pdMain) pdMain.src = src;
+      Array.from(pdThumbs.querySelectorAll('.thumb')).forEach(t => t.classList.remove('selected'));
+      b.classList.add('selected');
     });
-    if (pdThumbs) {
-      pdThumbs.addEventListener('click', function(e){
-        const b = e.target.closest('.thumb');
-        if (!b) return;
-        const src = b.getAttribute('data-src');
-        console.log('Thumbnail clicked:', src);
-        if (src && pdMain) pdMain.src = src;
-        Array.from(pdThumbs.querySelectorAll('.thumb')).forEach(t => t.classList.remove('selected'));
-        b.classList.add('selected');
-      });
-      const firstThumb = pdThumbs.querySelector('.thumb');
-      if (firstThumb) firstThumb.classList.add('selected');
-    }
     const form = addBtn.closest('form');
-    form.addEventListener('submit', function(e){
-      if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); }
-    });
+    form.addEventListener('submit', function(e){ if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ e.preventDefault(); } });
   });
 </script>
 <!-- Hero Section -->
