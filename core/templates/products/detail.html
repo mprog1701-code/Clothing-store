@@ -30,7 +30,6 @@
   .btn:disabled{opacity:.6;cursor:not-allowed}
   .product-hero{display:none}
   .product-details-section{display:none}
-  section.mb-5{display:none}
   .modal{display:none}
   .pdWrap, .pdMedia, .pdInfo, .title, .fit, .price-new, .sz, .btn{color:#1a1a1a}
   #addBtn{background:#ff6a00;color:#ffffff;border-color:#ff6a00}
@@ -83,49 +82,23 @@
     {% if fit_advice %}
     <div class="fit">{{ fit_advice }}</div>
     {% endif %}
-    <div class="negRow" style="display:flex;align-items:center;gap:12px;margin:12px 0;">
-      <input type="number" step="0.01" min="0" id="negPrice" name="negotiatedPrice" placeholder="Negotiated Price" style="max-width:180px;">
-      <div id="storeRating">⭐ {{ product.rating|default:"0.0" }}</div>
-    </div>
     <form method="post" action="{% url 'cart_items_json' %}">
       {% csrf_token %}
       <input type="hidden" name="productId" value="{{ product.id }}">
       <input type="hidden" name="storeId" value="{{ product.store.id }}">
       <input type="hidden" name="variantId" id="variantId">
       <input type="hidden" name="quantity" id="qty" value="1">
+      <div class="sizes" id="sizes"></div>
       <div class="swatches" id="swatches"></div>
-      <div class="sizes" id="sizes">
-        <div class="fit">Select Color first</div>
+      <div class="negRow" style="display:flex;align-items:center;gap:12px;margin:12px 0;">
+        <input type="number" step="0.01" min="0" id="negPrice" name="negotiatedPrice" placeholder="Negotiated Price" style="max-width:180px;">
+        <div id="storeRating">⭐ {{ product.rating|default:"0.0" }}</div>
       </div>
       <div style="margin-top:16px"><button class="btn" id="addBtn">Add to Cart</button></div>
     </form>
   </div>
 </div>
-{% if similar_products %}
-<section class="related-wrap">
-  <div class="relTitle">متوفر في متاجر أخرى بأسعار مختلفة</div>
-  <div class="relList">
-    {% for p in similar_products %}
-    <a href="{% url 'product_detail' p.id %}" class="relCard">
-      <div class="relImg">
-        {% with img=p.images.all|first %}
-          {% if img %}
-            <img src="{{ img.get_image_url }}" alt="{{ p.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
-          {% else %}
-            <img src="{{ placeholder_image_url }}" alt="{{ p.name }}">
-          {% endif %}
-        {% endwith %}
-      </div>
-      <div class="relBody">
-        <div class="relStore">{{ p.store.name }}</div>
-        <div class="relName">{{ p.name }}</div>
-        <div class="relPrice">{{ p.discount_price|default:p.base_price|iqd }}</div>
-      </div>
-    </a>
-    {% endfor %}
-  </div>
-</section>
-{% endif %}
+{% if similar_products %}{% endif %}
 <script type="application/json" id="variant-data">{{ variant_data|safe }}</script>
 <script type="application/json" id="images-data">{{ images_by_color|safe }}</script>
 <script type="application/json" id="colors-data">{{ available_colors|safe }}</script>
@@ -222,7 +195,7 @@
   document.addEventListener('DOMContentLoaded', function(){
     renderSwatches();
     renderThumbs(getAllImages());
-    sizesEl.innerHTML = '<div class="fit">Select Color first</div>';
+    sizesEl.innerHTML = '';
     if (Array.isArray(VARIANTS) && VARIANTS.length > 0) { addBtn.disabled = true; }
     pdThumbs.addEventListener('click', function(e){
       const b = e.target.closest('.thumb');
