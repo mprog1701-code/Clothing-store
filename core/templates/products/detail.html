@@ -21,7 +21,7 @@
   .price-old{font-size:14px;color:#888;text-decoration:line-through}
   .fit{border:1px solid #e5e7eb;background:#ffffff;border-radius:8px;padding:10px;margin:8px 0;font-size:14px}
   .swatches{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
-  .swatch{width:35px;height:35px;border:1px solid #ccc;border-radius:6px;cursor:pointer;transition:transform .15s ease, border-color .15s ease}
+  .swatch{width:35px;height:35px;border:2px solid #eee;border-radius:6px;cursor:pointer;transition:transform .15s ease, border-color .15s ease}
   .swatch.selected{border:2px solid #000;transform:scale(1.05)}
   .sizes{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin-top:8px}
   .sz{min-width:52px;padding:10px 12px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
@@ -163,7 +163,7 @@
     });
   }
   function renderSizesForColor(colorId){
-    sizesEl.innerHTML = '';
+    renderSizesAll();
     const sizes = Array.from(new Set(VARIANTS.filter(v => String(v.color_id || '') === String(colorId)).map(v => v.size)));
     sizes.forEach(function(s){
       const v = VARIANTS.find(x => String(x.color_id || '') === String(colorId) && String(x.size || '') === String(s || ''));
