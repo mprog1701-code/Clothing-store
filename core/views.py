@@ -21,6 +21,8 @@ from django.db import transaction
 from .serializers import UserRegistrationSerializer
 from .forms import AddressForm, ProductForm, VariantFormSet, ImageFormSet
 from .templatetags.math_filters import cart_count
+def health(request):
+    return JsonResponse({'status': 'ok'})
 # Fashion marketplace view
 @ensure_csrf_cookie
 def hybrid_home(request):
