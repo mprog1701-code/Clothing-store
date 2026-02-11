@@ -442,18 +442,19 @@
                         <script type="application/json" id="images-data">{{ images_by_color|safe }}</script>
                         <script type="application/json" id="colors-data">{{ available_colors|safe }}</script>
                         <script>
-                            const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
-                            const SIZES_BY_COLOR = JSON.parse(document.getElementById('sizes-data').textContent || '{}');
-                            const IMAGES_BY_COLOR = JSON.parse(document.getElementById('images-data').textContent || '{}');
-                            const AVAILABLE_COLORS = JSON.parse(document.getElementById('colors-data').textContent || '[]');
-                            const DEFAULT_COLOR = {{ default_color|default:'null'|safe }};
+                            (function(){
+                            const PD_VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
+                            const PD_SIZES_BY_COLOR = JSON.parse(document.getElementById('sizes-data').textContent || '{}');
+                            const PD_IMAGES_BY_COLOR = JSON.parse(document.getElementById('images-data').textContent || '{}');
+                            const PD_AVAILABLE_COLORS = JSON.parse(document.getElementById('colors-data').textContent || '[]');
+                            const PD_DEFAULT_COLOR = {{ default_color|default:'null'|safe }};
                             const COLOR_NAME_BY_ID = (function(){
                                 const map = {};
-                                (AVAILABLE_COLORS||[]).forEach(c=>{ map[String(c.id)] = c.name; });
+                                (PD_AVAILABLE_COLORS||[]).forEach(c=>{ map[String(c.id)] = c.name; });
                                 return map;
                             })();
                             const DEFAULT_MAIN_IMAGE = '{{ default_main_image_url }}';
-                                console.log('pd:init:data', {variantsLen: VARIANTS.length, colorsLen: AVAILABLE_COLORS.length, sizesKeys: Object.keys(SIZES_BY_COLOR), defaultColor: DEFAULT_COLOR});
+                                console.log('pd:init:data', {variantsLen: PD_VARIANTS.length, colorsLen: PD_AVAILABLE_COLORS.length, sizesKeys: Object.keys(PD_SIZES_BY_COLOR), defaultColor: PD_DEFAULT_COLOR});
                             const swatchesEl = document.getElementById('pdSwatches');
                             const sizesEl = document.getElementById('pdSizes');
                             const selColor = document.getElementById('selColor');
@@ -473,9 +474,9 @@
                             let selectedSize = null;
 
                             function renderColorSwatches(){
-                                console.log('pd:renderColorSwatches:start', {availableColors: AVAILABLE_COLORS});
+                                console.log('pd:renderColorSwatches:start', {availableColors: PD_AVAILABLE_COLORS});
                                 swatchesEl.innerHTML = '';
-                                AVAILABLE_COLORS.forEach(c => {
+                                PD_AVAILABLE_COLORS.forEach(c => {
                                     const sw = document.createElement('button');
                                     sw.type = 'button';
                                     sw.className = 'swatch';
@@ -489,21 +490,21 @@
                                     sw.addEventListener('click', function(){ selectColor(String(c.id)); });
                                     swatchesEl.appendChild(sw);
                                 });
-                                console.log('pd:renderColorSwatches:end', {count: (AVAILABLE_COLORS || []).length});
+                                console.log('pd:renderColorSwatches:end', {count: (PD_AVAILABLE_COLORS || []).length});
                             }
                             function updateGallery(color){
                                 const key = (color != null && color !== '') ? String(color) : '';
                                 let list = [];
-                                if (key && Array.isArray(IMAGES_BY_COLOR[key]) && IMAGES_BY_COLOR[key].length > 0) {
-                                    list = IMAGES_BY_COLOR[key];
+                                if (key && Array.isArray(PD_IMAGES_BY_COLOR[key]) && PD_IMAGES_BY_COLOR[key].length > 0) {
+                                    list = PD_IMAGES_BY_COLOR[key];
                                 } else {
                                     // عرض كل صور المنتج عند عدم اختيار لون أو عدم توفر صور لهذا اللون
                                     const all = [];
-                                    Object.keys(IMAGES_BY_COLOR || {}).forEach(k => {
-                                        const arr = IMAGES_BY_COLOR[k];
+                                    Object.keys(PD_IMAGES_BY_COLOR || {}).forEach(k => {
+                                        const arr = PD_IMAGES_BY_COLOR[k];
                                         if (Array.isArray(arr)) { arr.forEach(u => { if (u) all.push(u); }); }
                                     });
-                                    list = (all.length > 0 ? all : (IMAGES_BY_COLOR['__default__'] || []));
+                                    list = (all.length > 0 ? all : (PD_IMAGES_BY_COLOR['__default__'] || []));
                                 }
                                 console.log('pd:updateGallery', {color, urlsLen: (list || []).length});
                                 const first = (list && list.length) ? list[0] : DEFAULT_MAIN_IMAGE;
@@ -537,7 +538,7 @@
                             }
                             function selectColor(color){
                                 resetSize();
-                                const sizes = SIZES_BY_COLOR[String(color)] || [];
+                                const sizes = PD_SIZES_BY_COLOR[String(color)] || [];
                                 console.log('pd:selectColor', {color, sizesLen: sizes.length});
                                 let availableCount = 0;
                                 // mark selected color
@@ -547,7 +548,7 @@
                                 });
                                 // build size buttons
                                 sizes.forEach(s => {
-                                    const v = VARIANTS.find(x => String(x.color_id || '') === String(color) && x.size === s);
+                                    const v = PD_VARIANTS.find(x => String(x.color_id || '') === String(color) && x.size === s);
                                     const out = !v || v.stock_qty <= 0;
                                     const b = document.createElement('button');
                                     b.type = 'button';
@@ -566,7 +567,7 @@
                                 stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
                                 selColor.textContent = COLOR_NAME_BY_ID[String(color)] || 'غير محدد';
                                 selSize.textContent = 'غير محدد';
-                                const firstAvail = VARIANTS.find(x => String(x.color_id || '') === String(color) && x.stock_qty > 0);
+                                const firstAvail = PD_VARIANTS.find(x => String(x.color_id || '') === String(color) && x.stock_qty > 0);
                                 if (firstAvail){ selectSize(color, firstAvail.size); }
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
                             }
@@ -577,7 +578,7 @@
                                 Array.from(sizesEl.children || []).forEach(el => {
                                     el.classList.toggle('selected', el.getAttribute('data-size') === size);
                                 });
-                                const v = VARIANTS.find(x => String(x.color_id || '') === String(color || '') && x.size === size);
+                                const v = PD_VARIANTS.find(x => String(x.color_id || '') === String(color || '') && x.size === size);
                                 if (!v){
                                     console.log('pd:selectSize:notFound', {color, size});
                                     hiddenVariantId.value = '';
@@ -607,17 +608,17 @@
                                 console.log('pd:initPage:start');
                                 renderColorSwatches();
                                 updateGallery('');
-                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0){
-                                    const hasColors = Array.isArray(AVAILABLE_COLORS) && AVAILABLE_COLORS.length > 0;
-                                    const initialColor = DEFAULT_COLOR || (hasColors && AVAILABLE_COLORS[0] ? String(AVAILABLE_COLORS[0].id) : null);
+                                if (Array.isArray(PD_VARIANTS) && PD_VARIANTS.length > 0){
+                                    const hasColors = Array.isArray(PD_AVAILABLE_COLORS) && PD_AVAILABLE_COLORS.length > 0;
+                                    const initialColor = PD_DEFAULT_COLOR || (hasColors && PD_AVAILABLE_COLORS[0] ? String(PD_AVAILABLE_COLORS[0].id) : null);
                                     console.log('pd:initPage:variants', {hasColors, initialColor});
                                     if (initialColor) {
                                         selectColor(initialColor);
                                     } else {
-                                        const nocSizes = SIZES_BY_COLOR['__no_color__'] || Array.from(new Set(VARIANTS.map(x => x.size)));
+                                        const nocSizes = PD_SIZES_BY_COLOR['__no_color__'] || Array.from(new Set(PD_VARIANTS.map(x => x.size)));
                                         sizesEl.innerHTML = '';
                                         nocSizes.forEach(s => {
-                                            const v = VARIANTS.find(x => (x.color_id == null) && x.size === s) || VARIANTS.find(x => x.size === s);
+                                            const v = PD_VARIANTS.find(x => (x.color_id == null) && x.size === s) || PD_VARIANTS.find(x => x.size === s);
                                             const out = !v || v.stock_qty <= 0;
                                             const b = document.createElement('button');
                                             b.type = 'button';
@@ -649,7 +650,7 @@
                             }
                             document.getElementById('variantPickerForm').addEventListener('submit', async function(e){
                                 e.preventDefault();
-                                if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVariantId.value){ inlineMsg.style.display = 'block'; return; }
+                                if (Array.isArray(PD_VARIANTS) && PD_VARIANTS.length > 0 && !hiddenVariantId.value){ inlineMsg.style.display = 'block'; return; }
                                 const prev = addBtn.innerHTML || addBtn.textContent;
                                 addBtn.disabled = true;
                                 addBtn.textContent = 'Adding...';
@@ -674,6 +675,7 @@
 
                                 // Initialize default selection on page load if variants exist
                             document.addEventListener('DOMContentLoaded', initPage);
+                            })();
                         </script>
                         <script>
                             const quickAddBtn = document.getElementById('quickAddBtn');
@@ -681,9 +683,9 @@
                                 quickAddBtn.addEventListener('click', function(){
                                     const form = document.getElementById('variantPickerForm');
                                     const hiddenVariantId = document.getElementById('selectedVariantId');
-                                    const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
+                                    const variantsLen = (JSON.parse(document.getElementById('variant-data').textContent || '[]') || []).length;
                                     const inlineMsg = document.getElementById('inlineMsg');
-                                    if (!hiddenVariantId.value && VARIANTS.length > 0) { inlineMsg.style.display = 'block'; return; }
+                                    if (!hiddenVariantId.value && variantsLen > 0) { inlineMsg.style.display = 'block'; return; }
                                     form.requestSubmit();
                                 });
                             }
@@ -692,9 +694,9 @@
                                 buyNowBtn.addEventListener('click', async function(){
                                     const form = document.getElementById('variantPickerForm');
                                     const hiddenVariantId = document.getElementById('selectedVariantId');
-                                    const VARIANTS = JSON.parse(document.getElementById('variant-data').textContent || '[]');
+                                    const variantsLen = (JSON.parse(document.getElementById('variant-data').textContent || '[]') || []).length;
                                     const inlineMsg = document.getElementById('inlineMsg');
-                                    if (!hiddenVariantId.value && VARIANTS.length > 0) { inlineMsg.style.display = 'block'; return; }
+                                    if (!hiddenVariantId.value && variantsLen > 0) { inlineMsg.style.display = 'block'; return; }
                                     const fd = new FormData(form);
                                     const resp = await fetch(form.action, { method: 'POST', body: fd });
                                     if (resp.ok) { window.location.href = '{% url "checkout" %}'; }
