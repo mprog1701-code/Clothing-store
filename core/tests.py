@@ -453,3 +453,18 @@ class ProductDetailRedesignTests(TestCase):
         self.assertContains(res, 'id="pdThumbs"')
         self.assertContains(res, 'id="images-data"')
         self.assertContains(res, 'id="colors-data"')
+
+
+class PublicStoreDetailTests(TestCase):
+    def setUp(self):
+        U = get_user_model()
+        self.owner = U.objects.create_user(username='own_pub', password='x', role='store_admin', phone='07700000999', city='Baghdad')
+        self.client = Client()
+        self.store = Store.objects.create(owner=self.owner, name='PUB', city='Baghdad', address='Addr')
+
+    def test_public_store_detail_renders_with_iqd_filter(self):
+        Product.objects.create(store=self.store, name='P1', description='x', base_price=1000, category='men', size_type='none', status='ACTIVE')
+        url = reverse('store_detail', args=[self.store.id])
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, 'د.ع')
