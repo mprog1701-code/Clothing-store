@@ -24,7 +24,9 @@
   .swatch{width:35px;height:35px;border:2px solid #eee;border-radius:6px;cursor:pointer;transition:transform .15s ease, border-color .15s ease}
   .swatch.selected{border:2px solid #000;transform:scale(1.05)}
   .sizes{display:flex;gap:8px;flex-wrap:wrap;background:#ffffff;margin-top:8px}
-  .sz{min-width:52px;padding:10px 12px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700}
+  .sz{min-width:52px;padding:10px 12px;border:2px solid #000;border-radius:10px;background:#ffffff;font-weight:700;transition:all .15s ease}
+  .sz.selected{border-color:#ff6a00;background:#ff6a00;color:#fff}
+  .sz:hover{transform:translateY(-1px)}
   .sz:disabled{opacity:.5;cursor:not-allowed}
   .btn{padding:12px 18px;border:none;border-radius:10px;background:#ff6a00;color:#fff;font-weight:700;width:100%}
   .btn:disabled{background:#ff6a00;opacity:.6;cursor:not-allowed}
@@ -76,6 +78,7 @@
       <input type="hidden" name="storeId" value="{{ product.store.id }}">
       <input type="hidden" name="variantId" id="variantId">
       <input type="hidden" name="quantity" id="qty" value="1">
+      <div class="small text-muted mb-2"><span>اللون: <span id="selColor">غير محدد</span></span> <span class="ms-2">القياس: <span id="selSize">غير محدد</span></span></div>
       <div class="swatches" id="swatches"></div>
       <div class="sizes" id="sizes"></div>
       <div class="negRow" style="display:flex;align-items:center;gap:12px;margin:12px 0;">
@@ -104,8 +107,11 @@
   const pdThumbs = document.getElementById('pdThumbs');
   const DEFAULT_IMAGE = '{{ default_main_image_url }}';
   const inlineMsg = document.getElementById('inlineMsg');
+  const selColor = document.getElementById('selColor');
+  const selSize = document.getElementById('selSize');
   let selectedColorId = null;
   let selectedSizeVal = null;
+  const COLOR_NAME_BY_ID = (function(){ const m={}; (AVAILABLE_COLORS||[]).forEach(c=>{ m[String(c.id)] = c.name; }); return m; })();
 
   function getAllImages(){
     const acc = [];
@@ -209,6 +215,7 @@
     hiddenVar.value = v && v.id ? String(v.id) : '';
     addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
     if (inlineMsg) inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
+    if (selSize) selSize.textContent = String(size);
   }
   function onColorSelect(colorId){
     selectedColorId = String(colorId);
@@ -218,6 +225,7 @@
     const firstAvail = VARIANTS.find(x => String(x.color_id || '') === String(selectedColorId) && (x.stock_qty || 0) > 0);
     if (firstAvail){ selectSize(firstAvail.size); }
     else { selectedSizeVal = null; hiddenVar.value = ''; addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
+    if (selColor) selColor.textContent = COLOR_NAME_BY_ID[String(selectedColorId)] || 'غير محدد';
   }
 
   document.addEventListener('DOMContentLoaded', function(){
