@@ -113,8 +113,10 @@ class CartAndCheckoutTests(TestCase):
         # Render cart view
         r = self.client.get(reverse("cart_view"))
         self.assertEqual(r.status_code, 200)
-        # Should show new unit price and subtotal based on negotiated price
-        self.assertIn("4500", r.content.decode("utf-8"))
+        # Should show proposed price section and pending approval badge
+        html = r.content.decode("utf-8")
+        self.assertIn("Proposed", html)
+        self.assertIn("Pending Approval", html)
 
     def test_checkout_stock_failed(self):
         self.login_customer()

@@ -712,6 +712,7 @@ def cart_view(request):
         raw_variant_id = item.get('variant_id')
         raw_product_id = item.get('product_id')
         neg_price_raw = item.get('negotiated_price')
+        mgr_approved = bool(item.get('manager_approved'))
         try:
             negotiated_price = (Decimal(str(neg_price_raw)) if neg_price_raw not in [None, ''] else None)
         except Exception:
@@ -728,8 +729,7 @@ def cart_view(request):
                 continue
             quantity = int(item.get('quantity') or 1)
             price = product.base_price
-            active_price = negotiated_price if (negotiated_price is not None and negotiated_price > 0) else price
-            subtotal = active_price * int(quantity)
+            subtotal = Decimal(price) * int(quantity)
             image_url = None
             try:
                 mimg = getattr(product, 'main_image', None) or product.images.first()
@@ -741,9 +741,10 @@ def cart_view(request):
                 'product': product,
                 'variant': None,
                 'quantity': quantity,
-                'price': active_price,
+                'price': price,
                 'original_price': price,
                 'negotiated_price': negotiated_price,
+                'manager_approved': mgr_approved,
                 'subtotal': subtotal,
                 'image_url': image_url,
                 'unavailable': False,
@@ -765,8 +766,7 @@ def cart_view(request):
             quantity = variant.stock_qty
         # compute price and image url
         price = variant.price
-        active_price = negotiated_price if (negotiated_price is not None and negotiated_price > 0) else price
-        subtotal = Decimal('0') if unavailable else active_price * int(quantity)
+        subtotal = Decimal('0') if unavailable else Decimal(price) * int(quantity)
         image_url = None
         try:
             vimg = variant.images.first()
@@ -787,9 +787,10 @@ def cart_view(request):
                 'product': product,
                 'variant': variant,
                 'quantity': quantity,
-                'price': active_price,
+                'price': price,
                 'original_price': price,
                 'negotiated_price': negotiated_price,
+                'manager_approved': mgr_approved,
                 'subtotal': subtotal,
                 'image_url': image_url,
                 'unavailable': unavailable,
@@ -962,6 +963,7 @@ def cart_items_json(request):
     raw_quantity = payload.get('quantity')
     raw_store_id = payload.get('storeId') or payload.get('store_id')
     raw_neg_price = payload.get('negotiatedPrice') or payload.get('negotiated_price')
+    raw_mgr_approved = payload.get('managerApproved') or payload.get('manager_approved')
     try:
         product_id = int(raw_product_id)
     except (TypeError, ValueError):
@@ -976,6 +978,11 @@ def cart_items_json(request):
         negotiated_price = float(raw_neg_price) if raw_neg_price not in [None, ''] else None
     except Exception:
         negotiated_price = None
+    manager_approved = False
+    if isinstance(raw_mgr_approved, str):
+        manager_approved = raw_mgr_approved.lower() in ['true', '1', 'yes']
+    elif isinstance(raw_mgr_approved, (int, bool)):
+        manager_approved = bool(raw_mgr_approved)
     product = Product.objects.filter(id=product_id, is_active=True).first()
     if not product:
         return JsonResponse({'code': 'PRODUCT_NOT_FOUND', 'message': 'product not found'}, status=404)
@@ -1036,10 +1043,12 @@ def cart_items_json(request):
         existing_item['quantity'] = new_qty
         if negotiated_price is not None and negotiated_price > 0:
             existing_item['negotiated_price'] = negotiated_price
+        existing_item['manager_approved'] = manager_approved
     else:
         item = {'product_id': product.id, 'variant_id': variant_id, 'quantity': quantity}
         if negotiated_price is not None and negotiated_price > 0:
             item['negotiated_price'] = negotiated_price
+        item['manager_approved'] = manager_approved
         cart.append(item)
     request.session['cart'] = cart
     if not cart or session_store_id is None:

@@ -28,8 +28,9 @@
 .primary .btn-total{display:inline-block;margin-inline-start:8px;background:#fff;color:#111;border-radius:8px;padding:2px 8px}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52vh}
 .cta{display:inline-block;background:#ff6a00;color:#fff;border-radius:10px;padding:12px 24px;text-decoration:none;margin-top:12px}
-.unit .old{color:#888;text-decoration:line-through;margin-inline-end:6px}
-.unit .new{color:#ff6a00;font-weight:800}
+.proposed{font-size:13px;color:#555}
+.badge-pending{display:inline-block;background:#ffd54f;color:#111;border:1px solid #e0b900;border-radius:10px;padding:2px 8px;margin-inline-start:8px}
+.info-tip{display:inline-block;margin-inline-start:6px;color:#888;cursor:help}
 .toast{position:fixed;bottom:70px;left:0;right:0;display:none}
 .toast .box{margin:0 auto;background:#111;color:#fff;padding:10px 14px;border-radius:10px;max-width:280px;text-align:center}
 </style>
@@ -50,10 +51,13 @@
           <div class="qty"><button class="dec">−</button><input type="number" value="{{ item.quantity }}" min="1"><button class="inc">+</button><button class="del-btn">حذف</button></div>
         </div>
         <div class="price">
+          <div class="unit">{{ item.price|iqd }}</div>
           {% if item.negotiated_price %}
-            <div class="unit"><span class="old">{{ item.original_price|iqd }}</span><span class="new">{{ item.price|iqd }}</span></div>
-          {% else %}
-            <div class="unit">{{ item.price|iqd }}</div>
+          <div class="proposed">
+            Proposed: {{ item.negotiated_price|iqd }}
+            <span class="badge-pending">Pending Approval</span>
+            <span class="info-tip" title="Your offer is being reviewed by the store owner.">ℹ️</span>
+          </div>
           {% endif %}
           <div class="subtotal">{{ item.subtotal|iqd }}</div>
         </div>
