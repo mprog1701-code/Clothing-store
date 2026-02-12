@@ -81,10 +81,12 @@
       <div class="small text-muted mb-2"><span>اللون: <span id="selColor">غير محدد</span></span> <span class="ms-2">القياس: <span id="selSize">غير محدد</span></span></div>
       <div class="swatches" id="swatches"></div>
       <div class="sizes" id="sizes"></div>
+      {% if features.NEGOTIATION_ENABLED and product.allow_negotiation %}
       <div class="negRow" style="display:flex;align-items:center;gap:12px;margin:12px 0;">
         <input type="number" step="0.01" min="0" id="negPrice" name="negotiatedPrice" placeholder="Negotiated Price" style="max-width:180px;">
         <div id="storeRating">⭐ {{ product.rating|default:"0.0" }}</div>
       </div>
+      {% endif %}
       <div style="margin-top:16px"><button class="btn" id="addBtn" disabled>Add to Cart</button></div>
       <div id="inlineMsg" class="hint">Please select a color and size</div>
     </form>
@@ -109,6 +111,11 @@
   const inlineMsg = document.getElementById('inlineMsg');
   const selColor = document.getElementById('selColor');
   const selSize = document.getElementById('selSize');
+  const MIN_ACCEPTABLE = (function(){
+    const raw = '{{ product.minimum_acceptable_price|default_if_none:"" }}';
+    const n = parseFloat(raw);
+    return isNaN(n) ? null : n;
+  })();
   let selectedColorId = null;
   let selectedSizeVal = null;
   const COLOR_NAME_BY_ID = (function(){ const m={}; (AVAILABLE_COLORS||[]).forEach(c=>{ m[String(c.id)] = c.name; }); return m; })();
@@ -255,6 +262,15 @@
     form.addEventListener('submit', async function(e){
       e.preventDefault();
       if (Array.isArray(VARIANTS) && VARIANTS.length > 0 && !hiddenVar.value){ inlineMsg.style.display='block'; return; }
+      const negInput = document.getElementById('negPrice');
+      if (negInput && MIN_ACCEPTABLE !== null) {
+        const val = parseFloat(negInput.value || '');
+        if (!isNaN(val) && val < MIN_ACCEPTABLE) {
+          const msg = 'Your offer is too low for this item';
+          if (inlineMsg) { inlineMsg.textContent = msg; inlineMsg.style.display = 'block'; }
+          return;
+        }
+      }
       const prev = addBtn.textContent;
       addBtn.disabled = true;
       addBtn.textContent = 'Adding...';

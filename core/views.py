@@ -1004,6 +1004,27 @@ def cart_items_json(request):
             return JsonResponse({'code': 'OUT_OF_STOCK', 'message': 'variant is out of stock'}, status=409)
         if quantity > variant.stock_qty:
             return JsonResponse({'code': 'INSUFFICIENT_STOCK', 'message': 'insufficient stock', 'details': {'available': int(variant.stock_qty)}}, status=409)
+    from django.core.cache import cache
+    cached_flags = None
+    try:
+        cached_flags = cache.get('feature_flags_cache')
+    except Exception:
+        cached_flags = None
+    neg_global_enabled = True
+    try:
+        neg_global_enabled = bool((cached_flags or {}).get('NEGOTIATION_ENABLED', True))
+    except Exception:
+        neg_global_enabled = True
+    if (not neg_global_enabled) or (not getattr(product, 'allow_negotiation', True)):
+        negotiated_price = None
+    else:
+        if negotiated_price is not None:
+            try:
+                minp = float(product.minimum_acceptable_price) if getattr(product, 'minimum_acceptable_price', None) is not None else None
+            except Exception:
+                minp = None
+            if minp is not None and float(negotiated_price) < minp:
+                return JsonResponse({'code': 'NEGOTIATION_TOO_LOW', 'message': 'Your offer is too low for this item'}, status=400)
     cart = request.session.get('cart', [])
     session_store_id = request.session.get('cart_store_id')
     cur_store_id = session_store_id
@@ -4279,6 +4300,8 @@ def super_owner_edit_product(request, product_id):
             is_featured = request.POST.get('is_featured') == 'on'
             size_type = (request.POST.get('size_type') or '').strip()
             new_images = request.FILES.getlist('new_images')
+            allow_negotiation = request.POST.get('allow_negotiation') == 'on'
+            min_price_raw = (request.POST.get('minimum_acceptable_price') or '').strip()
 
             # Validate required fields
             if not all([name, store_id, category, base_price, description]):
@@ -4297,6 +4320,15 @@ def super_owner_edit_product(request, product_id):
                 product.is_featured = is_featured
                 if size_type in ['symbolic', 'numeric', 'none']:
                     product.size_type = size_type
+                product.allow_negotiation = allow_negotiation
+                from decimal import Decimal, InvalidOperation
+                if min_price_raw == '':
+                    product.minimum_acceptable_price = None
+                else:
+                    try:
+                        product.minimum_acceptable_price = Decimal(min_price_raw)
+                    except InvalidOperation:
+                        product.minimum_acceptable_price = None
 
                 product.save()
 
@@ -5465,6 +5497,8 @@ def super_owner_settings(request):
             feat_reports = (request.POST.get('feat_reports') or '').lower() in ['on','true','1']
             set_flag('NEW_ARRIVALS_SECTION', feat_new_arrivals)
             set_flag('OWNER_DASHBOARD_REPORTS', feat_reports)
+            feat_negotiation = (request.POST.get('feat_negotiation') or '').lower() in ['on','true','1']
+            set_flag('NEGOTIATION_ENABLED', feat_negotiation)
             feat_cat_women = (request.POST.get('feat_cat_women') or '').lower() in ['on','true','1']
             feat_cat_men = (request.POST.get('feat_cat_men') or '').lower() in ['on','true','1']
             feat_cat_kids = (request.POST.get('feat_cat_kids') or '').lower() in ['on','true','1']

@@ -6,6 +6,7 @@ def site_settings(request):
     """Context processor to make site settings available in all templates"""
     settings_obj, created = SiteSettings.objects.get_or_create(id=1)
     features = dict(getattr(settings, 'FEATURE_FLAGS', {}) or {})
+    features.setdefault('NEGOTIATION_ENABLED', True)
     cached = cache.get('feature_flags_cache')
     if cached is None:
         try:

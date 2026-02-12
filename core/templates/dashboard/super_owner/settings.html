@@ -191,6 +191,10 @@
                                     <input class="form-check-input" type="checkbox" id="feat_reports" name="feat_reports" {% if features.OWNER_DASHBOARD_REPORTS %}checked{% endif %}>
                                     <label class="form-check-label" for="feat_reports">تفعيل صفحة "التقارير" في لوحة المالك</label>
                                 </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="feat_negotiation" name="feat_negotiation" {% if features.NEGOTIATION_ENABLED %}checked{% endif %}>
+                                    <label class="form-check-label" for="feat_negotiation">تفعيل ميزة التفاوض على السعر (على مستوى الموقع)</label>
+                                </div>
                                 <hr>
                                 <h6 class="mb-2">التحكم بالفئات الظاهرة في الصفحة</h6>
                                 <div class="row">
