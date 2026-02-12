@@ -95,6 +95,27 @@ class CartAndCheckoutTests(TestCase):
         self.assertEqual(res2.status_code, 200)
         self.assertTrue(res2.json().get("ok"))
 
+    def test_cart_view_with_negotiated_price(self):
+        self.login_customer()
+        # Add product without variant
+        url = reverse("cart_items_json")
+        res = self.client.post(
+            url,
+            data={
+                "productId": self.product_a.id,
+                "quantity": 2,
+                "negotiatedPrice": 4500,
+                "storeId": self.store_a.id,
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(res.status_code, 200)
+        # Render cart view
+        r = self.client.get(reverse("cart_view"))
+        self.assertEqual(r.status_code, 200)
+        # Should show new unit price and subtotal based on negotiated price
+        self.assertIn("4500", r.content.decode("utf-8"))
+
     def test_checkout_stock_failed(self):
         self.login_customer()
         addr = Address.objects.create(user=self.customer, city="Baghdad", area="Karrada", street="1st")

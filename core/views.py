@@ -701,10 +701,11 @@ def owner_password_reset(request):
 
 
 def cart_view(request):
+    from decimal import Decimal
     cart = request.session.get('cart', [])
     new_cart = []
     cart_items = []
-    total = 0
+    total = Decimal('0')
     items_count = 0
 
     for item in cart:
@@ -712,7 +713,7 @@ def cart_view(request):
         raw_product_id = item.get('product_id')
         neg_price_raw = item.get('negotiated_price')
         try:
-            negotiated_price = float(neg_price_raw) if neg_price_raw not in [None, ''] else None
+            negotiated_price = (Decimal(str(neg_price_raw)) if neg_price_raw not in [None, ''] else None)
         except Exception:
             negotiated_price = None
         # Fallback for products without variants
@@ -728,8 +729,7 @@ def cart_view(request):
             quantity = int(item.get('quantity') or 1)
             price = product.base_price
             active_price = negotiated_price if (negotiated_price is not None and negotiated_price > 0) else price
-            subtotal = price * quantity
-            subtotal = active_price * quantity
+            subtotal = active_price * int(quantity)
             image_url = None
             try:
                 mimg = getattr(product, 'main_image', None) or product.images.first()
@@ -766,8 +766,7 @@ def cart_view(request):
         # compute price and image url
         price = variant.price
         active_price = negotiated_price if (negotiated_price is not None and negotiated_price > 0) else price
-        subtotal = 0 if unavailable else price * quantity
-        subtotal = 0 if unavailable else active_price * quantity
+        subtotal = Decimal('0') if unavailable else active_price * int(quantity)
         image_url = None
         try:
             vimg = variant.images.first()
