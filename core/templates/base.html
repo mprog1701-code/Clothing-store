@@ -1814,6 +1814,29 @@
             window.openQuickVariantPicker = openQuickVariantPicker;
         })();
         </script>
+        <script>
+        (function(){
+            function send(payload){
+                try{ fetch('/debug/log-js/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); }catch(e){}
+            }
+            window.addEventListener('error', function(e){
+                try{
+                    var p={ message:String(e.message||e.error||''), file:String(e.filename|| (e.error && e.error.fileName) || ''), line:parseInt(e.lineno|| (e.error && e.error.lineNumber) || 0)||0, col:parseInt(e.colno||0)||0, url: String(location.href||'') };
+                    send(p);
+                }catch(err){}
+            });
+            window.addEventListener('unhandledrejection', function(e){
+                try{
+                    var reason=e.reason; var msg='';
+                    if(typeof reason==='string'){ msg=reason; }
+                    else if(reason && reason.message){ msg=reason.message; }
+                    else { msg=String(reason||''); }
+                    var p={ message: msg, file: '', line: 0, col: 0, url: String(location.href||'') };
+                    send(p);
+                }catch(err){}
+            });
+        })();
+        </script>
     
     {% block extra_js %}{% endblock %}
 </body>

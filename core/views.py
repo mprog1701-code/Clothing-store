@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from datetime import timedelta
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 import logging
 import re
 import os
@@ -2292,6 +2292,59 @@ def super_owner_issues(request):
         'system_status': system_status,
     }
     return render(request, 'dashboard/super_owner/issues.html', context)
+
+@login_required
+def technical_debugger(request):
+    if request.user.username != 'super_owner' and not request.user.is_staff:
+        messages.error(request, 'ليس لديك صلاحية الوصول!')
+        return redirect('home')
+    from .models import ErrorLog
+    errors = list(ErrorLog.objects.order_by('-last_seen')[:200])
+    context = {'errors': errors}
+    return render(request, 'dashboard/super_owner/technical_debugger.html', context)
+
+@csrf_exempt
+def log_js_error(request):
+    if request.method != 'POST':
+        return HttpResponseBadRequest('invalid')
+    try:
+        data = {}
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+        except Exception:
+            data = request.POST.dict()
+        message = str(data.get('message') or '')
+        file_path = str(data.get('file') or '')
+        line_number = int(str(data.get('line') or '0') or 0)
+        url = str(data.get('url') or '') or request.META.get('HTTP_REFERER', '')
+        from .models import ErrorLog
+        import hashlib
+        base = 'frontend|' + 'JSError' + '|' + file_path + '|' + str(line_number) + '|' + (message[:120] or '')
+        fp = hashlib.sha256(base.encode('utf-8', errors='ignore')).hexdigest()
+        user_obj = getattr(request, 'user', None)
+        if not getattr(user_obj, 'is_authenticated', False):
+            user_obj = None
+        obj = ErrorLog.objects.filter(fingerprint=fp).first()
+        if obj:
+            from django.utils import timezone
+            obj.occurrences = (obj.occurrences or 0) + 1
+            obj.last_seen = timezone.now()
+            obj.save(update_fields=['occurrences', 'last_seen'])
+        else:
+            ErrorLog.objects.create(
+                source='frontend',
+                error_type='JSError',
+                message=message,
+                file_path=file_path,
+                line_number=line_number,
+                url=url,
+                user=user_obj,
+                fingerprint=fp,
+                occurrences=1,
+            )
+        return JsonResponse({'ok': True})
+    except Exception:
+        return JsonResponse({'ok': False}, status=500)
 
 @login_required
 def super_owner_announcements(request):

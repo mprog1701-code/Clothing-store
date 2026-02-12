@@ -556,3 +556,60 @@ class AdminLoginAttempt(models.Model):
 
     def __str__(self):
         return f"{self.username_or_email} - {'success' if self.success else 'fail'}"
+
+
+class ErrorLog(models.Model):
+    SOURCE_CHOICES = [
+        ('backend', 'backend'),
+        ('frontend', 'frontend'),
+    ]
+    source = models.CharField(max_length=10, choices=SOURCE_CHOICES, default='backend')
+    error_type = models.CharField(max_length=100)
+    message = models.TextField()
+    file_path = models.TextField(blank=True)
+    line_number = models.IntegerField(default=0)
+    url = models.CharField(max_length=500, blank=True)
+    user = models.ForeignKey('core.User', on_delete=models.SET_NULL, null=True, blank=True)
+    fingerprint = models.CharField(max_length=64, unique=True)
+    occurrences = models.IntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['source']),
+            models.Index(fields=['file_path']),
+            models.Index(fields=['line_number']),
+        ]
+
+    def __str__(self):
+        return f"{self.source}:{self.error_type}@{self.file_path}:{self.line_number}"
+
+    @property
+    def suggested_fix(self):
+        mt = (self.message or '').lower()
+        et = (self.error_type or '').lower()
+        if self.source == 'frontend':
+            if '404' in mt or 'not found' in mt:
+                return 'Check image_url or request URL'
+            if 'cannot read' in mt and 'undefined' in mt:
+                return 'Guard undefined variables before access'
+            if 'unexpected token' in mt or 'json' in mt:
+                return 'Validate JSON format and parsing'
+            if 'failed to fetch' in mt or 'network' in mt or 'cors' in mt:
+                return 'Verify endpoint URL and CORS configuration'
+            return 'Inspect browser console and network requests'
+        else:
+            if et == 'keyerror':
+                return 'Ensure dict key exists before access'
+            if et == 'valueerror':
+                return 'Validate input types and value ranges'
+            if et == 'attributeerror' and 'nonetype' in mt:
+                return 'Add None checks before attribute access'
+            if 'doesnotexist' in et:
+                return 'Handle missing DB records gracefully'
+            if 'typeerror' in et:
+                return 'Confirm compatible types and function signatures'
+            if 'integrityerror' in et:
+                return 'Review unique constraints and foreign keys'
+            return 'Review stack trace and input assumptions'
