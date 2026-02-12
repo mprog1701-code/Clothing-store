@@ -5,72 +5,75 @@
 
 {% block extra_css %}
 <style>
-.cart-wrap{direction:rtl}
-.cart-grid{display:grid;grid-template-columns:1fr 360px;gap:16px}
-@media(max-width:900px){.cart-grid{grid-template-columns:1fr}}
-.cart-card{display:grid;grid-template-columns:96px 1fr 120px;gap:12px;align-items:center;background:#fff;border:1px solid #eee;border-radius:12px;padding:12px}
-.cart-image img{width:96px;height:96px;border-radius:10px;object-fit:cover}
-.cart-title{font-weight:700;margin-bottom:2px;color:#111}
-.cart-details{font-size:13px;color:#666;margin-bottom:6px}
-.chip{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:4px 8px;margin-inline-end:6px;font-size:13px}
+.cart-page{direction:rtl;background:#f8f9fa}
+.cart-grid{display:grid;grid-template-columns:70% 30%;gap:24px}
+@media(max-width:991px){.cart-grid{grid-template-columns:1fr}}
+/* Item card */
+.item-card{display:grid;grid-template-columns:120px 1fr 180px;gap:16px;align-items:center;background:#fff;border:1px solid #eaeaea;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+.item-image img{width:120px;height:120px;border-radius:14px;object-fit:cover}
+.item-title{font-weight:800;font-size:18px;margin-bottom:4px;color:#111}
+.item-details{font-size:14px;color:#6c757d;margin-bottom:8px}
+.chip{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:4px 8px;margin-inline-end:6px;font-size:12px}
+.item-price{justify-self:end;text-align:end}
+.item-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px}
 .qty{display:flex;gap:8px;align-items:center}
-.qty input{width:60px;text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px}
+.qty input{width:64px;text-align:center;border:1px solid #ddd;border-radius:8px;padding:8px}
 .qty button{border:1px solid #ddd;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
-.price{justify-self:end;text-align:end}
-.summary{position:sticky;top:16px;background:#fff;border:1px solid #eee;border-radius:12px;padding:14px;height:max-content;color:#111}
-.summary-row{display:flex;justify-content:space-between;margin:8px 0}
-.summary-total{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:10px;font-weight:700}
-.summary-row span,.summary-total span{color:#111}
-.primary{display:block;text-align:center;background:#ff6a00;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}
-.bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px}
-.bar .bar-content{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.bar .bar-total{font-weight:700;color:#111}
-.primary .btn-total{display:inline-block;margin-inline-start:8px;background:#fff;color:#111;border-radius:8px;padding:2px 8px}
+.remove-btn{border:none;background:#fff;color:#d9534f;cursor:pointer}
+.status-bar{grid-column:1 / -1;background:#fff3cd;color:#856404;border:1px solid #ffeeba;border-radius:10px;padding:8px 10px;margin-top:10px;font-size:13px;display:flex;align-items:center;justify-content:space-between}
+.status-bar .label{font-weight:600}
+.status-bar .tip{color:#6c757d}
+/* Summary */
+.summary{position:sticky;top:16px;background:#fff;border:1px solid #eaeaea;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.06);height:max-content;color:#111}
+.summary-row{display:flex;justify-content:space-between;margin:8px 0;color:#111}
+.summary-total{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:12px;font-weight:800}
+.primary{display:block;text-align:center;background:#ff6a00;color:#fff;padding:14px;border-radius:12px;text-decoration:none;margin-top:14px;font-weight:700}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52vh}
-.cta{display:inline-block;background:#ff6a00;color:#fff;border-radius:10px;padding:12px 24px;text-decoration:none;margin-top:12px}
-.proposed{font-size:13px;color:#555}
-.badge-pending{display:inline-block;background:#ffd54f;color:#111;border:1px solid #e0b900;border-radius:10px;padding:2px 8px;margin-inline-start:8px}
-.info-tip{display:inline-block;margin-inline-start:6px;color:#888;cursor:help}
+.cta{display:inline-block;background:#ff6a00;color:#fff;border-radius:12px;padding:12px 24px;text-decoration:none;margin-top:12px}
 .toast{position:fixed;bottom:70px;left:0;right:0;display:none}
 .toast .box{margin:0 auto;background:#111;color:#fff;padding:10px 14px;border-radius:10px;max-width:280px;text-align:center}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container cart-wrap">
+<div class="container cart-page">
   {% if cart_items %}
   <div class="cart-grid">
     <div>
       {% for item in cart_items %}
-      <div class="cart-card" data-index="{{ forloop.counter0 }}" data-pid="{{ item.product.id }}" data-vid="{{ item.variant.id|default:'' }}" data-unit="{{ item.price }}">
-        <div class="cart-image">{% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% endif %}</div>
+      <div class="item-card cart-card" data-index="{{ forloop.counter0 }}" data-pid="{{ item.product.id }}" data-vid="{{ item.variant.id|default:'' }}" data-unit="{{ item.price }}">
+        <div class="item-image">{% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% endif %}</div>
         <div>
-          <div class="cart-title">{{ item.product.name }}</div>
-          <div class="cart-details">{% if item.variant %}Color: {{ item.variant.color }} • Size: {{ item.variant.size }}{% endif %}</div>
+          <div class="item-title">{{ item.product.name }}</div>
+          <div class="item-details">{% if item.variant %}Color: {{ item.variant.color }} • Size: {{ item.variant.size }}{% endif %}</div>
           <div class="cart-meta">{% if item.variant %}{% if item.variant.size %}<div class="chip">{{ item.variant.size }}</div>{% endif %}{% if item.variant.color %}<div class="chip">{{ item.variant.color }}</div>{% endif %}{% endif %}</div>
-          <div class="qty"><button class="dec">−</button><input type="number" value="{{ item.quantity }}" min="1"><button class="inc">+</button><button class="del-btn">حذف</button></div>
-        </div>
-        <div class="price">
-          <div class="unit">{{ item.price|iqd }}</div>
           {% if item.negotiated_price %}
-          <div class="proposed">
-            Proposed: {{ item.negotiated_price|iqd }}
-            <span class="badge-pending">Pending Approval</span>
-            <span class="info-tip" title="Your offer is being reviewed by the store owner.">ℹ️</span>
+          <div class="status-bar">
+            <div><span class="label">Proposed:</span> {{ item.negotiated_price|iqd }}</div>
+            <div class="tip" title="Your offer is being reviewed by the store owner.">Pending Approval • ℹ️</div>
           </div>
           {% endif %}
-          <div class="subtotal">{{ item.subtotal|iqd }}</div>
+        </div>
+        <div class="item-actions">
+          <div class="item-price">
+            <div class="unit">{{ item.price|iqd }}</div>
+            <div class="subtotal">{{ item.subtotal|iqd }}</div>
+          </div>
+          <div class="qty"><button class="dec">−</button><input type="number" value="{{ item.quantity }}" min="1"><button class="inc">+</button></div>
+          <button class="remove-btn del-btn">حذف</button>
         </div>
       </div>
       {% endfor %}
     </div>
     <div class="summary">
       <div class="summary-row"><span>عدد القطع</span><span id="sumItems">{{ items_count }}</span></div>
-      <div class="summary-row"><span>المجموع</span><span id="sumProducts">{{ total|iqd }}</span></div>
-      <a href="{% url 'checkout' %}" class="primary">متابعة لإتمام الطلب</a>
+      <div class="summary-row"><span>Subtotal</span><span id="sumProducts">{{ total|iqd }}</span></div>
+      <div class="summary-row"><span>Tax</span><span>{{ 0|iqd }}</span></div>
+      <div class="summary-row"><span>Delivery</span><span>{{ delivery_fee|iqd }}</span></div>
+      <div class="summary-total"><span>Grand Total</span><span>{{ grand_total|iqd }}</span></div>
+      <a href="{% url 'checkout' %}" class="primary">Proceed to Checkout</a>
     </div>
   </div>
-  <div class="bar"><div class="container"><div class="bar-content"><div class="bar-total">المجموع: <span class="sumTotal">{{ total|iqd }}</span></div><a href="{% url 'checkout' %}" class="primary" id="goCheckout">متابعة لإتمام الطلب <span class="btn-total">{{ total|iqd }}</span></a></div></div></div>
   {% else %}
   <div class="empty"><div style="font-size:22px;color:#777">Your cart is empty</div><a href="{% url 'store_list' %}" class="cta">Back to Shopping</a></div>
   {% endif %}
