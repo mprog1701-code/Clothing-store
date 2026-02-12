@@ -9,10 +9,10 @@
 .cart-grid{display:grid;grid-template-columns:70% 30%;gap:24px}
 @media(max-width:991px){.cart-grid{grid-template-columns:1fr}}
 /* Item card */
-.item-card{display:grid;grid-template-columns:120px 1fr 180px;gap:16px;align-items:center;background:#fff;border:1px solid #eaeaea;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
-.item-image img{width:120px;height:120px;border-radius:14px;object-fit:cover}
+.item-card{display:grid;grid-template-columns:140px 1fr 180px;gap:16px;align-items:center;background:#fff;border:1px solid #eaeaea;border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+.item-image img{width:140px;height:140px;border-radius:14px;object-fit:cover}
 .item-title{font-weight:800;font-size:18px;margin-bottom:4px;color:#111}
-.item-details{font-size:14px;color:#6c757d;margin-bottom:8px}
+.item-details{font-size:16px;color:#333;margin-bottom:8px}
 .chip{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:4px 8px;margin-inline-end:6px;font-size:12px}
 .item-price{justify-self:end;text-align:end}
 .item-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px}
@@ -46,7 +46,6 @@
         <div>
           <div class="item-title">{{ item.product.name }}</div>
           <div class="item-details">{% if item.variant %}Color: {{ item.variant.color }} • Size: {{ item.variant.size }}{% endif %}</div>
-          <div class="cart-meta">{% if item.variant %}{% if item.variant.size %}<div class="chip">{{ item.variant.size }}</div>{% endif %}{% if item.variant.color %}<div class="chip">{{ item.variant.color }}</div>{% endif %}{% endif %}</div>
           {% if item.negotiated_price %}
           <div class="status-bar">
             <div><span class="label">Proposed:</span> {{ item.negotiated_price|iqd }}</div>
