@@ -10,7 +10,8 @@
 @media(max-width:900px){.cart-grid{grid-template-columns:1fr}}
 .cart-card{display:grid;grid-template-columns:96px 1fr 120px;gap:12px;align-items:center;background:#fff;border:1px solid #eee;border-radius:12px;padding:12px}
 .cart-image img{width:96px;height:96px;border-radius:10px;object-fit:cover}
-.cart-title{font-weight:700;margin-bottom:6px}
+.cart-title{font-weight:700;margin-bottom:2px;color:#111}
+.cart-details{font-size:13px;color:#666;margin-bottom:6px}
 .chip{display:inline-block;background:#f5f5f5;border:1px solid #ddd;border-radius:12px;padding:4px 8px;margin-inline-end:6px;font-size:13px}
 .qty{display:flex;gap:8px;align-items:center}
 .qty input{width:60px;text-align:center;border:1px solid #ddd;border-radius:8px;padding:6px}
@@ -20,13 +21,15 @@
 .summary-row{display:flex;justify-content:space-between;margin:8px 0}
 .summary-total{display:flex;justify-content:space-between;border-top:1px solid #eee;padding-top:10px;font-weight:700}
 .summary-row span,.summary-total span{color:#111}
-.primary{display:block;text-align:center;background:#111;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}
+.primary{display:block;text-align:center;background:#ff6a00;color:#fff;padding:12px;border-radius:10px;text-decoration:none;margin-top:10px}
 .bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #eee;padding:10px}
 .bar .bar-content{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .bar .bar-total{font-weight:700;color:#111}
 .primary .btn-total{display:inline-block;margin-inline-start:8px;background:#fff;color:#111;border-radius:8px;padding:2px 8px}
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:52vh}
-.cta{display:inline-block;background:#111;color:#fff;border-radius:10px;padding:12px 24px;text-decoration:none;margin-top:12px}
+.cta{display:inline-block;background:#ff6a00;color:#fff;border-radius:10px;padding:12px 24px;text-decoration:none;margin-top:12px}
+.unit .old{color:#888;text-decoration:line-through;margin-inline-end:6px}
+.unit .new{color:#ff6a00;font-weight:800}
 .toast{position:fixed;bottom:70px;left:0;right:0;display:none}
 .toast .box{margin:0 auto;background:#111;color:#fff;padding:10px 14px;border-radius:10px;max-width:280px;text-align:center}
 </style>
@@ -42,10 +45,18 @@
         <div class="cart-image">{% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% endif %}</div>
         <div>
           <div class="cart-title">{{ item.product.name }}</div>
-          <div class="cart-meta">{% if item.variant %}<div class="chip">{{ item.variant.size }}</div>{% if item.variant.color %}<div class="chip">{{ item.variant.color }}</div>{% endif %}{% endif %}</div>
+          <div class="cart-details">{% if item.variant %}Color: {{ item.variant.color }} • Size: {{ item.variant.size }}{% endif %}</div>
+          <div class="cart-meta">{% if item.variant %}{% if item.variant.size %}<div class="chip">{{ item.variant.size }}</div>{% endif %}{% if item.variant.color %}<div class="chip">{{ item.variant.color }}</div>{% endif %}{% endif %}</div>
           <div class="qty"><button class="dec">−</button><input type="number" value="{{ item.quantity }}" min="1"><button class="inc">+</button><button class="del-btn">حذف</button></div>
         </div>
-        <div class="price"><div class="unit">سعر الوحدة</div><div class="subtotal">{{ item.subtotal|iqd }}</div></div>
+        <div class="price">
+          {% if item.negotiated_price %}
+            <div class="unit"><span class="old">{{ item.original_price|iqd }}</span><span class="new">{{ item.price|iqd }}</span></div>
+          {% else %}
+            <div class="unit">{{ item.price|iqd }}</div>
+          {% endif %}
+          <div class="subtotal">{{ item.subtotal|iqd }}</div>
+        </div>
       </div>
       {% endfor %}
     </div>
@@ -57,7 +68,7 @@
   </div>
   <div class="bar"><div class="container"><div class="bar-content"><div class="bar-total">المجموع: <span class="sumTotal">{{ total|iqd }}</span></div><a href="{% url 'checkout' %}" class="primary" id="goCheckout">متابعة لإتمام الطلب <span class="btn-total">{{ total|iqd }}</span></a></div></div></div>
   {% else %}
-  <div class="empty"><div style="font-size:22px;color:#777">سلة التسوق فارغة</div><a href="{% url 'store_list' %}" class="cta">ابدأ التسوق</a></div>
+  <div class="empty"><div style="font-size:22px;color:#777">Your cart is empty</div><a href="{% url 'store_list' %}" class="cta">Back to Shopping</a></div>
   {% endif %}
   <div id="toast" class="toast"><div class="box"></div></div>
 </div>

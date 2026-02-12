@@ -710,6 +710,11 @@ def cart_view(request):
     for item in cart:
         raw_variant_id = item.get('variant_id')
         raw_product_id = item.get('product_id')
+        neg_price_raw = item.get('negotiated_price')
+        try:
+            negotiated_price = float(neg_price_raw) if neg_price_raw not in [None, ''] else None
+        except Exception:
+            negotiated_price = None
         # Fallback for products without variants
         if not raw_variant_id:
             try:
@@ -722,7 +727,9 @@ def cart_view(request):
                 continue
             quantity = int(item.get('quantity') or 1)
             price = product.base_price
+            active_price = negotiated_price if (negotiated_price is not None and negotiated_price > 0) else price
             subtotal = price * quantity
+            subtotal = active_price * quantity
             image_url = None
             try:
                 mimg = getattr(product, 'main_image', None) or product.images.first()
@@ -734,7 +741,9 @@ def cart_view(request):
                 'product': product,
                 'variant': None,
                 'quantity': quantity,
-                'price': price,
+                'price': active_price,
+                'original_price': price,
+                'negotiated_price': negotiated_price,
                 'subtotal': subtotal,
                 'image_url': image_url,
                 'unavailable': False,
@@ -756,7 +765,9 @@ def cart_view(request):
             quantity = variant.stock_qty
         # compute price and image url
         price = variant.price
+        active_price = negotiated_price if (negotiated_price is not None and negotiated_price > 0) else price
         subtotal = 0 if unavailable else price * quantity
+        subtotal = 0 if unavailable else active_price * quantity
         image_url = None
         try:
             vimg = variant.images.first()
@@ -777,7 +788,9 @@ def cart_view(request):
                 'product': product,
                 'variant': variant,
                 'quantity': quantity,
-                'price': price,
+                'price': active_price,
+                'original_price': price,
+                'negotiated_price': negotiated_price,
                 'subtotal': subtotal,
                 'image_url': image_url,
                 'unavailable': unavailable,
@@ -949,6 +962,7 @@ def cart_items_json(request):
     raw_variant_id = payload.get('variantId') or payload.get('variant_id')
     raw_quantity = payload.get('quantity')
     raw_store_id = payload.get('storeId') or payload.get('store_id')
+    raw_neg_price = payload.get('negotiatedPrice') or payload.get('negotiated_price')
     try:
         product_id = int(raw_product_id)
     except (TypeError, ValueError):
@@ -959,6 +973,10 @@ def cart_items_json(request):
         quantity = 1
     if quantity < 1:
         return JsonResponse({'code': 'INVALID_QUANTITY', 'message': 'quantity must be >= 1'}, status=400)
+    try:
+        negotiated_price = float(raw_neg_price) if raw_neg_price not in [None, ''] else None
+    except Exception:
+        negotiated_price = None
     product = Product.objects.filter(id=product_id, is_active=True).first()
     if not product:
         return JsonResponse({'code': 'PRODUCT_NOT_FOUND', 'message': 'product not found'}, status=404)
@@ -1017,8 +1035,13 @@ def cart_items_json(request):
             except ProductVariant.DoesNotExist:
                 pass
         existing_item['quantity'] = new_qty
+        if negotiated_price is not None and negotiated_price > 0:
+            existing_item['negotiated_price'] = negotiated_price
     else:
-        cart.append({'product_id': product.id, 'variant_id': variant_id, 'quantity': quantity})
+        item = {'product_id': product.id, 'variant_id': variant_id, 'quantity': quantity}
+        if negotiated_price is not None and negotiated_price > 0:
+            item['negotiated_price'] = negotiated_price
+        cart.append(item)
     request.session['cart'] = cart
     if not cart or session_store_id is None:
         try:
