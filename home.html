@@ -1265,11 +1265,13 @@
             document.getElementById('loadingSpinner').style.display = 'none';
         }
         
-        // Smooth scrolling
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
+                const href = this.getAttribute('href') || '';
+                if (!href || href === '#' || href.length <= 1) return;
+                const id = href.slice(1);
+                const target = document.getElementById(id);
                 if (target) {
                     target.scrollIntoView({
                         behavior: 'smooth',
@@ -1442,7 +1444,7 @@
                     </div>
                 `;
                 document.body.appendChild(toast);
-                setTimeout(() => { toast.remove(); }, 3000);
+                setTimeout(() => { toast.remove(); }, 6000);
                 hideLoading();
             })
             .catch(() => { hideLoading(); });
