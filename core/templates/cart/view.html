@@ -67,10 +67,7 @@
     </div>
     <div class="summary">
       <div class="summary-row"><span>عدد القطع</span><span id="sumItems">{{ items_count }}</span></div>
-      <div class="summary-row"><span>Subtotal</span><span id="sumProducts">{{ total|iqd }}</span></div>
-      <div class="summary-row"><span>Tax</span><span>{{ 0|iqd }}</span></div>
-      <div class="summary-row"><span>Delivery</span><span>{{ delivery_fee|iqd }}</span></div>
-      <div class="summary-total"><span>Grand Total</span><span>{{ grand_total|iqd }}</span></div>
+      <div class="summary-row"><span>المجموع</span><span id="sumProducts">{{ total|iqd }}</span></div>
       <a href="{% url 'checkout' %}" class="primary">Proceed to Checkout</a>
     </div>
   </div>
