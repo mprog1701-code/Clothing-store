@@ -4353,7 +4353,15 @@ def super_owner_add_product(request):
         'variant_formset': variant_formset,
         'image_formset': image_formset,
     }
-    return render(request, 'dashboard/super_owner/add_product.html', context)
+    try:
+        return render(request, 'dashboard/super_owner/add_product.html', context)
+    except Exception as e:
+        try:
+            logging.exception('super_owner_add_product_render_failed', extra={'pid': getattr(product,'id',None), 'step': step, 'error': str(e)})
+        except Exception:
+            pass
+        messages.error(request, 'تعذّر عرض الصفحة، يرجى المحاولة مرة أخرى')
+        return redirect('super_owner_products')
 
 
 @login_required
