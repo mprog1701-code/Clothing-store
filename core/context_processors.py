@@ -1,10 +1,14 @@
 from core.models import SiteSettings, FeatureFlag
 from django.conf import settings
 from django.core.cache import cache
+from types import SimpleNamespace
 
 def site_settings(request):
     """Context processor to make site settings available in all templates"""
-    settings_obj, created = SiteSettings.objects.get_or_create(id=1)
+    try:
+        settings_obj, created = SiteSettings.objects.get_or_create(id=1)
+    except Exception:
+        settings_obj = SimpleNamespace(site_name='متجر الملابس', phone='', email='', theme='dark')
     features = dict(getattr(settings, 'FEATURE_FLAGS', {}) or {})
     features.setdefault('NEGOTIATION_ENABLED', True)
     cached = cache.get('feature_flags_cache')
