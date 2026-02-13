@@ -3361,7 +3361,7 @@ def super_owner_add_product(request):
             except Exception:
                 pass
             return redirect(f"{request.path}?pid={product.id}&step=attributes")
-        elif step in ('attributes', 'variants', 'images') and product:
+        elif step in ('attributes', 'variants', 'images') and product and action == '':
             product_form = ProductForm(request.POST, instance=product)
             variant_formset = VariantFormSet(request.POST, instance=product, prefix='variants')
             image_formset = ImageFormSet(request.POST, request.FILES, instance=product, prefix='images')
