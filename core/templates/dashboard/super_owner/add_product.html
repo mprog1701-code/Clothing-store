@@ -539,6 +539,8 @@
         if (stepVal_{{ product.id|default:'0' }} === 'variants'){
             var container = document.getElementById('variant-container');
             if (container){ container.innerHTML = ''; }
+            var onceKey = 'ap_variants_rendered_'+pid;
+            if (window[onceKey]){ return; }
             var variantsData = [];
             {% for v in variants %}
             variantsData.push({
@@ -555,12 +557,13 @@
             var selColors = []; var selSizes = [];
             try{ selColors = JSON.parse(localStorage.getItem('ap_selected_colors_'+pid)||'[]'); }catch(e){ selColors = []; }
             try{ selSizes = JSON.parse(localStorage.getItem('ap_selected_sizes_'+pid)||'[]'); }catch(e){ selSizes = []; }
+            if (!selColors || selColors.length === 0){ return; }
             var filtered = variantsData.filter(function(it){
                 var cOk = selColors.length===0 ? true : (it.color_id!==null && selColors.indexOf(String(it.color_id))>=0);
                 var sOk = selSizes.length===0 ? true : (it.size_id!==null && selSizes.indexOf(String(it.size_id))>=0);
                 return cOk && sOk;
             });
-            if (filtered.length===0 && variantsData.length>0){ filtered = variantsData; }
+            if (filtered.length===0){ return; }
             var html = '';
             html += '<table class="table table-bordered align-middle"><thead><tr><th>اللون</th><th>المقاس</th><th>الكمية</th><th>السعر الخاص</th><th>مفعل</th></tr></thead><tbody>';
             filtered.forEach(function(it){
@@ -572,9 +575,9 @@
                     '<td class="text-center"><input type="checkbox" name="v_'+it.id+'_enabled" '+(it.enabled?'checked':'')+'></td>'+
                 '</tr>';
             });
-            if (filtered.length===0){ html += '<tr><td colspan="5" class="text-center text-muted">لا توجد متغيرات مطابقة للاختيارات الحالية</td></tr>'; }
             html += '</tbody></table>';
             if (container){ container.innerHTML = html; }
+            window[onceKey] = true;
         }
     }catch(e){}
   }
