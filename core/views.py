@@ -3475,68 +3475,57 @@ def super_owner_add_product(request):
                 messages.error(request, 'المنتج غير موجود')
                 return redirect('super_owner_add_product')
 
-            selected_colors = list(AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()]))
-            selected_sizes = list(AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()]))
+            try:
+                selected_colors = list(AttributeColor.objects.filter(id__in=[int(cid) for cid in color_ids if cid.isdigit()]))
+                selected_sizes = list(AttributeSize.objects.filter(id__in=[int(sid) for sid in size_ids if sid.isdigit()]))
+            except Exception:
+                messages.error(request, 'Please clear your selections and try again.')
+                return redirect(f"{request.path}?pid={product.id}&step=attributes")
 
             if not selected_colors and not selected_sizes and product.size_type != 'none':
                 messages.error(request, 'يرجى اختيار لون أو قياس قبل الحفظ')
                 return redirect(f"{request.path}?pid={product.id}&step=attributes")
 
             created = 0
-            with transaction.atomic():
-                if selected_colors and selected_sizes:
-                    for c in selected_colors:
-                        for s in selected_sizes:
-                            exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr=s).exists()
-                            if exists:
-                                continue
+            try:
+                with transaction.atomic():
+                    ProductVariant.objects.filter(product=product).delete()
+                    if selected_colors and selected_sizes:
+                        for c in selected_colors:
+                            for s in selected_sizes:
+                                try:
+                                    ProductVariant.objects.create(
+                                        product=product,
+                                        color_attr=c,
+                                        size_attr=s,
+                                        size=s.name,
+                                        stock_qty=0,
+                                        price_override=None,
+                                        is_enabled=False,
+                                    )
+                                    created += 1
+                                except Exception:
+                                    continue
+                    elif selected_colors and not selected_sizes and product.size_type == 'none':
+                        for c in selected_colors:
                             try:
                                 ProductVariant.objects.create(
                                     product=product,
                                     color_attr=c,
-                                    size_attr=s,
-                                    size=s.name,
+                                    size_attr=None,
+                                    size='ONE',
                                     stock_qty=0,
                                     price_override=None,
                                     is_enabled=False,
                                 )
                                 created += 1
                             except Exception:
-                                pass
-                    try:
-                        from django.db.models import Q
-                        ProductVariant.objects.filter(product=product).filter(Q(color_attr__isnull=True) | ~Q(color_attr_id__in=[c.id for c in selected_colors]) | Q(size_attr__isnull=True) | ~Q(size_attr_id__in=[s.id for s in selected_sizes])).delete()
-                    except Exception:
-                        pass
-                elif selected_colors and not selected_sizes and product.size_type == 'none':
-                    for c in selected_colors:
-                        exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr__isnull=True).exists()
-                        if exists:
-                            continue
-                        try:
-                            ProductVariant.objects.create(
-                                product=product,
-                                color_attr=c,
-                                size_attr=None,
-                                size='ONE',
-                                stock_qty=0,
-                                price_override=None,
-                                is_enabled=False,
-                            )
-                            created += 1
-                        except Exception:
-                            pass
-                    try:
-                        ProductVariant.objects.filter(product=product).exclude(color_attr_id__in=[c.id for c in selected_colors]).delete()
-                        ProductVariant.objects.filter(product=product).exclude(size_attr__isnull=True).delete()
-                    except Exception:
-                        pass
-                elif selected_sizes and not selected_colors:
-                    messages.error(request, 'يرجى اختيار لون مع المقاس')
-                    return redirect(f"{request.path}?pid={product.id}&step=attributes")
-                else:
-                    if product.size_type == 'none':
-                        if not ProductVariant.objects.filter(product=product).exists():
+                                continue
+                    elif selected_sizes and not selected_colors:
+                        messages.error(request, 'يرجى اختيار لون مع المقاس')
+                        return redirect(f"{request.path}?pid={product.id}&step=attributes")
+                    else:
+                        if product.size_type == 'none':
                             try:
                                 ProductVariant.objects.create(
                                     product=product,
@@ -3550,6 +3539,10 @@ def super_owner_add_product(request):
                                 created += 1
                             except Exception:
                                 pass
+            except Exception:
+                messages.error(request, 'Please clear your selections and try again.')
+                return redirect(f"{request.path}?pid={product.id}&step=attributes")
+
             if created > 0:
                 messages.success(request, f'تم حفظ الخصائص وإنشاء {created} متغيرات')
             else:
