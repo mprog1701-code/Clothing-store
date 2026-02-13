@@ -3319,34 +3319,48 @@ def super_owner_add_product(request):
 
     if request.method == 'POST':
         if step == 'info':
-            form = ProductForm(request.POST)
-            if form.is_valid():
-                cd = form.cleaned_data
-                store_for_product = None
-                posted_store_id = (request.POST.get('store') or '').strip()
-                if posted_store_id and posted_store_id.isdigit():
-                    store_for_product = Store.objects.filter(id=int(posted_store_id)).first()
-                elif preselect_store and str(preselect_store).isdigit():
-                    store_for_product = Store.objects.filter(id=int(preselect_store)).first()
-                if not store_for_product and getattr(request.user, 'role', '') == 'store_admin':
-                    store_for_product = Store.objects.filter(owner_user=request.user).first() or Store.objects.filter(owner=request.user).first()
-                if not store_for_product:
-                    store_for_product = stores.first()
-                if not store_for_product:
-                    messages.error(request, 'لا يوجد متجر متاح لإنشاء المنتج')
-                    return redirect('super_owner_products')
-                with transaction.atomic():
-                    product = form.save(commit=False)
-                    if not getattr(product, 'description', '').strip():
-                        product.description = '—'
-                    product.store = store_for_product
-                    product.status = 'DRAFT'
-                    product.save()
-                try:
-                    request.session['draft_product_id'] = product.id
-                except Exception:
-                    pass
-                return redirect(f"{request.path}?pid={product.id}&step=attributes")
+            name = (request.POST.get('name') or '').strip()
+            category = (request.POST.get('category') or '').strip()
+            base_price_raw = (request.POST.get('base_price') or '').strip()
+            if not name or not category or base_price_raw == '':
+                messages.error(request, 'يرجى ملء الاسم والتصنيف والسعر الأساسي')
+                return redirect(f"{request.path}?step=info")
+            from decimal import Decimal, InvalidOperation
+            try:
+                base_price_val = Decimal(base_price_raw)
+            except InvalidOperation:
+                messages.error(request, 'السعر الأساسي غير صالح')
+                return redirect(f"{request.path}?step=info")
+            store_for_product = None
+            posted_store_id = (request.POST.get('store') or '').strip()
+            if posted_store_id and posted_store_id.isdigit():
+                store_for_product = Store.objects.filter(id=int(posted_store_id)).first()
+            elif preselect_store and str(preselect_store).isdigit():
+                store_for_product = Store.objects.filter(id=int(preselect_store)).first()
+            if not store_for_product and getattr(request.user, 'role', '') == 'store_admin':
+                store_for_product = Store.objects.filter(owner_user=request.user).first() or Store.objects.filter(owner=request.user).first()
+            if not store_for_product:
+                store_for_product = stores.first()
+            if not store_for_product:
+                messages.error(request, 'لا يوجد متجر متاح لإنشاء المنتج')
+                return redirect('super_owner_products')
+            with transaction.atomic():
+                product = Product(
+                    store=store_for_product,
+                    name=name,
+                    description=(request.POST.get('description') or '—').strip() or '—',
+                    category=category,
+                    base_price=base_price_val,
+                    size_type='symbolic',
+                    fit_type='standard',
+                    status='DRAFT'
+                )
+                product.save()
+            try:
+                request.session['draft_product_id'] = product.id
+            except Exception:
+                pass
+            return redirect(f"{request.path}?pid={product.id}&step=attributes")
         elif step in ('attributes', 'variants', 'images') and product:
             product_form = ProductForm(request.POST, instance=product)
             variant_formset = VariantFormSet(request.POST, instance=product, prefix='variants')
