@@ -4326,12 +4326,20 @@ def super_owner_add_product(request):
             except Exception:
                 pass
 
+    try:
+        colors_list = list(AttributeColor.objects.all())
+    except Exception:
+        colors_list = []
+    try:
+        images_list = list(product.images.order_by('order', '-is_main')) if product else []
+    except Exception:
+        images_list = []
     context = {
         'stores': stores,
         'selected_store_id': int(preselect_store) if preselect_store and preselect_store.isdigit() else None,
         'step': step,
         'product': product,
-        'colors': list(AttributeColor.objects.all()),
+        'colors': colors_list,
         'sizes': sizes_display,
         'variants': variants,
         'color_attrs': color_attrs,
@@ -4340,7 +4348,7 @@ def super_owner_add_product(request):
         'variant_grid': variant_grid,
         'existing_color_ids': existing_color_ids,
         'existing_size_ids': existing_size_ids,
-        'images': list(product.images.order_by('order', '-is_main')) if product else [],
+        'images': images_list,
         'product_form': form,
         'variant_formset': variant_formset,
         'image_formset': image_formset,
