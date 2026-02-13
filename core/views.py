@@ -426,6 +426,7 @@ def product_detail(request, product_id):
 
 def register(request):
     if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
         try:
             print(request.FILES)
         except Exception:
