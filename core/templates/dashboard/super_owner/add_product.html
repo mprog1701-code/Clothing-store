@@ -31,42 +31,28 @@
                         {% endfor %}
                     {% endif %}
 
-                    <ul class="nav nav-tabs mb-3">
-                        <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=info{% else %}?step=info{% endif %}">معلومات المنتج</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}{% if not product %} disabled{% endif %}" href="{% if product %}{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=attributes{% else %}#{% endif %}">الخصائص</a></li>
-                        <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}" href="{% url 'super_owner_add_product' %}{% if product %}?pid={{ product.id }}&step=images{% else %}?step=images{% endif %}">الصور</a></li>
+                    <ul class="nav nav-pills mb-3 wizard-steps">
+                        <li class="nav-item"><a class="nav-link {% if step == 'info' %}active{% endif %}" href="{% url 'super_owner_add_product' %}?step=info">1. معلومات أساسية</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'attributes' %}active{% endif %}{% if not product %} disabled{% endif %}" href="{% if product %}{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=attributes{% else %}#{% endif %}">2. الألوان والمقاسات</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'variants' %}active{% endif %}{% if not product %} disabled{% endif %}" href="{% if product %}{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=variants{% else %}#{% endif %}">3. المتغيرات</a></li>
+                        <li class="nav-item"><a class="nav-link {% if step == 'images' %}active{% endif %}{% if not product %} disabled{% endif %}" href="{% if product %}{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images{% else %}#{% endif %}">4. الصور</a></li>
                     </ul>
 
                     {% if step == 'info' %}
-                    <form method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data" id="productInfoForm">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="create_product">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="store" class="form-label">المتجر</label>
-                                    <select class="form-select" id="store" name="store" required>
-                                        <option value="">اختر المتجر</option>
-                                        {% for store in stores %}
-                                            <option value="{{ store.id }}" {% if selected_store_id == store.id %}selected{% endif %}>{{ store.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <small class="text-muted">المتجر الذي يملك المنتج</small>
-                                </div>
                                 {{ product_form.non_field_errors }}
+                                <input type="hidden" name="description" value="—">
                                 <div class="mb-3">{{ product_form.name.label_tag }}{{ product_form.name }}</div>
-                                <div class="mb-3">{{ product_form.description.label_tag }}{{ product_form.description }}</div>
                                 <div class="mb-3">{{ product_form.category.label_tag }}{{ product_form.category }}</div>
                                 <div class="mb-3">{{ product_form.base_price.label_tag }}{{ product_form.base_price }}</div>
-                                <div class="mb-3">{{ product_form.discount_price.label_tag }}{{ product_form.discount_price }}</div>
-                                <div class="mb-3">{{ product_form.size_type.label_tag }}{{ product_form.size_type }}</div>
-                                <div class="mb-3">{{ product_form.fit_type.label_tag }}{{ product_form.fit_type }}</div>
-                                <div class="mb-3 form-check">{{ product_form.is_featured }} {{ product_form.is_featured.label_tag }}</div>
-                                <div class="mb-3 form-check">{{ product_form.is_active }} {{ product_form.is_active.label_tag }}</div>
                             </div>
                             <div class="col-md-6">
-                                <div class="d-flex justify-content-between">
-                                    <button type="submit" class="btn btn-success"><i class="fas fa-plus me-2"></i>إنشاء المنتج</button>
+                                <div class="d-flex justify-content-between align-items-end h-100">
+                                    <button type="submit" class="btn btn-success"><i class="fas fa-arrow-left me-2"></i>التالي: الألوان والمقاسات</button>
                                     <a href="{% url 'super_owner_products' %}" class="btn btn-secondary"><i class="fas fa-times me-2"></i>إلغاء</a>
                                 </div>
                             </div>
@@ -75,7 +61,7 @@
                     {% endif %}
 
                     {% if product and step == 'attributes' %}
-                    <form method="post" enctype="multipart/form-data" class="mb-4">
+                    <form method="post" enctype="multipart/form-data" class="mb-4" id="attributesForm">
                         {% csrf_token %}
                         {{ product_form.non_field_errors }}
                         <div class="row g-3">
@@ -88,38 +74,8 @@
                                 <div class="mb-3 form-check">{{ product_form.is_active }} {{ product_form.is_active.label_tag }}</div>
                             </div>
                             <div class="col-md-6">
-                                {{ variant_formset.management_form }}
-                                <div class="table-responsive">
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>اللون</th>
-                                                <th>المقاس</th>
-                                                <th>اسم المقاس</th>
-                                                <th>الكمية</th>
-                                                <th>سعر خاص</th>
-                                                <th>مفعل</th>
-                                                <th>حذف</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for vf in variant_formset %}
-                                            <tr>
-                                                <td>{{ vf.color_attr }}</td>
-                                                <td>{{ vf.size_attr }}</td>
-                                                <td>{{ vf.size }}</td>
-                                                <td>{{ vf.stock_qty }}</td>
-                                                <td>{{ vf.price_override }}</td>
-                                                <td class="text-center">{{ vf.is_enabled }}</td>
-                                                <td class="text-center">{% if vf.DELETE %}{{ vf.DELETE }}{% endif %}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-success" name="finish" value="0"><i class="fas fa-save me-2"></i>حفظ</button>
-                                    <button type="submit" class="btn btn-primary" name="finish" value="1"><i class="fas fa-check me-2"></i>إنهاء</button>
+                                <div class="alert alert-info">
+                                    بعد اختيار الألوان والمقاسات، سيتم إنشاء جدول متغيرات نظيف في الخطوة التالية فقط لهذه الاختيارات.
                                 </div>
                             </div>
                         </div>
@@ -172,8 +128,8 @@
                             
 
                             <div class="actions-row">
-                                <button class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ الخصائص</button>
-                                <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images" class="btn btn-outline-secondary">الانتقال إلى الصور</a>
+                                <button class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ الخصائص والانتقال للمتغيرات</button>
+                                <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=info" class="btn btn-outline-secondary">رجوع لمعلومات المنتج</a>
                             </div>
                         </form>
                         <div class="mt-3 d-flex align-items-center gap-2">
@@ -210,6 +166,53 @@
                     
 
                     
+
+                    {% if product and step == 'variants' %}
+                    <form method="post" class="mb-4" id="variantsForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="bulk_update_variants">
+                        <input type="hidden" name="pid" value="{{ product.id }}">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>اللون</th>
+                                        <th>المقاس</th>
+                                        <th>الكمية</th>
+                                        <th>السعر الخاص</th>
+                                        <th>مفعل</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for v in variants %}
+                                    <tr>
+                                        <td>{{ v.color_attr.name if v.color_attr }}{% if not v.color_attr %}-{% endif %}</td>
+                                        <td>{{ v.size_attr.name if v.size_attr }}{% if not v.size_attr %}{{ v.size }}{% endif %}</td>
+                                        <td>
+                                            <input type="number" class="form-control" name="v_{{ v.id }}_qty" value="{{ v.stock_qty }}" min="0">
+                                        </td>
+                                        <td>
+                                            <input type="number" step="0.01" class="form-control" name="v_{{ v.id }}_price" value="{{ v.price_override|default_if_none:'' }}">
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="v_{{ v.id }}_enabled" {% if v.is_enabled %}checked{% endif %}>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="text-center text-muted">لا توجد متغيرات بعد. ارجع لخطوة الخصائص لإنشائها.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=attributes" class="btn btn-outline-secondary">رجوع للخصائص</a>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>حفظ المتغيرات</button>
+                                <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=images" class="btn btn-primary"><i class="fas fa-arrow-left me-2"></i>التالي: الصور</a>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
 
                     {% if product and step == 'images' %}
                     <form method="post" enctype="multipart/form-data" class="mb-4">
@@ -542,6 +545,18 @@
             if (sizeType) {
                 sizeType.addEventListener('change', applySizeFilter);
             }
+
+            try{
+                var stepVal = '{{ step }}';
+                var hasPid = !!document.querySelector('input[name="pid"]');
+                if (stepVal === 'info' && !hasPid){
+                    var f = document.getElementById('productInfoForm');
+                    if (f && f.reset){ f.reset(); }
+                    var n = document.querySelector('input[name="name"]'); if(n){ n.value=''; }
+                    var bp = document.querySelector('input[name="base_price"]'); if(bp){ bp.value=''; }
+                    var cat = document.querySelector('select[name="category"]'); if(cat){ cat.selectedIndex = 0; }
+                }
+            }catch(e){}
         });
 </script>
 {% endblock %}

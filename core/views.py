@@ -3304,6 +3304,11 @@ def super_owner_add_product(request):
     preselect_store = request.GET.get('store')
     step = (request.GET.get('step') or 'info').strip()
     pid = request.GET.get('pid')
+    if request.method == 'GET' and not pid and step == 'info':
+        try:
+            request.session.pop('draft_product_id', None)
+        except Exception:
+            pass
 
     from .models import AttributeColor, AttributeSize
 
@@ -3331,9 +3336,15 @@ def super_owner_add_product(request):
                     return redirect('super_owner_products')
                 with transaction.atomic():
                     product = form.save(commit=False)
+                    if not getattr(product, 'description', '').strip():
+                        product.description = '—'
                     product.store = store_for_product
                     product.status = 'DRAFT'
                     product.save()
+                try:
+                    request.session['draft_product_id'] = product.id
+                except Exception:
+                    pass
                 return redirect(f"{request.path}?pid={product.id}&step=attributes")
         elif step in ('attributes', 'variants', 'images') and product:
             product_form = ProductForm(request.POST, instance=product)
@@ -3492,6 +3503,11 @@ def super_owner_add_product(request):
                                 created += 1
                             except Exception:
                                 pass
+                    try:
+                        from django.db.models import Q
+                        ProductVariant.objects.filter(product=product).filter(Q(color_attr__isnull=True) | ~Q(color_attr_id__in=[c.id for c in selected_colors]) | Q(size_attr__isnull=True) | ~Q(size_attr_id__in=[s.id for s in selected_sizes])).delete()
+                    except Exception:
+                        pass
                 elif selected_colors and not selected_sizes and product.size_type == 'none':
                     for c in selected_colors:
                         exists = ProductVariant.objects.filter(product=product, color_attr=c, size_attr__isnull=True).exists()
@@ -3510,6 +3526,11 @@ def super_owner_add_product(request):
                             created += 1
                         except Exception:
                             pass
+                    try:
+                        ProductVariant.objects.filter(product=product).exclude(color_attr_id__in=[c.id for c in selected_colors]).delete()
+                        ProductVariant.objects.filter(product=product).exclude(size_attr__isnull=True).delete()
+                    except Exception:
+                        pass
                 elif selected_sizes and not selected_colors:
                     messages.error(request, 'يرجى اختيار لون مع المقاس')
                     return redirect(f"{request.path}?pid={product.id}&step=attributes")
@@ -3533,7 +3554,7 @@ def super_owner_add_product(request):
                 messages.success(request, f'تم حفظ الخصائص وإنشاء {created} متغيرات')
             else:
                 messages.info(request, 'تم حفظ الخصائص دون إنشاء متغيرات جديدة')
-            return redirect(f"{request.path}?pid={product.id}&step=images")
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
 
         elif action == 'add_global_color':
             cname = (request.POST.get('color_name') or '').strip()
@@ -3850,6 +3871,40 @@ def super_owner_add_product(request):
             messages.success(request, 'تم ' + ('إنشاء' if created else 'تحديث') + ' المتغير')
             return redirect(f"{request.path}?pid={product.id}&step=variants")
 
+        elif action == 'bulk_update_variants':
+            pid = request.POST.get('pid')
+            try:
+                product = Product.objects.get(id=int(pid))
+            except (Product.DoesNotExist, ValueError, TypeError):
+                messages.error(request, 'المنتج غير موجود')
+                return redirect('super_owner_add_product')
+            rows = list(ProductVariant.objects.filter(product=product))
+            updated = 0
+            from decimal import Decimal, InvalidOperation
+            for v in rows:
+                qty_raw = (request.POST.get(f"v_{v.id}_qty") or '').strip()
+                price_raw = (request.POST.get(f"v_{v.id}_price") or '').strip()
+                enabled = (request.POST.get(f"v_{v.id}_enabled") == 'on')
+                try:
+                    v.stock_qty = int(qty_raw or v.stock_qty)
+                except ValueError:
+                    pass
+                if price_raw == '':
+                    v.price_override = None
+                else:
+                    try:
+                        v.price_override = Decimal(price_raw)
+                    except InvalidOperation:
+                        pass
+                v.is_enabled = enabled
+                try:
+                    v.save()
+                    updated += 1
+                except Exception:
+                    continue
+            messages.success(request, f'تم حفظ المتغيرات ({updated})')
+            return redirect(f"{request.path}?pid={product.id}&step=variants")
+
         elif action == 'upload_images':
             pid = request.POST.get('pid')
             try:
@@ -3989,7 +4044,6 @@ def super_owner_add_product(request):
                 if cid is None:
                     img.color_id = None
                 else:
-                    from django.shortcuts import get_object_or_404
                     pc = get_object_or_404(ProductColor, id=cid, product=product)
                     img.color_id = pc.id
                     img.color_attr_id = None
@@ -4253,8 +4307,16 @@ def super_owner_add_product(request):
         image_formset = None
     else:
         form = ProductForm(instance=product) if product else ProductForm()
-        variant_formset = VariantFormSet(instance=product, prefix='variants') if product else None
+        variant_formset = None
         image_formset = ImageFormSet(instance=product, prefix='images') if product else None
+        if image_formset and product:
+            try:
+                vqs = ProductVariant.objects.filter(product=product, is_enabled=True)
+                for f in image_formset.forms:
+                    if 'variant' in f.fields:
+                        f.fields['variant'].queryset = vqs
+            except Exception:
+                pass
 
     context = {
         'stores': stores,
@@ -4972,7 +5034,6 @@ def super_owner_edit_product(request, product_id):
                 if cid is None:
                     img.color_id = None
                 else:
-                    from django.shortcuts import get_object_or_404
                     pc = get_object_or_404(ProductColor, id=cid, product=product)
                     img.color_id = pc.id
                     img.color_attr_id = None

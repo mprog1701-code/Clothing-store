@@ -198,6 +198,7 @@
 <script>
 (function(){
     var mapEl = document.getElementById('addrMap');
+    try{ if(mapEl && mapEl._leaflet_id){ mapEl._leaflet_id = null; } }catch(e){}
     var summaryEl = document.getElementById('addrSummary');
     var cityEl = document.getElementById('addrCity');
     var areaEl = document.getElementById('addrArea');

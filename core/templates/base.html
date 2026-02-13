@@ -1488,6 +1488,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateCartCount();
             hideLoading();
+            try{ var h = String(location.hash||''); if(h === '#'){ history.replaceState(null, document.title, location.pathname + location.search); } }catch(e){}
             
             // Add animation to cards
             const cards = document.querySelectorAll('.card');

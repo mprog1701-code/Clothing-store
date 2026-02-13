@@ -47,6 +47,7 @@ function forwardGeocode(q){ return fetch('/api/addresses/autocomplete/?q='+encod
 
 document.addEventListener('DOMContentLoaded', function(){
   var mapEl = document.getElementById('map');
+  try{ if(mapEl && mapEl._leaflet_id){ mapEl._leaflet_id = null; } }catch(e){}
   var diag = document.getElementById('diag');
   var preview = document.getElementById('previewText');
   var searchInput = document.getElementById('searchInput');

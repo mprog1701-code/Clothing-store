@@ -341,7 +341,11 @@ var cancelMap = document.getElementById('cancelMap');
 var openMapBtn = document.getElementById('openMap');
 var openMapGuestBtn = document.getElementById('openMapGuest');
 function openMap(){ mapModal.classList.add('open'); initMap(); }
-function hideMap(){ mapModal.classList.remove('open'); }
+function hideMap(){
+  mapModal.classList.remove('open');
+  try{ if(map){ map.remove(); } }catch(e){}
+  map = null; marker = null;
+}
 if(openMapBtn){ openMapBtn.addEventListener('click', openMap); }
 if(openMapGuestBtn){ openMapGuestBtn.addEventListener('click', openMap); }
 closeMap.addEventListener('click', hideMap); cancelMap.addEventListener('click', hideMap);
