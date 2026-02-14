@@ -1,0 +1,91 @@
+:root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --text: #212529;
+    --muted: #495057;
+    --border: #dee2e6;
+    --brand: #0d6efd;
+    --brand-contrast: #ffffff;
+}
+
+[data-bs-theme="light"] {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --text: #212529;
+    --muted: #495057;
+    --border: #dee2e6;
+    --brand: #0d6efd;
+    --brand-contrast: #ffffff;
+}
+
+[data-bs-theme="dark"] {
+    --bg: #0f1115;
+    --surface: #1a1d22;
+    --text: #f8f9fa;
+    --muted: #ced4da;
+    --border: #343a40;
+    --brand: #4ea1ff;
+    --brand-contrast: #0f1115;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+.text-theme {
+    color: var(--text) !important;
+}
+
+.text-muted-theme {
+    color: var(--muted) !important;
+}
+
+.border-theme {
+    border-color: var(--border) !important;
+}
+
+.badge-brand {
+    background-color: var(--brand) !important;
+    color: var(--brand-contrast) !important;
+}
+
+.card,
+.modal-content,
+.dropdown-menu,
+.list-group-item,
+.offcanvas,
+.offcanvas-header,
+.offcanvas-body {
+    background-color: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+
+[data-bs-theme="light"] .text-white,
+body.theme-light .text-white {
+    color: var(--text) !important;
+}
+
+[data-bs-theme="light"] .text-light,
+body.theme-light .text-light {
+    color: var(--muted) !important;
+}
+
+.navbar .nav-link,
+.navbar .nav-text {
+    color: var(--text) !important;
+}
+
+.price-old,
+.price-new,
+.cart-item__price,
+.cart-item__price .price-base,
+.cart-item__price .price-proposed {
+    color: var(--text) !important;
+}
+
+.badge.bg-warning,
+.badge.bg-light {
+    color: var(--text) !important;
+}
