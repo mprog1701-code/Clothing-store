@@ -128,3 +128,69 @@ button, .btn { max-width: 100%; }
         font-size: 1.2rem;
     }
 }
+
+:root {
+    --fg: #212529;
+    --muted: #495057;
+    --card-fg: var(--fg);
+    --price-fg: #111111;
+    --badge-fg: #212529;
+}
+
+[data-bs-theme="light"],
+body.theme-light {
+    color: var(--fg);
+}
+
+[data-bs-theme="light"] .text-muted,
+body.theme-light .text-muted {
+    color: var(--muted) !important;
+}
+
+[data-bs-theme="light"] .card,
+[data-bs-theme="light"] .card-body,
+[data-bs-theme="light"] .card-title,
+[data-bs-theme="light"] .card-text,
+body.theme-light .card,
+body.theme-light .card-body,
+body.theme-light .card-title,
+body.theme-light .card-text {
+    color: var(--card-fg);
+}
+
+[data-bs-theme="light"] .navbar .nav-link,
+[data-bs-theme="light"] .navbar .nav-text,
+body.theme-light .navbar .nav-link,
+body.theme-light .navbar .nav-text {
+    color: var(--fg) !important;
+}
+
+[data-bs-theme="light"] .badge,
+[data-bs-theme="light"] .badge.bg-light,
+body.theme-light .badge,
+body.theme-light .badge.bg-light {
+    color: var(--badge-fg) !important;
+}
+
+[data-bs-theme="light"] .price-old,
+[data-bs-theme="light"] .price-new,
+[data-bs-theme="light"] .cart-item__price,
+[data-bs-theme="light"] .cart-item__price .price-base,
+[data-bs-theme="light"] .cart-item__price .price-proposed,
+body.theme-light .price-old,
+body.theme-light .price-new,
+body.theme-light .cart-item__price,
+body.theme-light .cart-item__price .price-base,
+body.theme-light .cart-item__price .price-proposed {
+    color: var(--price-fg) !important;
+}
+
+[data-bs-theme="light"] .text-white,
+body.theme-light .text-white {
+    color: var(--fg) !important;
+}
+
+[data-bs-theme="light"] .text-light,
+body.theme-light .text-light {
+    color: var(--muted) !important;
+}
