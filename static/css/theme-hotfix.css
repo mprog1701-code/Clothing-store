@@ -1,0 +1,69 @@
+[data-bs-theme="light"] .text-white,
+body.theme-light .text-white {
+  color: var(--text) !important;
+}
+
+[data-bs-theme="light"] .text-light,
+body.theme-light .text-light {
+  color: var(--text) !important;
+}
+
+[data-bs-theme="light"] .text-muted,
+body.theme-light .text-muted {
+  color: var(--muted) !important;
+}
+
+[data-bs-theme="light"] svg,
+[data-bs-theme="light"] svg *,
+body.theme-light svg,
+body.theme-light svg * {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+[data-bs-theme="light"] .opacity-0,
+body.theme-light .opacity-0 {
+  opacity: 1 !important;
+}
+
+[data-bs-theme="light"] .invisible,
+body.theme-light .invisible {
+  visibility: visible !important;
+}
+
+[data-bs-theme="light"] .container,
+[data-bs-theme="light"] .card,
+[data-bs-theme="light"] .card-body,
+[data-bs-theme="light"] .navbar,
+[data-bs-theme="light"] .navbar .nav-link,
+[data-bs-theme="light"] .navbar .nav-text,
+[data-bs-theme="light"] .dropdown-menu,
+[data-bs-theme="light"] .offcanvas,
+[data-bs-theme="light"] .offcanvas-header,
+[data-bs-theme="light"] .offcanvas-body,
+[data-bs-theme="light"] footer,
+[data-bs-theme="light"] .badge,
+[data-bs-theme="light"] .price-old,
+[data-bs-theme="light"] .price-new,
+[data-bs-theme="light"] .cart-item__price,
+[data-bs-theme="light"] .cart-item__price .price-base,
+[data-bs-theme="light"] .cart-item__price .price-proposed,
+body.theme-light .container,
+body.theme-light .card,
+body.theme-light .card-body,
+body.theme-light .navbar,
+body.theme-light .navbar .nav-link,
+body.theme-light .navbar .nav-text,
+body.theme-light .dropdown-menu,
+body.theme-light .offcanvas,
+body.theme-light .offcanvas-header,
+body.theme-light .offcanvas-body,
+body.theme-light footer,
+body.theme-light .badge,
+body.theme-light .price-old,
+body.theme-light .price-new,
+body.theme-light .cart-item__price,
+body.theme-light .cart-item__price .price-base,
+body.theme-light .cart-item__price .price-proposed {
+  color: var(--text) !important;
+}
