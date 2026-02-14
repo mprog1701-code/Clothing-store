@@ -3305,6 +3305,7 @@ def super_owner_add_product(request):
     preselect_store = request.GET.get('store')
     step = (request.GET.get('step') or 'info').strip()
     pid = request.GET.get('pid')
+    action = request.POST.get('action') or request.GET.get('action') or ''
     if request.method == 'GET' and not pid and step == 'info':
         try:
             request.session.pop('draft_product_id', None)
