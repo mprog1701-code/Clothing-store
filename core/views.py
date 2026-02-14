@@ -16,7 +16,7 @@ import os
 import json
 import uuid
 import urllib.parse
-from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign
+from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign, CartItem
 from django.db.utils import OperationalError, ProgrammingError
 from django.db import transaction
 from .serializers import UserRegistrationSerializer
@@ -709,6 +709,15 @@ def cart_view(request):
     cart_items = []
     total = Decimal('0')
     items_count = 0
+    db_items_map = {}
+    if request.user.is_authenticated:
+        try:
+            db_items = CartItem.objects.filter(user=request.user).select_related('product','variant')
+            for di in db_items:
+                key = (di.product_id, di.variant_id or 0)
+                db_items_map[key] = di
+        except Exception:
+            db_items_map = {}
 
     for item in cart:
         raw_variant_id = item.get('variant_id')
@@ -745,8 +754,8 @@ def cart_view(request):
                 'quantity': quantity,
                 'price': price,
                 'original_price': price,
-                'negotiated_price': negotiated_price,
-                'manager_approved': mgr_approved,
+                'negotiated_price': (db_items_map.get((product.id, 0)).proposed_price if db_items_map.get((product.id, 0)) else negotiated_price),
+                'proposal_status': (db_items_map.get((product.id, 0)).proposal_status if db_items_map.get((product.id, 0)) else ('approved' if mgr_approved else 'pending' if negotiated_price else None)),
                 'subtotal': subtotal,
                 'image_url': image_url,
                 'unavailable': False,
@@ -785,21 +794,21 @@ def cart_view(request):
             if mimg:
                 image_url = mimg.get_image_url()
 
-            cart_items.append({
-                'product': product,
-                'variant': variant,
-                'quantity': quantity,
-                'price': price,
-                'original_price': price,
-                'negotiated_price': negotiated_price,
-                'manager_approved': mgr_approved,
-                'subtotal': subtotal,
-                'image_url': image_url,
-                'unavailable': unavailable,
-            })
-            total += subtotal
-            if not unavailable:
-                items_count += quantity
+        cart_items.append({
+            'product': product,
+            'variant': variant,
+            'quantity': quantity,
+            'price': price,
+            'original_price': price,
+            'negotiated_price': (db_items_map.get((product.id, variant.id)).proposed_price if db_items_map.get((product.id, variant.id)) else negotiated_price),
+            'proposal_status': (db_items_map.get((product.id, variant.id)).proposal_status if db_items_map.get((product.id, variant.id)) else ('approved' if mgr_approved else 'pending' if negotiated_price else None)),
+            'subtotal': subtotal,
+            'image_url': image_url,
+            'unavailable': unavailable,
+        })
+        total += subtotal
+        if not unavailable:
+            items_count += quantity
         new_cart.append({'product_id': variant.product_id, 'variant_id': variant_id, 'quantity': (0 if unavailable else quantity)})
 
     # persist revalidated cart
@@ -1081,6 +1090,22 @@ def cart_items_json(request):
             request.session['cart_store_id'] = requested_store_id
     try:
         request.session.modified = True
+    except Exception:
+        pass
+    try:
+        if negotiated_price is not None and negotiated_price > 0:
+            from decimal import Decimal
+            defaults = {
+                'quantity': existing_item['quantity'] if existing_item else quantity,
+                'proposed_price': Decimal(str(negotiated_price)),
+                'proposal_status': 'pending',
+            }
+            CartItem.objects.update_or_create(
+                user=request.user,
+                product=product,
+                variant=variant,
+                defaults=defaults
+            )
     except Exception:
         pass
     return JsonResponse({'ok': True, 'cart_items_count': cart_count(cart)})

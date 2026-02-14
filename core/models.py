@@ -497,6 +497,30 @@ class OrderItem(models.Model):
             self.price = self.variant.price if self.variant else self.product.base_price
         super().save(*args, **kwargs)
 
+class CartItem(models.Model):
+    PROPOSAL_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    variant = models.ForeignKey(ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.IntegerField(validators=[MinValueValidator(1)], default=1)
+    proposed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    proposal_status = models.CharField(max_length=20, choices=PROPOSAL_STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        unique_together = ('user', 'product', 'variant')
+        indexes = [
+            models.Index(fields=['user']),
+            models.Index(fields=['product']),
+            models.Index(fields=['variant']),
+        ]
+    def __str__(self):
+        return f"CartItem u={self.user_id} p={self.product_id} v={self.variant_id}"
+
 
 class Campaign(models.Model):
     title = models.CharField(max_length=255)
