@@ -240,21 +240,4 @@ body.theme-light .text-white {
 [data-bs-theme="light"] .text-light,
 body.theme-light .text-light {
     color: var(--muted) !important;
-}] .cart-item__price .price-proposed,
-body.theme-light .price-old,
-body.theme-light .price-new,
-body.theme-light .cart-item__price,
-body.theme-light .cart-item__price .price-base,
-body.theme-light .cart-item__price .price-proposed {
-    color: var(--price-fg) !important;
-}
-
-[data-bs-theme="light"] .text-white,
-body.theme-light .text-white {
-    color: var(--fg) !important;
-}
-
-[data-bs-theme="light"] .text-light,
-body.theme-light .text-light {
-    color: var(--muted) !important;
 }

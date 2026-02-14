@@ -13,6 +13,57 @@ body.theme-light .text-muted {
   color: var(--muted) !important;
 }
 
+[data-bs-theme="light"] .text-white-50,
+[data-bs-theme="light"] .text-white-75,
+[data-bs-theme="light"] .text-secondary,
+body.theme-light .text-white-50,
+body.theme-light .text-white-75,
+body.theme-light .text-secondary {
+  color: var(--muted) !important;
+}
+
+[data-bs-theme="light"] h1,
+[data-bs-theme="light"] h2,
+[data-bs-theme="light"] h3,
+[data-bs-theme="light"] h4,
+[data-bs-theme="light"] h5,
+[data-bs-theme="light"] h6,
+[data-bs-theme="light"] p,
+[data-bs-theme="light"] span,
+[data-bs-theme="light"] small,
+[data-bs-theme="light"] label,
+[data-bs-theme="light"] legend,
+[data-bs-theme="light"] a,
+[data-bs-theme="light"] li,
+[data-bs-theme="light"] dt,
+[data-bs-theme="light"] dd,
+[data-bs-theme="light"] th,
+[data-bs-theme="light"] td,
+[data-bs-theme="light"] button,
+body.theme-light h1,
+body.theme-light h2,
+body.theme-light h3,
+body.theme-light h4,
+body.theme-light h5,
+body.theme-light h6,
+body.theme-light p,
+body.theme-light span,
+body.theme-light small,
+body.theme-light label,
+body.theme-light legend,
+body.theme-light a,
+body.theme-light li,
+body.theme-light dt,
+body.theme-light dd,
+body.theme-light th,
+body.theme-light td,
+body.theme-light button {
+  color: var(--text) !important;
+  mix-blend-mode: normal !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
 [data-bs-theme="light"] svg,
 [data-bs-theme="light"] svg *,
 body.theme-light svg,
