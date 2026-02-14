@@ -3300,6 +3300,7 @@ def super_owner_products(request):
 
 @login_required
 def super_owner_add_product(request):
+    action = request.POST.get("action", "")
     if request.user.username != 'super_owner':
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
@@ -3308,7 +3309,6 @@ def super_owner_add_product(request):
     preselect_store = request.GET.get('store')
     step = (request.GET.get('step') or 'info').strip()
     pid = request.GET.get('pid')
-    action = request.POST.get('action') or request.GET.get('action') or ''
     if request.method == 'GET' and not pid and step == 'info':
         try:
             request.session.pop('draft_product_id', None)
@@ -3666,7 +3666,6 @@ def super_owner_add_product(request):
                 if not sname:
                     messages.error(request, 'يرجى إدخال اسم القياس')
                     return redirect(f"{request.path}?pid={request.POST.get('pid')}&step=attributes")
-                from django.db.models import Max
                 from .models import AttributeSize
                 max_order = AttributeSize.objects.aggregate(m=Max('order')).get('m') or 0
                 AttributeSize.objects.get_or_create(name=sname, defaults={'order': max_order + 1})
@@ -3932,7 +3931,8 @@ def super_owner_add_product(request):
                     pass
                 messages.error(request, 'لم يتم تحديد أي ملف للرفع')
                 return redirect(f"{request.path}?pid={product.id}&step=images")
-            max_order = product.images.aggregate(m=Max('order')).get('m') or 0
+            max_order = product.images.aggregate(max_order=Max("order")).get("max_order") or 0
+            next_order = max_order + 1
             existing_images = list(product.images.all())
             default_color_attr_id = None
             try:
@@ -3985,7 +3985,7 @@ def super_owner_add_product(request):
                         product=product,
                         image=f,
                         is_main=False,
-                        order=max_order + idx + 1,
+                        order=next_order + idx,
                         image_hash=new_digest,
                         color_attr_id=default_color_attr_id if default_color_attr_id else None,
                     )
