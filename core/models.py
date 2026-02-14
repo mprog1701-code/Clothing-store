@@ -508,7 +508,7 @@ class CartItem(models.Model):
     variant = models.ForeignKey(ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.IntegerField(validators=[MinValueValidator(1)], default=1)
     proposed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    proposal_status = models.CharField(max_length=20, choices=PROPOSAL_STATUS_CHOICES, default='pending')
+    proposal_status = models.CharField(max_length=20, choices=PROPOSAL_STATUS_CHOICES, null=True, blank=True, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:
