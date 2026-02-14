@@ -1243,6 +1243,7 @@ def checkout(request):
                 continue
             product = variant.product
             quantity = int(item.get('quantity') or 1)
+            negotiated_val = item.get('negotiated_price')
             if variant.stock_qty <= 0 or quantity > variant.stock_qty:
                 reason = 'OUT_OF_STOCK' if variant.stock_qty <= 0 else 'INSUFFICIENT_STOCK'
                 failures.append({
@@ -1260,7 +1261,7 @@ def checkout(request):
                 groups[s.id] = {'store': s, 'items': []}
                 totals[s.id] = 0
             price = variant.price
-            groups[s.id]['items'].append({'product': product, 'variant': variant, 'quantity': quantity, 'price': price})
+            groups[s.id]['items'].append({'product': product, 'variant': variant, 'quantity': quantity, 'price': price, 'negotiated_price': negotiated_val})
             totals[s.id] += price * quantity
         request.session['cart'] = new_cart
         try:
@@ -1311,7 +1312,8 @@ def checkout(request):
                             product=item_data['product'],
                             variant=v,
                             quantity=q,
-                            price=item_data['price']
+                            price=item_data['price'],
+                            negotiated_price=item_data.get('negotiated_price')
                         )
                         v.stock_qty = int(v.stock_qty) - q
                         v.save()

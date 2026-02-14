@@ -114,6 +114,7 @@
                                     <th>المنتج</th>
                                     <th>المتغير</th>
                                     <th>السعر</th>
+                                    <th>العرض المقترح</th>
                                     <th>الكمية</th>
                                     <th>الإجمالي</th>
                                 </tr>
@@ -152,6 +153,7 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ item.price|iqd }}</td>
+                                    <td>{% if item.negotiated_price %}{{ item.negotiated_price|iqd }}{% else %}-{% endif %}</td>
                                     <td>{{ item.quantity }}</td>
                                     <td>{{ item.quantity|multiply:item.price|iqd }}</td>
                                 </tr>

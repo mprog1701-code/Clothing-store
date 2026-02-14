@@ -59,16 +59,8 @@
     <img id="pdMain" src="{{ default_main_image_url }}" alt="{{ product.name }}" onerror="this.onerror=null;this.src='{{ placeholder_image_url }}'">
     <div id="pdThumbs"></div>
   </div>
-  <div class="pdInfo">
+    <div class="pdInfo">
     <div class="title">{{ product.name }}</div>
-    <div class="price">
-      {% if product.discount_price %}
-        <span class="price-old">{{ product.base_price|iqd }}</span>
-        <span class="price-new">{{ product.discount_price|iqd }}</span>
-      {% else %}
-        <span class="price-new">{{ product.base_price|iqd }}</span>
-      {% endif %}
-    </div>
     {% if fit_advice %}
     <div class="fit">{{ fit_advice }}</div>
     {% endif %}
@@ -83,7 +75,8 @@
       <div class="sizes" id="sizes"></div>
       {% if features.NEGOTIATION_ENABLED and product.allow_negotiation %}
       <div class="negRow" style="display:flex;align-items:center;gap:12px;margin:12px 0;">
-        <input type="number" step="0.01" min="0" id="negPrice" name="negotiatedPrice" placeholder="Negotiated Price" style="max-width:180px;">
+        <label for="negPrice" class="form-label" style="margin:0 8px 0 0;">Proposed Price</label>
+        <input type="number" step="0.01" min="0" id="negPrice" name="negotiatedPrice" placeholder="Proposed Price" style="max-width:180px;border:2px solid #2e7d32;border-radius:8px;">
         <div id="storeRating">⭐ {{ product.rating|default:"0.0" }}</div>
       </div>
       {% endif %}
@@ -359,12 +352,21 @@
                         </div>
                         <div class="product-price mb-3">
                             {% if product.discount_price %}
-                                <div class="d-flex align-items-baseline gap-3">
-                                    <span class="price-old">{{ product.base_price|iqd }}</span>
-                                    <span class="price-new">{{ product.discount_price|iqd }}</span>
+                                <div class="d-flex align-items-baseline gap-4">
+                                    <div class="d-flex align-items-baseline gap-2">
+                                        <span class="text-muted">Original Price</span>
+                                        <span class="price-old">{{ product.base_price|iqd }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-baseline gap-2">
+                                        <span class="text-muted">Discounted Price</span>
+                                        <span class="price-new">{{ product.discount_price|iqd }}</span>
+                                    </div>
                                 </div>
                             {% else %}
-                                <span class="price-new">{{ product.base_price|iqd }}</span>
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <span class="text-muted">Original Price</span>
+                                    <span class="price-new">{{ product.base_price|iqd }}</span>
+                                </div>
                             {% endif %}
                         </div>
                         {% if fit_advice %}
