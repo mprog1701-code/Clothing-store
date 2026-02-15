@@ -7,6 +7,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--phone", dest="phone", default="", help="Phone to search across tables")
+        parser.add_argument("--product", dest="product", default="", help="Product ID to inspect variants/prices")
 
     def handle(self, *args, **options):
         db = settings.DATABASES.get("default", {})
@@ -96,6 +97,24 @@ class Command(BaseCommand):
                         print(r)
                 except Exception:
                     pass
+            # Optional: inspect a product's variants and prices
+            pid = (options.get("product") or "").strip()
+            if pid and pid.isdigit():
+                print(f"[product] variants for product_id={pid}")
+                try:
+                    sql = """
+                        SELECT v.id, v.product_id, v.color_attr_id, v.size_attr_id, v.size, v.stock_qty, v.price_override
+                        FROM core_productvariant v
+                        WHERE v.product_id = %s
+                        ORDER BY COALESCE(v.color_attr_id,0), COALESCE(v.size_attr_id,0), v.id
+                    """
+                    cur.execute(sql, [int(pid)])
+                    rows = cur.fetchall()
+                    for r in rows:
+                        vid, ppid, color_id, size_id, size, qty, pov = r
+                        print(f"[variant] id={vid} color_attr_id={color_id} size_attr_id={size_id} size={size} qty={qty} price_override={pov}")
+                except Exception as e:
+                    print(f"[product] query failed: {e}")
 
             vendor = connection.vendor
             print(f"[db] vendor={vendor}")

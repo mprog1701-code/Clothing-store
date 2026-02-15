@@ -3420,6 +3420,19 @@ def super_owner_add_product(request):
             product_form = ProductForm(request.POST, instance=product)
             variant_formset = VariantFormSet(request.POST, instance=product, prefix='variants')
             image_formset = ImageFormSet(request.POST, request.FILES, instance=product, prefix='images')
+            # Restrict image formset choices to this product's variants/colors
+            try:
+                vqs = ProductVariant.objects.filter(product=product, is_enabled=True)
+                col_ids = list(vqs.exclude(color_attr__isnull=True).values_list('color_attr_id', flat=True).distinct())
+                from .models import AttributeColor  # ensure in scope
+                colors_qs = AttributeColor.objects.filter(id__in=col_ids) if col_ids else AttributeColor.objects.none()
+                for f in image_formset.forms:
+                    if 'variant' in f.fields:
+                        f.fields['variant'].queryset = vqs
+                    if 'color_attr' in f.fields:
+                        f.fields['color_attr'].queryset = colors_qs
+            except Exception:
+                pass
             try:
                 print(request.FILES)
             except Exception:
@@ -3955,7 +3968,22 @@ def super_owner_add_product(request):
                     v.price_override = None
                 else:
                     try:
-                        v.price_override = Decimal(price_raw)
+                        s = price_raw.replace('٬','').replace(' ','').replace('٫','.')
+                        s = s.replace('،',',')
+                        if ',' in s and '.' in s:
+                            if s.rfind(',') > s.rfind('.'):
+                                s = s.replace('.','')
+                                s = s.replace(',', '.')
+                            else:
+                                s = s.replace(',', '')
+                        else:
+                            if ',' in s:
+                                parts = s.split(',')
+                                if len(parts) == 2 and len(parts[1]) <= 2:
+                                    s = s.replace(',', '.')
+                                else:
+                                    s = s.replace(',', '')
+                        v.price_override = Decimal(s)
                     except InvalidOperation:
                         pass
                 v.is_enabled = enabled
@@ -3965,6 +3993,9 @@ def super_owner_add_product(request):
                 except Exception:
                     continue
             messages.success(request, f'تم حفظ المتغيرات ({updated})')
+            goto = (request.POST.get('goto') or '').strip()
+            if goto == 'images':
+                return redirect(f"{request.path}?pid={product.id}&step=images")
             return redirect(f"{request.path}?pid={product.id}&step=variants")
 
         elif action == 'upload_images':
@@ -4375,9 +4406,14 @@ def super_owner_add_product(request):
         if image_formset and product:
             try:
                 vqs = ProductVariant.objects.filter(product=product, is_enabled=True)
+                col_ids = list(vqs.exclude(color_attr__isnull=True).values_list('color_attr_id', flat=True).distinct())
+                from .models import AttributeColor
+                colors_qs = AttributeColor.objects.filter(id__in=col_ids) if col_ids else AttributeColor.objects.none()
                 for f in image_formset.forms:
                     if 'variant' in f.fields:
                         f.fields['variant'].queryset = vqs
+                    if 'color_attr' in f.fields:
+                        f.fields['color_attr'].queryset = colors_qs
             except Exception:
                 pass
 
@@ -6312,16 +6348,29 @@ def super_owner_inventory(request):
                             qty = 0
                         v.stock_qty = qty
                         v.is_enabled = bool(enabled_raw) if enabled_raw is not None else (qty > 0)
-                        # update price override safely
                         try:
                             from decimal import Decimal
                             raw = (price_raw or '').strip()
                             if raw == '':
                                 v.price_override = None
                             else:
-                                v.price_override = Decimal(raw)
+                                s = raw.replace('٬','').replace(' ','').replace('٫','.')
+                                s = s.replace('،',',')
+                                if ',' in s and '.' in s:
+                                    if s.rfind(',') > s.rfind('.'):
+                                        s = s.replace('.','')
+                                        s = s.replace(',', '.')
+                                    else:
+                                        s = s.replace(',', '')
+                                else:
+                                    if ',' in s:
+                                        parts = s.split(',')
+                                        if len(parts) == 2 and len(parts[1]) <= 2:
+                                            s = s.replace(',', '.')
+                                        else:
+                                            s = s.replace(',', '')
+                                v.price_override = Decimal(s)
                         except Exception:
-                            # ignore invalid price input without breaking other fields
                             pass
                         v.save()
                 messages.success(request, 'تم حفظ الكميات والحالة بنجاح')
