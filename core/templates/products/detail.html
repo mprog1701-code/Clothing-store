@@ -64,13 +64,8 @@
     <div class="product-meta-fixed">
       <div class="product-price-fixed">
         <span class="label">السعر:</span>
-        <span class="value" id="productPriceFixedValue">
-          {% if product.discount_price %}
-            {{ product.discount_price|iqd }}
-          {% else %}
-            {{ product.base_price|iqd }}
-          {% endif %}
-        </span>
+        <span class="value" id="js-price" data-currency="د.ع">{% if product.discount_price %}{{ product.discount_price|iqd }} د.ع{% else %}{{ product.base_price|iqd }} د.ع{% endif %}</span>
+        <span id="js-old-price" class="old-price d-none"></span>
       </div>
       {% if product.description %}
       <div class="product-desc-fixed">{{ product.description }}</div>
@@ -119,15 +114,25 @@
   const inlineMsg = document.getElementById('inlineMsg');
   const selColor = document.getElementById('selColor');
   const selSize = document.getElementById('selSize');
-  const fixedPriceEl = document.getElementById('productPriceFixedValue');
+  const priceEl = document.getElementById('js-price');
+  const oldEl = document.getElementById('js-old-price');
   const PRODUCT_BASE = (function(){ const n = parseFloat('{{ product.base_price|default:0 }}'); return isNaN(n)? 0 : n; })();
   const PRODUCT_DISCOUNT = (function(){ const raw='{{ product.discount_price|default_if_none:"" }}'; const n=parseFloat(raw); return isNaN(n)? null : n; })();
-  function setFixedPrice(num){
-    if (!fixedPriceEl) return;
-    try {
-      const n = parseFloat(num);
-      if (!isNaN(n)) fixedPriceEl.textContent = n.toLocaleString('ar-IQ') + ' د.ع';
-    } catch(e){}
+  function fmt(n){ if(n===null||n===undefined||n==='') return ''; const x=Number(n); return Number.isNaN(x)? String(n): x.toLocaleString('ar-IQ'); }
+  function setPrice(price, oldPrice){
+    const cur = (priceEl && priceEl.dataset && priceEl.dataset.currency) ? priceEl.dataset.currency : 'د.ع';
+    if (priceEl) priceEl.textContent = fmt(price) + ' ' + cur;
+    if (oldEl){
+      const op = Number(oldPrice);
+      const p  = Number(price);
+      if(!Number.isNaN(op) && !Number.isNaN(p) && op > p){
+        oldEl.textContent = fmt(op) + ' ' + cur;
+        oldEl.classList.remove('d-none');
+      }else{
+        oldEl.classList.add('d-none');
+        oldEl.textContent = '';
+      }
+    }
   }
   const MIN_ACCEPTABLE = (function(){
     const raw = '{{ product.minimum_acceptable_price|default_if_none:"" }}';
@@ -213,6 +218,11 @@
       b.disabled = !!out;
       b.textContent = s;
       b.setAttribute('data-size', s);
+      if (v){ 
+        if (v.id != null) b.setAttribute('data-variant-id', String(v.id));
+        if (v.price != null) b.setAttribute('data-price', String(v.price));
+        if (v.old_price != null) b.setAttribute('data-old-price', String(v.old_price));
+      }
       b.addEventListener('click', function(){ selectSize(s); });
       sizesEl.appendChild(b);
     });
@@ -241,8 +251,14 @@
     addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
     if (inlineMsg) inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
     if (selSize) selSize.textContent = String(size);
-    if (v && typeof v.price === 'number') { setFixedPrice(v.price); }
-    else { setFixedPrice(PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE); }
+    if (v && v.price != null) { 
+      setPrice(v.price, v.old_price); 
+    }
+    else { 
+      const fallbackP = (PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
+      const fallbackOP = (PRODUCT_DISCOUNT != null ? PRODUCT_BASE : null);
+      setPrice(fallbackP, fallbackOP);
+    }
   }
   function onColorSelect(colorId){
     selectedColorId = String(colorId);
@@ -258,15 +274,18 @@
       hiddenVar.value = ''; 
       addBtn.disabled = true; 
       if (inlineMsg) inlineMsg.style.display='block'; 
-      // fallback: أظهر أقل سعر متاح لهذا اللون حتى لو المخزون صفر
       const any = colorVariants && colorVariants.length ? colorVariants.reduce(function(min, v){
-        const ap = (typeof v.price === 'number') ? v.price : Number(v.price);
-        if (isNaN(ap)) return min;
-        if (min == null) return { p: ap };
-        return (ap < min.p) ? { p: ap } : min;
+        const ap = Number(v.price);
+        if (Number.isNaN(ap)) return min;
+        if (min == null) return { p: ap, op: v.old_price };
+        return (ap < min.p) ? { p: ap, op: v.old_price } : min;
       }, null) : null;
-      if (any && typeof any.p === 'number') setFixedPrice(any.p);
-      else setFixedPrice(PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
+      if (any && typeof any.p === 'number') setPrice(any.p, any.op);
+      else {
+        const fallbackP = (PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
+        const fallbackOP = (PRODUCT_DISCOUNT != null ? PRODUCT_BASE : null);
+        setPrice(fallbackP, fallbackOP);
+      }
     }
     if (selColor) selColor.textContent = COLOR_NAME_BY_ID[String(selectedColorId)] || 'غير محدد';
   }
@@ -286,14 +305,17 @@
         if (firstAvail){ selectSize(firstAvail.size); }
       }
     }
-    // تأكيد ضبط السعر المبدئي
-    if (fixedPriceEl) {
+    if (priceEl) {
       const chosen = (function(){
         const vid = hiddenVar && hiddenVar.value ? String(hiddenVar.value) : null;
         return vid ? (VARIANTS.find(v => String(v.id) === vid) || null) : null;
       })();
-      if (chosen && typeof chosen.price === 'number') setFixedPrice(chosen.price);
-      else setFixedPrice(PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
+      if (chosen && chosen.price != null) setPrice(chosen.price, chosen.old_price);
+      else {
+        const fallbackP = (PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
+        const fallbackOP = (PRODUCT_DISCOUNT != null ? PRODUCT_BASE : null);
+        setPrice(fallbackP, fallbackOP);
+      }
     }
     pdThumbs.addEventListener('click', function(e){
       const b = e.target.closest('.thumb');
@@ -540,7 +562,10 @@
                             const qtyInput = document.getElementById('qtyInput');
                             const stockInfo = document.getElementById('stockInfo');
                             const variantPrice = document.getElementById('variantPrice');
-                            const fixedPriceEl = document.getElementById('productPriceFixedValue');
+                            const priceEl = document.getElementById('js-price');
+                            const oldEl = document.getElementById('js-old-price');
+                            function fmt(n){ if(n===null||n===undefined||n==='') return ''; const x=Number(n); return Number.isNaN(x)? String(n): x.toLocaleString('ar-IQ'); }
+                            function setPriceGlobal(p, op){ const cur = (priceEl && priceEl.dataset && priceEl.dataset.currency) ? priceEl.dataset.currency : 'د.ع'; if (priceEl) priceEl.textContent = fmt(p) + ' ' + cur; if (oldEl){ const n1 = Number(op); const n2 = Number(p); if(!Number.isNaN(n1)&&!Number.isNaN(n2)&&n1>n2){ oldEl.textContent = fmt(n1) + ' ' + cur; oldEl.classList.remove('d-none'); } else { oldEl.classList.add('d-none'); oldEl.textContent=''; } } }
                             const addBtn = document.getElementById('addToCartBtn');
                             const hiddenVariantId = document.getElementById('selectedVariantId');
                             const pdMain = document.getElementById('pdMain');
@@ -651,16 +676,15 @@
                                 if (firstAvail){ 
                                     selectSize(color, firstAvail.size); 
                                 } else {
-                                    // fallback price لعرض السعر الأدنى لهذا اللون حتى قبل اختيار المقاس
                                     const candidate = colorVars.reduce(function(min, v){
                                         const ap = (typeof v.price === 'number') ? v.price : Number(v.price);
                                         if (isNaN(ap)) return min;
-                                        if (min == null) return { p: ap };
-                                        return (ap < min.p) ? { p: ap } : min;
+                                        if (min == null) return { p: ap, op: v.old_price };
+                                        return (ap < min.p) ? { p: ap, op: v.old_price } : min;
                                     }, null);
                                     if (candidate && typeof candidate.p === 'number') {
                                         variantPrice.textContent = `${candidate.p.toLocaleString('ar-IQ')} دينار`;
-                                        if (fixedPriceEl) { fixedPriceEl.textContent = `${candidate.p.toLocaleString('ar-IQ')} د.ع`; }
+                                        setPriceGlobal(candidate.p, candidate.op);
                                     }
                                 }
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
@@ -691,7 +715,7 @@
                                 qtyInput.value = 1;
                                 qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
                                 variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
-                                if (fixedPriceEl) { fixedPriceEl.textContent = `${v.price.toLocaleString('ar-IQ')} د.ع`; }
+                                setPriceGlobal(v.price, v.old_price);
                                 selColor.textContent = COLOR_NAME_BY_ID[String(color)] || 'غير محدد';
                                 selSize.textContent = size || 'غير محدد';
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
@@ -739,7 +763,7 @@
                                     addBtn.disabled = false;
                                     stockInfo.textContent = '';
                                     variantPrice.textContent = `${parseFloat({{ product.discount_price|default:product.base_price }}).toLocaleString('ar-IQ')} دينار`;
-                                    if (fixedPriceEl) { fixedPriceEl.textContent = `${parseFloat({{ product.discount_price|default:product.base_price }}).toLocaleString('ar-IQ')} د.ع`; }
+                                    setPriceGlobal(parseFloat({{ product.discount_price|default:product.base_price }}), null);
                                     inlineMsg.style.display = 'none';
                                     console.log('pd:initPage:noVariants');
                                 }
