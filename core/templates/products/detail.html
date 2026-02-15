@@ -249,9 +249,25 @@
     renderSwatches(true);
     renderThumbs(getImagesForColorId(selectedColorId));
     renderSizesForColor(selectedColorId);
-    const firstAvail = VARIANTS.find(x => String(x.color_id || '') === String(selectedColorId) && (x.stock_qty || 0) > 0);
-    if (firstAvail){ selectSize(firstAvail.size); }
-    else { selectedSizeVal = null; hiddenVar.value = ''; addBtn.disabled = true; if (inlineMsg) inlineMsg.style.display='block'; }
+    const colorVariants = VARIANTS.filter(x => String(x.color_id || '') === String(selectedColorId));
+    const firstAvail = colorVariants.find(x => (x.stock_qty || 0) > 0);
+    if (firstAvail){ 
+      selectSize(firstAvail.size); 
+    } else { 
+      selectedSizeVal = null; 
+      hiddenVar.value = ''; 
+      addBtn.disabled = true; 
+      if (inlineMsg) inlineMsg.style.display='block'; 
+      // fallback: أظهر أقل سعر متاح لهذا اللون حتى لو المخزون صفر
+      const any = colorVariants && colorVariants.length ? colorVariants.reduce(function(min, v){
+        const ap = (typeof v.price === 'number') ? v.price : Number(v.price);
+        if (isNaN(ap)) return min;
+        if (min == null) return { p: ap };
+        return (ap < min.p) ? { p: ap } : min;
+      }, null) : null;
+      if (any && typeof any.p === 'number') setFixedPrice(any.p);
+      else setFixedPrice(PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
+    }
     if (selColor) selColor.textContent = COLOR_NAME_BY_ID[String(selectedColorId)] || 'غير محدد';
   }
 
@@ -630,8 +646,23 @@
                                 stockInfo.textContent = (sizes.length > 0 && availableCount === 0) ? 'هذا اللون غير متوفر' : '';
                                 selColor.textContent = COLOR_NAME_BY_ID[String(color)] || 'غير محدد';
                                 selSize.textContent = 'غير محدد';
-                                const firstAvail = PD_VARIANTS.find(x => String(x.color_id || '') === String(color) && x.stock_qty > 0);
-                                if (firstAvail){ selectSize(color, firstAvail.size); }
+                                const colorVars = PD_VARIANTS.filter(x => String(x.color_id || '') === String(color));
+                                const firstAvail = colorVars.find(x => x.stock_qty > 0);
+                                if (firstAvail){ 
+                                    selectSize(color, firstAvail.size); 
+                                } else {
+                                    // fallback price لعرض السعر الأدنى لهذا اللون حتى قبل اختيار المقاس
+                                    const candidate = colorVars.reduce(function(min, v){
+                                        const ap = (typeof v.price === 'number') ? v.price : Number(v.price);
+                                        if (isNaN(ap)) return min;
+                                        if (min == null) return { p: ap };
+                                        return (ap < min.p) ? { p: ap } : min;
+                                    }, null);
+                                    if (candidate && typeof candidate.p === 'number') {
+                                        variantPrice.textContent = `${candidate.p.toLocaleString('ar-IQ')} دينار`;
+                                        if (fixedPriceEl) { fixedPriceEl.textContent = `${candidate.p.toLocaleString('ar-IQ')} د.ع`; }
+                                    }
+                                }
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
                             }
 
