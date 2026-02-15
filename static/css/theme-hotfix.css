@@ -118,3 +118,33 @@ body.theme-light .cart-item__price .price-base,
 body.theme-light .cart-item__price .price-proposed {
   color: var(--text) !important;
 }
+
+.product-meta-fixed {
+  display: block !important;
+  margin: 8px 0 !important;
+  color: var(--text) !important;
+}
+.product-meta-fixed * {
+  color: var(--text) !important;
+}
+.product-price-fixed {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: baseline !important;
+}
+.product-price-fixed .label {
+  color: var(--muted) !important;
+  font-weight: 600 !important;
+}
+.product-price-fixed .value {
+  color: var(--text) !important;
+  font-weight: 800 !important;
+}
+.product-desc-fixed {
+  margin-top: 6px !important;
+  color: var(--text) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}

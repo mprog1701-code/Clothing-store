@@ -61,6 +61,15 @@
   </div>
     <div class="pdInfo">
     <div class="title">{{ product.name }}</div>
+    <div class="product-meta-fixed">
+      <div class="product-price-fixed">
+        <span class="label">السعر:</span>
+        <span class="value">{{ product.price }} د.ع</span>
+      </div>
+      {% if product.description %}
+      <div class="product-desc-fixed">{{ product.description }}</div>
+      {% endif %}
+    </div>
     {% if fit_advice %}
     <div class="fit">{{ fit_advice }}</div>
     {% endif %}
