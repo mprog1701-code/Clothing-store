@@ -66,6 +66,7 @@
         <span class="label">السعر:</span>
         <span class="value" id="js-price" data-currency="د.ع">{% if product.discount_price %}{{ product.discount_price|iqd }} د.ع{% else %}{{ product.base_price|iqd }} د.ع{% endif %}</span>
         <span id="js-old-price" class="old-price d-none"></span>
+        <small id="js-price-note" class="text-muted d-none" style="margin-right:8px;"></small>
       </div>
       {% if product.description %}
       <div class="product-desc-fixed">{{ product.description }}</div>
@@ -116,6 +117,8 @@
   const selSize = document.getElementById('selSize');
   const priceEl = document.getElementById('js-price');
   const oldEl = document.getElementById('js-old-price');
+  const noteEl = document.getElementById('js-price-note');
+  const PRODUCT_ID = {{ product.id }};
   const PRODUCT_BASE = (function(){ const n = parseFloat('{{ product.base_price|default:0 }}'); return isNaN(n)? 0 : n; })();
   const PRODUCT_DISCOUNT = (function(){ const raw='{{ product.discount_price|default_if_none:"" }}'; const n=parseFloat(raw); return isNaN(n)? null : n; })();
   function fmt(n){ if(n===null||n===undefined||n==='') return ''; const x=Number(n); return Number.isNaN(x)? String(n): x.toLocaleString('ar-IQ'); }
@@ -133,6 +136,30 @@
         oldEl.textContent = '';
       }
     }
+  }
+  function setNote(show, txt){
+    if(!noteEl) return;
+    if(show){ noteEl.textContent = txt || ''; noteEl.classList.remove('d-none'); }
+    else { noteEl.textContent = ''; noteEl.classList.add('d-none'); }
+  }
+  function updatePriceElements(p, op, note){
+    try { if (typeof setPrice === 'function') setPrice(p, op); } catch(e){}
+    try { if (typeof setPriceGlobal === 'function') setPriceGlobal(p, op); } catch(e){}
+    if (note) setNote(true, note); else setNote(false, '');
+  }
+  async function fetchAndUpdatePrice(colorKey, sizeVal){
+    if(!PRODUCT_ID || !colorKey || !sizeVal) return;
+    try{
+      const url = `/api/products/${PRODUCT_ID}/variant-price/?color=${encodeURIComponent(colorKey)}&size=${encodeURIComponent(sizeVal)}`;
+      const resp = await fetch(url, { headers: {'Accept': 'application/json'} });
+      const data = await resp.json();
+      if (data && data.found === true){
+        updatePriceElements(data.price, data.sale_price || null, null);
+      } else if (data && data.found === false){
+        const fb = (typeof data.fallback_price === 'number') ? data.fallback_price : (PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
+        updatePriceElements(fb, null, 'السعر لهذا الخيار غير محدد');
+      }
+    }catch(e){}
   }
   const MIN_ACCEPTABLE = (function(){
     const raw = '{{ product.minimum_acceptable_price|default_if_none:"" }}';
@@ -259,6 +286,8 @@
       const fallbackOP = (PRODUCT_DISCOUNT != null ? PRODUCT_BASE : null);
       setPrice(fallbackP, fallbackOP);
     }
+    // fetch price from API to ensure inventory-managed price
+    fetchAndUpdatePrice(selectedColorId, selectedSizeVal);
   }
   function onColorSelect(colorId){
     selectedColorId = String(colorId);

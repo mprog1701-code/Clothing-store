@@ -235,6 +235,51 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         ]
         return Response({'color': color, 'sizes': data})
 
+    @action(detail=True, methods=['get'], url_path='variant-price', permission_classes=[AllowAny], authentication_classes=[])
+    def variant_price(self, request, pk=None):
+        """
+        Returns price information for a product variant given color and size.
+        Query params:
+          - color: Either numeric color_obj_id, or 'A<attr_id>' for AttributeColor
+          - size:  Size string or AttributeSize.name
+        Response:
+          - {found: bool, price: number|null, sale_price: number|null, currency: str, fallback_price: number|null}
+        """
+        product = self.get_object()
+        color = (request.query_params.get('color') or '').strip()
+        size = (request.query_params.get('size') or '').strip()
+        from django.db.models import Q
+        qs = product.variants.all()
+        # filter by color if provided
+        if color:
+            if color.startswith('A'):
+                try:
+                    cid = int(color[1:])
+                    qs = qs.filter(color_attr_id=cid)
+                except Exception:
+                    qs = qs.none()
+            else:
+                try:
+                    cid = int(color)
+                    qs = qs.filter(color_obj_id=cid)
+                except Exception:
+                    qs = qs.none()
+        # filter by size if provided
+        if size:
+            qs = qs.filter(Q(size=size) | Q(size_attr__name=size))
+        v = qs.first()
+        currency = 'د.ع'
+        try:
+            base_price = float(product.base_price)
+        except Exception:
+            base_price = None
+        if not v:
+            return Response({'found': False, 'price': None, 'sale_price': None, 'currency': currency, 'fallback_price': base_price})
+        # If explicit inventory price exists use it; otherwise treat as not found and fallback to product base_price
+        if v.price_override is not None:
+            return Response({'found': True, 'price': float(v.price_override), 'sale_price': None, 'currency': currency})
+        return Response({'found': False, 'price': None, 'sale_price': None, 'currency': currency, 'fallback_price': base_price})
+
 
 class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = AddressSerializer

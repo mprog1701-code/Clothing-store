@@ -748,15 +748,27 @@ def cart_view(request):
                     image_url = mimg.get_image_url()
             except Exception:
                 image_url = None
+            # determine effective price with proposal
+            db_entry = db_items_map.get((product.id, 0))
+            proposed = (db_entry.proposed_price if db_entry else negotiated_price)
+            pstatus = (db_entry.proposal_status if db_entry else ('approved' if mgr_approved else 'pending' if negotiated_price else None))
+            effective_price = price
+            try:
+                if proposed is not None and (pstatus == 'approved'):
+                    from decimal import Decimal
+                    effective_price = Decimal(str(proposed))
+                    subtotal = effective_price * int(quantity)
+            except Exception:
+                pass
             cart_items.append({
                 'product': product,
                 'variant': None,
                 'quantity': quantity,
-                'price': price,
+                'price': effective_price,
                 'original_price': price,
-                'negotiated_price': (db_items_map.get((product.id, 0)).proposed_price if db_items_map.get((product.id, 0)) else negotiated_price),
-                'proposal_status': (db_items_map.get((product.id, 0)).proposal_status if db_items_map.get((product.id, 0)) else ('approved' if mgr_approved else 'pending' if negotiated_price else None)),
-                'display_price': (db_items_map.get((product.id, 0)).proposed_price if db_items_map.get((product.id, 0)) else price),
+                'negotiated_price': proposed,
+                'proposal_status': pstatus,
+                'display_price': (proposed if proposed is not None else price),
                 'subtotal': subtotal,
                 'image_url': image_url,
                 'unavailable': False,
@@ -795,15 +807,27 @@ def cart_view(request):
             if mimg:
                 image_url = mimg.get_image_url()
 
+        # determine effective price with proposal
+        db_entry = db_items_map.get((product.id, variant.id))
+        proposed = (db_entry.proposed_price if db_entry else negotiated_price)
+        pstatus = (db_entry.proposal_status if db_entry else ('approved' if mgr_approved else 'pending' if negotiated_price else None))
+        effective_price = price
+        try:
+            if proposed is not None and (pstatus == 'approved') and not unavailable:
+                from decimal import Decimal
+                effective_price = Decimal(str(proposed))
+                subtotal = effective_price * int(quantity)
+        except Exception:
+            pass
         cart_items.append({
             'product': product,
             'variant': variant,
             'quantity': quantity,
-            'price': price,
+            'price': effective_price,
             'original_price': price,
-            'negotiated_price': (db_items_map.get((product.id, variant.id)).proposed_price if db_items_map.get((product.id, variant.id)) else negotiated_price),
-            'proposal_status': (db_items_map.get((product.id, variant.id)).proposal_status if db_items_map.get((product.id, variant.id)) else ('approved' if mgr_approved else 'pending' if negotiated_price else None)),
-            'display_price': (db_items_map.get((product.id, variant.id)).proposed_price if db_items_map.get((product.id, variant.id)) else price),
+            'negotiated_price': proposed,
+            'proposal_status': pstatus,
+            'display_price': (proposed if proposed is not None else price),
             'subtotal': subtotal,
             'image_url': image_url,
             'unavailable': unavailable,
@@ -6267,6 +6291,11 @@ def super_owner_inventory(request):
                                 variant_ids.add(int(key[4:]))
                             except Exception:
                                 pass
+                        elif key.startswith('price_'):
+                            try:
+                                variant_ids.add(int(key[6:]))
+                            except Exception:
+                                pass
                     for vid in variant_ids:
                         try:
                             v = ProductVariant.objects.select_related('product').get(id=vid)
@@ -6274,6 +6303,7 @@ def super_owner_inventory(request):
                             continue
                         qty_raw = request.POST.get(f'qty_{vid}', '')
                         enabled_raw = request.POST.get(f'enabled_{vid}', None)
+                        price_raw = request.POST.get(f'price_{vid}', '')
                         try:
                             qty = int((qty_raw or '').strip() or '0')
                         except Exception:
@@ -6282,6 +6312,17 @@ def super_owner_inventory(request):
                             qty = 0
                         v.stock_qty = qty
                         v.is_enabled = bool(enabled_raw) if enabled_raw is not None else (qty > 0)
+                        # update price override safely
+                        try:
+                            from decimal import Decimal
+                            raw = (price_raw or '').strip()
+                            if raw == '':
+                                v.price_override = None
+                            else:
+                                v.price_override = Decimal(raw)
+                        except Exception:
+                            # ignore invalid price input without breaking other fields
+                            pass
                         v.save()
                 messages.success(request, 'تم حفظ الكميات والحالة بنجاح')
             except Exception:

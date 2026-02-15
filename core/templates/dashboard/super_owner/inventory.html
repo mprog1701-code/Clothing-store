@@ -80,6 +80,7 @@
                                         <th>اللون</th>
                                         <th>المقاس</th>
                                         <th style="width:150px">الكمية</th>
+                                        <th style="width:160px">السعر</th>
                                         <th>الحالة</th>
                                     </tr>
                                 </thead>
@@ -106,6 +107,9 @@
                                             <input type="number" name="qty_{{ v.id }}" class="form-control" min="0" value="{{ v.stock_qty }}">
                                         </td>
                                         <td>
+                                            <input type="number" name="price_{{ v.id }}" class="form-control" min="0" step="0.01" value="{{ v.price_override|default_if_none:'' }}" placeholder="{{ v.product.base_price }}">
+                                        </td>
+                                        <td>
                                             <div class="form-check form-switch">
                                                 <input class="form-check-input" type="checkbox" name="enabled_{{ v.id }}" id="enabled_{{ v.id }}" {% if v.is_enabled %}checked{% endif %}>
                                                 <label class="form-check-label" for="enabled_{{ v.id }}">{% if v.is_enabled %}نشط{% else %}معطّل{% endif %}</label>
@@ -114,7 +118,7 @@
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted">لا توجد عناصر مطابقة</td>
+                                        <td colspan="9" class="text-center text-muted">لا توجد عناصر مطابقة</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
