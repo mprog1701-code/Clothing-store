@@ -64,7 +64,7 @@
     <div class="product-meta-fixed">
       <div class="product-price-fixed">
         <span class="label">السعر:</span>
-        <span class="value">
+        <span class="value" id="productPriceFixedValue">
           {% if product.discount_price %}
             {{ product.discount_price|iqd }}
           {% else %}
@@ -119,6 +119,16 @@
   const inlineMsg = document.getElementById('inlineMsg');
   const selColor = document.getElementById('selColor');
   const selSize = document.getElementById('selSize');
+  const fixedPriceEl = document.getElementById('productPriceFixedValue');
+  const PRODUCT_BASE = (function(){ const n = parseFloat('{{ product.base_price|default:0 }}'); return isNaN(n)? 0 : n; })();
+  const PRODUCT_DISCOUNT = (function(){ const raw='{{ product.discount_price|default_if_none:"" }}'; const n=parseFloat(raw); return isNaN(n)? null : n; })();
+  function setFixedPrice(num){
+    if (!fixedPriceEl) return;
+    try {
+      const n = parseFloat(num);
+      if (!isNaN(n)) fixedPriceEl.textContent = n.toLocaleString('ar-IQ') + ' د.ع';
+    } catch(e){}
+  }
   const MIN_ACCEPTABLE = (function(){
     const raw = '{{ product.minimum_acceptable_price|default_if_none:"" }}';
     const n = parseFloat(raw);
@@ -231,6 +241,8 @@
     addBtn.disabled = !(v && (v.stock_qty || 0) > 0);
     if (inlineMsg) inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
     if (selSize) selSize.textContent = String(size);
+    if (v && typeof v.price === 'number') { setFixedPrice(v.price); }
+    else { setFixedPrice(PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE); }
   }
   function onColorSelect(colorId){
     selectedColorId = String(colorId);
@@ -257,6 +269,15 @@
         const firstAvail = VARIANTS.find(x => (x.stock_qty || 0) > 0);
         if (firstAvail){ selectSize(firstAvail.size); }
       }
+    }
+    // تأكيد ضبط السعر المبدئي
+    if (fixedPriceEl) {
+      const chosen = (function(){
+        const vid = hiddenVar && hiddenVar.value ? String(hiddenVar.value) : null;
+        return vid ? (VARIANTS.find(v => String(v.id) === vid) || null) : null;
+      })();
+      if (chosen && typeof chosen.price === 'number') setFixedPrice(chosen.price);
+      else setFixedPrice(PRODUCT_DISCOUNT != null ? PRODUCT_DISCOUNT : PRODUCT_BASE);
     }
     pdThumbs.addEventListener('click', function(e){
       const b = e.target.closest('.thumb');
@@ -503,6 +524,7 @@
                             const qtyInput = document.getElementById('qtyInput');
                             const stockInfo = document.getElementById('stockInfo');
                             const variantPrice = document.getElementById('variantPrice');
+                            const fixedPriceEl = document.getElementById('productPriceFixedValue');
                             const addBtn = document.getElementById('addToCartBtn');
                             const hiddenVariantId = document.getElementById('selectedVariantId');
                             const pdMain = document.getElementById('pdMain');
@@ -638,6 +660,7 @@
                                 qtyInput.value = 1;
                                 qtyInput.max = v.stock_qty > 0 ? v.stock_qty : 1;
                                 variantPrice.textContent = `${v.price.toLocaleString('ar-IQ')} دينار`;
+                                if (fixedPriceEl) { fixedPriceEl.textContent = `${v.price.toLocaleString('ar-IQ')} د.ع`; }
                                 selColor.textContent = COLOR_NAME_BY_ID[String(color)] || 'غير محدد';
                                 selSize.textContent = size || 'غير محدد';
                                 inlineMsg.style.display = addBtn.disabled ? 'block' : 'none';
@@ -685,6 +708,7 @@
                                     addBtn.disabled = false;
                                     stockInfo.textContent = '';
                                     variantPrice.textContent = `${parseFloat({{ product.discount_price|default:product.base_price }}).toLocaleString('ar-IQ')} دينار`;
+                                    if (fixedPriceEl) { fixedPriceEl.textContent = `${parseFloat({{ product.discount_price|default:product.base_price }}).toLocaleString('ar-IQ')} د.ع`; }
                                     inlineMsg.style.display = 'none';
                                     console.log('pd:initPage:noVariants');
                                 }
