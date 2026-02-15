@@ -64,7 +64,13 @@
     <div class="product-meta-fixed">
       <div class="product-price-fixed">
         <span class="label">السعر:</span>
-        <span class="value">{{ product.price }} د.ع</span>
+        <span class="value">
+          {% if product.discount_price %}
+            {{ product.discount_price|iqd }}
+          {% else %}
+            {{ product.base_price|iqd }}
+          {% endif %}
+        </span>
       </div>
       {% if product.description %}
       <div class="product-desc-fixed">{{ product.description }}</div>
