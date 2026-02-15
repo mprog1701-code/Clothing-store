@@ -5267,6 +5267,14 @@ def super_owner_edit_product(request, product_id):
         'product': product,
         'stores': stores,
     }
+    try:
+        images_preview = list(product.images.order_by('order', '-is_main')[:48])
+        images_total = product.images.count()
+    except Exception:
+        images_preview = []
+        images_total = 0
+    context['images_preview'] = images_preview
+    context['images_total'] = images_total
     def numeric_sizes():
         return [str(n) for n in range(28, 61, 2)]
     if product.size_type == 'symbolic':

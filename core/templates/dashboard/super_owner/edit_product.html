@@ -125,15 +125,17 @@
                                 
                                 <div class="mb-3">
                                     <label class="form-label">الصور الحالية</label>
-                                    {% if product.images.all %}
-                                        <div class="row">
-                                            {% for image in product.images.all %}
-                                                <div class="col-md-4 mb-2">
-                                                    <img src="{{ image.get_image_url }}" alt="{{ product.name }}" 
-                                                         class="img-thumbnail" style="max-height: 100px;">
+                                    {% if images_preview %}
+                                        <div class="row" id="currentImages">
+                                            {% for image in images_preview %}
+                                                <div class="col-md-3 mb-2">
+                                                    <img src="{{ image.get_image_url }}" alt="{{ product.name }}" class="img-thumbnail" style="max-height:100px;width:auto" loading="lazy" decoding="async" fetchpriority="low">
                                                 </div>
                                             {% endfor %}
                                         </div>
+                                        {% if images_total|default:0 > 48 %}
+                                        <div class="small text-muted mt-1">تم عرض أول 48 صورة من {{ images_total }}</div>
+                                        {% endif %}
                                     {% else %}
                                         <p class="text-muted">لا توجد صور للمنتج</p>
                                     {% endif %}
