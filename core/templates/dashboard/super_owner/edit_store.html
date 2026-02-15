@@ -130,6 +130,20 @@
 
                                 <div class="mb-3">
                                     <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="negotiation_enabled" name="negotiation_enabled" {% if store.negotiation_enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="negotiation_enabled">تفعيل السعر التفاوضي لهذا المتجر</label>
+                                    </div>
+                                    <div class="mt-2">
+                                        <label for="negotiation_max_price" class="form-label">الحد الأقصى للسعر التفاوضي (غير ظاهر للمستخدم)</label>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" class="form-control" id="negotiation_max_price" name="negotiation_max_price" value="{{ store.negotiation_max_price|default:'' }}">
+                                            <span class="input-group-text">IQD</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-check">
                                         <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if store.is_active %}checked{% endif %}>
                                         <label class="form-check-label" for="is_active">
                                             المتجر نشط

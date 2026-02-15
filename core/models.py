@@ -122,6 +122,8 @@ class Store(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     formatted_address = models.TextField(blank=True)
+    negotiation_enabled = models.BooleanField(default=True)
+    negotiation_max_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     def __str__(self):
         return self.name
@@ -166,6 +168,8 @@ class Product(models.Model):
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     allow_negotiation = models.BooleanField(default=True)
     minimum_acceptable_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    alert_note = models.TextField(blank=True, default='')
+    show_store_rating = models.BooleanField(default=True)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     SIZE_TYPE_CHOICES = [
         ('symbolic', 'رمزية'),
@@ -204,6 +208,23 @@ class PhoneReservation(models.Model):
     name = models.CharField(max_length=100)
     note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class AppRating(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    score = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class StoreRating(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='ratings')
+    score = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['store']),
+        ]
 
 
 class StoreOwnerInvite(models.Model):

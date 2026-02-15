@@ -40,6 +40,8 @@ urlpatterns = [
     path('checkout/apply-coupon/', views.apply_coupon_json, name='apply_coupon_json'),
     path('my/orders/', views.order_list, name='order_list'),
     path('my/orders/<int:order_id>/', views.order_detail, name='order_detail'),
+    path('api/rate-app/', views.rate_app_json, name='rate_app_json'),
+    path('api/stores/<int:store_id>/rate/', views.rate_store_json, name='rate_store_json'),
     
     # Address URLs
     path('my/addresses/', views.address_list, name='address_list'),

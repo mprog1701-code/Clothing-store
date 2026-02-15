@@ -68,6 +68,8 @@
                             <div class="col-md-6">
                                 <div class="mb-3">{{ product_form.name.label_tag }}{{ product_form.name }}</div>
                                 <div class="mb-3">{{ product_form.description.label_tag }}{{ product_form.description }}</div>
+                                <div class="mb-3">{{ product_form.alert_note.label_tag }}{{ product_form.alert_note }}</div>
+                                <div class="mb-3 form-check">{{ product_form.show_store_rating }} <label class="form-check-label" for="{{ product_form.show_store_rating.id_for_label }}">إظهار تقييم المتجر في صفحة المنتج</label></div>
                                 <div class="mb-3">{{ product_form.size_type.label_tag }}{{ product_form.size_type }}</div>
                                 <div class="mb-3">{{ product_form.fit_type.label_tag }}{{ product_form.fit_type }}</div>
                                 <div class="mb-3">{{ product_form.discount_price.label_tag }}{{ product_form.discount_price }}</div>

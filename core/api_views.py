@@ -277,7 +277,21 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({'found': False, 'price': None, 'sale_price': None, 'currency': currency, 'fallback_price': base_price})
         # If explicit inventory price exists use it; otherwise treat as not found and fallback to product base_price
         if v.price_override is not None:
-            return Response({'found': True, 'price': float(v.price_override), 'sale_price': None, 'currency': currency})
+            try:
+                vp = float(v.price_override)
+            except Exception:
+                vp = None
+            try:
+                base_price_num = float(product.base_price)
+            except Exception:
+                base_price_num = None
+            sale_old = None
+            try:
+                if base_price_num is not None and vp is not None and base_price_num > vp:
+                    sale_old = base_price_num
+            except Exception:
+                sale_old = None
+            return Response({'found': True, 'price': vp, 'sale_price': sale_old, 'currency': currency})
         return Response({'found': False, 'price': None, 'sale_price': None, 'currency': currency, 'fallback_price': base_price})
 
 

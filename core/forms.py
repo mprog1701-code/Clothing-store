@@ -89,10 +89,12 @@ class AddressForm(forms.ModelForm):
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'description', 'category', 'base_price', 'discount_price', 'size_type', 'fit_type', 'is_active', 'is_featured']
+        fields = ['name', 'description', 'alert_note', 'show_store_rating', 'category', 'base_price', 'discount_price', 'size_type', 'fit_type', 'is_active', 'is_featured']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'alert_note': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'ملاحظة تنبيهية باللون الأحمر أسفل الوصف (اختياري)'}),
+            'show_store_rating': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'category': forms.Select(attrs={'class': 'form-select'}),
             'base_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'discount_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

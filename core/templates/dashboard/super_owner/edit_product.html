@@ -95,6 +95,13 @@
                                     <label for="minimum_acceptable_price" class="form-label">الحد الأدنى للسعر المقبول</label>
                                     <input type="number" class="form-control" id="minimum_acceptable_price" name="minimum_acceptable_price" value="{{ product.minimum_acceptable_price|unlocalize }}" step="0.01" min="0">
                                 </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="show_store_rating" name="show_store_rating" {% if product.show_store_rating %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_store_rating">إظهار تقييم المتجر في صفحة هذا المنتج</label>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="col-md-6">
@@ -145,6 +152,10 @@
                                 <div class="mb-3">
                                     <label for="description" class="form-label">وصف المنتج *</label>
                                     <textarea class="form-control" id="description" name="description" rows="4" required>{{ product.description }}</textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="alert_note" class="form-label">ملاحظة المنتج (تظهر تحت الوصف باللون الأحمر)</label>
+                                    <textarea class="form-control" id="alert_note" name="alert_note" rows="3" placeholder="اختياري...">{{ product.alert_note }}</textarea>
                                 </div>
                             </div>
                         </div>

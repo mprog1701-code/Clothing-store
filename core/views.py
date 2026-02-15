@@ -3,7 +3,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, IntegerField, Case, When
-from django.db.models import Max
+from django.db.models import Max, Avg
 from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
@@ -1052,7 +1052,13 @@ def cart_items_json(request):
         neg_global_enabled = bool((cached_flags or {}).get('NEGOTIATION_ENABLED', True))
     except Exception:
         neg_global_enabled = True
-    if (not neg_global_enabled) or (not getattr(product, 'allow_negotiation', True)):
+    store_obj = getattr(product, 'store', None)
+    store_neg_enabled = True
+    try:
+        store_neg_enabled = bool(getattr(store_obj, 'negotiation_enabled', True))
+    except Exception:
+        store_neg_enabled = True
+    if (not neg_global_enabled) or (not getattr(product, 'allow_negotiation', True)) or (not store_neg_enabled):
         negotiated_price = None
     else:
         if negotiated_price is not None:
@@ -1061,7 +1067,13 @@ def cart_items_json(request):
             except Exception:
                 minp = None
             if minp is not None and float(negotiated_price) < minp:
-                return JsonResponse({'code': 'NEGOTIATION_TOO_LOW', 'message': 'Your offer is too low for this item'}, status=400)
+                return JsonResponse({'code': 'NEGOTIATION_TOO_LOW', 'message': 'عرضك منخفض جداً لهذا المنتج'}, status=400)
+            try:
+                maxp = float(getattr(store_obj, 'negotiation_max_price', None)) if store_obj and getattr(store_obj, 'negotiation_max_price', None) is not None else None
+            except Exception:
+                maxp = None
+            if maxp is not None and float(negotiated_price) > maxp:
+                return JsonResponse({'code': 'NEGOTIATION_TOO_HIGH', 'message': 'عرضك يتجاوز الحد المسموح به لهذا المتجر'}, status=400)
     cart = request.session.get('cart', [])
     session_store_id = request.session.get('cart_store_id')
     cur_store_id = session_store_id
@@ -1171,6 +1183,41 @@ def clear_cart(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.method == 'DELETE':
         return JsonResponse({'success': True})
     return redirect('cart_view')
+
+def rate_app_json(request):
+    return JsonResponse({'code': 'DEPRECATED', 'message': 'use /api/stores/<id>/rate/'}, status=410)
+
+def rate_store_json(request, store_id):
+    if request.method != 'POST':
+        return JsonResponse({'code': 'METHOD_NOT_ALLOWED', 'message': 'method not allowed'}, status=405)
+    try:
+        if request.headers.get('Content-Type', '').startswith('application/json'):
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+        else:
+            payload = request.POST
+    except Exception:
+        payload = {}
+    raw_score = payload.get('score')
+    try:
+        score = int(raw_score)
+    except Exception:
+        return JsonResponse({'code': 'INVALID_SCORE', 'message': 'invalid score'}, status=400)
+    if score < 1 or score > 5:
+        return JsonResponse({'code': 'INVALID_SCORE_RANGE', 'message': 'score must be between 1 and 5'}, status=400)
+    try:
+        from .models import Store, StoreRating
+        store = Store.objects.get(id=int(store_id))
+        StoreRating.objects.create(user=request.user if request.user.is_authenticated else None, store=store, score=score)
+        # recompute average
+        agg = store.ratings.all().aggregate(Avg('score'))
+        avg = agg.get('score__avg') or 0
+        store.rating = round(float(avg), 2)
+        store.save(update_fields=['rating'])
+        return JsonResponse({'ok': True, 'store_id': store.id, 'avg': store.rating})
+    except Store.DoesNotExist:
+        return JsonResponse({'code': 'NOT_FOUND', 'message': 'store not found'}, status=404)
+    except Exception:
+        return JsonResponse({'ok': False}, status=500)
 
 
 def checkout(request):
@@ -3125,6 +3172,8 @@ def super_owner_edit_store(request, store_id):
         dt_unit = (request.POST.get('delivery_time_unit') or '').strip()
         delivery_fee_raw = (request.POST.get('delivery_fee') or '').strip()
         free_threshold_raw = (request.POST.get('free_delivery_threshold') or '').strip()
+        neg_enabled = (request.POST.get('negotiation_enabled') == 'on')
+        neg_max_raw = (request.POST.get('negotiation_max_price') or '').strip()
         
         # Validate required fields
         if not all([name, city, address, owner_id]):
@@ -3160,6 +3209,18 @@ def super_owner_edit_store(request, store_id):
                 store.owner_phone = p
             if category in [c[0] for c in Store.CATEGORY_CHOICES]:
                 store.category = category
+            store.negotiation_enabled = neg_enabled
+            try:
+                if neg_max_raw == '':
+                    store.negotiation_max_price = None
+                else:
+                    from decimal import Decimal, InvalidOperation
+                    try:
+                        store.negotiation_max_price = Decimal(neg_max_raw)
+                    except InvalidOperation:
+                        store.negotiation_max_price = None
+            except Exception:
+                store.negotiation_max_price = None
             dt_value = None
             try:
                 dt_value = int(dt_value_raw) if dt_value_raw != '' else None
@@ -4473,6 +4534,8 @@ def super_owner_edit_product(request, product_id):
             category = request.POST.get('category')
             base_price = request.POST.get('base_price')
             description = request.POST.get('description')
+            alert_note = (request.POST.get('alert_note') or '').strip()
+            show_store_rating = request.POST.get('show_store_rating') == 'on'
             is_active = request.POST.get('is_active') == 'on'
             is_featured = request.POST.get('is_featured') == 'on'
             size_type = (request.POST.get('size_type') or '').strip()
@@ -4493,6 +4556,8 @@ def super_owner_edit_product(request, product_id):
                 product.category = category
                 product.base_price = base_price
                 product.description = description
+                product.alert_note = alert_note
+                product.show_store_rating = show_store_rating
                 product.is_active = is_active
                 product.is_featured = is_featured
                 if size_type in ['symbolic', 'numeric', 'none']:
