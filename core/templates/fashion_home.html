@@ -238,6 +238,36 @@
         transform: scale(1.05);
     }
 
+    /* New Arrivals: mobile horizontal scroller */
+    @media (max-width: 680px) {
+        .new-arrivals-scroller {
+            display: grid !important;
+            grid-auto-flow: column;
+            grid-auto-columns: clamp(70vw, 80vw, 85vw);
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 12px;
+            padding: 4px 12px 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .new-arrivals-scroller::-webkit-scrollbar { display: none; }
+        .new-arrivals-scroller > [class*="col-"] {
+            width: auto !important;
+            max-width: none !important;
+            flex: 0 0 auto;
+            scroll-snap-align: start;
+        }
+        .new-arrivals-scroller .product-card { padding: 12px; }
+        .new-arrivals-scroller .product-image {
+            width: 100%;
+            aspect-ratio: 4 / 5;
+            object-fit: cover;
+            border-radius: 14px;
+        }
+        .new-arrivals-scroller .product-name { font-size: 1rem; }
+        .new-arrivals-scroller .product-price { font-size: 1rem; }
+    }
+
     .new-arrivals {
         background: linear-gradient(135deg, var(--black-light) 0%, var(--black) 100%);
         border-radius: 20px;
@@ -614,9 +644,9 @@
 <div class="container">
     <h2 class="section-title">وصل حديثًا</h2>
     {% if features.NEW_ARRIVALS_SECTION %}
-    <div class="row">
+    <div class="row new-arrivals-scroller">
         {% for product in new_arrivals %}
-        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+        <div class="col-6 col-md-4 col-lg-3 mb-4">
             <div class="product-card position-relative">
                 {% if product.main_image %}
                 {% with url=product.main_image.get_image_url %}

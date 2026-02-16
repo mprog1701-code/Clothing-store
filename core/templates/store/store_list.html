@@ -354,7 +354,10 @@
     </div>
 
     <!-- Stores Grid -->
-    <div class="row">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <small id="storesCount" class="text-white-50"></small>
+    </div>
+    <div class="row" id="storesGrid" data-page-size="6">
         {% for store in stores %}
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="store-card">
@@ -395,6 +398,9 @@
         </div>
         {% endfor %}
     </div>
+    <div class="text-center my-3">
+        <button id="loadMoreStores" class="btn btn-outline-light px-4 py-2" type="button">عرض المزيد</button>
+    </div>
 </div>
 
 
@@ -426,6 +432,29 @@
         if(prev){ prev.addEventListener('click', function(){ rotateBackward(); start(); }); }
         if(next){ next.addEventListener('click', function(){ rotateForward(); start(); }); }
         start();
+    })();
+
+    // Load more for stores grid
+    (function(){
+        const grid = document.getElementById('storesGrid');
+        if(!grid) return;
+        const pageSize = parseInt(grid.getAttribute('data-page-size')||'6')||6;
+        const items = Array.prototype.slice.call(grid.children);
+        const btn = document.getElementById('loadMoreStores');
+        const info = document.getElementById('storesCount');
+        let shown = 0;
+        function render(){
+            const total = items.length;
+            items.forEach((el, idx)=>{ el.style.display = idx < shown ? '' : 'none'; });
+            if(info){ info.textContent = `المعروض: ${Math.min(shown,total)} من ${total}`; }
+            if(btn){ btn.style.display = shown >= total ? 'none' : 'inline-block'; }
+        }
+        function init(){
+            shown = Math.min(pageSize, items.length);
+            render();
+        }
+        if(btn){ btn.addEventListener('click', function(){ shown = Math.min(shown + pageSize, items.length); render(); }); }
+        init();
     })();
 </script>
 {% endblock %}
