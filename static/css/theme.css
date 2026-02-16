@@ -249,3 +249,9 @@ input, textarea, select {
         font-size: .9rem;
     }
 }
+
+/* إظهار 4 عناصر كحد أقصى بشكل افتراضي على الشاشات الصغيرة */
+@media (max-width: 820px) {
+    .mobile-chunked-grid > * { display: none; }
+    .mobile-chunked-grid > *:nth-child(-n+4) { display: block; }
+}

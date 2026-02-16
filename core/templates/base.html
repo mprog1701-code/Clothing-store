@@ -1889,6 +1889,7 @@
         </script>
         <script>
         (function(){
+            var MOBILE_MAX = 820; // أوسع قليلاً لضمان عمل التجميع على أغلب الهواتف
             function setupContainer(grid){
                 var size = parseInt(grid.getAttribute('data-chunk-size')||'4')||4;
                 var items = Array.prototype.filter.call(grid.children, function(el){ return el && el.nodeType===1; });
@@ -1911,11 +1912,11 @@
                     grid._chunkNav = nav;
                 }
                 function apply(){
-                    var isMobile = window.matchMedia('(max-width: 576px)').matches;
+                    var isMobile = (window.innerWidth || 0) <= MOBILE_MAX;
                     var st = grid._chunkState || (grid._chunkState = { page:0 });
                     var pages = Math.ceil(items.length/size);
                     if(!isMobile){
-                        items.forEach(function(el){ el.style.display=''; });
+                        items.forEach(function(el){ el.style.removeProperty('display'); });
                         if(nav) nav.style.display='none';
                         return;
                     }
@@ -1934,6 +1935,7 @@
                 apply();
                 var ro;
                 try{ ro = new ResizeObserver(apply); ro.observe(document.documentElement); }catch(e){ window.addEventListener('resize', apply); }
+                setTimeout(apply, 50); // تأكيد التطبيق بعد الرسم الأولي
             }
             function init(){
                 var grids = document.querySelectorAll('.mobile-chunked-grid');
