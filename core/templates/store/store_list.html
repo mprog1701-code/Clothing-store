@@ -49,6 +49,14 @@
     .showcase-price { color: var(--copper-light); font-weight: 700; font-size: .9rem; }
     .showcase-controls { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; }
     .showcase-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); color: #fff; padding: 6px 10px; border-radius: 20px; font-size: .85rem; font-weight: 700; }
+    
+    @media (max-width: 576px) {
+        .showcase-track { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .showcase-img { height: 110px; }
+        .showcase-title { font-size: .9rem; }
+        .showcase-price { font-size: .85rem; }
+        .showcase-info { padding: 8px; }
+    }
 
     .category-filters {
         background: rgba(255,255,255,0.1);

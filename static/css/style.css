@@ -117,16 +117,31 @@ button, .btn { max-width: 100%; }
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .product-card {
-        margin-bottom: 1rem;
+        margin-bottom: 0.85rem;
     }
     
     .store-card {
-        padding: 15px;
+        padding: 14px;
     }
     
     .navbar-brand {
         font-size: 1.2rem;
     }
+}
+
+@media (max-width: 576px) {
+    /* شبكة مضغوطة للمنتجات في الموبايل عند عدم وجود أعمدة Bootstrap صريحة */
+    .container .row:has(.product-card) {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0,1fr));
+        gap: 0.75rem;
+    }
+    .container .row:has(.product-card) > [class*="col"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 auto;
+    }
+    .product-card .product-image { max-height: 180px; object-fit: cover; }
 }
 
 :root {
