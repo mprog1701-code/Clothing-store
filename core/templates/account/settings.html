@@ -136,6 +136,17 @@
 @media (max-width: 400px){
   .account-settings .settings-row { min-height: 54px; }
 }
+
+/* Force white text on settings page */
+.account-settings{
+  --text: #ffffff;
+  --muted: rgba(255,255,255,0.9);
+  --link: #ffffff;
+  --link-hover: #e6e6e6;
+}
+.account-settings :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold,.text-muted){
+  color: #ffffff !important;
+}
 </style>
 <script>
 function initAccountSettings(){
