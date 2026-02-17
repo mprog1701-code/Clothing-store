@@ -109,6 +109,17 @@
 .account-dashboard .quick-actions .qa{display:flex;align-items:center;gap:10px;min-height:56px;border-radius:14px}
 .account-dashboard .quick-actions .qa i{font-size:1.2rem}
 @media (max-width:600px){.account-dashboard .quick-actions .qa{min-height:54px}}
+
+/* Force white text on the account dashboard page */
+.account-dashboard{
+  --text: #ffffff;
+  --muted: rgba(255,255,255,0.9);
+  --link: #ffffff;
+  --link-hover: #e6e6e6;
+}
+.account-dashboard :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold,.text-muted){
+  color: #ffffff !important;
+}
 </style>
 {% endblock %}
 
