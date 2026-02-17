@@ -16,6 +16,7 @@
     --placeholder: #6c757d;
     --elev-1: 0 1px 2px rgba(0,0,0,0.06);
     --elev-2: 0 4px 12px rgba(0,0,0,0.08);
+    --app-scale: 1;
     /* Aliases for requested variables */
     --bg-color: var(--bg);
     --text-color: var(--text);
@@ -78,6 +79,7 @@ html, body {
     color: var(--text);
     overflow-x: hidden;
     width: 100%;
+    zoom: var(--app-scale);
 }
 
 main, .main, .content, .container, .container-fluid {
@@ -300,29 +302,17 @@ body.dark-theme {
 
 /* Mobile compact spacing */
 @media (max-width: 430px) {
-    html { font-size: 14px; }
-    .product-card .product-info { padding: .9rem; }
-    .product-card .product-image { aspect-ratio: 4/5; object-fit: cover; }
-    .product-card .product-name { font-size: .95rem; }
-    .product-card .current-price { font-size: 1rem; }
-    .product-grid { gap: .6rem; }
-    .categories-grid { gap: .55rem; }
-    .store-card { padding: 14px; }
-    .mobile-chunked-grid-nav .btn { font-size: .85rem; }
-    .container, .container-fluid { padding-left: 10px; padding-right: 10px; }
-    .card-body, .offcanvas-body, .modal-body { padding: .85rem; }
-    .list-group-item { padding: .6rem .8rem; }
-    .btn { padding: .45rem .75rem; font-size: .95rem; }
+    :root { --app-scale: 0.95; }
 }
 
 @media (max-width: 360px) {
-    html { font-size: 13px; }
-    .product-card .product-info { padding: .75rem; }
-    .product-card .product-name { font-size: .9rem; }
-    .mobile-chunked-grid-nav .btn { padding: .3rem .6rem; font-size: .82rem; }
-    .product-grid { grid-template-columns: 1fr !important; }
-    .categories-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .card-body, .offcanvas-body, .modal-body { padding: .75rem; }
-    .list-group-item { padding: .55rem .7rem; }
-    .btn { padding: .4rem .7rem; font-size: .9rem; }
+    :root { --app-scale: 0.9; }
+}
+
+@supports not (zoom: 1) {
+    main.container-fluid {
+        transform: scale(var(--app-scale));
+        transform-origin: top center;
+        width: calc(100% / var(--app-scale));
+    }
 }
