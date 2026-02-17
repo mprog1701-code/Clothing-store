@@ -6984,3 +6984,5 @@ def bind_image_to_color(request):
         from django.http import JsonResponse
         return JsonResponse({'ok': False, 'error': 'server_error'}, status=500)
                     
+def offline_fallback(request):
+    return render(request, 'pwa/offline.html')

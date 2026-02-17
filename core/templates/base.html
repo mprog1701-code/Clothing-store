@@ -6,6 +6,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#c67a2b">
+    <link rel="manifest" href="{% static 'pwa/manifest.json' %}">
     <title>{% block title %}متجر الملابس | تسوق بثقة{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -1259,7 +1261,7 @@
                 for(var i=0;i<items.length;i+=size){
                     var row=document.createElement('div');
                     row.className=rowClass;
-                    row.setAttribute('dir','rtl');
+                    // لا نضبط dir هنا حتى لا نغير اتجاه النصوص تلقائياً
                     for(var j=i;j<i+size && j<items.length;j++){ row.appendChild(items[j]); }
                     container.appendChild(row);
                 }
@@ -2049,5 +2051,14 @@
         </script>
     
     {% block extra_js %}{% endblock %}
+    <script>
+    (function(){
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+        });
+      }
+    })();
+    </script>
 </body>
 </html>
