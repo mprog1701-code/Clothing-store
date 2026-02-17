@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 {% load static %}
 {% load math_filters %}
-<html lang="ar" dir="rtl" data-theme="light">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,26 +17,18 @@
     <script>
       (function(){
         try{
-          var saved = '';
-          try { saved = localStorage.getItem('theme') || ''; } catch(e){}
-          var attr = document.documentElement.getAttribute('data-theme') || saved || 'light';
-          if(saved && saved !== attr){ document.documentElement.setAttribute('data-theme', saved); attr = saved; }
-          var bs = (attr === 'dark') ? 'dark' : 'light';
-          document.documentElement.setAttribute('data-bs-theme', bs);
+          document.documentElement.setAttribute('data-theme', 'dark');
+          document.documentElement.setAttribute('data-bs-theme', 'dark');
           function applyBodyClass(){
-            if(attr === 'dark'){
-              document.body.classList.remove('theme-light');
-              document.body.classList.add('dark-theme');
-            }else{
-              document.body.classList.add('theme-light');
-              document.body.classList.remove('dark-theme');
-            }
+            document.body.classList.add('dark-theme');
+            document.body.classList.remove('theme-light');
           }
           if(document.readyState === 'loading'){
             document.addEventListener('DOMContentLoaded', applyBodyClass);
           }else{
             applyBodyClass();
           }
+          try{ localStorage.setItem('theme','dark'); }catch(e){}
         }catch(e){}
       })();
     </script>
@@ -1255,24 +1247,23 @@
         </script>
         <script>
         (function(){
-            function setTheme(mode){
-                document.documentElement.setAttribute('data-theme', mode);
-                document.documentElement.setAttribute('data-bs-theme', mode==='dark'?'dark':'light');
-                if(mode==='dark'){ document.body.classList.add('dark-theme'); document.body.classList.remove('theme-light'); }
-                else { document.body.classList.remove('dark-theme'); document.body.classList.add('theme-light'); }
-                try{ localStorage.setItem('theme', mode); }catch(e){}
+            // force dark theme; disable toggling
+            function setThemeDark(){
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+                document.body.classList.add('dark-theme');
+                document.body.classList.remove('theme-light');
+                try{ localStorage.setItem('theme', 'dark'); }catch(e){}
             }
-            function toggleTheme(){
-                var isDark = document.body.classList.contains('dark-theme');
-                setTheme(isDark ? 'light' : 'dark');
-            }
+            function noToggle(){ setThemeDark(); }
             document.addEventListener('click', function(e){
                 var t = e.target.closest && e.target.closest('[data-theme-toggle],#themeToggle');
                 if(!t) return;
                 e.preventDefault();
-                toggleTheme();
+                setThemeDark(); // always dark
             });
-            window.toggleTheme = toggleTheme;
+            window.toggleTheme = noToggle;
+            setThemeDark();
         })();
         </script>
         
