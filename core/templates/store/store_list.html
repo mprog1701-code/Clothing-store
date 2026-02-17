@@ -442,6 +442,15 @@
     (function(){
         const grid = document.getElementById('storesGrid');
         if(!grid) return;
+        // إذا تم تفعيل وضع السلايدر الأفقي بالموبايل، عطّل زر التحميل
+        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches && grid.__chunked) {
+            const btn = document.getElementById('loadMoreStores');
+            if(btn) btn.style.display = 'none';
+            const total = grid.querySelectorAll('[class*="col-"]').length || 0;
+            const info = document.getElementById('storesCount');
+            if(info) info.textContent = `المعروض: ${total} من ${total}`;
+            return;
+        }
         const pageSize = parseInt(grid.getAttribute('data-page-size')||'6')||6;
         const items = Array.prototype.slice.call(grid.children);
         const btn = document.getElementById('loadMoreStores');

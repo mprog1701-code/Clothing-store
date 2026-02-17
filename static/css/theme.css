@@ -311,6 +311,19 @@ body.dark-theme {
   .light-theme { --text-primary: #222; --text-secondary: #555; }
   .light-theme * { color: var(--text-primary); }
   .light-theme .muted { color: var(--text-secondary); }
+  .m-row-scroller { display: flex; overflow-x: auto; gap: 10px; padding: 0 10px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x; direction: rtl; }
+  .m-row-scroller > * { flex: 0 0 auto; scroll-snap-align: start; scroll-snap-stop: normal; }
+  .m-row-scroller::-webkit-scrollbar { display: none; }
+  .m-row-scroller.cats > * { min-width: clamp(92px, 28vw, 120px); }
+  .m-row-scroller.products > * { min-width: clamp(58vw, 65vw, 72vw); }
+  .m-row-scroller.stores > * { min-width: clamp(62vw, 70vw, 78vw); }
+  .m-row-scroller.stores .store-card { padding: 16px; }
+  .m-row-scroller.stores .store-image { height: 160px; border-radius: 12px; }
+  .m-row-scroller.cats .category-card { padding: .75rem .5rem; border-radius: 12px; }
+  .m-row-scroller.cats .category-icon { width: 44px; height: 44px; font-size: 1.1rem; }
+  .m-row-scroller.products .product-card { padding: .85rem; }
+  .m-row-scroller.products .product-image { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 12px; }
+  .new-arrivals-scroller { display: grid !important; grid-auto-flow: row !important; gap: 12px !important; overflow-x: visible !important; }
 }
 
 /* Mobile compact spacing */
