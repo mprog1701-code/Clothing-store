@@ -93,7 +93,7 @@
             padding-bottom: env(safe-area-inset-bottom);
             padding-top: env(safe-area-inset-top);
         }
-        html, body { height: auto; min-height: 100vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        html, body { height: auto; min-height: 100%; }
         body.theme-light {
             --black: #ffffff;
             --black-light: #f7f7f7;
@@ -111,7 +111,6 @@
         .main-container {
             background: linear-gradient(135deg, var(--black-light) 0%, #111 100%);
             min-height: 100vh;
-            box-shadow: 0 0 50px rgba(184,115,51,0.15);
         }
         main { padding-bottom: calc(var(--bottom-nav-height) + 24px); }
         body.theme-light .main-container {
@@ -121,8 +120,6 @@
         
         .navbar {
             background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%) !important;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 20px rgba(184,115,51,0.3);
             border-bottom: 1px solid rgba(212,165,116,0.3);
         }
         body.theme-light .navbar {
@@ -178,7 +175,7 @@
             padding: 10px;
         }
 
-        .global-bottom-nav { background: var(--black-light); border-top: 2px solid var(--copper); padding: 6px 0; padding-bottom: env(safe-area-inset-bottom); position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; width: 100%; backdrop-filter: blur(10px); height: var(--bottom-nav-height); }
+        .global-bottom-nav { background: var(--black-light); border-top: 2px solid var(--copper); padding: 6px 0; padding-bottom: env(safe-area-inset-bottom); position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; width: 100%; height: var(--bottom-nav-height); }
         .global-bottom-nav .row { align-items: center; }
         .global-bottom-nav .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: var(--bottom-nav-height); -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         body.theme-light .global-bottom-nav { background: #f7f7f7; }
@@ -206,7 +203,12 @@
             line-height: 1.2;
             transform: translateY(-2px);
         }
-        main { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        main { overflow: visible; padding-bottom: calc(var(--bottom-nav-height) + 24px); }
+
+        @media (max-width: 680px) {
+            .navbar { box-shadow: none; }
+            .main-container { box-shadow: none; }
+        }
 
         input, textarea, select { direction: rtl; text-align: right; }
         table th, table td { text-align: right; }
