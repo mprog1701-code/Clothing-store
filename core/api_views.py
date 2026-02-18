@@ -223,16 +223,32 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     def sizes_for_color(self, request, pk=None):
         color = (request.query_params.get('color') or '').strip()
         product = self.get_object()
-        variants = product.variants.filter(color=color)
-        data = [
-            {
-                'id': v.id,
-                'size': v.size,
-                'stock_qty': v.stock_qty,
-                'price': float(v.price),
-            }
-            for v in variants
-        ]
+        qs = product.variants.all()
+        if color:
+            if color.lower().startswith('a'):
+                try:
+                    cid = int(color[1:])
+                    qs = qs.filter(color_attr_id=cid)
+                except Exception:
+                    qs = qs.none()
+            else:
+                try:
+                    cid = int(color)
+                    qs = qs.filter(color_obj_id=cid)
+                except Exception:
+                    from django.db.models import Q
+                    qs = qs.filter(Q(color_obj__name=color) | Q(color_attr__name=color))
+        data = []
+        for v in qs:
+            try:
+                data.append({
+                    'id': v.id,
+                    'size': getattr(v, 'size_display', v.size),
+                    'stock_qty': int(getattr(v, 'stock_qty', 0)),
+                    'price': float(v.price),
+                })
+            except Exception:
+                continue
         return Response({'color': color, 'sizes': data})
 
     @action(detail=True, methods=['get'], url_path='variant-price', permission_classes=[AllowAny], authentication_classes=[])
@@ -600,12 +616,15 @@ class OrderViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'customer':
-            return Order.objects.filter(user=user)
-        elif user.role == 'store_owner':
-            return Order.objects.filter(store__owner=user)
-        elif user.role == 'admin':
+        if not getattr(user, 'is_authenticated', False):
+            return Order.objects.none()
+        if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
             return Order.objects.all()
+        if getattr(user, 'role', '') == 'store_admin':
+            from django.db.models import Q
+            return Order.objects.filter(Q(store__owner_user=user) | Q(store__owner=user))
+        if getattr(user, 'role', '') == 'customer':
+            return Order.objects.filter(user=user)
         return Order.objects.none()
     
     def get_serializer_class(self):

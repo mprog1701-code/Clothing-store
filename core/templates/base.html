@@ -7,6 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token }}">
     <meta name="theme-color" content="#c67a2b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <link rel="manifest" href="{% static 'pwa/manifest.json' %}">
     <title>{% block title %}متجر الملابس | تسوق بثقة{% endblock %}</title>
     
@@ -1105,6 +1109,15 @@
         .card { border-radius: 16px; }
         .global-bottom-nav .nav-icon { font-size: 1.5rem; }
         .global-bottom-nav .nav-text { font-size: .8rem; font-weight: 700; }
+        .app-container { min-height: calc(100vh - var(--bottom-nav-height)); }
+        .main-container { box-shadow: none; }
+        body { overscroll-behavior-y: contain; }
+        #pwaInstallBanner { position: fixed; left: 12px; right: 12px; bottom: calc(var(--bottom-nav-height) + 12px + env(safe-area-inset-bottom)); z-index: 1040; display: none; background: rgba(26,26,26,0.95); border: 1px solid rgba(212,165,116,0.35); border-radius: 16px; padding: 12px; backdrop-filter: blur(12px); }
+        #pwaInstallBanner.show { display: block; }
+        #pwaInstallBanner .banner-title { font-weight: 800; font-size: 1rem; margin: 0; color: var(--text-primary); }
+        #pwaInstallBanner .banner-sub { margin: 4px 0 0; font-size: .9rem; color: var(--text-secondary); }
+        #pwaInstallBanner .banner-actions { display: flex; gap: 10px; margin-top: 10px; }
+        #pwaInstallBanner .banner-actions .btn { flex: 1; padding: 12px 14px; border-radius: 12px; }
         @media (max-width: 600px) {
             :root { --bottom-nav-height: 60px; }
             .navbar-brand { font-size: 1.4rem; }
@@ -1119,6 +1132,8 @@
             .list-group-item .fs-5 { font-size: 1.25rem !important; }
             .list-group-item i { margin-inline-end: 6px; }
             .navbar-toggler { padding: 10px; border-radius: 10px; }
+            .navbar .navbar-collapse { display: none !important; }
+            footer { display: none; }
         }
         @media (max-width: 400px) {
             :root { --bottom-nav-height: 56px; }
@@ -1343,6 +1358,15 @@
                 {% block content %}{% endblock %}
             </div>
         </main>
+
+        <div id="pwaInstallBanner" role="dialog" aria-hidden="true">
+            <p class="banner-title">ثبّت التطبيق</p>
+            <p class="banner-sub">افتحه مثل أي تطبيق من شاشة الهاتف</p>
+            <div class="banner-actions">
+                <button type="button" class="btn btn-gradient" id="pwaInstallBtn">تثبيت</button>
+                <button type="button" class="btn btn-outline-secondary" id="pwaDismissBtn">لاحقاً</button>
+            </div>
+        </div>
 
         <nav class="global-bottom-nav">
             <div class="container">
@@ -2058,6 +2082,68 @@
           navigator.serviceWorker.register('/service-worker.js').catch(function(){});
         });
       }
+    })();
+    </script>
+    <script>
+    (function(){
+        function isStandalone(){
+            try{
+                return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+            }catch(e){ return false; }
+        }
+        function now(){ return Date.now ? Date.now() : (new Date()).getTime(); }
+        function shouldSuppress(){
+            try{
+                var until = parseInt(localStorage.getItem('pwaInstallHideUntil') || '0', 10) || 0;
+                return until > now();
+            }catch(e){ return false; }
+        }
+        var deferred = null;
+        var banner = document.getElementById('pwaInstallBanner');
+        var installBtn = document.getElementById('pwaInstallBtn');
+        var dismissBtn = document.getElementById('pwaDismissBtn');
+        function show(){
+            if(!banner) return;
+            if(isStandalone()) return;
+            if(shouldSuppress()) return;
+            banner.classList.add('show');
+            banner.setAttribute('aria-hidden','false');
+        }
+        function hide(days){
+            if(banner){
+                banner.classList.remove('show');
+                banner.setAttribute('aria-hidden','true');
+            }
+            if(days){
+                try{
+                    var ms = days * 24 * 60 * 60 * 1000;
+                    localStorage.setItem('pwaInstallHideUntil', String(now() + ms));
+                }catch(e){}
+            }
+        }
+        window.addEventListener('beforeinstallprompt', function(e){
+            try{ e.preventDefault(); }catch(err){}
+            deferred = e;
+            show();
+        });
+        if(installBtn){
+            installBtn.addEventListener('click', async function(){
+                if(!deferred){ hide(7); return; }
+                try{
+                    deferred.prompt();
+                    await deferred.userChoice;
+                }catch(e){}
+                deferred = null;
+                hide(30);
+            });
+        }
+        if(dismissBtn){
+            dismissBtn.addEventListener('click', function(){ hide(7); });
+        }
+        window.addEventListener('appinstalled', function(){ hide(365); });
+        if(!isStandalone()){
+            setTimeout(show, 1200);
+        }
     })();
     </script>
 </body>

@@ -245,8 +245,9 @@ if USE_R2:
         MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/'
     else:
         MEDIA_URL = '/media/'
-    print("USE_R2 =", USE_R2)
-    print("MEDIA_URL =", MEDIA_URL)
+    if DEBUG:
+        print("USE_R2 =", USE_R2)
+        print("MEDIA_URL =", MEDIA_URL)
 else:
     STORAGES = {
         "default": {
@@ -304,7 +305,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
@@ -364,7 +365,8 @@ CACHE_TTL_SHORT = 0 if DISABLE_CACHE else config('CACHE_TTL_SHORT', default=45, 
 
 try:
     from django.core.files.storage import default_storage
-    print(f"[diagnostic] default_storage backend: {default_storage.__class__.__module__}.{default_storage.__class__.__name__}")
+    if DEBUG:
+        print(f"[diagnostic] default_storage backend: {default_storage.__class__.__module__}.{default_storage.__class__.__name__}")
 except Exception:
     pass
 
@@ -381,11 +383,12 @@ try:
         _h = _p.netloc.split('@')[-1]
         _host = _h.split(':')[0]
         _name = ( _p.path or '' ).lstrip('/') or _name
-    print(f"[diagnostic] db engine: {_engine}")
-    print(f"[diagnostic] db name: {_name}")
-    print(f"[diagnostic] db host: {_host}")
-    print(f"[diagnostic] db port: {_port}")
-    print(f"[diagnostic] has DATABASE_URL: {bool(_url)}")
+    if DEBUG:
+        print(f"[diagnostic] db engine: {_engine}")
+        print(f"[diagnostic] db name: {_name}")
+        print(f"[diagnostic] db host: {_host}")
+        print(f"[diagnostic] db port: {_port}")
+        print(f"[diagnostic] has DATABASE_URL: {bool(_url)}")
 except Exception:
     pass
 
