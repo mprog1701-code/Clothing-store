@@ -79,7 +79,6 @@ html, body {
     color: var(--text);
     overflow-x: hidden;
     width: 100%;
-    zoom: var(--app-scale);
 }
 
 main, .main, .content, .container, .container-fluid {
@@ -340,12 +339,4 @@ body.dark-theme {
 
 @media (max-width: 360px) {
     :root { --app-scale: 0.9; }
-}
-
-@supports not (zoom: 1) {
-    main.container-fluid {
-        transform: scale(var(--app-scale));
-        transform-origin: top center;
-        width: calc(100% / var(--app-scale));
-    }
 }
