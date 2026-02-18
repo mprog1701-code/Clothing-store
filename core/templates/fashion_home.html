@@ -249,6 +249,8 @@
             gap: 12px;
             padding: 4px 12px 8px;
             -webkit-overflow-scrolling: touch;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
         }
         .new-arrivals-scroller::-webkit-scrollbar { display: none; }
         .new-arrivals-scroller > [class*="col-"] {
@@ -256,6 +258,10 @@
             max-width: none !important;
             flex: 0 0 auto;
             scroll-snap-align: start;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            margin-bottom: 0 !important;
+            box-sizing: border-box;
         }
         .new-arrivals-scroller .product-card { padding: 12px; }
         .new-arrivals-scroller .product-image {
@@ -644,7 +650,7 @@
 <div class="container">
     <h2 class="section-title">وصل حديثًا</h2>
     {% if features.NEW_ARRIVALS_SECTION %}
-    <div class="row new-arrivals-scroller">
+    <div class="row new-arrivals-scroller" data-no-chunk="1">
         {% for product in new_arrivals %}
         <div class="col-6 col-md-4 col-lg-3 mb-4">
             <div class="product-card position-relative">

@@ -1298,9 +1298,12 @@
                 chunk(document.querySelector('.category-grid'), '.category-card', 15, 'm-row-scroller cats');
                 chunk(document.querySelector('.categories-grid'), '.category-card', 15, 'm-row-scroller cats');
                 var na=document.querySelector('.new-arrivals-scroller');
-                if(na){
+                if(na && !na.hasAttribute('data-no-chunk') && !na.classList.contains('no-chunk')){
                     var sel='[class*=\"col-\"]';
-                    if(na.querySelectorAll(sel).length){ chunk(na, sel, 15, 'm-row-scroller products'); }
+                    if(na.querySelectorAll(sel).length){
+                        chunk(na, sel, 15, 'm-row-scroller products');
+                        try{ na.classList.add('chunked'); }catch(e){}
+                    }
                 }
                 var sg=document.getElementById('storesGrid');
                 if(sg){
@@ -2019,9 +2022,46 @@
         </script>
         <script>
         (function(){
+            function isVisible(el){
+                if(!el || el.nodeType !== 1) return false;
+                var cs;
+                try{ cs = window.getComputedStyle(el); }catch(e){ cs = null; }
+                if(cs && (cs.display === 'none' || cs.visibility === 'hidden')) return false;
+                try{
+                    if(el.getClientRects && el.getClientRects().length === 0) return false;
+                }catch(e){}
+                return true;
+            }
+            function update(){
+                try{
+                    document.querySelectorAll('.m-row-scroller').forEach(function(scroller){
+                        var visibleCount = 0;
+                        for(var i=0;i<scroller.children.length;i++){
+                            if(isVisible(scroller.children[i])) visibleCount++;
+                            if(visibleCount > 1) break;
+                        }
+                        scroller.classList.toggle('m-single', visibleCount <= 1);
+                    });
+                }catch(e){}
+            }
+            function schedule(){ try{ requestAnimationFrame(update); }catch(e){ setTimeout(update, 0); } }
+            if(document.readyState === 'loading'){
+                document.addEventListener('DOMContentLoaded', function(){ schedule(); setTimeout(schedule, 150); });
+            }else{
+                schedule(); setTimeout(schedule, 150);
+            }
+            window.addEventListener('resize', schedule);
+            document.addEventListener('click', function(e){
+                try{
+                    if(e && e.target && e.target.closest && e.target.closest('.mobile-chunked-grid-nav button')) setTimeout(schedule, 0);
+                }catch(_e){}
+            }, true);
+        })();
+        </script>
+        <script>
+        (function(){
             function send(payload){
                 try{ fetch('/debug/log-js/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); }catch(e){}
-            }
             }
             window.addEventListener('error', function(e){
                 try{
@@ -2132,6 +2172,30 @@
         if(!isStandalone()){
             setTimeout(show, 1200);
         }
+    })();
+    </script>
+    <script>
+    (function(){
+        function cleanupScrollLock(){
+            try{
+                var openLayer = document.querySelector('.modal.show, .offcanvas.show');
+                if(openLayer) return;
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+                document.documentElement.style.removeProperty('overflow');
+                document.querySelectorAll('.modal-backdrop').forEach(function(el){ try{ el.remove(); }catch(e){} });
+            }catch(e){}
+        }
+        if(document.readyState === 'loading'){
+            document.addEventListener('DOMContentLoaded', function(){ setTimeout(cleanupScrollLock, 0); });
+        } else {
+            setTimeout(cleanupScrollLock, 0);
+        }
+        window.addEventListener('load', function(){ setTimeout(cleanupScrollLock, 0); });
+        document.addEventListener('hidden.bs.modal', function(){ setTimeout(cleanupScrollLock, 0); });
+        document.addEventListener('hidden.bs.offcanvas', function(){ setTimeout(cleanupScrollLock, 0); });
+        document.addEventListener('keyup', function(e){ if(e && e.key === 'Escape') setTimeout(cleanupScrollLock, 0); });
     })();
     </script>
 </body>
