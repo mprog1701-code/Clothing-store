@@ -15,6 +15,12 @@
     <title>{% block title %}متجر الملابس | تسوق بثقة{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
@@ -23,18 +29,19 @@
     <script>
       (function(){
         try{
-          document.documentElement.setAttribute('data-theme', 'dark');
-          document.documentElement.setAttribute('data-bs-theme', 'dark');
-          function applyBodyClass(){
-            document.body.classList.add('dark-theme');
-            document.body.classList.remove('theme-light');
+          var pref = 'system';
+          try{ pref = localStorage.getItem('siteTheme') || 'system'; }catch(e){}
+          var isDark = pref === 'dark' ? true : (pref === 'light' ? false : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+          var mode = isDark ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', mode);
+          document.documentElement.setAttribute('data-bs-theme', mode);
+          function apply(){
+            if(!document.body) return;
+            document.body.classList.toggle('theme-light', !isDark);
+            document.body.classList.toggle('dark-theme', isDark);
           }
-          if(document.readyState === 'loading'){
-            document.addEventListener('DOMContentLoaded', applyBodyClass);
-          }else{
-            applyBodyClass();
-          }
-          try{ localStorage.setItem('theme','dark'); }catch(e){}
+          if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', apply); }
+          else { apply(); }
         }catch(e){}
       })();
     </script>
@@ -1302,29 +1309,6 @@
             if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
         })();
         </script>
-        <script>
-        (function(){
-            // force dark theme; disable toggling
-            function setThemeDark(){
-                document.documentElement.setAttribute('data-theme', 'dark');
-                document.documentElement.setAttribute('data-bs-theme', 'dark');
-                document.body.classList.add('dark-theme');
-                document.body.classList.remove('theme-light');
-                try{ localStorage.setItem('theme', 'dark'); }catch(e){}
-            }
-            function noToggle(){ setThemeDark(); }
-            document.addEventListener('click', function(e){
-                var t = e.target.closest && e.target.closest('[data-theme-toggle],#themeToggle');
-                if(!t) return;
-                e.preventDefault();
-                setThemeDark(); // always dark
-            });
-            window.toggleTheme = noToggle;
-            setThemeDark();
-        })();
-        </script>
-        
-
         <!-- Main Content -->
         <main class="container-fluid px-0">
             {% if messages %}
@@ -1439,33 +1423,6 @@
       }
     })();
     </script>
-    <script>
-    (function(){
-        function setTheme(t){
-            var v = (t === 'dark') ? 'dark' : 'light';
-            try { localStorage.setItem('theme', v); } catch(e){}
-            try {
-                document.documentElement.setAttribute('data-bs-theme', v);
-                document.body.classList.toggle('theme-light', v === 'light');
-            } catch(e){}
-        }
-        try {
-            var saved = null;
-            try { saved = localStorage.getItem('theme'); } catch(e){}
-            var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setTheme(saved ? saved : (systemDark ? 'dark' : 'light'));
-            if (window.matchMedia) {
-                var mq = window.matchMedia('(prefers-color-scheme: dark)');
-                mq.addEventListener('change', function(ev){
-                    var hasSaved = null;
-                    try { hasSaved = localStorage.getItem('theme'); } catch(e){}
-                    if (!hasSaved) setTheme(ev.matches ? 'dark' : 'light');
-                });
-            }
-            window.setTheme = setTheme;
-        } catch(e){}
-    })();
-    </script>
     <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -1491,7 +1448,15 @@
                 var pref = 'system';
                 try{ pref = localStorage.getItem('siteTheme') || 'system'; }catch(e){}
                 var isDark = pref === 'dark' ? true : (pref === 'light' ? false : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
-                document.body.classList.toggle('theme-light', !isDark);
+                var mode = isDark ? 'dark' : 'light';
+                try{
+                    document.documentElement.setAttribute('data-bs-theme', mode);
+                    document.documentElement.setAttribute('data-theme', mode);
+                }catch(e){}
+                try{
+                    document.body.classList.toggle('theme-light', !isDark);
+                    document.body.classList.toggle('dark-theme', isDark);
+                }catch(e){}
             }
             function bindSystemListener(){
                 try{
@@ -2098,6 +2063,11 @@
                 return until > now();
             }catch(e){ return false; }
         }
+        function isIOS(){
+            try{
+                return /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+            }catch(e){ return false; }
+        }
         var deferred = null;
         var banner = document.getElementById('pwaInstallBanner');
         var installBtn = document.getElementById('pwaInstallBtn');
@@ -2106,6 +2076,7 @@
             if(!banner) return;
             if(isStandalone()) return;
             if(shouldSuppress()) return;
+            if(!deferred && !isIOS()) return;
             banner.classList.add('show');
             banner.setAttribute('aria-hidden','false');
         }
@@ -2128,7 +2099,19 @@
         });
         if(installBtn){
             installBtn.addEventListener('click', async function(){
-                if(!deferred){ hide(7); return; }
+                if(!deferred){
+                    if(isIOS()){
+                        try{
+                            alert('على iPhone/iPad: افتح الموقع من Safari ثم اضغط زر المشاركة واختر "إضافة إلى الشاشة الرئيسية".');
+                        }catch(e){}
+                        return;
+                    }
+                    try{
+                        alert('ميزة التثبيت غير متاحة الآن. جرّب فتح الموقع من Chrome/Edge، أو انتظر حتى يظهر خيار التثبيت من المتصفح.');
+                    }catch(e){}
+                    hide(7);
+                    return;
+                }
                 try{
                     deferred.prompt();
                     await deferred.userChoice;

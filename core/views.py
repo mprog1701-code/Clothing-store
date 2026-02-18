@@ -1225,92 +1225,110 @@ def checkout(request):
         # Delivery available across Iraq (no city restriction)
         
         failures = []
-        variant_ids = []
-        for idx, item in enumerate(cart):
-            try:
-                vid = int(item.get('variant_id'))
-            except (TypeError, ValueError):
-                continue
-            variant_ids.append(vid)
-        locked_variants = list(ProductVariant.objects.select_for_update().filter(id__in=variant_ids))
-        variants_by_id = {v.id: v for v in locked_variants}
         groups = {}
         totals = {}
         new_cart = []
-        for idx, item in enumerate(cart):
-            try:
-                variant_id = int(item.get('variant_id'))
-            except (TypeError, ValueError):
-                continue
-            variant = variants_by_id.get(variant_id)
-            if not variant:
-                continue
-            product = variant.product
-            quantity = int(item.get('quantity') or 1)
-            negotiated_val = item.get('negotiated_price')
-            if variant.stock_qty <= 0 or quantity > variant.stock_qty:
-                reason = 'OUT_OF_STOCK' if variant.stock_qty <= 0 else 'INSUFFICIENT_STOCK'
-                failures.append({
-                    'cartItemId': idx,
-                    'productId': int(product.id),
-                    'variantId': int(variant.id),
-                    'reason': reason,
-                    'availableQty': int(max(0, variant.stock_qty))
-                })
-                if variant.stock_qty > 0:
-                    new_cart.append({'product_id': int(product.id), 'variant_id': int(variant.id), 'quantity': int(variant.stock_qty)})
-                continue
-            s = product.store
-            if s.id not in groups:
-                groups[s.id] = {'store': s, 'items': []}
-                totals[s.id] = 0
-            price = variant.price
-            groups[s.id]['items'].append({'product': product, 'variant': variant, 'quantity': quantity, 'price': price, 'negotiated_price': negotiated_val})
-            totals[s.id] += price * quantity
-        request.session['cart'] = new_cart
-        try:
-            request.session.modified = True
-        except Exception:
-            pass
-        if failures:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'message': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.', 'items': failures}, status=409)
-            messages.error(request, 'تم تعديل المخزون، يرجى مراجعة السلة')
-            return redirect('cart_view')
-        if not groups:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'message': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.', 'items': []}, status=409)
-            messages.error(request, 'السلة فارغة أو تحتوي على منتجات غير متوفرة!')
-            return redirect('cart_view')
-        applied_discount = 0
-        try:
-            applied_discount = int(request.session.get('discount') or 0)
-        except Exception:
-            applied_discount = 0
         order_ids = []
         try:
             with transaction.atomic():
+                variant_ids = []
+                for item in cart:
+                    try:
+                        variant_ids.append(int(item.get('variant_id')))
+                    except (TypeError, ValueError):
+                        continue
+
+                locked_variants = list(
+                    ProductVariant.objects.select_for_update()
+                    .select_related('product', 'product__store')
+                    .filter(id__in=variant_ids)
+                )
+                variants_by_id = {v.id: v for v in locked_variants}
+
+                for idx, item in enumerate(cart):
+                    try:
+                        variant_id = int(item.get('variant_id'))
+                    except (TypeError, ValueError):
+                        continue
+                    variant = variants_by_id.get(variant_id)
+                    if not variant:
+                        continue
+                    product = variant.product
+                    try:
+                        quantity = int(item.get('quantity') or 1)
+                    except (TypeError, ValueError):
+                        quantity = 1
+                    quantity = max(1, quantity)
+                    negotiated_val = item.get('negotiated_price')
+
+                    available_qty = int(variant.stock_qty or 0)
+                    if available_qty <= 0 or quantity > available_qty:
+                        reason = 'OUT_OF_STOCK' if available_qty <= 0 else 'INSUFFICIENT_STOCK'
+                        failures.append({
+                            'cartItemId': idx,
+                            'productId': int(product.id),
+                            'variantId': int(variant.id),
+                            'reason': reason,
+                            'availableQty': int(max(0, available_qty))
+                        })
+                        if available_qty > 0:
+                            new_cart.append({
+                                'product_id': int(product.id),
+                                'variant_id': int(variant.id),
+                                'quantity': int(available_qty),
+                            })
+                        continue
+
+                    s = product.store
+                    if s.id not in groups:
+                        groups[s.id] = {'store': s, 'items': []}
+                        totals[s.id] = 0
+                    price = int(variant.price or 0)
+                    groups[s.id]['items'].append({
+                        'product': product,
+                        'variant': variant,
+                        'quantity': quantity,
+                        'price': price,
+                        'negotiated_price': negotiated_val
+                    })
+                    totals[s.id] += price * quantity
+
+                if failures or not groups:
+                    request.session['cart'] = new_cart
+                    request.session.modified = True
+                    raise ValueError('CHECKOUT_STOCK_FAILED')
+
+                applied_discount = 0
+                try:
+                    applied_discount = int(request.session.get('discount') or 0)
+                except Exception:
+                    applied_discount = 0
+                applied_discount = max(0, applied_discount)
+
                 from .models import OrderItem
                 first = True
                 for sid, grp in groups.items():
-                    total_store = totals.get(sid) or 0
-                    shipping_fee = settings.DELIVERY_FEE if first else 0
-                    discount_apply = applied_discount
-                    grand_total = max(0, (total_store + shipping_fee) - discount_apply)
+                    total_store = int(totals.get(sid) or 0)
+                    shipping_fee = int(settings.DELIVERY_FEE) if first else 0
+                    subtotal = total_store + shipping_fee
+                    discount_apply = min(applied_discount, subtotal)
+                    grand_total = max(0, subtotal - discount_apply)
+
                     order = Order.objects.create(
                         user=checkout_user,
                         store=grp['store'],
                         address=address,
                         total_amount=grand_total,
                         delivery_fee=shipping_fee,
-                        payment_method='cod',
+                        payment_method=(request.POST.get('payment_method') or 'cod'),
                         status='pending'
                     )
                     for item_data in grp['items']:
                         v = item_data['variant']
                         q = int(item_data['quantity'])
-                        if v.stock_qty < q:
-                            raise ValueError('INSUFFICIENT_STOCK')
+                        current_stock = int(v.stock_qty or 0)
+                        if current_stock < q:
+                            raise ValueError('CHECKOUT_STOCK_FAILED')
                         OrderItem.objects.create(
                             order=order,
                             product=item_data['product'],
@@ -1319,15 +1337,25 @@ def checkout(request):
                             price=item_data['price'],
                             negotiated_price=item_data.get('negotiated_price')
                         )
-                        v.stock_qty = int(v.stock_qty) - q
-                        v.save()
+                        v.stock_qty = current_stock - q
+                        v.save(update_fields=['stock_qty'])
                     order_ids.append(order.id)
                     first = False
+        except ValueError as ve:
+            if str(ve) == 'CHECKOUT_STOCK_FAILED':
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'message': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.', 'items': failures}, status=409)
+                messages.error(request, 'تم تعديل المخزون، يرجى مراجعة السلة')
+                return redirect('cart_view')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'code': 'CHECKOUT_FAILED', 'message': 'تعذر إتمام الطلب'}, status=400)
+            messages.error(request, 'تعذر إتمام الطلب')
+            return redirect('checkout')
         except Exception:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'code': 'CHECKOUT_STOCK_FAILED', 'message': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.', 'items': []}, status=409)
-            messages.error(request, 'تعذر إتمام الطلب بسبب المخزون')
-            return redirect('cart_view')
+                return JsonResponse({'code': 'CHECKOUT_FAILED', 'message': 'تعذر إتمام الطلب'}, status=500)
+            messages.error(request, 'تعذر إتمام الطلب')
+            return redirect('checkout')
         request.session['cart'] = []
         if order_ids:
             request.session['guest_order_id'] = order_ids[0]
@@ -1335,7 +1363,9 @@ def checkout(request):
             if k in request.session:
                 del request.session[k]
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'ok': True, 'order_ids': order_ids, 'order_id': (order_ids[0] if order_ids else None), 'count': len(order_ids)})
+            from django.urls import reverse
+            redirect_url = reverse('order_detail', kwargs={'order_id': order_ids[0]}) if order_ids else '/'
+            return JsonResponse({'ok': True, 'order_ids': order_ids, 'order_id': (order_ids[0] if order_ids else None), 'count': len(order_ids), 'redirect_url': redirect_url})
         if len(order_ids) == 1:
             messages.success(request, f'تم إنشاء الطلب رقم #{order_ids[0]} بنجاح!')
             return redirect('order_detail', order_id=order_ids[0])

@@ -33,6 +33,19 @@
 .cta{display:inline-block;background:#ff6a00;color:#fff;border-radius:12px;padding:12px 24px;text-decoration:none;margin-top:12px}
 .toast{position:fixed;bottom:70px;left:0;right:0;display:none}
 .toast .box{margin:0 auto;background:#111;color:#fff;padding:10px 14px;border-radius:10px;max-width:280px;text-align:center}
+@media(max-width:600px){
+  .cart-page{padding-left:0;padding-right:0;background:transparent}
+  .cart-grid{gap:12px}
+  .item-card{grid-template-columns:96px 1fr;grid-template-rows:auto auto;align-items:start;gap:12px;padding:12px}
+  .item-image img{width:96px;height:96px;border-radius:12px}
+  .item-title{font-size:16px}
+  .item-details{font-size:14px}
+  .item-actions{grid-column:1/-1;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .cart-item__price{justify-self:start;text-align:start;min-width:0}
+  .cart-item__price .price-base{font-size:18px}
+  .qty input{width:56px}
+  .summary{position:static}
+}
 </style>
 {% endblock %}
 
