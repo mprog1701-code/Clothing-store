@@ -1012,15 +1012,7 @@
         });
 
         // Swipe/drag support
-        let startX = 0; let startY = 0; let currentX = 0; let currentY = 0; let dragging = false; let isHorizontal = false;
-        const threshold = 40;
-        const el = document.getElementById('ann-card');
-        el.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; startY = e.touches[0].clientY; dragging = true; isHorizontal = false; }, {passive:true});
-        el.addEventListener('touchmove', (e)=>{ if(!dragging) return; currentX = e.touches[0].clientX; currentY = e.touches[0].clientY; const dx = Math.abs(currentX - startX); const dy = Math.abs(currentY - startY); if (!isHorizontal && dx > dy + 5) { isHorizontal = true; e.preventDefault(); } }, {passive:false});
-        el.addEventListener('touchend', ()=>{ if(!dragging) return; const dx = currentX - startX; const dy = currentY - startY; dragging=false; if (!isHorizontal || isVideoPlaying) { return; } if (Math.abs(dx) > threshold && Math.abs(dx) > Math.abs(dy)){ if (dx < 0) { nextSlide(); } else { prevSlide(); } restartAuto(); } });
-        el.addEventListener('mousedown', (e)=>{ startX = e.clientX; dragging = true; });
-        el.addEventListener('mousemove', (e)=>{ if(!dragging) return; currentX = e.clientX; });
-        el.addEventListener('mouseup', ()=>{ if(!dragging) return; const dx = currentX - startX; dragging=false; if (isVideoPlaying) return; if (Math.abs(dx) > threshold){ if (dx < 0) { nextSlide(); } else { prevSlide(); } restartAuto(); } });
+        // REMOVED manual touch handlers to allow native scrolling
     }
     document.addEventListener('DOMContentLoaded', showAnnouncement);
     window.addEventListener('showAnnouncement', ()=>{ try{ localStorage.removeItem('appAnnouncementDismissed'); localStorage.removeItem('appAnnouncementDismissedAt'); sessionStorage.removeItem('appAnnouncementShown'); sessionStorage.setItem('showAnnouncements','1'); }catch(e){} showAnnouncement(); });

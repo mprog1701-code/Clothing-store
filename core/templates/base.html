@@ -84,7 +84,7 @@
         
         body {
             font-family: 'Tajawal', sans-serif;
-            background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%);
+            background: #111; /* fallback */
             min-height: 100vh;
             margin: 0;
             color: var(--text-primary);
@@ -109,7 +109,7 @@
         }
         
         .main-container {
-            background: linear-gradient(135deg, var(--black-light) 0%, #111 100%);
+            background: #111;
             min-height: 100vh;
         }
         main { padding-bottom: calc(var(--bottom-nav-height) + 24px); }
@@ -1258,23 +1258,7 @@
         </script>
         <script>
         (function(){
-            try{
-                if('scrollRestoration' in history){ history.scrollRestoration = 'manual'; }
-                var KEY = 'scroll:'+location.pathname;
-                document.addEventListener('click', function(e){
-                    var a = e.target.closest && e.target.closest('a[href]');
-                    if(!a) return;
-                    try{ sessionStorage.setItem(KEY, String(window.pageYOffset||document.documentElement.scrollTop||0)); }catch(err){}
-                }, true);
-                function restore(){
-                    var nav = (performance && performance.getEntriesByType) ? performance.getEntriesByType('navigation')[0] : null;
-                    var isBack = nav ? (nav.type==='back_forward') : (document.referrer && document.referrer.indexOf(location.origin)===0);
-                    var y = 0;
-                    try{ y = parseInt(sessionStorage.getItem(KEY)||'0', 10)||0; }catch(err){ y = 0; }
-                    if(isBack && y>0){ window.scrollTo({ top: y, left: 0, behavior: 'instant' in window ? 'instant' : 'auto' }); }
-                }
-                if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', restore); } else { restore(); }
-            }catch(_e){}
+            // Removed manual scroll restoration which was causing sticky scroll issues
         })();
         </script>
         <script>
