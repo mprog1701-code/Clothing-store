@@ -1432,6 +1432,71 @@
       }
     })();
     </script>
+    <script>
+    (function(){
+      var bs = window.bootstrap || {};
+      var hasDropdown = typeof bs.Dropdown === 'function';
+      var hasCollapse = typeof bs.Collapse === 'function';
+      if(hasDropdown && hasCollapse) return;
+
+      function qs(el, sel){ try{ return el ? el.querySelector(sel) : null; }catch(e){ return null; } }
+      function qsa(el, sel){ try{ return el ? Array.from(el.querySelectorAll(sel)) : []; }catch(e){ return []; } }
+      function closest(el, sel){ try{ return el && el.closest ? el.closest(sel) : null; }catch(e){ return null; } }
+
+      function closeAllDropdowns(exceptMenu){
+        qsa(document, '.dropdown-menu.show').forEach(function(menu){
+          if(exceptMenu && menu === exceptMenu) return;
+          menu.classList.remove('show');
+          var t = menu.__toggleEl;
+          if(t) t.setAttribute('aria-expanded','false');
+        });
+      }
+
+      if(!hasDropdown){
+        document.addEventListener('click', function(e){
+          var toggle = closest(e.target, '[data-bs-toggle="dropdown"]');
+          if(!toggle){
+            closeAllDropdowns(null);
+            return;
+          }
+          e.preventDefault();
+          e.stopPropagation();
+          var li = closest(toggle, '.dropdown') || toggle.parentElement;
+          var menu = qs(li, '.dropdown-menu') || (toggle.nextElementSibling && toggle.nextElementSibling.classList && toggle.nextElementSibling.classList.contains('dropdown-menu') ? toggle.nextElementSibling : null);
+          if(!menu) return;
+          var willOpen = !menu.classList.contains('show');
+          closeAllDropdowns(menu);
+          if(willOpen){
+            menu.classList.add('show');
+            menu.__toggleEl = toggle;
+            toggle.setAttribute('aria-expanded','true');
+          }else{
+            menu.classList.remove('show');
+            toggle.setAttribute('aria-expanded','false');
+          }
+        }, true);
+      }
+
+      if(!hasCollapse){
+        document.addEventListener('click', function(e){
+          var btn = closest(e.target, '[data-bs-toggle="collapse"]');
+          if(!btn) return;
+          var sel = btn.getAttribute('data-bs-target') || btn.getAttribute('href') || '';
+          if(!sel) return;
+          if(sel.charAt(0) !== '#') return;
+          var target = document.getElementById(sel.slice(1));
+          if(!target) return;
+          e.preventDefault();
+          var open = target.classList.contains('show');
+          if(open) target.classList.remove('show'); else target.classList.add('show');
+        }, true);
+      }
+
+      document.addEventListener('keyup', function(e){
+        if(e && e.key === 'Escape') closeAllDropdowns(null);
+      });
+    })();
+    </script>
     <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -1630,45 +1695,50 @@
         
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
+            const isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 680px)').matches);
+            const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
             updateCartCount();
             hideLoading();
             try{ var h = String(location.hash||''); if(h === '#'){ history.replaceState(null, document.title, location.pathname + location.search); } }catch(e){}
             
             // Add animation to cards
-            const cards = document.querySelectorAll('.card');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-                card.classList.add('animate__animated', 'animate__fadeInUp');
-            });
+            if(!isMobile && !reduceMotion){
+                const cards = document.querySelectorAll('.card');
+                const limit = Math.min(cards.length, 12);
+                for(let i=0;i<limit;i++){
+                    const card = cards[i];
+                    card.style.animationDelay = `${i * 0.06}s`;
+                    card.classList.add('animate__animated', 'animate__fadeInUp');
+                }
+            }
             
             // Enhanced button interactions
             const buttons = document.querySelectorAll('.btn, .btn-table-action, .btn-management, .quick-action-btn');
             buttons.forEach(button => {
-                // Add ripple effect on click
-                button.addEventListener('click', function(e) {
-                    const ripple = document.createElement('span');
-                    const rect = this.getBoundingClientRect();
-                    const size = Math.max(rect.width, rect.height);
-                    const x = e.clientX - rect.left - size / 2;
-                    const y = e.clientY - rect.top - size / 2;
-                    
-                    ripple.style.width = ripple.style.height = size + 'px';
-                    ripple.style.left = x + 'px';
-                    ripple.style.top = y + 'px';
-                    ripple.classList.add('ripple');
-                    
-                    this.appendChild(ripple);
-                    
-                    setTimeout(() => {
-                        ripple.remove();
-                    }, 600);
-                });
+                if(!isMobile && !reduceMotion){
+                    button.addEventListener('click', function(e) {
+                        const ripple = document.createElement('span');
+                        const rect = this.getBoundingClientRect();
+                        const size = Math.max(rect.width, rect.height);
+                        const x = e.clientX - rect.left - size / 2;
+                        const y = e.clientY - rect.top - size / 2;
+                        
+                        ripple.style.width = ripple.style.height = size + 'px';
+                        ripple.style.left = x + 'px';
+                        ripple.style.top = y + 'px';
+                        ripple.classList.add('ripple');
+                        
+                        this.appendChild(ripple);
+                        
+                        setTimeout(() => {
+                            ripple.remove();
+                        }, 600);
+                    });
+                }
                 
-                // Add loading state for form submissions
                 if (button.type === 'submit' || (button.tagName === 'A' && button.href && (button.href.includes('/add') || button.href.includes('/edit')))) {
                     button.addEventListener('click', function() {
                         this.classList.add('btn-loading');
-                        // Remove loading state after 3 seconds as fallback
                         setTimeout(() => {
                             this.classList.remove('btn-loading');
                         }, 3000);
@@ -2105,12 +2175,21 @@
         function shouldSuppress(){
             try{
                 var until = parseInt(localStorage.getItem('pwaInstallHideUntil') || '0', 10) || 0;
-                return until > now();
+                var diff = until - now();
+                if(diff <= 0) return false;
+                return diff < (6 * 60 * 60 * 1000);
             }catch(e){ return false; }
         }
         function isIOS(){
             try{
                 return /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+            }catch(e){ return false; }
+        }
+        function isAndroidChromeLike(){
+            try{
+                var ua = String(navigator.userAgent || '');
+                if(!/android/i.test(ua)) return false;
+                return /(chrome|crios|edga|edg)/i.test(ua);
             }catch(e){ return false; }
         }
         var deferred = null;
@@ -2121,7 +2200,7 @@
             if(!banner) return;
             if(isStandalone()) return;
             if(shouldSuppress()) return;
-            if(!deferred && !isIOS()) return;
+            if(!deferred && !isIOS() && !isAndroidChromeLike()) return;
             banner.classList.add('show');
             banner.setAttribute('aria-hidden','false');
         }
@@ -2152,9 +2231,8 @@
                         return;
                     }
                     try{
-                        alert('ميزة التثبيت غير متاحة الآن. جرّب فتح الموقع من Chrome/Edge، أو انتظر حتى يظهر خيار التثبيت من المتصفح.');
+                        alert('للتثبيت: افتح القائمة ⋮ في Chrome/Edge ثم اختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".');
                     }catch(e){}
-                    hide(7);
                     return;
                 }
                 try{
@@ -2166,7 +2244,7 @@
             });
         }
         if(dismissBtn){
-            dismissBtn.addEventListener('click', function(){ hide(7); });
+            dismissBtn.addEventListener('click', function(){ hide(0.25); });
         }
         window.addEventListener('appinstalled', function(){ hide(365); });
         if(!isStandalone()){
