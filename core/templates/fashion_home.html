@@ -239,31 +239,45 @@
     }
 
     /* New Arrivals: mobile horizontal scroller */
-    @media (max-width: 680px) {
+    @media (max-width: 991px) {
         .new-arrivals-scroller {
-            display: grid !important;
-            grid-auto-flow: column;
-            grid-auto-columns: clamp(68vw, 75vw, 80vw);
-            overflow-x: auto;
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            gap: 16px;
+            padding: 4px 12px 24px !important;
             scroll-snap-type: x proximity;
-            gap: 12px;
-            padding: 4px 12px 8px;
             -webkit-overflow-scrolling: touch;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
+            margin-left: -12px !important;
+            margin-right: -12px !important;
+            width: calc(100% + 24px) !important;
+            max-width: none !important;
         }
         .new-arrivals-scroller::-webkit-scrollbar { display: none; }
         .new-arrivals-scroller > [class*="col-"] {
-            width: auto !important;
-            max-width: none !important;
-            flex: 0 0 auto;
-            scroll-snap-align: start;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-            margin-bottom: 0 !important;
+            width: 75vw !important;
+            max-width: 320px !important;
+            min-width: 250px !important;
+            flex: 0 0 auto !important;
+            scroll-snap-align: center;
+            padding: 0 !important;
+            margin: 0 !important;
             box-sizing: border-box;
+            display: block !important;
         }
-        .new-arrivals-scroller .product-card { padding: 12px; }
+        .new-arrivals-scroller .product-card { 
+            padding: 12px;
+            height: 100%;
+            width: 100%;
+            margin: 0 !important;
+        }
+        /* Hide the "empty" message column in scroll mode if needed or style it */
+        .new-arrivals-scroller > .col-12 {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 100% !important;
+        }
+    }
         .new-arrivals-scroller .product-image {
             width: 100%;
             aspect-ratio: 4 / 5;
