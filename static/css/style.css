@@ -1,7 +1,7 @@
 * { box-sizing: border-box; }
 html, body { width: 100%; max-width: 100%; height: auto; margin: 0; padding: 0; }
-html { overflow-x: visible; }
-body { overflow-x: hidden; touch-action: manipulation; }
+html { overflow-x: clip; }
+body { overflow-x: clip; touch-action: manipulation; }
 body { font-family: 'Arial', sans-serif; }
 .app-container { width: 100%; max-width: 100%; margin: 0; padding: 0 12px; }
 @media (min-width: 768px) { .app-container { max-width: 100%; } }

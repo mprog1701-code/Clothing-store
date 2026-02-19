@@ -302,7 +302,7 @@ body.dark-theme {
 }
 
 @media (max-width: 768px) {
-  body { overflow-x: hidden; }
+  body { overflow-x: clip; }
   .card { max-width: 100%; width: 100%; padding: 12px; }
   section { padding: 16px 12px !important; }
   h1, h2 { font-size: clamp(18px, 4.5vw, 24px); }
