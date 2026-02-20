@@ -253,8 +253,9 @@
                [style*="background-color: white"],
                [style*="background-color:rgb(255,255,255)"],
                [style*="background-color: rgb(255,255,255)"])
-        :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,a,label,legend,th,td){
+        :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,a,label,legend,th,td,button,.btn,.card-title,.card-text){
             color:#000 !important;
+            text-shadow: none !important;
         }
         :where(.bg-white,
                .modal-content,
@@ -307,7 +308,7 @@
                [style*="background-color: white"],
                [style*="background-color:rgb(255,255,255)"],
                [style*="background-color: rgb(255,255,255)"])
-        .form-control::placeholder{ color:#6c757d !important; }
+        .form-control::placeholder{ color:#6c757d !important; opacity: 1; }
 
         /* Light surface contrast overrides (scoped to light theme surfaces) */
         body.theme-light .card,

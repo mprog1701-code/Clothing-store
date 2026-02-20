@@ -6,7 +6,68 @@
 {% block content %}
 <!-- PD_UI_V2 | core/templates/products/detail.html | 2026-02-07 -->
 <style>
-  .pdWrap{display:flex;flex-direction:row;gap:16px;background:#ffffff;padding:16px}
+  .pdWrap{
+      display:flex;flex-direction:row;gap:16px;background:#ffffff;padding:16px;
+      /* Force Light Theme Variables inside this white card */
+      --text: #1a1a1a;
+      --muted: #555a60;
+      --border: #dcdfe3;
+      --input-bg: #ffffff;
+      --input-text: #1a1a1a;
+      --placeholder: #6c757d;
+      color: var(--text);
+  }
+  /* Force Font Family */
+  .pdWrap, .pdWrap * {
+      font-family: 'Tajawal', sans-serif !important;
+  }
+  /* Ensure button is not cut off */
+  form {
+      padding-bottom: 20px;
+  }
+  /* Strong overrides for text color inside white card */
+  .pdWrap h1, .pdWrap h2, .pdWrap h3, .pdWrap h4, .pdWrap h5, .pdWrap h6,
+  .pdWrap p, .pdWrap span, .pdWrap div, .pdWrap label, .pdWrap a, .pdWrap small,
+  .pdWrap .title, .pdWrap .price-new, .pdWrap .sz, .pdWrap .fit, .pdWrap .hint {
+      color: #1a1a1a !important;
+  }
+  .pdWrap a {
+      text-decoration: none;
+  }
+  .pdWrap .btn {
+      color: #fff !important; /* Button text must remain white */
+  }
+  .pdWrap .sz.selected {
+      color: #fff !important; /* Selected size text must remain white */
+  }
+  .pdWrap input, .pdWrap select, .pdWrap textarea {
+      background-color: var(--input-bg) !important;
+      color: var(--input-text) !important;
+      border-color: var(--border) !important;
+      font-family: 'Tajawal', sans-serif !important;
+  }
+  .pdWrap .text-muted {
+      color: var(--muted) !important;
+  }
+  /* Fix faint text specifically */
+  .pdWrap .small.text-muted {
+      color: #555 !important;
+      font-weight: 600;
+  }
+  /* Fix Price Color */
+  .pdWrap .value {
+      color: #000 !important;
+      font-weight: 800;
+  }
+  .pdWrap .label {
+      color: #333 !important;
+      font-weight: 700;
+  }
+  /* Fix Input Placeholder */
+  .pdWrap input::placeholder {
+      color: #888 !important;
+      opacity: 1;
+  }
   @media (max-width:768px){.pdWrap{flex-direction:column}}
   .pdMedia{flex:1;background:#ffffff}
   .pdInfo{flex:1;background:#ffffff}
