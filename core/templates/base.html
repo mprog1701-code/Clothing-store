@@ -99,7 +99,7 @@
         a, abbr, acronym, address, big, cite, code,
         del, dfn, em, img, ins, kbd, q, s, samp,
         small, strike, strong, sub, sup, tt, var,
-        b, u, i, center,
+        b, u, center,
         dl, dt, dd, ol, ul, li,
         fieldset, form, label, legend,
         table, caption, tbody, tfoot, thead, tr, th, td,
@@ -108,6 +108,10 @@
         menu, nav, output, ruby, section, summary,
         time, mark, audio, video, input, textarea, select, button, .btn {
             font-family: 'Tajawal', sans-serif !important;
+        }
+        /* Fix icons breaking due to font override */
+        i, .bi, .fa, .fas, .far, .fab, .material-icons, [class*=" icon-"], [class^="icon-"] {
+            font-family: 'bootstrap-icons' !important;
         }
 
         :root {
@@ -1205,7 +1209,7 @@
             .list-group-item .fs-5 { font-size: 1.25rem !important; }
             .list-group-item i { margin-inline-end: 6px; }
             .navbar-toggler { padding: 10px; border-radius: 10px; }
-            .navbar .navbar-collapse { display: none !important; }
+            /* .navbar .navbar-collapse { display: none !important; } */
             footer { display: none; }
         }
         @media (max-width: 400px) {
@@ -1252,7 +1256,7 @@
                     <i class="bi bi-shop"></i> متجر الملابس
                 </a>
                 
-                <button class="navbar-toggler" type="button" id="navbarTogglerBtn" aria-label="Toggle navigation"
+                <button class="navbar-toggler" type="button" id="navbarTogglerBtn" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"
                         style="padding: 12px; border-radius: 10px; font-size: 1.2rem;">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -1562,34 +1566,7 @@
     
     <script>
         (function(){
-            function applyThemeFromPreference(){
-                var mode = 'dark';
-                try{
-                    localStorage.setItem('siteTheme', 'dark');
-                    localStorage.setItem('theme', 'dark');
-                }catch(e){}
-                try{
-                    document.documentElement.setAttribute('data-bs-theme', mode);
-                    document.documentElement.setAttribute('data-theme', mode);
-                }catch(e){}
-                try{
-                    document.body.classList.remove('theme-light');
-                    document.body.classList.add('dark-theme');
-                }catch(e){}
-            }
-            function bindSystemListener(){
-                try{
-                    var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
-                    if(mq){
-                        mq.onchange = function(){
-                            applyThemeFromPreference();
-                        };
-                    }
-                }catch(e){}
-            }
-            window.applyThemeFromPreference = applyThemeFromPreference;
-            applyThemeFromPreference();
-            bindSystemListener();
+            // Removed conflicting theme enforcement script
         })();
         window.i18n = {
             ar: {
@@ -2320,5 +2297,73 @@
         document.addEventListener('keyup', function(e){ if(e && e.key === 'Escape') setTimeout(cleanupScrollLock, 0); });
     })();
     </script>
+    <script>
+    (function(){
+        // GLOBAL THEME LOGIC
+        function applyGlobalTheme(){
+            try{
+                var mode = document.documentElement.getAttribute('data-theme') || 'dark';
+                var isDark = mode === 'dark';
+                
+                // Update Body Classes
+                 if(document.body){
+                     var nav = document.querySelector('.navbar');
+                     if(isDark){
+                         document.body.classList.remove('theme-light');
+                         document.body.classList.add('dark-theme');
+                         if(nav) {
+                             nav.classList.remove('navbar-light');
+                             nav.classList.add('navbar-dark');
+                         }
+                     } else {
+                         document.body.classList.remove('dark-theme');
+                         document.body.classList.add('theme-light');
+                         if(nav) {
+                             nav.classList.remove('navbar-dark');
+                             nav.classList.add('navbar-light');
+                         }
+                     }
+                 }
+                
+                // Update Toggle Icons/Text if they exist
+                var icon = document.querySelector('#themeToggle i');
+                if(icon) icon.className = isDark ? 'bi bi-moon-stars' : 'bi bi-sun';
+                
+                var text = document.querySelector('#themeToggle span');
+                if(text) text.textContent = isDark ? 'الوضع الداكن' : 'الوضع الفاتح';
+                
+            }catch(e){ console.error('Theme apply error:', e); }
+        }
+        
+        // Run immediately
+        applyGlobalTheme();
+        
+        // Listen for changes
+         window.addEventListener('themeChange', applyGlobalTheme);
+         
+         // NAVBAR TOGGLE FALLBACK (Manual Override)
+         document.addEventListener('click', function(e){
+             var btn = e.target && e.target.closest ? e.target.closest('#navbarTogglerBtn') : null;
+             if(btn){
+                 e.preventDefault();
+                 e.stopPropagation();
+                 var targetId = btn.getAttribute('data-bs-target');
+                 if(targetId){
+                     var target = document.querySelector(targetId);
+                     if(target){
+                         if(target.classList.contains('show')){
+                             target.classList.remove('show');
+                             btn.setAttribute('aria-expanded', 'false');
+                         } else {
+                             target.classList.add('show');
+                             btn.setAttribute('aria-expanded', 'true');
+                         }
+                     }
+                 }
+             }
+         }, true);
+          
+      })();
+     </script>
 </body>
 </html>
