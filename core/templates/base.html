@@ -27,15 +27,55 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=3">
     <script>
-      // Initial Theme Setup - Read only, do not overwrite
-      (function(){
-        try{
-          var stored = localStorage.getItem('siteTheme') || localStorage.getItem('theme');
-          var mode = stored === 'light' ? 'light' : 'dark';
-          document.documentElement.setAttribute('data-theme', mode);
-          document.documentElement.setAttribute('data-bs-theme', mode);
-        }catch(e){}
-      })();
+        // Global Theme Manager
+        window.toggleAppTheme = function(){
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme') || 'dark';
+            var next = current === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-theme', next);
+            html.setAttribute('data-bs-theme', next);
+            
+            if(document.body){
+                document.body.classList.remove('theme-light', 'dark-theme');
+                document.body.classList.add(next === 'dark' ? 'dark-theme' : 'theme-light');
+            }
+            
+            try{
+                localStorage.setItem('siteTheme', next);
+                localStorage.setItem('theme', next);
+            }catch(e){}
+            
+            window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: next } }));
+            
+            var toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 start-50 translate-middle-x p-3';
+            toast.style.zIndex = '1100';
+            toast.innerHTML = '<div class="toast show align-items-center text-white bg-' + (next==='dark'?'dark':'primary') + ' border-0" role="alert" aria-live="assertive" aria-atomic="true"><div class="d-flex"><div class="toast-body">' + (next==='dark' ? 'تم تفعيل الوضع الداكن' : 'تم تفعيل الوضع الفاتح') + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div></div>';
+            document.body.appendChild(toast);
+            setTimeout(function(){ toast.remove(); }, 2000);
+            
+            return next;
+        };
+
+        window.applyCurrentTheme = function(){
+            var stored = localStorage.getItem('siteTheme') || localStorage.getItem('theme') || 'dark';
+            var html = document.documentElement;
+            html.setAttribute('data-theme', stored);
+            html.setAttribute('data-bs-theme', stored);
+            if(document.body){
+                document.body.classList.remove('theme-light', 'dark-theme');
+                document.body.classList.add(stored === 'dark' ? 'dark-theme' : 'theme-light');
+            }
+        };
+
+        // Apply theme immediately on script load
+        window.applyCurrentTheme();
+        
+        // Also apply on DOMContentLoaded for safety, though it might be redundant
+        if(document.readyState === 'loading'){
+            document.addEventListener('DOMContentLoaded', window.applyCurrentTheme);
+        }
     </script>
     
     <style>

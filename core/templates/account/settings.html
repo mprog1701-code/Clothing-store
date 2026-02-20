@@ -194,6 +194,7 @@ function initAccountSettings(){
   if(themeItem){
     themeItem.addEventListener('click', function(e){
       e.preventDefault();
+      alert('تم اكتشاف النقر!');
       // Use the global function defined in base.html
       if(window.toggleAppTheme){
         window.toggleAppTheme();
