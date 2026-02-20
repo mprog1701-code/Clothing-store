@@ -6,6 +6,7 @@
     --muted: #adb5bd;
     --border: #343a40;
     --primary: #c67a2b; /* Copper/Gold Branding */
+    --primary-rgb: 198, 122, 43;
     --on-primary: #0f1115;
     --link: #4ea1ff;
     color-scheme: light dark;
@@ -19,6 +20,7 @@ body.theme-light {
     --muted: #6c757d;
     --border: #dee2e6;
     --primary: #c67a2b; /* Copper/Gold Branding */
+    --primary-rgb: 198, 122, 43;
     --on-primary: #ffffff;
     --link: #0d6efd;
 }

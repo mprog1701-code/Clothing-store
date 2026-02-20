@@ -1,49 +1,55 @@
 (function() {
     'use strict';
-
     const THEME_KEY = 'siteTheme';
-    const THEME_LIGHT = 'light';
-    const THEME_DARK = 'dark';
-    const THEME_SYSTEM = 'system';
+    const THEME_DEFAULT = 'system';
 
-    function getAppliedTheme(preferredTheme) {
-        if (preferredTheme === THEME_SYSTEM || !preferredTheme) {
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? THEME_DARK : THEME_LIGHT;
+    /**
+     * Gets the theme preference from localStorage.
+     * @returns {'light'|'dark'|'system'}
+     */
+    function getThemePref() {
+        return localStorage.getItem(THEME_KEY) || THEME_DEFAULT;
+    }
+
+    /**
+     * Computes if the theme should be dark based on preference.
+     * @param {'light'|'dark'|'system'} pref - The user's preference.
+     * @returns {boolean} - True if the theme should be dark.
+     */
+    function computeIsDark(pref) {
+        if (pref === 'system') {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
         }
-        return preferredTheme;
+        return pref === 'dark';
     }
 
-    function applyTheme(theme) {
-        const isDark = theme === THEME_DARK;
+    /**
+     * Applies the theme to the document by setting the body class and data-bs-theme attribute.
+     */
+    function applyTheme() {
+        const pref = getThemePref();
+        const isDark = computeIsDark(pref);
+
         document.body.classList.toggle('theme-light', !isDark);
-        document.documentElement.setAttribute('data-bs-theme', isDark ? THEME_DARK : THEME_LIGHT);
+        document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
     }
 
-    function setSiteTheme(theme) {
-        localStorage.setItem(THEME_KEY, theme);
-        const appliedTheme = getAppliedTheme(theme);
-        applyTheme(appliedTheme);
-    }
+    // Make setSiteTheme globally available
+    window.setSiteTheme = function(theme) {
+        if (['light', 'dark', 'system'].includes(theme)) {
+            localStorage.setItem(THEME_KEY, theme);
+            applyTheme();
+        }
+    };
 
-    function applyThemeFromPreference() {
-        const preferredTheme = localStorage.getItem(THEME_KEY) || THEME_SYSTEM;
-        const appliedTheme = getAppliedTheme(preferredTheme);
-        applyTheme(appliedTheme);
-    }
-
-    // Expose API to global window object
-    window.setSiteTheme = setSiteTheme;
-    window.applyThemeFromPreference = applyThemeFromPreference;
-
-    // Apply theme on initial load
-    applyThemeFromPreference();
-
-    // Watch for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
-        const preferredTheme = localStorage.getItem(THEME_KEY);
-        if (preferredTheme === THEME_SYSTEM || !preferredTheme) {
-            applyThemeFromPreference();
+    // Listen for changes in OS theme preference
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        // Only re-apply if the user has selected 'system'
+        if (getThemePref() === 'system') {
+            applyTheme();
         }
     });
 
+    // Apply the theme on initial load to prevent FOUC
+    applyTheme();
 })();

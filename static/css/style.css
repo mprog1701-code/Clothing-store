@@ -13,6 +13,7 @@ body {
     overflow-x: clip; 
     touch-action: manipulation; 
     font-family: 'Tajawal', sans-serif !important; 
+    padding-bottom: var(--bottom-nav-height, 64px); /* Space for bottom nav */
 }
 
 /* Layout & Containers */
@@ -21,8 +22,8 @@ main { padding-bottom: 2rem; }
 
 /* Base Elements */
 img, video, iframe { max-width: 100%; height: auto; object-fit: cover; }
-a { color: var(--primary); text-decoration: none; }
-a:hover { color: var(--primary); opacity: 0.85; }
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link); opacity: 0.85; }
 
 /* Components */
 .card, .list-group-item, .modal-content, .alert, .breadcrumb, .offcanvas {
@@ -64,12 +65,13 @@ a:hover { color: var(--primary); opacity: 0.85; }
 .btn-primary {
     background-color: var(--primary);
     border-color: var(--primary);
-    color: var(--bg); /* High contrast */
+    color: var(--on-primary);
 }
 .btn-primary:hover {
     opacity: 0.85;
     background-color: var(--primary);
     border-color: var(--primary);
+    color: var(--on-primary);
 }
 
 .cart-badge {
@@ -92,14 +94,56 @@ a:hover { color: var(--primary); opacity: 0.85; }
     border: 1px solid var(--border);
     border-radius: 8px;
 }
-.form-control:focus {
+.form-control:focus, .form-select:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
 }
 .form-label { color: var(--muted); }
 
 /* Utilities */
 .text-muted { color: var(--muted) !important; }
+
+/* Bottom Navigation */
+.global-bottom-nav {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 6px 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1030;
+    width: 100%;
+    height: var(--bottom-nav-height, 64px);
+}
+.global-bottom-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--muted);
+    transition: color 0.2s ease-in-out;
+    cursor: pointer;
+    height: 100%;
+}
+.global-bottom-nav .nav-item.active,
+.global-bottom-nav .nav-item:hover {
+    color: var(--primary);
+}
+.global-bottom-nav .nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.75rem;
+    padding: 0;
+    width: 100%;
+}
+.global-bottom-nav .nav-link i {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
