@@ -27,55 +27,21 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=3">
     <script>
-        // Global Theme Manager
-        window.toggleAppTheme = function(){
-            var html = document.documentElement;
-            var current = html.getAttribute('data-theme') || 'dark';
-            var next = current === 'dark' ? 'light' : 'dark';
-            
-            html.setAttribute('data-theme', next);
-            html.setAttribute('data-bs-theme', next);
-            
-            if(document.body){
-                document.body.classList.remove('theme-light', 'dark-theme');
-                document.body.classList.add(next === 'dark' ? 'dark-theme' : 'theme-light');
-            }
-            
-            try{
-                localStorage.setItem('siteTheme', next);
-                localStorage.setItem('theme', next);
-            }catch(e){}
-            
-            window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: next } }));
-            
-            var toast = document.createElement('div');
-            toast.className = 'position-fixed bottom-0 start-50 translate-middle-x p-3';
-            toast.style.zIndex = '1100';
-            toast.innerHTML = '<div class="toast show align-items-center text-white bg-' + (next==='dark'?'dark':'primary') + ' border-0" role="alert" aria-live="assertive" aria-atomic="true"><div class="d-flex"><div class="toast-body">' + (next==='dark' ? 'تم تفعيل الوضع الداكن' : 'تم تفعيل الوضع الفاتح') + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div></div>';
-            document.body.appendChild(toast);
-            setTimeout(function(){ toast.remove(); }, 2000);
-            
-            return next;
-        };
-
-        window.applyCurrentTheme = function(){
-            var stored = localStorage.getItem('siteTheme') || localStorage.getItem('theme') || 'dark';
-            var html = document.documentElement;
-            html.setAttribute('data-theme', stored);
-            html.setAttribute('data-bs-theme', stored);
-            if(document.body){
-                document.body.classList.remove('theme-light', 'dark-theme');
-                document.body.classList.add(stored === 'dark' ? 'dark-theme' : 'theme-light');
-            }
-        };
-
-        // Apply theme immediately on script load
-        window.applyCurrentTheme();
-        
-        // Also apply on DOMContentLoaded for safety, though it might be redundant
-        if(document.readyState === 'loading'){
-            document.addEventListener('DOMContentLoaded', window.applyCurrentTheme);
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
         }
+
+        function toggleAppTheme() {
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        }
+
+        (function () {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            applyTheme(savedTheme);
+        })();
     </script>
     
     <style>
@@ -124,9 +90,7 @@
         html, body { height: auto; min-height: 100%; }
 
         /* Legacy class support mapping to new variables */
-        body.theme-light {
-           /* Variables are already handled by data-theme attribute in theme.css */
-        }
+
         
         .main-container {
             background-color: var(--bg);
@@ -140,17 +104,6 @@
             border-bottom: 1px solid var(--border);
             color: var(--text) !important;
         }
-        /* Navbar specific override for dark/light consistency if needed */
-        [data-theme="dark"] .navbar {
-             background: linear-gradient(135deg, #B87333 0%, #8B4513 100%) !important;
-             color: #fff !important;
-        }
-        [data-theme="light"] .navbar {
-             background: #fff !important;
-             color: #1a1a1a !important;
-             border-bottom: 1px solid #dee2e6;
-             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
         
         .navbar-brand { 
             font-weight: 800; 
@@ -158,13 +111,9 @@
             color: var(--warning) !important; 
             text-shadow: 0 2px 4px rgba(0,0,0,0.4); 
         }
-        [data-theme="light"] .navbar-brand {
-             color: #B87333 !important;
-             text-shadow: none;
-        }
         
         .navbar-nav .nav-link {
-            color: rgba(255,255,255,0.9) !important;
+            color: var(--text) !important;
             font-weight: 500;
             transition: all 0.3s ease;
             position: relative;
@@ -173,18 +122,11 @@
             margin: 0 5px;
             font-size: 1.1rem;
         }
-        [data-theme="light"] .navbar-nav .nav-link { 
-            color: #333 !important; 
-        }
         
         .navbar-nav .nav-link:hover {
             color: var(--warning) !important;
             transform: translateY(-2px);
             background: rgba(255,255,255,0.08);
-        }
-        [data-theme="light"] .navbar-nav .nav-link:hover {
-             background: rgba(0,0,0,0.05);
-             color: #B87333 !important;
         }
 
         .navbar-nav .nav-link::after {
@@ -340,39 +282,39 @@
         .form-control::placeholder{ color:#6c757d !important; opacity: 1; }
 
         /* Light surface contrast overrides (scoped to light theme surfaces) */
-        body.theme-light .card,
-        body.theme-light .modal-content,
-        body.theme-light .offcanvas,
-        body.theme-light .offcanvas-header,
-        body.theme-light .offcanvas-body,
-        body.theme-light .dropdown-menu,
-        body.theme-light .list-group-item,
-        body.theme-light .bg-white,
-        body.theme-light .toast .toast-body {
+        [data-theme="light"] .card,
+        [data-theme="light"] .modal-content,
+        [data-theme="light"] .offcanvas,
+        [data-theme="light"] .offcanvas-header,
+        [data-theme="light"] .offcanvas-body,
+        [data-theme="light"] .dropdown-menu,
+        [data-theme="light"] .list-group-item,
+        [data-theme="light"] .bg-white,
+        [data-theme="light"] .toast .toast-body {
             color: #111 !important;
         }
-        body.theme-light .card .text-muted,
-        body.theme-light .modal-content .text-muted,
-        body.theme-light .dropdown-menu .text-muted,
-        body.theme-light .offcanvas-body .text-muted,
-        body.theme-light .list-group-item .text-muted {
+        [data-theme="light"] .card .text-muted,
+        [data-theme="light"] .modal-content .text-muted,
+        [data-theme="light"] .dropdown-menu .text-muted,
+        [data-theme="light"] .offcanvas-body .text-muted,
+        [data-theme="light"] .list-group-item .text-muted {
             color: #6c757d !important;
         }
-        body.theme-light .card .form-label,
-        body.theme-light .modal-content .form-label,
-        body.theme-light .offcanvas-body .form-label,
-        body.theme-light .dropdown-menu .form-label { color: #111 !important; }
-        body.theme-light .card .form-control,
-        body.theme-light .modal-content .form-control,
-        body.theme-light .offcanvas-body .form-control,
-        body.theme-light .dropdown-menu .form-control { background-color: #fff; border-color: #ced4da; color: #212529; }
-        body.theme-light .card .form-control::placeholder,
-        body.theme-light .modal-content .form-control::placeholder,
-        body.theme-light .offcanvas-body .form-control::placeholder,
-        body.theme-light .dropdown-menu .form-control::placeholder { color: #6c757d; }
-        body.theme-light .card .input-group-text,
-        body.theme-light .modal-content .input-group-text,
-        body.theme-light .offcanvas-body .input-group-text { background-color: #f8f9fa; color: #212529; border-color: #ced4da; }
+        [data-theme="light"] .card .form-label,
+        [data-theme="light"] .modal-content .form-label,
+        [data-theme="light"] .offcanvas-body .form-label,
+        [data-theme="light"] .dropdown-menu .form-label { color: #111 !important; }
+        [data-theme="light"] .card .form-control,
+        [data-theme="light"] .modal-content .form-control,
+        [data-theme="light"] .offcanvas-body .form-control,
+        [data-theme="light"] .dropdown-menu .form-control { background-color: #fff; border-color: #ced4da; color: #212529; }
+        [data-theme="light"] .card .form-control::placeholder,
+        [data-theme="light"] .modal-content .form-control::placeholder,
+        [data-theme="light"] .offcanvas-body .form-control::placeholder,
+        [data-theme="light"] .dropdown-menu .form-control::placeholder { color: #6c757d; }
+        [data-theme="light"] .card .input-group-text,
+        [data-theme="light"] .modal-content .input-group-text,
+        [data-theme="light"] .offcanvas-body .input-group-text { background-color: #f8f9fa; color: #212529; border-color: #ced4da; }
 
         .alert { border: none; border-radius: .5rem; }
         .alert-success { background-color: #198754; color: var(--alert-text-light); }
@@ -1204,8 +1146,8 @@
     </style>
     
     {% block extra_css %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}">
-    <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
+    <!-- <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
+        <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
 </head>
 <body>
     <!-- Loading Spinner -->
@@ -1432,22 +1374,6 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    (function(){
-      function _modal(el){ return { show:function(){ if(el){ el.classList.add('show'); el.style.display='block'; } }, hide:function(){ if(el){ el.classList.remove('show'); el.style.display='none'; } } }; }
-      function _alert(el){ return { close:function(){ try{ el.remove(); }catch(e){} } }; }
-      function _toast(el){ return { show:function(){ if(el){ el.classList.add('show'); } }, hide:function(){ if(el){ el.classList.remove('show'); } } }; }
-      function _tooltip(el){ return {}; }
-      if(!window.bootstrap){
-        window.bootstrap = { Modal:_modal, Alert:_alert, Toast:_toast, Tooltip:_tooltip };
-        try{
-          var s=document.createElement('script');
-          s.src='https://unpkg.com/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
-          document.head.appendChild(s);
-        }catch(e){}
-      }
-    })();
-    </script>
     <script>
     (function(){
       var bs = window.bootstrap || {};
@@ -2143,7 +2069,10 @@
         })();
         </script>
     
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
+</body>
     <script>
     (function(){
       if ('serviceWorker' in navigator) {

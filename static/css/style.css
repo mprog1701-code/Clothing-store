@@ -1,56 +1,82 @@
+/* Global Resets & Box Sizing */
 * { box-sizing: border-box; }
-html, body { width: 100%; max-width: 100%; height: auto; margin: 0; padding: 0; }
+html, body { 
+    width: 100%; 
+    max-width: 100%; 
+    margin: 0; 
+    padding: 0; 
+    background-color: var(--bg);
+    color: var(--text);
+}
 html { overflow-x: clip; }
-body { overflow-x: clip; touch-action: manipulation; }
-body { font-family: 'Arial', sans-serif; }
-.app-container { width: 100%; max-width: 100%; margin: 0; padding: 0 12px; }
-@media (min-width: 768px) { .app-container { max-width: 100%; } }
-@media (min-width: 1200px) { .app-container { max-width: 100%; } }
-@media (min-width: 1600px) { .app-container { max-width: 100%; } }
-main { padding-bottom: 2rem; }
-.container, .container-fluid, .row { width: 100%; max-width: 100%; }
-.card, .list-group, .table, .modal, .modal-dialog, .modal-content, .alert, .breadcrumb, .dashboard-card { max-width: 100%; }
-img, video, iframe { max-width: 100%; height: auto; object-fit: cover; }
-input, select, textarea { width: 100%; max-width: 100%; }
-button, .btn { max-width: 100%; }
+body { 
+    overflow-x: clip; 
+    touch-action: manipulation; 
+    font-family: 'Tajawal', sans-serif !important; 
+}
 
+/* Layout & Containers */
+main { padding-bottom: 2rem; }
+.container, .container-fluid { padding: 0 12px; }
+
+/* Base Elements */
+img, video, iframe { max-width: 100%; height: auto; object-fit: cover; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { color: var(--primary); opacity: 0.85; }
+
+/* Components */
+.card, .list-group-item, .modal-content, .alert, .breadcrumb, .offcanvas {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.07);
+}
+
+.navbar {
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
 .navbar-brand {
     font-weight: bold;
     font-size: 1.5rem;
+    color: var(--text);
+}
+.nav-link { color: var(--text); }
+
+.table {
+    border-color: var(--border);
+}
+.table th, .table td {
+    border-color: var(--border);
+    color: var(--text);
+}
+.table th {
+    background-color: var(--surface);
+    font-weight: 600;
 }
 
-.product-card {
-    transition: transform 0.3s ease-in-out;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    overflow: hidden;
-    width: 100%;
+.btn { border-radius: 8px; }
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--bg); /* High contrast */
 }
-
-.product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.store-card {
-    border: 1px solid #dee2e6;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-    transition: box-shadow 0.3s ease-in-out;
-    background-color: #fff;
-    width: 100%;
-}
-
-.store-card:hover {
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+.btn-primary:hover {
+    opacity: 0.85;
+    background-color: var(--primary);
+    border-color: var(--primary);
 }
 
 .cart-badge {
     position: absolute;
     top: -8px;
     right: -8px;
-    background-color: #dc3545;
+    background-color: #dc3545; /* Keep as is for high visibility */
     color: white;
     border-radius: 50%;
     padding: 2px 6px;
@@ -58,81 +84,31 @@ button, .btn { max-width: 100%; }
     font-weight: bold;
 }
 
-.breadcrumb {
-    background-color: #f8f9fa;
-    padding: 10px 15px;
-    border-radius: 5px;
-}
-
-.table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
-
-.btn-primary {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.btn-primary:hover {
-    background-color: #0b5ed7;
-    border-color: #0a58ca;
-}
-
-.card {
-    border: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* Forms */
+.form-control, .form-select, input, select, textarea {
     width: 100%;
+    background-color: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
 }
-
-.modal-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.alert {
-    border-radius: 10px;
-    border: none;
-}
-
 .form-control:focus {
-    border-color: #86b7fe;
+    border-color: var(--primary);
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
+.form-label { color: var(--muted); }
 
-/* Dashboard specific styles */
-.dashboard-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px;
-}
-
-.dashboard-card .card-body {
-    padding: 2rem;
-}
-
-.dashboard-card h2 {
-    font-size: 2.5rem;
-    font-weight: bold;
-}
+/* Utilities */
+.text-muted { color: var(--muted) !important; }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .product-card {
-        margin-bottom: 0.85rem;
-    }
-    
-    .store-card {
-        padding: 14px;
-    }
-    
-    .navbar-brand {
-        font-size: 1.2rem;
-    }
+    .product-card { margin-bottom: 0.85rem; }
+    .store-card { padding: 14px; }
+    .navbar-brand { font-size: 1.2rem; }
 }
 
 @media (max-width: 576px) {
-    /* شبكة مضغوطة للمنتجات في الموبايل عند عدم وجود أعمدة Bootstrap صريحة */
     .container .row:has(.product-card) {
         display: grid;
         grid-template-columns: repeat(2, minmax(0,1fr));
@@ -144,117 +120,4 @@ button, .btn { max-width: 100%; }
         flex: 0 0 auto;
     }
     .product-card .product-image { max-height: 180px; object-fit: cover; }
-}
-
-:root {
-    --fg: #212529;
-    --muted: #495057;
-    --card-fg: var(--fg);
-    --price-fg: #111111;
-    --badge-fg: #212529;
-}
-
-[data-bs-theme="light"],
-body.theme-light {
-    color: var(--fg);
-}
-
-[data-bs-theme="light"] .text-muted,
-body.theme-light .text-muted {
-    color: var(--muted) !important;
-}
-
-[data-bs-theme="light"] .card,
-[data-bs-theme="light"] .card-body,
-[data-bs-theme="light"] .card-title,
-[data-bs-theme="light"] .card-text,
-body.theme-light .card,
-body.theme-light .card-body,
-body.theme-light .card-title,
-body.theme-light .card-text {
-    color: var(--card-fg);
-}
-
-[data-bs-theme="light"] .navbar .nav-link,
-[data-bs-theme="light"] .navbar .nav-text,
-body.theme-light .navbar .nav-link,
-body.theme-light .navbar .nav-text {
-    color: var(--fg) !important;
-}
-
-[data-bs-theme="light"] .badge,
-[data-bs-theme="light"] .badge.bg-light,
-body.theme-light .badge,
-body.theme-light .badge.bg-light {
-    color: var(--badge-fg) !important;
-}
-
-[data-bs-theme="light"] .price-old,
-[data-bs-theme="light"] .price-new,
-[data-bs-theme="light"] .cart-item__price,
-[data-bs-theme="light"] .cart-item__price .price-base,
-[data-bs-theme="light":root {
-    --fg: #212529;
-    --muted: #495057;
-    --card-fg: var(--fg);
-    --price-fg: #111111;
-    --badge-fg: #212529;
-}
-
-[data-bs-theme="light"],
-body.theme-light {
-    color: var(--fg);
-}
-
-[data-bs-theme="light"] .text-muted,
-body.theme-light .text-muted {
-    color: var(--muted) !important;
-}
-
-[data-bs-theme="light"] .card,
-[data-bs-theme="light"] .card-body,
-[data-bs-theme="light"] .card-title,
-[data-bs-theme="light"] .card-text,
-body.theme-light .card,
-body.theme-light .card-body,
-body.theme-light .card-title,
-body.theme-light .card-text {
-    color: var(--card-fg);
-}
-
-[data-bs-theme="light"] .navbar .nav-link,
-[data-bs-theme="light"] .navbar .nav-text,
-body.theme-light .navbar .nav-link,
-body.theme-light .navbar .nav-text {
-    color: var(--fg) !important;
-}
-
-[data-bs-theme="light"] .badge,
-[data-bs-theme="light"] .badge.bg-light,
-body.theme-light .badge,
-body.theme-light .badge.bg-light {
-    color: var(--badge-fg) !important;
-}
-
-[data-bs-theme="light"] .price-old,
-[data-bs-theme="light"] .price-new,
-[data-bs-theme="light"] .cart-item__price,
-[data-bs-theme="light"] .cart-item__price .price-base,
-[data-bs-theme="light"] .cart-item__price .price-proposed,
-body.theme-light .price-old,
-body.theme-light .price-new,
-body.theme-light .cart-item__price,
-body.theme-light .cart-item__price .price-base,
-body.theme-light .cart-item__price .price-proposed {
-    color: var(--price-fg) !important;
-}
-
-[data-bs-theme="light"] .text-white,
-body.theme-light .text-white {
-    color: var(--fg) !important;
-}
-
-[data-bs-theme="light"] .text-light,
-body.theme-light .text-light {
-    color: var(--muted) !important;
 }
