@@ -27,70 +27,16 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/theme.css' %}">
     <script>
+      // Initial Theme Setup - Read only, do not overwrite
       (function(){
         try{
-          var mode = 'dark';
-          try{
-            localStorage.setItem('siteTheme', 'dark');
-            localStorage.setItem('theme', 'dark');
-          }catch(e){}
+          var stored = localStorage.getItem('siteTheme') || localStorage.getItem('theme');
+          var mode = stored === 'light' ? 'light' : 'dark';
           document.documentElement.setAttribute('data-theme', mode);
           document.documentElement.setAttribute('data-bs-theme', mode);
-      function apply(){
-        if(!document.body) return;
-        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if(isDark){
-            document.body.classList.remove('theme-light');
-            document.body.classList.add('dark-theme');
-        } else {
-            document.body.classList.remove('dark-theme');
-            document.body.classList.add('theme-light');
-        }
-        // Update icon if exists
-        var icon = document.querySelector('#themeToggle i');
-        if(icon){
-            icon.className = isDark ? 'bi bi-moon-stars' : 'bi bi-sun';
-        }
-        var text = document.querySelector('#themeToggle span');
-        if(text){
-            text.textContent = isDark ? 'الوضع الداكن' : 'الوضع الفاتح';
-        }
-      }
-      if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', apply); }
-      else { apply(); }
-      
-      document.addEventListener('click', function(e){
-        var t = e.target && e.target.closest ? e.target.closest('[data-theme-toggle],#themeToggle') : null;
-        if(!t) return;
-        e.preventDefault();
-        var current = document.documentElement.getAttribute('data-theme');
-        var next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        document.documentElement.setAttribute('data-bs-theme', next);
-        try{
-            localStorage.setItem('siteTheme', next);
-            localStorage.setItem('theme', next);
         }catch(e){}
-        apply();
-      }, true);
-
-      // Robust Navbar Toggler
-      document.addEventListener('click', function(e){
-        var btn = e.target && e.target.closest ? e.target.closest('#navbarTogglerBtn') : null;
-        if(!btn) return;
-        e.preventDefault();
-        var target = document.getElementById('navbarNav');
-        if(target){
-            if(target.classList.contains('show')){
-                target.classList.remove('show');
-            } else {
-                target.classList.add('show');
-            }
-        }
-      }, true);
-    }catch(e){}
-  })();
-</script>
+      })();
+    </script>
     
     <style>
         /* CRITICAL: FONT LOCKDOWN */
@@ -1238,7 +1184,7 @@
                     <i class="bi bi-shop"></i> متجر الملابس
                 </a>
                 
-                <button class="navbar-toggler" type="button" id="navbarTogglerBtn" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"
+                <button class="navbar-toggler" type="button" id="navbarTogglerBtn" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"
                         style="padding: 12px; border-radius: 10px; font-size: 1.2rem;">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -2279,73 +2225,77 @@
         document.addEventListener('keyup', function(e){ if(e && e.key === 'Escape') setTimeout(cleanupScrollLock, 0); });
     })();
     </script>
+
+    <!-- Robust Navbar Toggler & Theme Manager -->
     <script>
     (function(){
-        // GLOBAL THEME LOGIC
-        function applyGlobalTheme(){
-            try{
-                var mode = document.documentElement.getAttribute('data-theme') || 'dark';
-                var isDark = mode === 'dark';
-                
-                // Update Body Classes
-                 if(document.body){
-                     var nav = document.querySelector('.navbar');
-                     if(isDark){
-                         document.body.classList.remove('theme-light');
-                         document.body.classList.add('dark-theme');
-                         if(nav) {
-                             nav.classList.remove('navbar-light');
-                             nav.classList.add('navbar-dark');
-                         }
-                     } else {
-                         document.body.classList.remove('dark-theme');
-                         document.body.classList.add('theme-light');
-                         if(nav) {
-                             nav.classList.remove('navbar-dark');
-                             nav.classList.add('navbar-light');
-                         }
-                     }
-                 }
-                
-                // Update Toggle Icons/Text if they exist
-                var icon = document.querySelector('#themeToggle i');
-                if(icon) icon.className = isDark ? 'bi bi-moon-stars' : 'bi bi-sun';
-                
-                var text = document.querySelector('#themeToggle span');
-                if(text) text.textContent = isDark ? 'الوضع الداكن' : 'الوضع الفاتح';
-                
-            }catch(e){ console.error('Theme apply error:', e); }
+        // 1. Navbar Toggler Fix
+        function initNavbar(){
+            var btn = document.getElementById('navbarTogglerBtn');
+            var target = document.getElementById('navbarNav');
+            if(!btn || !target) return;
+            
+            // Remove any existing listeners to be safe (by cloning) - optional but good for cleanup
+            // var newBtn = btn.cloneNode(true);
+            // btn.parentNode.replaceChild(newBtn, btn);
+            // btn = newBtn;
+            
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                // Toggle 'show' class
+                if(target.classList.contains('show')){
+                    target.classList.remove('show');
+                    btn.setAttribute('aria-expanded', 'false');
+                } else {
+                    target.classList.add('show');
+                    btn.setAttribute('aria-expanded', 'true');
+                }
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', function(e){
+                if(target.classList.contains('show') && !target.contains(e.target) && !btn.contains(e.target)){
+                    target.classList.remove('show');
+                    btn.setAttribute('aria-expanded', 'false');
+                }
+            });
         }
-        
-        // Run immediately
-        applyGlobalTheme();
-        
-        // Listen for changes
-         window.addEventListener('themeChange', applyGlobalTheme);
-         
-         // NAVBAR TOGGLE FALLBACK (Manual Override)
-         document.addEventListener('click', function(e){
-             var btn = e.target && e.target.closest ? e.target.closest('#navbarTogglerBtn') : null;
-             if(btn){
-                 e.preventDefault();
-                 e.stopPropagation();
-                 var targetId = btn.getAttribute('data-bs-target');
-                 if(targetId){
-                     var target = document.querySelector(targetId);
-                     if(target){
-                         if(target.classList.contains('show')){
-                             target.classList.remove('show');
-                             btn.setAttribute('aria-expanded', 'false');
-                         } else {
-                             target.classList.add('show');
-                             btn.setAttribute('aria-expanded', 'true');
-                         }
-                     }
-                 }
-             }
-         }, true);
-          
-      })();
-     </script>
+
+        // 2. Global Theme Manager
+        window.toggleAppTheme = function(){
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme') || 'dark';
+            var next = current === 'dark' ? 'light' : 'dark';
+            
+            // Set Attributes
+            html.setAttribute('data-theme', next);
+            html.setAttribute('data-bs-theme', next);
+            
+            // Set Body Classes
+            if(document.body){
+                document.body.classList.remove('theme-light', 'dark-theme');
+                document.body.classList.add(next === 'dark' ? 'dark-theme' : 'theme-light');
+            }
+            
+            // Save
+            try{
+                localStorage.setItem('siteTheme', next);
+                localStorage.setItem('theme', next);
+            }catch(e){}
+            
+            // Dispatch Event
+            window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: next } }));
+            
+            return next;
+        };
+
+        if(document.readyState === 'loading'){
+            document.addEventListener('DOMContentLoaded', initNavbar);
+        } else {
+            initNavbar();
+        }
+    })();
+    </script>
 </body>
 </html>
