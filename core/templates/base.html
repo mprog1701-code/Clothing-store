@@ -36,23 +36,80 @@
           }catch(e){}
           document.documentElement.setAttribute('data-theme', mode);
           document.documentElement.setAttribute('data-bs-theme', mode);
-          function apply(){
-            if(!document.body) return;
+      function apply(){
+        if(!document.body) return;
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if(isDark){
             document.body.classList.remove('theme-light');
             document.body.classList.add('dark-theme');
-          }
-          if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', apply); }
-          else { apply(); }
-          document.addEventListener('click', function(e){
-            var t = e.target && e.target.closest ? e.target.closest('[data-theme-toggle],#themeToggle') : null;
-            if(!t) return;
-            e.preventDefault();
-          }, true);
+        } else {
+            document.body.classList.remove('dark-theme');
+            document.body.classList.add('theme-light');
+        }
+        // Update icon if exists
+        var icon = document.querySelector('#themeToggle i');
+        if(icon){
+            icon.className = isDark ? 'bi bi-moon-stars' : 'bi bi-sun';
+        }
+        var text = document.querySelector('#themeToggle span');
+        if(text){
+            text.textContent = isDark ? 'الوضع الداكن' : 'الوضع الفاتح';
+        }
+      }
+      if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', apply); }
+      else { apply(); }
+      
+      document.addEventListener('click', function(e){
+        var t = e.target && e.target.closest ? e.target.closest('[data-theme-toggle],#themeToggle') : null;
+        if(!t) return;
+        e.preventDefault();
+        var current = document.documentElement.getAttribute('data-theme');
+        var next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        document.documentElement.setAttribute('data-bs-theme', next);
+        try{
+            localStorage.setItem('siteTheme', next);
+            localStorage.setItem('theme', next);
         }catch(e){}
-      })();
-    </script>
+        apply();
+      }, true);
+
+      // Robust Navbar Toggler
+      document.addEventListener('click', function(e){
+        var btn = e.target && e.target.closest ? e.target.closest('#navbarTogglerBtn') : null;
+        if(!btn) return;
+        e.preventDefault();
+        var target = document.getElementById('navbarNav');
+        if(target){
+            if(target.classList.contains('show')){
+                target.classList.remove('show');
+            } else {
+                target.classList.add('show');
+            }
+        }
+      }, true);
+    }catch(e){}
+  })();
+</script>
     
     <style>
+        /* CRITICAL: FONT LOCKDOWN */
+        html, body, div, span, applet, object, iframe,
+        h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+        a, abbr, acronym, address, big, cite, code,
+        del, dfn, em, img, ins, kbd, q, s, samp,
+        small, strike, strong, sub, sup, tt, var,
+        b, u, i, center,
+        dl, dt, dd, ol, ul, li,
+        fieldset, form, label, legend,
+        table, caption, tbody, tfoot, thead, tr, th, td,
+        article, aside, canvas, details, embed, 
+        figure, figcaption, footer, header, hgroup, 
+        menu, nav, output, ruby, section, summary,
+        time, mark, audio, video, input, textarea, select, button, .btn {
+            font-family: 'Tajawal', sans-serif !important;
+        }
+
         :root {
             --copper: #B87333;
             --copper-light: #D4A574;
@@ -1195,7 +1252,7 @@
                     <i class="bi bi-shop"></i> متجر الملابس
                 </a>
                 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                <button class="navbar-toggler" type="button" id="navbarTogglerBtn" aria-label="Toggle navigation"
                         style="padding: 12px; border-radius: 10px; font-size: 1.2rem;">
                     <span class="navbar-toggler-icon"></span>
                 </button>
