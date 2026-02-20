@@ -1,23 +1,62 @@
 :root {
-    color-scheme: light dark;
-}
-
-:root[data-theme="light"],
-html:not([data-theme]),
-html[data-theme=""] {
-    --bg: #ffffff;
-    --surface: #f8f9fa;
-    --text: #212529;
-    --muted: #6c757d;
-    --border: #dee2e6;
-    --primary: #0d6efd;
-}
-
-:root[data-theme="dark"] {
+    /* Default to Dark Theme */
     --bg: #0f1115;
     --surface: #171a1f;
     --text: #f1f3f5;
     --muted: #adb5bd;
     --border: #343a40;
-    --primary: #4ea1ff;
+    --primary: #c67a2b; /* Copper/Gold Branding */
+    --on-primary: #0f1115;
+    --link: #4ea1ff;
+    color-scheme: light dark;
+}
+
+body.theme-light {
+    /* Light Theme Overrides */
+    --bg: #ffffff;
+    --surface: #f8f9fa;
+    --text: #212529;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --primary: #c67a2b; /* Copper/Gold Branding */
+    --on-primary: #ffffff;
+    --link: #0d6efd;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+.card, .modal-content, .offcanvas, .dropdown-menu, .list-group-item, .toast {
+    background-color: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.text-muted {
+    color: var(--muted) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+}
+
+a {
+    color: var(--link);
+}
+
+.form-control, .form-select {
+    background-color: var(--bg);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--bg);
+    color: var(--text);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
 }
