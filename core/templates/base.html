@@ -114,28 +114,9 @@
             font-family: 'bootstrap-icons' !important;
         }
 
+        /* Updated CSS to use CSS Variables for Theming */
         :root {
-            --copper: #B87333;
-            --copper-light: #D4A574;
-            --copper-dark: #8B4513;
-            --black: #000000;
-            --black-light: #1a1a1a;
-            --gold: #FFD700;
-            --primary-color: var(--copper);
-            --secondary-color: var(--copper-dark);
-            --accent-color: var(--gold);
-            --dark-color: var(--black-light);
-            --light-color: #f8f9fa;
-            --success-color: #00b894;
-            --warning-color: #fdcb6e;
-            --danger-color: #e17055;
-            --text-primary: #f8f9fa;
-            --text-secondary: rgba(255,255,255,0.92);
-            --text-muted-dark: rgba(255,255,255,0.75);
-            --text-primary-light: #212529;
-            --text-muted-light: #6c757d;
-            --alert-text-light: #ffffff;
-            --alert-text-dark: #111111;
+            /* Fallback values are now handled in theme.css */
             --bottom-nav-height: 64px;
         }
         
@@ -145,50 +126,56 @@
         
         body {
             font-family: 'Tajawal', sans-serif;
-            background: #111; /* fallback */
+            background-color: var(--bg);
             min-height: 100vh;
             margin: 0;
-            color: var(--text-primary);
+            color: var(--text);
             direction: rtl;
             text-align: right;
             padding-bottom: env(safe-area-inset-bottom);
             padding-top: env(safe-area-inset-top);
         }
         html, body { height: auto; min-height: 100%; }
+
+        /* Legacy class support mapping to new variables */
         body.theme-light {
-            --black: #ffffff;
-            --black-light: #f7f7f7;
-            --copper: #B87333;
-            --copper-dark: #8B4513;
-            --gold: #B87333;
-            --dark-color: #f7f7f7;
-            --light-color: #ffffff;
-            --text-primary: var(--text-primary-light);
-            --text-secondary: #343a40;
-            --text-muted-dark: var(--text-muted-light);
-            --alert-text-light: #111111;
+           /* Variables are already handled by data-theme attribute in theme.css */
         }
         
         .main-container {
-            background: #111;
+            background-color: var(--bg);
             min-height: 100vh;
+            color: var(--text);
         }
         main { padding-bottom: calc(var(--bottom-nav-height) + 24px); }
-        body.theme-light .main-container {
-            background: #ffffff;
-            color: var(--text-primary-light);
-        }
         
         .navbar {
-            background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%) !important;
-            border-bottom: 1px solid rgba(212,165,116,0.3);
+            background: var(--surface) !important;
+            border-bottom: 1px solid var(--border);
+            color: var(--text) !important;
         }
-        body.theme-light .navbar {
-            background: #fff !important;
-            color: #000 !important;
+        /* Navbar specific override for dark/light consistency if needed */
+        [data-theme="dark"] .navbar {
+             background: linear-gradient(135deg, #B87333 0%, #8B4513 100%) !important;
+             color: #fff !important;
+        }
+        [data-theme="light"] .navbar {
+             background: #fff !important;
+             color: #1a1a1a !important;
+             border-bottom: 1px solid #dee2e6;
+             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
-        .navbar-brand { font-weight: 800; font-size: 1.8rem; color: var(--gold) !important; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+        .navbar-brand { 
+            font-weight: 800; 
+            font-size: 1.8rem; 
+            color: var(--warning) !important; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4); 
+        }
+        [data-theme="light"] .navbar-brand {
+             color: #B87333 !important;
+             text-shadow: none;
+        }
         
         .navbar-nav .nav-link {
             color: rgba(255,255,255,0.9) !important;
@@ -200,14 +187,20 @@
             margin: 0 5px;
             font-size: 1.1rem;
         }
-        body.theme-light .navbar-nav .nav-link { color: #333 !important; }
+        [data-theme="light"] .navbar-nav .nav-link { 
+            color: #333 !important; 
+        }
         
         .navbar-nav .nav-link:hover {
-            color: var(--gold) !important;
+            color: var(--warning) !important;
             transform: translateY(-2px);
             background: rgba(255,255,255,0.08);
         }
-        
+        [data-theme="light"] .navbar-nav .nav-link:hover {
+             background: rgba(0,0,0,0.05);
+             color: #B87333 !important;
+        }
+
         .navbar-nav .nav-link::after {
             content: '';
             position: absolute;
@@ -215,7 +208,7 @@
             left: 50%;
             width: 0;
             height: 2px;
-            background: var(--gold);
+            background: var(--warning);
             transition: all 0.3s ease;
             transform: translateX(-50%);
         }
@@ -231,24 +224,32 @@
         
         .dropdown-menu {
             border-radius: 15px;
-            border: none;
+            border: 1px solid var(--border);
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             padding: 10px;
+            background-color: var(--surface);
+            color: var(--text);
         }
 
-        .global-bottom-nav { background: var(--black-light); border-top: 2px solid var(--copper); padding: 6px 0; padding-bottom: env(safe-area-inset-bottom); position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; width: 100%; height: var(--bottom-nav-height); }
+        .global-bottom-nav { 
+            background: var(--surface); 
+            border-top: 2px solid var(--primary); 
+            padding: 6px 0; 
+            padding-bottom: env(safe-area-inset-bottom); 
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030; width: 100%; height: var(--bottom-nav-height); 
+        }
         .global-bottom-nav .row { align-items: center; }
         .global-bottom-nav .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; height: var(--bottom-nav-height); -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-        body.theme-light .global-bottom-nav { background: #f7f7f7; }
+        
         .global-bottom-nav .nav-item {
             text-align: center;
-            color: var(--copper-light);
+            color: var(--muted);
             transition: all 0.3s ease;
             cursor: pointer;
         }
         .global-bottom-nav .nav-item:hover,
         .global-bottom-nav .nav-item.active {
-            color: var(--gold);
+            color: var(--primary);
         }
         .global-bottom-nav .nav-icon {
             font-size: 1.4rem;
@@ -275,49 +276,30 @@
         table th, table td { text-align: right; }
         .ltr, .ltr * { direction: ltr !important; text-align: left !important; }
 
-        body:not(.theme-light) .text-muted { color: var(--text-muted-dark) !important; }
-        body:not(.theme-light) .card .text-muted { color: #6c757d !important; }
-        body.theme-light .text-muted { color: var(--text-muted-light) !important; }
+        .text-muted { color: var(--muted) !important; }
+        .card .text-muted { color: var(--muted) !important; }
 
-        .form-control { background-color: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.25); color: var(--text-primary); }
-        .form-control::placeholder { color: rgba(255,255,255,0.65); }
-        body.theme-light .form-control { background-color: #fff; border-color: #ced4da; color: #212529; }
-
-        .table thead th { color: var(--text-primary); background-color: rgba(255,255,255,0.08); }
-        body.theme-light .table thead th { color: #212529; background-color: #f8f9fa; }
-        body:not(.theme-light) .table thead th { color: #fff !important; }
-        /* Table body colors per theme to ensure strong contrast */
-        body:not(.theme-light) .table tbody tr { background-color: rgba(255,255,255,0.06) !important; }
-        body:not(.theme-light) .table tbody td { color: #fff !important; }
-        body.theme-light .table tbody td { color: #111 !important; }
-
-        :where(.bg-white,
-               .modal-content,
-               .offcanvas,
-               .offcanvas-header,
-               .offcanvas-body,
-               .dropdown-menu,
-               .list-group-item,
-               [style*="background:#fff"],
-               [style*="background: #fff"],
-               [style*="background:#ffffff"],
-               [style*="background: #ffffff"],
-               [style*="background:white"],
-               [style*="background: white"],
-               [style*="background:rgb(255,255,255)"],
-               [style*="background: rgb(255,255,255)"],
-               [style*="background-color:#fff"],
-               [style*="background-color: #fff"],
-               [style*="background-color:#ffffff"],
-               [style*="background-color: #ffffff"],
-               [style*="background-color:white"],
-               [style*="background-color: white"],
-               [style*="background-color:rgb(255,255,255)"],
-               [style*="background-color: rgb(255,255,255)"])
-        :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,a,label,legend,th,td,button,.btn,.card-title,.card-text){
-            color:#000 !important;
-            text-shadow: none !important;
+        .form-control { 
+            background-color: var(--input-bg); 
+            border-color: var(--border); 
+            color: var(--input-text); 
         }
+        .form-control::placeholder { color: var(--placeholder); }
+
+        .table thead th { color: var(--text); background-color: var(--surface); border-color: var(--border); }
+        .table tbody tr { background-color: var(--surface) !important; color: var(--text) !important; }
+        .table tbody td { color: var(--text) !important; border-color: var(--border); }
+        
+        /* Utility overrides to enforce theme vars */
+        .bg-white, .modal-content, .offcanvas, .list-group-item, .card {
+            background-color: var(--surface) !important;
+            color: var(--text) !important;
+        }
+        
+        h1,h2,h3,h4,h5,h6,p,span,small,strong,li,label,th,td {
+            color: var(--text);
+        }
+
         :where(.bg-white,
                .modal-content,
                .offcanvas,
@@ -1231,8 +1213,8 @@
         }
         .form-label,
         .form-check-label { color: inherit; font-weight: 600; margin-bottom: .25rem; display: block; }
-        .form-text { color: var(--text-muted-dark); }
-        body.theme-light .form-text { color: rgba(33,37,41,0.7); }
+        .form-text { color: var(--muted); }
+        /* body.theme-light .form-text { color: rgba(33,37,41,0.7); } - Handled by var */
     </style>
     
     {% block extra_css %}{% endblock %}
