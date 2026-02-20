@@ -194,16 +194,21 @@ function initAccountSettings(){
   if(themeItem){
     themeItem.addEventListener('click', function(e){
       e.preventDefault();
+      // Use the global function defined in base.html
       if(window.toggleAppTheme){
         window.toggleAppTheme();
       } else {
-        // Fallback if global function missing
-        var current = document.documentElement.getAttribute('data-theme');
-        var next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        document.documentElement.setAttribute('data-bs-theme', next);
+        // Fallback if base.html script hasn't loaded (shouldn't happen)
+        var html = document.documentElement;
+        var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        html.setAttribute('data-bs-theme', next);
         try{ localStorage.setItem('siteTheme', next); }catch(e){}
-        applyTheme();
+        if(document.body){
+            document.body.classList.remove('theme-light','dark-theme');
+            document.body.classList.add(next==='dark'?'dark-theme':'theme-light');
+        }
+        window.dispatchEvent(new Event('themeChange'));
       }
     });
   }
