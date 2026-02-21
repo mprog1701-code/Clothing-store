@@ -75,6 +75,16 @@ body.theme-light .btn-primary {
   color: var(--on-primary);
 }
 
+[data-bs-theme="light"] .navbar.navbar-dark .navbar-toggler,
+body.theme-light .navbar.navbar-dark .navbar-toggler {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-bs-theme="light"] .navbar.navbar-dark .navbar-toggler-icon,
+body.theme-light .navbar.navbar-dark .navbar-toggler-icon {
+  filter: invert(1) brightness(0.2);
+}
+
 .modal,
 .offcanvas,
 .dropdown-menu,
