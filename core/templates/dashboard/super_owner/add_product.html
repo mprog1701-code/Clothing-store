@@ -175,7 +175,7 @@
                         <input type="hidden" name="action" value="bulk_update_variants">
                         <input type="hidden" name="pid" value="{{ product.id }}">
                         <input type="hidden" name="goto" id="variantsGoto" value="">
-                        <div id="variant-container" class="table-responsive"></div>
+                        <div id="variant-container" class="table-responsive admin-table-wrap"></div>
                         <div class="d-flex justify-content-between mt-3">
                             <a href="{% url 'super_owner_add_product' %}?pid={{ product.id }}&step=attributes" class="btn btn-outline-secondary">رجوع للخصائص</a>
                             <div class="d-flex gap-2">
@@ -193,7 +193,7 @@
                         <div class="row g-3">
                             <div class="col-md-12">
                                 {{ image_formset.management_form }}
-                                <div class="table-responsive">
+                                <div class="table-responsive admin-table-wrap">
                                     <table class="table">
                                         <thead>
                                             <tr>

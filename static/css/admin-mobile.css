@@ -1,0 +1,111 @@
+@media (max-width: 768px) {
+  body.is-admin {
+    --admin-pad: 12px;
+  }
+  body.is-admin,
+  body.is-admin .main-container,
+  body.is-admin main {
+    overflow-x: hidden !important;
+  }
+  body.is-admin .app-container,
+  body.is-admin .container,
+  body.is-admin .container-fluid {
+    padding-left: var(--admin-pad) !important;
+    padding-right: var(--admin-pad) !important;
+  }
+  body.is-admin .card,
+  body.is-admin .panel,
+  body.is-admin .dashboard-card {
+    border-radius: 14px !important;
+  }
+  body.is-admin .btn,
+  body.is-admin .btn-group,
+  body.is-admin .actions,
+  body.is-admin .filters,
+  body.is-admin .toolbar,
+  body.is-admin form .row,
+  body.is-admin form .d-flex {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  body.is-admin .toolbar .btn,
+  body.is-admin .actions .btn,
+  body.is-admin .filters .btn,
+  body.is-admin form .btn {
+    width: 100% !important;
+  }
+  body.is-admin .btn-group {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  body.is-admin .form-control,
+  body.is-admin .form-select,
+  body.is-admin input,
+  body.is-admin select,
+  body.is-admin textarea {
+    font-size: 16px !important;
+    padding: 10px 12px !important;
+  }
+  body.is-admin .nav-tabs,
+  body.is-admin .nav-pills {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  body.is-admin .nav-tabs .nav-link,
+  body.is-admin .nav-pills .nav-link {
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+  }
+  body.is-admin .admin-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 12px !important;
+  }
+  body.is-admin table.table {
+    min-width: 720px !important;
+  }
+  body.is-admin table.table th,
+  body.is-admin table.table td {
+    white-space: nowrap !important;
+    vertical-align: middle !important;
+    padding: 10px 12px !important;
+  }
+  body.is-admin table.admin-stack thead {
+    display: none !important;
+  }
+  body.is-admin table.admin-stack,
+  body.is-admin table.admin-stack tbody,
+  body.is-admin table.admin-stack tr,
+  body.is-admin table.admin-stack td {
+    display: block !important;
+    width: 100% !important;
+  }
+  body.is-admin table.admin-stack tr {
+    margin-bottom: 10px !important;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
+    border-radius: 14px !important;
+    padding: 10px !important;
+    background: var(--surface, rgba(0, 0, 0, 0.2)) !important;
+  }
+  body.is-admin table.admin-stack td {
+    white-space: normal !important;
+    padding: 8px 10px !important;
+    border: 0 !important;
+  }
+  body.is-admin .navbar {
+    position: relative !important;
+    z-index: 1035 !important;
+  }
+  body.is-admin .dropdown-menu {
+    z-index: 2000 !important;
+  }
+  body.is-admin .dropdown-menu.show {
+    display: block !important;
+  }
+  body.is-admin .navbar-toggler,
+  body.is-admin .nav-link,
+  body.is-admin .dropdown-item {
+    padding: 12px 14px !important;
+  }
+}

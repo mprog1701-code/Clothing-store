@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=4">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=1">
     <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
     <script src="{% static 'js/theme.js' %}?v=4" defer></script>
     
@@ -55,7 +56,7 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% if user.is_staff or user.role == 'store_admin' or user.is_superuser %}is-admin{% endif %}" data-path="{{ request.path }}">
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
         <div class="spinner-border text-primary" role="status">

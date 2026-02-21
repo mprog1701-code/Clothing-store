@@ -143,3 +143,5 @@ body {
     padding-right: 12px;
   }
 }
+.dropdown-menu{ z-index:2000; }
+.dropdown-menu.show{ display:block; opacity:1; visibility:visible; pointer-events:auto; }
