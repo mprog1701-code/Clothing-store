@@ -83,7 +83,7 @@
                     <ul class="navbar-nav">
                         {% if user.is_authenticated %}
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-person-circle"></i> {{ user.username }}
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
@@ -275,113 +275,6 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    (function(){
-      var bs = window.bootstrap || {};
-      var hasDropdown = typeof bs.Dropdown === 'function';
-      var hasCollapse = typeof bs.Collapse === 'function';
-      if(hasDropdown && hasCollapse) return;
-
-      function qs(el, sel){ try{ return el ? el.querySelector(sel) : null; }catch(e){ return null; } }
-      function qsa(el, sel){ try{ return el ? Array.from(el.querySelectorAll(sel)) : []; }catch(e){ return []; } }
-      function closest(el, sel){ try{ return el && el.closest ? el.closest(sel) : null; }catch(e){ return null; } }
-
-      function closeAllDropdowns(exceptMenu){
-        qsa(document, '.dropdown-menu.show').forEach(function(menu){
-          if(exceptMenu && menu === exceptMenu) return;
-          menu.classList.remove('show');
-          var t = menu.__toggleEl;
-          if(t) t.setAttribute('aria-expanded','false');
-        });
-      }
-
-      if(!hasDropdown){
-        document.addEventListener('click', function(e){
-          var toggle = closest(e.target, '[data-bs-toggle="dropdown"]');
-          if(!toggle){
-            closeAllDropdowns(null);
-            return;
-          }
-          e.preventDefault();
-          e.stopPropagation();
-          var li = closest(toggle, '.dropdown') || toggle.parentElement;
-          var menu = qs(li, '.dropdown-menu') || (toggle.nextElementSibling && toggle.nextElementSibling.classList && toggle.nextElementSibling.classList.contains('dropdown-menu') ? toggle.nextElementSibling : null);
-          if(!menu) return;
-          var willOpen = !menu.classList.contains('show');
-          closeAllDropdowns(menu);
-          if(willOpen){
-            menu.classList.add('show');
-            menu.__toggleEl = toggle;
-            toggle.setAttribute('aria-expanded','true');
-          }else{
-            menu.classList.remove('show');
-            toggle.setAttribute('aria-expanded','false');
-          }
-        }, true);
-      }
-
-      if(!hasCollapse){
-        document.addEventListener('click', function(e){
-          var btn = closest(e.target, '[data-bs-toggle="collapse"]');
-          if(!btn) return;
-          var sel = btn.getAttribute('data-bs-target') || btn.getAttribute('href') || '';
-          if(!sel) return;
-          if(sel.charAt(0) !== '#') return;
-          var target = document.getElementById(sel.slice(1));
-          if(!target) return;
-          e.preventDefault();
-          var open = target.classList.contains('show');
-          if(open) target.classList.remove('show'); else target.classList.add('show');
-        }, true);
-      }
-
-      document.addEventListener('keyup', function(e){
-        if(e && e.key === 'Escape') closeAllDropdowns(null);
-      });
-    })();
-    </script>
-    <script>
-    (function(){
-      function initNavbarDropdown(){
-        var toggle = document.getElementById('navbarDropdown');
-        if(!toggle) return;
-        var parent = toggle.parentElement;
-        var menu = parent ? parent.querySelector('.dropdown-menu') : null;
-        if(!menu) return;
-        var instance = null;
-        try{
-          if(window.bootstrap && window.bootstrap.Dropdown){
-            instance = window.bootstrap.Dropdown.getOrCreateInstance(toggle);
-          }
-        }catch(err){}
-        function openMenu(){
-          if(instance){ instance.show(); return; }
-          menu.classList.add('show');
-          toggle.setAttribute('aria-expanded','true');
-        }
-        function closeMenu(){
-          if(instance){ instance.hide(); return; }
-          menu.classList.remove('show');
-          toggle.setAttribute('aria-expanded','false');
-        }
-        toggle.addEventListener('click', function(e){
-          e.preventDefault();
-          e.stopPropagation();
-          if(menu.classList.contains('show')) closeMenu();
-          else openMenu();
-        }, true);
-        document.addEventListener('click', function(e){
-          if(toggle.contains(e.target) || menu.contains(e.target)) return;
-          closeMenu();
-        }, true);
-      }
-      if(document.readyState === 'loading'){
-        document.addEventListener('DOMContentLoaded', initNavbarDropdown);
-      } else {
-        initNavbarDropdown();
-      }
-    })();
-    </script>
     <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
