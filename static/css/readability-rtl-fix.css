@@ -1,4 +1,4 @@
-:root{--fix-text-strong:#000;--fix-text-muted:#333;--fix-bg-surface:#fff;--fix-border:#d0d0d0}
+:root{--fix-text-strong:var(--text);--fix-text-muted:var(--muted);--fix-bg-surface:var(--surface);--fix-border:var(--border)}
 .dashboard,.dashboard *{color:var(--fix-text-strong)}
 .dashboard table{background:var(--fix-bg-surface)}
 .dashboard .table *,.dashboard .data-table *,.table *,.data-table *{color:var(--fix-text-strong)}
@@ -11,16 +11,45 @@
 .dashboard input::placeholder,.dashboard textarea::placeholder{color:var(--fix-text-muted);opacity:1}
 .dashboard{direction:rtl;text-align:right}
 .dashboard .num,.dashboard [data-type="number"],.dashboard input[type="tel"],.dashboard input[type="number"]{direction:ltr;text-align:left}
-.dashboard .toast,.dashboard .alert,.dashboard .snackbar{color:#111}
-.dashboard table,.dashboard .table,.dashboard .data-table{color:#000!important}
-.dashboard .card .table thead th,.dashboard .card .table tbody td{color:#000!important}
-.dashboard .table thead th,.dashboard .table tbody td{color:#000!important;text-align:right}
-.dashboard .table td a,.dashboard .table th a{color:#000!important}
-.dashboard .table .badge,.dashboard .table .btn,.dashboard .table .input-group-text{color:#000!important}
-.dashboard .table input,.dashboard .table select,.dashboard .table textarea{color:#000!important;background:#fff!important;border-color:#d0d0d0!important}
-.dashboard .table input::placeholder,.dashboard .table textarea::placeholder{color:#333!important;opacity:1}
-.dashboard .table [data-type="number"],.dashboard .table .num,.dashboard .table input[type="tel"],.dashboard .table input[type="number"]{direction:ltr!important;text-align:left!important;color:#000!important}
-/* Force black text inside colored pills/buttons within tables */
-.dashboard .table .badge,.dashboard .table .rounded-pill,.dashboard .table .btn,.dashboard .table .bg-success,.dashboard .table .bg-warning,.dashboard .table .bg-primary,.dashboard .table .bg-secondary,.dashboard .table .bg-danger,.dashboard .table .bg-info,.dashboard .table .bg-light,.dashboard .table .bg-dark{color:#000!important}
-.dashboard .table .bg-success *,.dashboard .table .bg-warning *,.dashboard .table .bg-primary *,.dashboard .table .bg-secondary *,.dashboard .table .bg-danger *,.dashboard .table .bg-info *,.dashboard .table .bg-light *,.dashboard .table .bg-dark *{color:#000!important}
-.dashboard .table td span,.dashboard .table td div,.dashboard .table td p{color:#000!important}
+.dashboard .toast,.dashboard .alert,.dashboard .snackbar{color:var(--text)}
+.dashboard table,.dashboard .table,.dashboard .data-table{color:var(--text)!important}
+.dashboard .card .table thead th,.dashboard .card .table tbody td{color:var(--text)!important}
+.dashboard .table thead th,.dashboard .table tbody td{color:var(--text)!important;text-align:right}
+.dashboard .table td a,.dashboard .table th a{color:var(--text)!important}
+.dashboard .table .badge,.dashboard .table .btn,.dashboard .table .input-group-text{color:var(--text)!important}
+.dashboard .table input,.dashboard .table select,.dashboard .table textarea{color:var(--text)!important;background:var(--bg)!important;border-color:var(--border)!important}
+.dashboard .table input::placeholder,.dashboard .table textarea::placeholder{color:var(--muted)!important;opacity:1}
+.dashboard .table [data-type="number"],.dashboard .table .num,.dashboard .table input[type="tel"],.dashboard .table input[type="number"]{direction:ltr!important;text-align:left!important;color:var(--text)!important}
+.dashboard .table .badge,.dashboard .table .rounded-pill,.dashboard .table .btn,.dashboard .table .bg-success,.dashboard .table .bg-warning,.dashboard .table .bg-primary,.dashboard .table .bg-secondary,.dashboard .table .bg-danger,.dashboard .table .bg-info,.dashboard .table .bg-light,.dashboard .table .bg-dark{color:var(--text)!important}
+.dashboard .table .bg-success *,.dashboard .table .bg-warning *,.dashboard .table .bg-primary *,.dashboard .table .bg-secondary *,.dashboard .table .bg-danger *,.dashboard .table .bg-info *,.dashboard .table .bg-light *,.dashboard .table .bg-dark *{color:var(--text)!important}
+.dashboard .table td span,.dashboard .table td div,.dashboard .table td p{color:var(--text)!important}
+html, body{
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+.navbar, .navbar *,
+.card, .card *,
+.dropdown-menu, .dropdown-item,
+footer, footer *,
+.table, .table th, .table td{
+  color: var(--text) !important;
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+.form-control, .form-select, input, textarea{
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+a{
+  color: var(--link) !important;
+}
+
+.btn-primary{
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--on-primary) !important;
+}

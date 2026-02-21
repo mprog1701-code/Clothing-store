@@ -68,10 +68,6 @@
                 <div class="d-flex align-items-center gap-2"><i class="bi bi-translate"></i><span>اللغة</span></div>
                 <small id="currentLanguage">العربية</small>
               </a>
-              <a href="#" class="list-group-item d-flex align-items-center justify-content-between disabled" id="themeItem" style="pointer-events:none; opacity:0.75;">
-                <div class="d-flex align-items-center gap-2"><i class="bi bi-brightness-high"></i><span>الثيم</span></div>
-                <small id="currentTheme">داكن</small>
-              </a>
               <a href="#" class="list-group-item d-flex align-items-center justify-content-between" id="notifItem">
                 <div class="d-flex align-items-center gap-2"><i class="bi bi-bell"></i><span>الإشعارات</span></div>
                 <div class="form-check form-switch m-0">
@@ -110,16 +106,6 @@
 .account-dashboard .quick-actions .qa i{font-size:1.2rem}
 @media (max-width:600px){.account-dashboard .quick-actions .qa{min-height:54px}}
 
-/* Force white text on the account dashboard page */
-.account-dashboard{
-  --text: #ffffff;
-  --muted: rgba(255,255,255,0.9);
-  --link: #ffffff;
-  --link-hover: #e6e6e6;
-}
-.account-dashboard :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold,.text-muted){
-  color: #ffffff !important;
-}
 </style>
 {% endblock %}
 
@@ -129,7 +115,7 @@
   function showToast(text,type){var holder=document.getElementById('toastHolder');if(!holder)return;var cls=type==='success'?'bg-success':'bg-secondary';var d=document.createElement('div');d.className='toast show';d.innerHTML='<div class="toast-header '+cls+' text-white"><strong class="me-auto">'+(type==='success'?'تم':'تنبيه')+'</strong><button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button></div><div class="toast-body">'+text+'</div>';holder.appendChild(d);setTimeout(function(){try{d.remove()}catch(e){}},6000)}
   document.querySelectorAll('.quick-actions a.qa[data-action]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var act=this.getAttribute('data-action');if(act==='favorite'){showToast('المفضلة ستتوفر قريباً','secondary')}else if(act==='payments'){showToast('طرق الدفع Placeholder','secondary')}})});
   function applyLanguageLabel(){var el=document.getElementById('currentLanguage');var lang='ar';try{var s=localStorage.getItem('siteLanguage');if(s&&window.i18n&&window.i18n[s])lang=s;else localStorage.setItem('siteLanguage','ar')}catch(e){lang='ar'};var dict=(window.i18n&&window.i18n[lang])?window.i18n[lang]:window.i18n['ar'];if(el){el.textContent=dict['language_'+lang]||dict.language_ar}}
-  function applyThemeLabel(){var el=document.getElementById('currentTheme');var lang=localStorage.getItem('siteLanguage')||'ar';var dict=(window.i18n&&window.i18n[lang])?window.i18n[lang]:window.i18n['ar'];if(el){el.textContent=(dict.theme_dark||'داكن')}}
+  function applyThemeLabel(){var el=document.getElementById('currentTheme');if(el){el.textContent='فاتح'}}
   applyLanguageLabel();applyThemeLabel();
   var langItem=document.getElementById('langItem');if(langItem){langItem.addEventListener('click',function(e){e.preventDefault();var order=['ar','en','ku'];var cur='ar';try{var s=localStorage.getItem('siteLanguage');if(s)cur=s}catch(err){};var next=order[(order.indexOf(cur)+1)%order.length];try{localStorage.setItem('siteLanguage',next)}catch(err){};applyLanguageLabel();window.dispatchEvent(new CustomEvent('languageChange',{detail:{lang:next}}));showToast('تم تغيير اللغة','success')})}
   var notifToggle=document.getElementById('notifToggle');if(notifToggle){try{notifToggle.checked=(localStorage.getItem('notificationsEnabled')||'0')==='1'}catch(e){};notifToggle.addEventListener('change',function(){try{localStorage.setItem('notificationsEnabled',this.checked?'1':'0')}catch(e){};showToast(this.checked?'تم تفعيل الإشعارات':'تم إيقاف الإشعارات','success')})}

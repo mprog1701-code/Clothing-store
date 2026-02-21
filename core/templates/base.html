@@ -21,11 +21,13 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
+    <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}">
     <script src="{% static 'js/theme.js' %}" defer></script>
     
         <style>
@@ -52,8 +54,6 @@
     </style>
     
     {% block extra_css %}{% endblock %}
-    <!-- <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
-        <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
 </head>
 <body>
     <!-- Loading Spinner -->
@@ -81,16 +81,6 @@
                     <ul class="navbar-nav me-auto"></ul>
                     
                     <ul class="navbar-nav">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="themeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-sun-fill"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="themeDropdown">
-                                <li><a class="dropdown-item" href="#" onclick="setSiteTheme('light')"><i class="bi bi-sun-fill"></i> فاتح</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="setSiteTheme('dark')"><i class="bi bi-moon-stars-fill"></i> داكن</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="setSiteTheme('system')"><i class="bi bi-circle-half"></i> النظام</a></li>
-                            </ul>
-                        </li>
                         {% if user.is_authenticated %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
@@ -348,6 +338,66 @@
       document.addEventListener('keyup', function(e){
         if(e && e.key === 'Escape') closeAllDropdowns(null);
       });
+    })();
+    </script>
+    <script>
+    (function(){
+      function closest(el, sel){ try{ return el && el.closest ? el.closest(sel) : null; }catch(e){ return null; } }
+      function getMenu(toggle){
+        var parent = closest(toggle, '.dropdown') || toggle.parentElement;
+        return parent ? parent.querySelector('.dropdown-menu') : null;
+      }
+      function openMenu(toggle, menu){
+        try{
+          if(window.bootstrap && window.bootstrap.Dropdown){
+            window.bootstrap.Dropdown.getOrCreateInstance(toggle).show();
+            return;
+          }
+        }catch(err){}
+        if(menu) menu.classList.add('show');
+        if(toggle) toggle.setAttribute('aria-expanded','true');
+      }
+      function closeMenu(toggle, menu){
+        try{
+          if(window.bootstrap && window.bootstrap.Dropdown){
+            window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+            return;
+          }
+        }catch(err){}
+        if(menu) menu.classList.remove('show');
+        if(toggle) toggle.setAttribute('aria-expanded','false');
+      }
+      function closeAll(exceptMenu){
+        Array.from(document.querySelectorAll('.dropdown-menu.show')).forEach(function(menu){
+          if(exceptMenu && menu === exceptMenu) return;
+          var toggle = menu.__toggleEl;
+          if(!toggle){
+            var parent = closest(menu, '.dropdown');
+            toggle = parent ? parent.querySelector('[data-bs-toggle="dropdown"]') : null;
+          }
+          closeMenu(toggle, menu);
+        });
+      }
+      document.addEventListener('click', function(e){
+        var toggle = closest(e.target, '[data-bs-toggle="dropdown"]');
+        if(!toggle) return;
+        var menu = getMenu(toggle);
+        if(!menu) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var isOpen = menu.classList.contains('show');
+        closeAll(menu);
+        if(isOpen){
+          closeMenu(toggle, menu);
+        }else{
+          menu.__toggleEl = toggle;
+          openMenu(toggle, menu);
+        }
+      }, true);
+      document.addEventListener('click', function(e){
+        if(closest(e.target, '.dropdown-menu') || closest(e.target, '[data-bs-toggle="dropdown"]')) return;
+        closeAll(null);
+      }, true);
     })();
     </script>
     <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">

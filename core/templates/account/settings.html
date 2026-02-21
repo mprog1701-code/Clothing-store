@@ -43,13 +43,12 @@
         </a>
         <a href="#" id="themeItem" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between settings-row">
             <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-moon-stars fs-5" id="themeIcon"></i>
+                <i class="bi bi-sun fs-5" id="themeIcon"></i>
                 <div>
                     <div class="fw-bold" data-i18n="account_theme">مظهر التطبيق</div>
-                    <small class="text-muted" id="currentTheme">داكن</small>
+                    <small class="text-muted" id="currentTheme">فاتح</small>
                 </div>
             </div>
-            <i class="bi bi-chevron-left"></i>
         </a>
         <a href="{% url 'notifications' %}" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between settings-row">
             <div class="d-flex align-items-center gap-3">
@@ -128,18 +127,6 @@
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const themeItem = document.getElementById('themeItem');
-    if (themeItem) {
-        themeItem.addEventListener('click', function (e) {
-            e.preventDefault();
-            if (window.toggleAppTheme) {
-                window.toggleAppTheme();
-            } else {
-                console.error('Global theme function not found!');
-            }
-        });
-    }
-
     const langItem = document.getElementById('langItem');
     const currentLanguage = document.getElementById('currentLanguage');
     
@@ -154,23 +141,47 @@ document.addEventListener('DOMContentLoaded', function () {
         if (currentLanguage) currentLanguage.textContent = dict['language_' + lang] || dict.language_ar;
     }
 
-    function applyThemeUI() {
-        const current = document.documentElement.getAttribute('data-theme') || 'dark';
-        const isDark = current === 'dark';
-        const currentTheme = document.getElementById('currentTheme');
-        if (currentTheme) {
-            currentTheme.textContent = isDark ? 'داكن' : 'فاتح';
-        }
-        const icon = document.getElementById('themeIcon');
-        if (icon) {
-            icon.className = isDark ? 'bi bi-moon-stars fs-5' : 'bi bi-sun fs-5';
-        }
+    applyLanguageLabel();
+    const themeLabel = document.getElementById('currentTheme');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeItem = document.getElementById('themeItem');
+    function getCurrentTheme(){
+        let t = 'dark';
+        try{
+            t = localStorage.getItem('siteTheme') || localStorage.getItem('theme') || 'dark';
+        }catch(e){}
+        return t === 'light' ? 'light' : 'dark';
+    }
+    function renderThemeLabel(){
+        const t = getCurrentTheme();
+        if (themeLabel) themeLabel.textContent = t === 'light' ? 'فاتح' : 'داكن';
+        if (themeIcon) themeIcon.className = t === 'light' ? 'bi bi-sun fs-5' : 'bi bi-moon-stars fs-5';
+    }
+    renderThemeLabel();
+    if (themeItem) {
+        themeItem.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (typeof window.toggleAppTheme === 'function') {
+                window.toggleAppTheme();
+            } else {
+                const html = document.documentElement;
+                const current = getCurrentTheme();
+                const next = current === 'dark' ? 'light' : 'dark';
+                html.setAttribute('data-theme', next);
+                html.setAttribute('data-bs-theme', next);
+                if (document.body) {
+                    document.body.classList.remove('theme-light', 'dark-theme');
+                    document.body.classList.add(next === 'dark' ? 'dark-theme' : 'theme-light');
+                }
+                try{
+                    localStorage.setItem('siteTheme', next);
+                    localStorage.setItem('theme', next);
+                }catch(err){}
+            }
+            renderThemeLabel();
+        });
     }
 
-    applyLanguageLabel();
-    applyThemeUI();
-
-    window.addEventListener('themeChange', applyThemeUI);
 
     if (langItem) {
         langItem.addEventListener('click', function (e) {

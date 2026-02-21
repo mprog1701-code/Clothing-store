@@ -1,28 +1,14 @@
 :root {
-    /* Default to Dark Theme */
-    --bg: #0f1115;
-    --surface: #171a1f;
-    --text: #f1f3f5;
-    --muted: #adb5bd;
-    --border: #343a40;
-    --primary: #c67a2b; /* Copper/Gold Branding */
-    --primary-rgb: 198, 122, 43;
-    --on-primary: #0f1115;
-    --link: #4ea1ff;
-    color-scheme: light dark;
-}
-
-body.theme-light {
-    /* Light Theme Overrides */
     --bg: #ffffff;
     --surface: #f8f9fa;
     --text: #212529;
     --muted: #6c757d;
     --border: #dee2e6;
-    --primary: #c67a2b; /* Copper/Gold Branding */
-    --primary-rgb: 198, 122, 43;
+    --primary: #B87333; /* Copper/Gold Branding */
+    --primary-rgb: 184, 115, 51;
     --on-primary: #ffffff;
-    --link: #0d6efd;
+    --link: #8B4513;
+    color-scheme: light;
 }
 
 body {

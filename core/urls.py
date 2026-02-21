@@ -53,6 +53,7 @@ urlpatterns = [
     path('my/addresses/save-json/', views.address_save_json, name='address_save_json'),
     path('profile/', views.account_settings, name='profile'),
     path('my/account/', views.account_dashboard, name='account_settings'),
+    path('my/account/settings/', views.account_settings, name='account_settings_page'),
     path('notifications/', views.notifications_page, name='notifications'),
     path('about/', views.about_page, name='about'),
     path('services/', views.services_page, name='services'),
