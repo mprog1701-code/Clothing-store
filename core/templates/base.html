@@ -400,6 +400,42 @@
       }, true);
     })();
     </script>
+    <script>
+    (function(){
+      function setup(){
+        var toggle = document.getElementById('navbarDropdown');
+        if(!toggle) return;
+        var parent = toggle.parentElement;
+        var menu = parent ? parent.querySelector('.dropdown-menu') : null;
+        if(!menu) return;
+        toggle.addEventListener('click', function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          var isOpen = menu.classList.contains('show');
+          document.querySelectorAll('.dropdown-menu.show').forEach(function(m){
+            if(m !== menu) m.classList.remove('show');
+          });
+          if(isOpen){
+            menu.classList.remove('show');
+            toggle.setAttribute('aria-expanded','false');
+          }else{
+            menu.classList.add('show');
+            toggle.setAttribute('aria-expanded','true');
+          }
+        }, true);
+        document.addEventListener('click', function(e){
+          if(toggle.contains(e.target) || menu.contains(e.target)) return;
+          menu.classList.remove('show');
+          toggle.setAttribute('aria-expanded','false');
+        }, true);
+      }
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', setup);
+      } else {
+        setup();
+      }
+    })();
+    </script>
     <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">

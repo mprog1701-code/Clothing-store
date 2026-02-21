@@ -48,6 +48,12 @@ a:hover { color: var(--link); opacity: 0.85; }
     color: var(--text);
 }
 .nav-link { color: var(--text); }
+.navbar .dropdown-menu {
+    z-index: 1100;
+}
+.navbar .dropdown-menu.show {
+    display: block;
+}
 
 .table {
     border-color: var(--border);
