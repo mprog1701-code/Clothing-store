@@ -1,11 +1,12 @@
-const STATIC_CACHE = 'static-v2';
-const PAGES_CACHE = 'pages-v2';
+const STATIC_CACHE = 'static-v3';
+const PAGES_CACHE = 'pages-v3';
 const OFFLINE_URL = '/offline/';
 const STATIC_ASSETS = [
   '/',
   OFFLINE_URL,
   '/static/css/style.css',
   '/static/css/theme.css',
+  '/static/js/theme.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -50,10 +51,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets same-origin: cache-first
   const dest = req.destination;
   const isStatic = ['style', 'script', 'image', 'font'].includes(dest);
   if (isStatic && isSameOrigin(req)) {
+    if (dest === 'script') {
+      event.respondWith(
+        fetch(req).then(res => {
+          const copy = res.clone();
+          caches.open(STATIC_CACHE).then(cache => cache.put(req, copy)).catch(() => {});
+          return res;
+        }).catch(() => caches.match(req))
+      );
+      return;
+    }
     event.respondWith(
       caches.match(req).then(match => match || fetch(req).then(res => {
         const copy = res.clone();
