@@ -22,6 +22,17 @@ from django.db import transaction
 from .serializers import UserRegistrationSerializer
 from .forms import AddressForm, ProductForm, VariantFormSet, ImageFormSet
 from .templatetags.math_filters import cart_count
+def is_super_owner(user):
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(user, 'is_superuser', False):
+        return True
+    admin_role = (getattr(user, 'admin_role', '') or '').upper()
+    if admin_role in {'OWNER', 'SUPER_ADMIN'}:
+        return True
+    if getattr(user, 'username', '') == 'super_owner':
+        return True
+    return False
 def health(request):
     return JsonResponse({'status': 'ok'})
 # Fashion marketplace view
@@ -554,7 +565,7 @@ def owner_login(request):
             user_auth = authenticate(request, username=user.username, password=password)
             if user_auth is not None:
                 login(request, user_auth)
-                if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False) or getattr(user, 'role', '') == 'admin':
+                if is_super_owner(user) or getattr(user, 'is_staff', False):
                     messages.success(request, 'تم تسجيل دخول المدير بنجاح!')
                     return redirect('main_dashboard')
                 messages.error(request, 'ليس لديك صلاحية المدير')
@@ -1845,7 +1856,7 @@ def contact_page(request):
 
 @login_required
 def admin_overview(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -1870,7 +1881,7 @@ def admin_overview(request):
 
 @login_required
 def admin_stores(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     return redirect('super_owner_stores')
@@ -1878,7 +1889,7 @@ def admin_stores(request):
 
 @login_required
 def admin_db_diagnostics(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         from django.http import JsonResponse
         return JsonResponse({'error': 'unauthorized'}, status=403)
     from django.conf import settings
@@ -1945,7 +1956,7 @@ def admin_db_diagnostics(request):
 
 @login_required
 def super_owner_dashboard(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
 
@@ -2084,7 +2095,7 @@ def super_owner_dashboard(request):
 
 @login_required
 def super_owner_reports(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
 
@@ -2303,7 +2314,7 @@ def super_owner_reports(request):
 
 @login_required
 def super_owner_issues(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
 
@@ -2353,7 +2364,7 @@ def super_owner_issues(request):
 
 @login_required
 def technical_debugger(request):
-    if request.user.username != 'super_owner' and not request.user.is_staff:
+    if not is_super_owner(request.user) and not request.user.is_staff:
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     from .models import ErrorLog
@@ -2406,7 +2417,7 @@ def log_js_error(request):
 
 @login_required
 def super_owner_announcements(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
 
@@ -2488,7 +2499,7 @@ def super_owner_announcements(request):
 
 @login_required
 def super_owner_stores(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -2637,7 +2648,7 @@ def super_owner_stores(request):
 
 @login_required
 def super_owner_store_center(request, store_id):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     store = get_object_or_404(Store, id=store_id)
@@ -2684,7 +2695,7 @@ def super_owner_store_center(request, store_id):
 
 @login_required
 def super_owner_add_store(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -2809,7 +2820,7 @@ def super_owner_quick_add_store(request):
 
 @login_required
 def super_owner_owner_search_json(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         return JsonResponse({'error': 'unauthorized'}, status=403)
     q = (request.GET.get('q') or '').strip()
     from .models import StoreOwner
@@ -2822,7 +2833,7 @@ def super_owner_owner_search_json(request):
 
 @login_required
 def super_owner_create_owner_json(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         return JsonResponse({'error': 'unauthorized'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'error': 'method_not_allowed'}, status=405)
@@ -2870,7 +2881,7 @@ def super_owner_create_owner_json(request):
 
 @login_required
 def super_owner_create_store(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     step = (request.POST.get('step') or request.GET.get('step') or '1').strip()
@@ -3086,7 +3097,7 @@ def super_owner_create_store(request):
 
 @login_required
 def super_owner_edit_store(request, store_id):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -3226,7 +3237,7 @@ def super_owner_edit_store(request, store_id):
 
 @login_required
 def super_owner_products(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -3348,7 +3359,7 @@ def super_owner_products(request):
 @login_required
 def super_owner_add_product(request):
     action = request.POST.get("action", "")
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
 
@@ -4453,7 +4464,7 @@ def super_owner_add_product(request):
 
 @login_required
 def super_owner_edit_product(request, product_id):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -5249,7 +5260,7 @@ def super_owner_edit_product(request, product_id):
 
 @login_required
 def super_owner_orders(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -5407,7 +5418,7 @@ def super_owner_orders(request):
 
 @login_required
 def super_owner_delete_order_json(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         return JsonResponse({'error': 'unauthorized'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'error': 'invalid_method'}, status=405)
@@ -5467,7 +5478,7 @@ def super_owner_delete_order_json(request):
 
 @login_required
 def super_owner_update_order_status_json(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         return JsonResponse({'error': 'unauthorized'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'error': 'invalid_method'}, status=405)
@@ -5510,7 +5521,7 @@ def super_owner_update_order_status_json(request):
 
 @login_required
 def super_owner_orders_statuses_json(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         return JsonResponse({'error': 'unauthorized'}, status=403)
     try:
         ids_param = (request.GET.get('ids') or '').strip()
@@ -5546,7 +5557,7 @@ def super_owner_orders_statuses_json(request):
 
 @login_required
 def super_owner_update_delivery_json(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         return JsonResponse({'error': 'unauthorized'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'error': 'invalid_method'}, status=405)
@@ -5641,7 +5652,7 @@ def super_owner_update_delivery_json(request):
 
 @login_required
 def super_owner_settings(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     
@@ -5772,7 +5783,7 @@ from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 
 @login_required
 def super_owner_owners(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
 
@@ -5920,7 +5931,7 @@ def super_owner_owners(request):
 
 @login_required
 def super_owner_disable_owner_json(request, owner_id):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         return JsonResponse({'error': 'unauthorized'}, status=403)
     if request.method != 'POST':
         return JsonResponse({'error': 'method_not_allowed'}, status=405)
@@ -6291,7 +6302,7 @@ def admin_portal_orders(request):
 
 @login_required
 def super_owner_inventory(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
 
@@ -6674,7 +6685,7 @@ def announcements(request):
 
 @login_required
 def footer_settings(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية للوصول إلى هذه الصفحة.')
         return redirect('home')
     
@@ -6803,7 +6814,7 @@ def debug_owner_login(request):
     return render(request, 'debug/owner_login_debug.html')
 @login_required
 def store_products(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     store = Store.objects.filter(owner=request.user).first()
@@ -6820,7 +6831,7 @@ def store_products(request):
 
 @login_required
 def store_orders(request):
-    if request.user.username != 'super_owner':
+    if not is_super_owner(request.user):
         messages.error(request, 'ليس لديك صلاحية الوصول!')
         return redirect('home')
     store = Store.objects.filter(owner=request.user).first()

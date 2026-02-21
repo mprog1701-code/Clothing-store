@@ -15,7 +15,7 @@ urlpatterns = [
     
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='login'),
-    path('owner-login/', views.user_login, name='owner_login'),
+    path('owner-login/', views.owner_login, name='owner_login'),
     path('admin-portal/login/', views.admin_portal_login, name='admin_portal_login'),
     path('admin-portal/dashboard/', views.admin_portal_dashboard, name='admin_portal_dashboard'),
     path('admin-portal/orders/', views.admin_portal_orders, name='admin_portal_orders'),

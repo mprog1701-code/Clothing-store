@@ -342,97 +342,43 @@
     </script>
     <script>
     (function(){
-      function closest(el, sel){ try{ return el && el.closest ? el.closest(sel) : null; }catch(e){ return null; } }
-      function getMenu(toggle){
-        var parent = closest(toggle, '.dropdown') || toggle.parentElement;
-        return parent ? parent.querySelector('.dropdown-menu') : null;
-      }
-      function openMenu(toggle, menu){
-        try{
-          if(window.bootstrap && window.bootstrap.Dropdown){
-            window.bootstrap.Dropdown.getOrCreateInstance(toggle).show();
-            return;
-          }
-        }catch(err){}
-        if(menu) menu.classList.add('show');
-        if(toggle) toggle.setAttribute('aria-expanded','true');
-      }
-      function closeMenu(toggle, menu){
-        try{
-          if(window.bootstrap && window.bootstrap.Dropdown){
-            window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
-            return;
-          }
-        }catch(err){}
-        if(menu) menu.classList.remove('show');
-        if(toggle) toggle.setAttribute('aria-expanded','false');
-      }
-      function closeAll(exceptMenu){
-        Array.from(document.querySelectorAll('.dropdown-menu.show')).forEach(function(menu){
-          if(exceptMenu && menu === exceptMenu) return;
-          var toggle = menu.__toggleEl;
-          if(!toggle){
-            var parent = closest(menu, '.dropdown');
-            toggle = parent ? parent.querySelector('[data-bs-toggle="dropdown"]') : null;
-          }
-          closeMenu(toggle, menu);
-        });
-      }
-      document.addEventListener('click', function(e){
-        var toggle = closest(e.target, '[data-bs-toggle="dropdown"]');
-        if(!toggle) return;
-        var menu = getMenu(toggle);
-        if(!menu) return;
-        e.preventDefault();
-        e.stopPropagation();
-        var isOpen = menu.classList.contains('show');
-        closeAll(menu);
-        if(isOpen){
-          closeMenu(toggle, menu);
-        }else{
-          menu.__toggleEl = toggle;
-          openMenu(toggle, menu);
-        }
-      }, true);
-      document.addEventListener('click', function(e){
-        if(closest(e.target, '.dropdown-menu') || closest(e.target, '[data-bs-toggle="dropdown"]')) return;
-        closeAll(null);
-      }, true);
-    })();
-    </script>
-    <script>
-    (function(){
-      function setup(){
+      function initNavbarDropdown(){
         var toggle = document.getElementById('navbarDropdown');
         if(!toggle) return;
         var parent = toggle.parentElement;
         var menu = parent ? parent.querySelector('.dropdown-menu') : null;
         if(!menu) return;
+        var instance = null;
+        try{
+          if(window.bootstrap && window.bootstrap.Dropdown){
+            instance = window.bootstrap.Dropdown.getOrCreateInstance(toggle);
+          }
+        }catch(err){}
+        function openMenu(){
+          if(instance){ instance.show(); return; }
+          menu.classList.add('show');
+          toggle.setAttribute('aria-expanded','true');
+        }
+        function closeMenu(){
+          if(instance){ instance.hide(); return; }
+          menu.classList.remove('show');
+          toggle.setAttribute('aria-expanded','false');
+        }
         toggle.addEventListener('click', function(e){
           e.preventDefault();
           e.stopPropagation();
-          var isOpen = menu.classList.contains('show');
-          document.querySelectorAll('.dropdown-menu.show').forEach(function(m){
-            if(m !== menu) m.classList.remove('show');
-          });
-          if(isOpen){
-            menu.classList.remove('show');
-            toggle.setAttribute('aria-expanded','false');
-          }else{
-            menu.classList.add('show');
-            toggle.setAttribute('aria-expanded','true');
-          }
+          if(menu.classList.contains('show')) closeMenu();
+          else openMenu();
         }, true);
         document.addEventListener('click', function(e){
           if(toggle.contains(e.target) || menu.contains(e.target)) return;
-          menu.classList.remove('show');
-          toggle.setAttribute('aria-expanded','false');
+          closeMenu();
         }, true);
       }
       if(document.readyState === 'loading'){
-        document.addEventListener('DOMContentLoaded', setup);
+        document.addEventListener('DOMContentLoaded', initNavbarDropdown);
       } else {
-        setup();
+        initNavbarDropdown();
       }
     })();
     </script>
@@ -1066,8 +1012,6 @@
         })();
         </script>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
     <script>

@@ -48,10 +48,19 @@ a:hover { color: var(--link); opacity: 0.85; }
     color: var(--text);
 }
 .nav-link { color: var(--text); }
+.navbar .nav-item.dropdown {
+    position: relative;
+}
 .navbar .dropdown-menu {
     z-index: 1100;
+    top: 100%;
+    inset-inline-end: 0;
+    inset-inline-start: auto;
 }
 .navbar .dropdown-menu.show {
+    display: block;
+}
+.navbar .nav-item.dropdown.dropdown-open > .dropdown-menu {
     display: block;
 }
 
