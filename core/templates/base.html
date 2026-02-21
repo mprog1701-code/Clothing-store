@@ -528,6 +528,7 @@
         // Smooth scrolling
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
+                if (this.getAttribute('data-bs-toggle') === 'dropdown' || this.closest('.dropdown')) return;
                 e.preventDefault();
                 const href = this.getAttribute('href') || '';
                 if (!href || href === '#' || href.length <= 1) return;
