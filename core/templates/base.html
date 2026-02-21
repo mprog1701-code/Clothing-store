@@ -81,6 +81,16 @@
                     <ul class="navbar-nav me-auto"></ul>
                     
                     <ul class="navbar-nav">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="themeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-sun-fill"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="themeDropdown">
+                                <li><a class="dropdown-item" href="#" onclick="setSiteTheme('light')"><i class="bi bi-sun-fill"></i> فاتح</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="setSiteTheme('dark')"><i class="bi bi-moon-stars-fill"></i> داكن</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="setSiteTheme('system')"><i class="bi bi-circle-half"></i> النظام</a></li>
+                            </ul>
+                        </li>
                         {% if user.is_authenticated %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">

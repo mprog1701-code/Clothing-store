@@ -124,37 +124,7 @@
   .account-settings .settings-row { min-height: 54px; }
 }
 
-/* Force white text on settings page - ONLY IN DARK MODE */
-[data-theme="dark"] .account-settings,
-[data-bs-theme="dark"] .account-settings {
-  --text: #ffffff;
-  --muted: rgba(255,255,255,0.9);
-  --link: #ffffff;
-  --link-hover: #e6e6e6;
-}
-[data-theme="dark"] .account-settings :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold,.text-muted),
-[data-bs-theme="dark"] .account-settings :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold,.text-muted){
-  color: #ffffff !important;
-}
 
-/* Light mode overrides */
-[data-theme="light"] .account-settings,
-[data-bs-theme="light"] .account-settings,
-body.theme-light .account-settings {
-    --text: #111111;
-    --muted: #6c757d;
-    --link: #0d6efd;
-}
-[data-theme="light"] .account-settings :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold),
-[data-bs-theme="light"] .account-settings :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold),
-body.theme-light .account-settings :is(h1,h2,h3,h4,h5,h6,p,span,small,strong,em,code,li,dt,dd,label,legend,th,td,a,.nav-link,.dropdown-item,.card-title,.card-text,.fw-bold) {
-    color: #111111 !important;
-}
-[data-theme="light"] .account-settings .text-muted,
-[data-bs-theme="light"] .account-settings .text-muted,
-body.theme-light .account-settings .text-muted {
-    color: #6c757d !important;
-}
 </style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
