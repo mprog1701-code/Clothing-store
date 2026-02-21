@@ -53,7 +53,7 @@
             <div class="card-body">
                 {% if recent_orders %}
                 <div class="table-responsive admin-table-wrap">
-                    <table class="table table-sm">
+                    <table class="table table-sm admin-table">
                         <thead>
                             <tr>
                                 <th>رقم الطلب</th>
@@ -66,9 +66,9 @@
                         <tbody>
                             {% for order in recent_orders %}
                             <tr>
-                                <td>#{{ order.id }}</td>
-                                <td>{{ order.store.name }}</td>
-                                <td>
+                                <td data-label="رقم الطلب">#{{ order.id }}</td>
+                                <td data-label="المتجر">{{ order.store.name }}</td>
+                                <td data-label="الحالة">
                                     <span class="badge 
                                         {% if order.status == 'pending' %}bg-warning
                                         {% elif order.status == 'accepted' %}bg-info
@@ -80,8 +80,8 @@
                                         {{ order.get_status_display }}
                                     </span>
                                 </td>
-                                <td>{{ order.total_amount|iqd }}</td>
-                                <td>{{ order.created_at|date:"Y-m-d" }}</td>
+                                <td data-label="المبلغ">{{ order.total_amount|iqd }}</td>
+                                <td data-label="التاريخ">{{ order.created_at|date:"Y-m-d" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -104,7 +104,7 @@
             <div class="card-body">
                 {% if pending_stores %}
                 <div class="table-responsive admin-table-wrap">
-                    <table class="table table-sm">
+                    <table class="table table-sm admin-table">
                         <thead>
                             <tr>
                                 <th>المتجر</th>
@@ -117,17 +117,17 @@
                         <tbody>
                             {% for store in pending_stores %}
                             <tr>
-                                <td>{{ store.name }}</td>
-                                <td>
+                                <td data-label="المتجر">{{ store.name }}</td>
+                                <td data-label="المالك">
                                     {% if store.owner %}
                                         {{ store.owner.get_full_name|default:store.owner.username }}
                                     {% else %}
                                         —
                                     {% endif %}
                                 </td>
-                                <td>{{ store.city }}</td>
-                                <td>{{ store.created_at|date:"Y-m-d" }}</td>
-                                <td>
+                                <td data-label="المدينة">{{ store.city }}</td>
+                                <td data-label="التاريخ">{{ store.created_at|date:"Y-m-d" }}</td>
+                                <td data-label="إجراء">
                                     <a href="{% url 'admin_stores' %}" class="btn btn-sm btn-primary">عرض</a>
                                 </td>
                             </tr>

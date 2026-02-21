@@ -20,7 +20,7 @@
     <div class="col-12">
         {% if products %}
         <div class="table-responsive admin-table-wrap">
-            <table class="table">
+            <table class="table admin-table">
                 <thead>
                     <tr>
                         <th>الصورة</th>
@@ -35,7 +35,7 @@
                 <tbody>
                     {% for product in products %}
                     <tr>
-                        <td>
+                        <td data-label="الصورة">
                             {% if product.main_image %}
                             {% with url=product.main_image.get_image_url %}
                             {% if url %}
@@ -58,18 +58,18 @@
                             </div>
                             {% endif %}
                         </td>
-                        <td>{{ product.name }}</td>
-                        <td>{{ product.get_category_display }}</td>
-                        <td>{{ product.base_price|iqd }}</td>
-                        <td>
+                        <td data-label="الاسم">{{ product.name }}</td>
+                        <td data-label="الفئة">{{ product.get_category_display }}</td>
+                        <td data-label="السعر">{{ product.base_price|iqd }}</td>
+                        <td data-label="الحالة">
                             {% if product.is_active %}
                                 <span class="badge bg-success">نشط</span>
                             {% else %}
                                 <span class="badge bg-danger">غير نشط</span>
                             {% endif %}
                         </td>
-                        <td>{{ product.created_at|date:"Y-m-d" }}</td>
-                        <td>
+                        <td data-label="تاريخ الإضافة">{{ product.created_at|date:"Y-m-d" }}</td>
+                        <td data-label="الإجراءات">
                             <a href="#" class="btn btn-sm btn-outline-primary">تعديل</a>
                             <a href="#" class="btn btn-sm btn-outline-danger">حذف</a>
                         </td>

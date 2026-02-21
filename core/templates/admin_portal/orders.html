@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>طلبات الإدارة</title>
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme-hotfix.css">
+  <link rel="stylesheet" href="/static/css/admin-mobile.css?v=1">
 </head>
-<body>
+<body class="is-admin" data-path="{{ request.path }}">
   <div class="container" style="max-width:1200px;margin:20px auto;">
     <h2>الطلبات</h2>
     <nav>
@@ -25,7 +27,7 @@
     {% endif %}
 
     <div class="table-responsive admin-table-wrap">
-    <table class="table">
+    <table class="table admin-table">
       <thead>
         <tr>
           <th>#</th>
@@ -40,13 +42,13 @@
       <tbody>
         {% for o in orders %}
         <tr>
-          <td>{{ o.id }}</td>
-          <td>{{ o.user.username }}</td>
-          <td>{{ o.store.name }}</td>
-          <td>{{ o.status }}</td>
-          <td>{{ o.total_amount }}</td>
-          <td>{{ o.created_at }}</td>
-          <td>
+          <td data-label="#">{{ o.id }}</td>
+          <td data-label="المستخدم">{{ o.user.username }}</td>
+          <td data-label="المتجر">{{ o.store.name }}</td>
+          <td data-label="الحالة">{{ o.status }}</td>
+          <td data-label="المبلغ">{{ o.total_amount }}</td>
+          <td data-label="تاريخ الإنشاء">{{ o.created_at }}</td>
+          <td data-label="تعديل الحالة">
             <form method="post" style="display:flex;gap:8px;align-items:center;">
               {% csrf_token %}
               <input type="hidden" name="order_id" value="{{ o.id }}">

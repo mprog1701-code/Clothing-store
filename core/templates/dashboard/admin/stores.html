@@ -13,7 +13,7 @@
     <div class="col-12">
         {% if stores %}
         <div class="table-responsive admin-table-wrap">
-            <table class="table">
+            <table class="table admin-table">
                 <thead>
                     <tr>
                         <th>اسم المتجر</th>
@@ -27,24 +27,24 @@
                 <tbody>
                     {% for store in stores %}
                     <tr>
-                        <td>{{ store.name }}</td>
-                        <td>
+                        <td data-label="اسم المتجر">{{ store.name }}</td>
+                        <td data-label="المالك">
                             {% if store.owner %}
                                 {{ store.owner.get_full_name|default:store.owner.username }}
                             {% else %}
                                 —
                             {% endif %}
                         </td>
-                        <td>{{ store.city }}</td>
-                        <td>{{ store.created_at|date:"Y-m-d" }}</td>
-                        <td>
+                        <td data-label="المدينة">{{ store.city }}</td>
+                        <td data-label="تاريخ الإنشاء">{{ store.created_at|date:"Y-m-d" }}</td>
+                        <td data-label="الحالة">
                             {% if store.is_active %}
                                 <span class="badge bg-success">نشط</span>
                             {% else %}
                                 <span class="badge bg-warning">غير نشط</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td data-label="الإجراءات">
                             <form method="post" class="d-inline">
                                 {% csrf_token %}
                                 <input type="hidden" name="store_id" value="{{ store.id }}">

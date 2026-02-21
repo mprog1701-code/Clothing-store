@@ -107,8 +107,8 @@
                 </div>
                 <div class="card-body">
                     {% if request.user.role == 'admin' %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
+                    <div class="table-responsive admin-table-wrap">
+                        <table class="table table-hover admin-table">
                             <thead>
                                 <tr>
                                     <th>المنتج</th>
@@ -122,7 +122,7 @@
                             <tbody>
                                 {% for item in order_items %}
                                 <tr>
-                                    <td>
+                                    <td data-label="المنتج">
                                         <div class="d-flex align-items-center">
                                             {% if item.product.main_image %}
                                             {% with url=item.product.main_image.get_image_url %}
@@ -145,17 +145,17 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="المتغير">
                                         {% if item.variant %}
                                             {{ item.variant.size }} - {{ item.variant.color }}
                                         {% else %}
                                             -
                                         {% endif %}
                                     </td>
-                                    <td>{{ item.price|iqd }}</td>
-                                    <td>{% if item.negotiated_price %}{{ item.negotiated_price|iqd }}{% else %}-{% endif %}</td>
-                                    <td>{{ item.quantity }}</td>
-                                    <td>{{ item.quantity|multiply:item.price|iqd }}</td>
+                                    <td data-label="السعر">{{ item.price|iqd }}</td>
+                                    <td data-label="العرض المقترح">{% if item.negotiated_price %}{{ item.negotiated_price|iqd }}{% else %}-{% endif %}</td>
+                                    <td data-label="الكمية">{{ item.quantity }}</td>
+                                    <td data-label="الإجمالي">{{ item.quantity|multiply:item.price|iqd }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

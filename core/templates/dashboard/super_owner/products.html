@@ -90,7 +90,7 @@
                         </div>
                     </div>
                     <div class="table-responsive admin-table-wrap">
-                        <table class="table table-hover align-middle">
+                        <table class="table table-hover align-middle admin-table">
                             <thead class="table-light">
                                 <tr>
                                     <th><input type="checkbox" id="select_all_products"></th>
@@ -108,9 +108,9 @@
                             <tbody>
                                 {% for product in products %}
                                 <tr>
-                                    <td><input type="checkbox" class="row-select" value="{{ product.id }}"></td>
-                                    <td>{{ product.id }}</td>
-                                    <td>
+                                    <td data-label="تحديد"><input type="checkbox" class="row-select" value="{{ product.id }}"></td>
+                                    <td data-label="#">{{ product.id }}</td>
+                                    <td data-label="المنتج">
                                         <div class="d-flex align-items-center">
                                             {% if product.main_image %}
                                                 {% with url=product.main_image.get_image_url %}
@@ -136,7 +136,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="المتجر">
                                         <div class="d-flex align-items-center">
                                             {% if product.store.main_logo_url %}
                                                 <img src="{{ product.store.main_logo_url }}" alt="{{ product.store.name }}" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
@@ -148,19 +148,19 @@
                                             <span>{{ product.store.name }}</span>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="السعر">
                                         <strong>{{ product.base_price|iqd }}</strong>
                                     </td>
-                                    <td>
+                                    <td data-label="عدد المتغيرات">
                                         <span class="badge bg-info text-dark">{{ product.variants_count|default:0 }}</span>
                                     </td>
-                                    <td>
+                                    <td data-label="إجمالي المخزون">
                                         <span class="badge bg-secondary">{{ product.total_stock|default:0 }}</span>
                                     </td>
-                                    <td>
+                                    <td data-label="الفئة">
                                         <span class="badge bg-secondary">{{ product.get_category_display }}</span>
                                     </td>
-                                    <td>
+                                    <td data-label="الحالة">
                                         {% if product.is_active %}
                                             <span class="badge bg-success">
                                                 <i class="fas fa-check-circle me-1"></i>
@@ -173,7 +173,7 @@
                                             </span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td data-label="الإجراءات">
                                         <div class="btn-group" role="group">
                                             <a href="{% url 'super_owner_edit_product' product.id %}" class="btn btn-primary btn-table-action" title="تعديل">
                                                 <i class="fas fa-edit"></i>

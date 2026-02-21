@@ -14,7 +14,7 @@
     <div class="col-12">
         {% if orders %}
         <div class="table-responsive admin-table-wrap">
-            <table class="table">
+            <table class="table admin-table">
                 <thead>
                     <tr>
                         <th>رقم الطلب</th>
@@ -28,9 +28,9 @@
                 <tbody>
                     {% for order in orders %}
                     <tr>
-                        <td>#{{ order.id }}</td>
-                        <td>{{ order.user.get_full_name|default:order.user.username }}</td>
-                        <td>
+                        <td data-label="رقم الطلب">#{{ order.id }}</td>
+                        <td data-label="العميل">{{ order.user.get_full_name|default:order.user.username }}</td>
+                        <td data-label="الحالة">
                             <form method="post" class="d-inline">
                                 {% csrf_token %}
                                 <input type="hidden" name="order_id" value="{{ order.id }}">
@@ -44,9 +44,9 @@
                                 </select>
                             </form>
                         </td>
-                        <td>{{ order.total_amount|iqd }}</td>
-                        <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
-                        <td>
+                        <td data-label="المبلغ الإجمالي">{{ order.total_amount|iqd }}</td>
+                        <td data-label="تاريخ الطلب">{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                        <td data-label="الإجراءات">
                             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
                                 التفاصيل
                             </button>
@@ -88,7 +88,7 @@
                                     
                                     <h6>منتجات الطلب:</h6>
                                     <div class="table-responsive admin-table-wrap">
-                                        <table class="table table-sm">
+                                        <table class="table table-sm admin-table">
                                             <thead>
                                                 <tr>
                                                     <th>المنتج</th>
@@ -102,18 +102,18 @@
                                             <tbody>
                                                 {% for item in order.items.all %}
                                                 <tr>
-                                                    <td>{{ item.product.name }}</td>
-                                                    <td>
+                                                    <td data-label="المنتج">{{ item.product.name }}</td>
+                                                    <td data-label="المتغير">
                                                         {% if item.variant %}
                                                             {{ item.variant.size }} - {{ item.variant.color }}
                                                         {% else %}
                                                             -
                                                         {% endif %}
                                                     </td>
-                                                    <td>{{ item.quantity }}</td>
-                                                    <td>{{ item.price|iqd }}</td>
-                                                    <td>{% if item.negotiated_price %}{{ item.negotiated_price|iqd }}{% else %}-{% endif %}</td>
-                                                    <td>{{ item.quantity|multiply:item.price|iqd }}</td>
+                                                    <td data-label="الكمية">{{ item.quantity }}</td>
+                                                    <td data-label="السعر">{{ item.price|iqd }}</td>
+                                                    <td data-label="العرض المقترح">{% if item.negotiated_price %}{{ item.negotiated_price|iqd }}{% else %}-{% endif %}</td>
+                                                    <td data-label="الإجمالي">{{ item.quantity|multiply:item.price|iqd }}</td>
                                                 </tr>
                                                 {% endfor %}
                                             </tbody>

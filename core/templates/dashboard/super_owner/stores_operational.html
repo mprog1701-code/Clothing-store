@@ -100,7 +100,7 @@
     </div>
 
     <div class="table-responsive admin-table-wrap">
-      <table class="table table-hover align-middle">
+      <table class="table table-hover align-middle admin-table">
         <thead class="table-light">
           <tr>
             <th><input type="checkbox" id="select_all"></th>
@@ -117,8 +117,8 @@
         <tbody>
           {% for store in stores %}
             <tr>
-              <td><input type="checkbox" name="selected_ids" value="{{ store.id }}" class="row_select"></td>
-              <td>
+              <td data-label="تحديد"><input type="checkbox" name="selected_ids" value="{{ store.id }}" class="row_select"></td>
+              <td data-label="اسم المتجر">
                 <div class="d-flex align-items-center">
                   {% if store.main_logo_url %}
                     <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="rounded-circle me-2" width="36" height="36" style="object-fit: cover;" onerror="this.onerror=null;this.src='https://placehold.co/80x80?text=Store'">
@@ -129,25 +129,25 @@
                   </div>
                 </div>
               </td>
-              <td>{{ store.city }}</td>
-              <td>{{ store.get_category_display }}</td>
-              <td>
+              <td data-label="المدينة">{{ store.city }}</td>
+              <td data-label="القالب">{{ store.get_category_display }}</td>
+              <td data-label="المالك">
                 {% if store.owner %}
                   {{ store.owner.get_full_name|default:store.owner.username }}
                 {% else %}
                   غير مُعيّن
                 {% endif %}
               </td>
-              <td>
+              <td data-label="الحالة">
                 {% if store.is_active %}
                   <span class="badge bg-success">نشط</span>
                 {% else %}
                   <span class="badge bg-danger">موقوف</span>
                 {% endif %}
               </td>
-              <td>{{ store.products_count }}</td>
-              <td>{{ store.orders_today }}</td>
-              <td>
+              <td data-label="المنتجات">{{ store.products_count }}</td>
+              <td data-label="طلبات اليوم">{{ store.orders_today }}</td>
+              <td data-label="إجراءات">
                 <div class="btn-group btn-group-sm" role="group">
                   <a href="{% url 'super_owner_store_center' store.id %}" class="btn btn-primary" title="فتح"><i class="fas fa-external-link-alt"></i></a>
                   {% if store.is_active %}

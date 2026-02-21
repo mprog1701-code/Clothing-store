@@ -14,7 +14,7 @@
   <div class="card border-0 shadow-sm">
     <div class="card-body">
       <div class="table-responsive admin-table-wrap">
-        <table class="table table-sm align-middle">
+        <table class="table table-sm align-middle admin-table">
           <thead>
             <tr>
               <th>File</th>
@@ -27,11 +27,11 @@
           <tbody>
             {% for e in errors %}
               <tr class="{% if e.source == 'backend' %}table-danger{% else %}table-warning{% endif %}">
-                <td>{{ e.file_path|default:'—' }}</td>
-                <td>{{ e.line_number|default:'—' }}</td>
-                <td>{{ e.error_type }}: {{ e.message|default:'' }}</td>
-                <td>{{ e.occurrences }}</td>
-                <td>{{ e.suggested_fix }}</td>
+                <td data-label="File">{{ e.file_path|default:'—' }}</td>
+                <td data-label="Line">{{ e.line_number|default:'—' }}</td>
+                <td data-label="Error Message">{{ e.error_type }}: {{ e.message|default:'' }}</td>
+                <td data-label="Occurrences">{{ e.occurrences }}</td>
+                <td data-label="Suggested Fix">{{ e.suggested_fix }}</td>
               </tr>
             {% empty %}
               <tr><td colspan="5" class="text-center">No errors logged</td></tr>

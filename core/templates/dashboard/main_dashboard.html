@@ -134,7 +134,7 @@
                     <div class="card-body p-0">
                         {% if recent_orders %}
                             <div class="table-responsive admin-table-wrap">
-                                <table class="table table-hover mb-0">
+                                <table class="table table-hover mb-0 admin-table">
                                     <thead class="table-light">
                                         <tr>
                                             <th>رقم الطلب</th>
@@ -147,15 +147,15 @@
                                     <tbody>
                                         {% for order in recent_orders %}
                                         <tr>
-                                            <td><strong>#{{ order.id }}</strong></td>
-                                            <td>{{ order.created_at|date:"d/m/Y" }}</td>
-                        <td>{{ order.total_amount|iqd }}</td>
-                                            <td>
+                                            <td data-label="رقم الطلب"><strong>#{{ order.id }}</strong></td>
+                                            <td data-label="التاريخ">{{ order.created_at|date:"d/m/Y" }}</td>
+                        <td data-label="المجموع">{{ order.total_amount|iqd }}</td>
+                                            <td data-label="الحالة">
                                                 <span class="badge bg-{{ order.get_status_color }}">
                                                     {{ order.get_status_display }}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td data-label="إجراءات">
                                                 <a href="{% url 'order_list' %}" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-eye"></i>
                                                 </a>

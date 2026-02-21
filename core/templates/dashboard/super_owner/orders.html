@@ -61,7 +61,7 @@
                     </div>
 
                     <div class="table-responsive admin-table-wrap">
-                        <table class="table table-hover align-middle">
+                        <table class="table table-hover align-middle admin-table">
                             <thead class="table-light">
                                 <tr>
                                     <th><input type="checkbox" id="select_all_orders"></th>
@@ -80,12 +80,12 @@
                                 {% for oi in orders_info %}
                                 {% with order=oi.order %}
                                 <tr>
-                                    <td><input type="checkbox" class="order-select" value="{{ order.id }}"></td>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td>
+                                    <td data-label="تحديد"><input type="checkbox" class="order-select" value="{{ order.id }}"></td>
+                                    <td data-label="#">{{ forloop.counter }}</td>
+                                    <td data-label="رقم الطلب">
                                         <strong>#{{ order.id }}</strong>
                                     </td>
-                                    <td>
+                                    <td data-label="العميل">
                                         <div class="d-flex align-items-center">
                                             {% if order.user.profile.avatar %}
                                                 <img src="{{ order.user.profile.avatar.url }}" alt="{{ order.user.username }}" class="rounded-circle me-2" width="30" height="30">
@@ -101,7 +101,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="المتجر">
                                         <div class="d-flex align-items-center">
                                             {% if order.store.main_logo_url %}
                                                 <img src="{{ order.store.main_logo_url }}" alt="{{ order.store.name }}" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;">
@@ -113,12 +113,12 @@
                                             <span>{{ order.store.name }}</span>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="المبلغ الإجمالي">
                                         <strong>{{ order.total_amount|iqd }}</strong>
                                         <br>
                                         <small class="text-muted">شحن: {{ order.delivery_fee|iqd }}</small>
                                     </td>
-                                    <td>
+                                    <td data-label="حالة الطلب">
                                         <span class="order-status" data-order-id="{{ order.id }}">
                                             {% if order.status == 'pending' %}
                                                 <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> قيد الانتظار</span>
@@ -133,7 +133,7 @@
                                             {% endif %}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td data-label="طريقة الدفع">
                                         {% if order.payment_method == 'cod' %}
                                             <span class="badge bg-light text-dark">
                                                 <i class="fas fa-money-bill-wave me-1"></i>
@@ -146,8 +146,8 @@
                                             </span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ order.created_at|date:"Y/m/d H:i" }}</td>
-                                    <td>
+                                    <td data-label="تاريخ الطلب">{{ order.created_at|date:"Y/m/d H:i" }}</td>
+                                    <td data-label="الإجراءات">
                                         <div class="d-flex align-items-center gap-2 flex-wrap">
                                             <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-primary btn-sm" title="عرض التفاصيل" data-bs-toggle="tooltip">
                                                 <i class="fas fa-eye" style="font-size:1.25rem;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;"></i>

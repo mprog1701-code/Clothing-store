@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>متاجر الإدارة</title>
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme-hotfix.css">
+  <link rel="stylesheet" href="/static/css/admin-mobile.css?v=1">
 </head>
-<body>
+<body class="is-admin" data-path="{{ request.path }}">
   <div class="container" style="max-width:1200px;margin:20px auto;">
     <h2>المتاجر</h2>
     <nav>
@@ -25,7 +27,7 @@
     {% endif %}
 
     <div class="table-responsive admin-table-wrap">
-    <table class="table">
+    <table class="table admin-table">
       <thead>
         <tr>
           <th>#</th>
@@ -38,17 +40,17 @@
       <tbody>
         {% for s in stores %}
         <tr>
-          <td>{{ s.id }}</td>
-          <td>{{ s.name }}</td>
-          <td>{{ s.city }}</td>
-          <td>
+          <td data-label="#">{{ s.id }}</td>
+          <td data-label="الاسم">{{ s.name }}</td>
+          <td data-label="المدينة">{{ s.city }}</td>
+          <td data-label="الحالة">
             {% if s.is_active %}
               نشط
             {% else %}
               موقوف
             {% endif %}
           </td>
-          <td>
+          <td data-label="تعديل الحالة">
             <form method="post" style="display:inline-block;">
               {% csrf_token %}
               <input type="hidden" name="store_id" value="{{ s.id }}">

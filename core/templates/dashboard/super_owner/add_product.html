@@ -194,7 +194,7 @@
                             <div class="col-md-12">
                                 {{ image_formset.management_form }}
                                 <div class="table-responsive admin-table-wrap">
-                                    <table class="table">
+                                    <table class="table admin-table">
                                         <thead>
                                             <tr>
                                                 <th>صورة</th>
@@ -211,15 +211,15 @@
                                         <tbody>
                                             {% for iform in image_formset %}
                                             <tr>
-                                                <td>{{ iform.image }}</td>
-                                                <td>{{ iform.image_url }}</td>
-                                                <td>{{ iform.video_file }}</td>
-                                                <td>{{ iform.video_url }}</td>
-                                                <td>{{ iform.color_attr }}</td>
-                                                <td>{{ iform.variant }}</td>
-                                                <td class="text-center">{{ iform.is_main }}</td>
-                                                <td>{{ iform.order }}</td>
-                                                <td class="text-center">{% if iform.DELETE %}{{ iform.DELETE }}{% endif %}</td>
+                                                <td data-label="صورة">{{ iform.image }}</td>
+                                                <td data-label="رابط الصورة">{{ iform.image_url }}</td>
+                                                <td data-label="فيديو">{{ iform.video_file }}</td>
+                                                <td data-label="رابط الفيديو">{{ iform.video_url }}</td>
+                                                <td data-label="لون">{{ iform.color_attr }}</td>
+                                                <td data-label="متغير">{{ iform.variant }}</td>
+                                                <td data-label="رئيسية" class="text-center">{{ iform.is_main }}</td>
+                                                <td data-label="ترتيب">{{ iform.order }}</td>
+                                                <td data-label="حذف" class="text-center">{% if iform.DELETE %}{{ iform.DELETE }}{% endif %}</td>
                                             </tr>
                                             {% endfor %}
                                         </tbody>
@@ -582,14 +582,14 @@
             });
             if (filtered.length===0){ return; }
             var html = '';
-            html += '<table class="table table-bordered align-middle"><thead><tr><th>اللون</th><th>المقاس</th><th>الكمية</th><th>السعر الخاص</th><th>مفعل</th></tr></thead><tbody>';
+            html += '<table class="table table-bordered align-middle admin-table"><thead><tr><th>اللون</th><th>المقاس</th><th>الكمية</th><th>السعر الخاص</th><th>مفعل</th></tr></thead><tbody>';
             filtered.forEach(function(it){
                 html += '<tr>'+
-                    '<td>'+ (it.color_name||'-') +'</td>'+
-                    '<td>'+ (it.size_name||'-') +'</td>'+
-                    '<td><input type="number" class="form-control" name="v_'+it.id+'_qty" value="'+String(it.qty)+'" min="0"></td>'+
-                    '<td><input type="number" step="0.01" class="form-control" name="v_'+it.id+'_price" value="'+String(it.price)+'"></td>'+
-                    '<td class="text-center"><input type="checkbox" name="v_'+it.id+'_enabled" '+(it.enabled?'checked':'')+'></td>'+
+                    '<td data-label="اللون">'+ (it.color_name||'-') +'</td>'+
+                    '<td data-label="المقاس">'+ (it.size_name||'-') +'</td>'+
+                    '<td data-label="الكمية"><input type="number" class="form-control" name="v_'+it.id+'_qty" value="'+String(it.qty)+'" min="0"></td>'+
+                    '<td data-label="السعر الخاص"><input type="number" step="0.01" class="form-control" name="v_'+it.id+'_price" value="'+String(it.price)+'"></td>'+
+                    '<td data-label="مفعل" class="text-center"><input type="checkbox" name="v_'+it.id+'_enabled" '+(it.enabled?'checked':'')+'></td>'+
                 '</tr>';
             });
             html += '</tbody></table>';

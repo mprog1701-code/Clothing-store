@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>منتجات الإدارة</title>
   <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme-hotfix.css">
+  <link rel="stylesheet" href="/static/css/admin-mobile.css?v=1">
 </head>
-<body>
+<body class="is-admin" data-path="{{ request.path }}">
   <div class="container" style="max-width:1200px;margin:20px auto;">
     <h2>المنتجات</h2>
     <nav>
@@ -60,7 +62,7 @@
     </div>
 
     <div class="table-responsive admin-table-wrap">
-    <table class="table">
+    <table class="table admin-table">
       <thead>
         <tr>
           <th>#</th>
@@ -77,13 +79,13 @@
       <tbody>
         {% for p in products %}
         <tr>
-          <td>{{ p.id }}</td>
-          <td>{{ p.name }}</td>
-          <td>{{ p.store.name }}</td>
-          <td>{{ p.base_price }}</td>
-          <td>{{ p.category }}</td>
-          <td>{{ p.created_at }}</td>
-          <td>
+          <td data-label="#">{{ p.id }}</td>
+          <td data-label="الاسم">{{ p.name }}</td>
+          <td data-label="المتجر">{{ p.store.name }}</td>
+          <td data-label="السعر">{{ p.base_price }}</td>
+          <td data-label="الفئة">{{ p.category }}</td>
+          <td data-label="تاريخ الإنشاء">{{ p.created_at }}</td>
+          <td data-label="تحديث السعر">
             <form method="post" style="display:flex;gap:8px;align-items:center;">
               {% csrf_token %}
               <input type="hidden" name="action" value="update_price">
@@ -92,7 +94,7 @@
               <button type="submit" class="btn btn-sm btn-primary">تحديث</button>
             </form>
           </td>
-          <td>
+          <td data-label="إضافة صورة (URL)">
             <form method="post" style="display:flex;gap:8px;align-items:center;">
               {% csrf_token %}
               <input type="hidden" name="action" value="add_image_url">
@@ -101,7 +103,7 @@
               <button type="submit" class="btn btn-sm btn-secondary">إضافة</button>
             </form>
           </td>
-          <td>
+          <td data-label="تحديث المخزون">
             <form method="post" style="display:flex;gap:8px;align-items:center;">
               {% csrf_token %}
               <input type="hidden" name="action" value="set_stock">
