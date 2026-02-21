@@ -1,5 +1,5 @@
-const STATIC_CACHE = 'static-v3';
-const PAGES_CACHE = 'pages-v3';
+const STATIC_CACHE = 'static-v4';
+const PAGES_CACHE = 'pages-v4';
 const OFFLINE_URL = '/offline/';
 const STATIC_ASSETS = [
   '/',
