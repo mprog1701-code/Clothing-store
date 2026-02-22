@@ -25,7 +25,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=99">
     <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=1">
     <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
@@ -913,7 +913,7 @@
     (function(){
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/service-worker.js?v=4').catch(function(){});
+          navigator.serviceWorker.register('/service-worker.js?v=5').catch(function(){});
         });
       }
     })();

@@ -274,25 +274,36 @@ a:hover, .nav-link:hover, .dropdown-item:hover{
 @media (max-width: 768px){
   .mobile-horizontal-scroll{
     display:flex !important;
+    flex-wrap:nowrap !important;
     overflow-x:auto !important;
-    gap:12px;
-    padding:10px 4px;
+    overflow-y:hidden !important;
+    gap:12px !important;
+    padding:10px 6px !important;
     scroll-snap-type:x mandatory;
     -webkit-overflow-scrolling:touch;
     scroll-behavior:smooth;
   }
   .mobile-horizontal-scroll > *{
-    flex:0 0 auto;
+    flex:0 0 auto !important;
     scroll-snap-align:start;
   }
+  .mobile-horizontal-scroll.row{
+    margin-left:0 !important;
+    margin-right:0 !important;
+  }
+  .mobile-horizontal-scroll.row > [class*="col"]{
+    flex:0 0 auto !important;
+    width:auto !important;
+    max-width:none !important;
+  }
   .categories-scroll .category-card{
-    min-width:140px;
+    min-width:140px !important;
   }
   .products-scroll .product-card{
-    min-width:180px;
+    min-width:180px !important;
   }
   .stores-scroll .store-card{
-    min-width:220px;
+    min-width:220px !important;
   }
   .mobile-horizontal-scroll::-webkit-scrollbar{
     display:none;
