@@ -281,14 +281,20 @@
 </div>
 
 <div class="container">
-    <div class="showcase">
+    <div class="showcase mobile-product-rail">
+        <div class="rail-tabs">
+            <button type="button" class="rail-tab active" data-tab="best">الأكثر مبيعاً</button>
+            <button type="button" class="rail-tab" data-tab="discount">خصومات</button>
+            <button type="button" class="rail-tab" data-tab="new">جديد</button>
+            <button type="button" class="rail-tab" data-tab="price">حسب السعر</button>
+        </div>
         <div class="showcase-controls">
             <button class="showcase-btn" id="scPrev">السابق</button>
             <button class="showcase-btn" id="scNext">التالي</button>
         </div>
-        <div class="showcase-track" id="showcaseTrack">
+        <div class="showcase-track rail-scroller" id="showcaseTrack" dir="rtl">
             {% for p in showcase_products %}
-            <div class="showcase-card" onclick="window.location.href='{% url 'product_detail' p.id %}'">
+            <div class="showcase-card rail-item" data-store-id="{{ p.store.id|default:'' }}" data-is-new="0" data-discount="{% if p.discount_price and p.discount_price < p.base_price %}1{% else %}0{% endif %}" data-sold="" data-price="{{ p.discount_price|default:p.base_price }}" data-created-at="{{ p.created_at|date:'c' }}" onclick="window.location.href='{% url 'product_detail' p.id %}'">
                 {% if p.main_image %}
                     {% with url=p.main_image.get_image_url %}
                         {% if url %}
@@ -425,6 +431,7 @@
         window.location.href = url;
     }
     (function(){
+        if(window.innerWidth <= 768) return;
         const track = document.getElementById('showcaseTrack');
         const prev = document.getElementById('scPrev');
         const next = document.getElementById('scNext');
