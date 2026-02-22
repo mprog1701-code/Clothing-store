@@ -60,19 +60,21 @@
 {% block content %}
 <!-- Hero Section -->
 <section class="hero-section py-5 mb-5">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h1 class="display-4 fw-bold text-gradient mb-3 animate-fade-in">
-                    المتاجر
-                </h1>
-                <p class="lead text-muted mb-4 animate-fade-in-delay">
-                    اكتشف أفضل متاجر الملابس والموضة في منطقتك
-                </p>
-            </div>
-            <div class="col-lg-4 text-center">
-                <div class="hero-icon animate-bounce">
-                    <i class="bi bi-shop display-1 text-primary-gradient"></i>
+    <div class="container-fluid px-0">
+        <div class="container container-desktop-only px-3">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold text-gradient mb-3 animate-fade-in">
+                        المتاجر
+                    </h1>
+                    <p class="lead text-muted mb-4 animate-fade-in-delay">
+                        اكتشف أفضل متاجر الملابس والموضة في منطقتك
+                    </p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="hero-icon animate-bounce">
+                        <i class="bi bi-shop display-1 text-primary-gradient"></i>
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,24 +83,26 @@
 
 <!-- Filter Section -->
 <section class="filter-section mb-5">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="filter-card p-4 rounded-4 shadow-sm">
-                    <form method="get" class="d-flex gap-3">
-                        <div class="flex-grow-1">
-                            <select name="city" class="form-select form-select-lg border-0 shadow-sm">
-                                <option value="">جميع المدن</option>
-                                {% for city in cities %}
-                                <option value="{{ city }}" {% if city == selected_city %}selected{% endif %}>{{ city }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-gradient btn-lg px-4">
-                            <i class="bi bi-funnel me-2"></i>
-                            تصفية
-                        </button>
-                    </form>
+    <div class="container-fluid px-0">
+        <div class="container container-desktop-only px-3">
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <div class="filter-card p-4 rounded-4 shadow-sm">
+                        <form method="get" class="d-flex gap-3">
+                            <div class="flex-grow-1">
+                                <select name="city" class="form-select form-select-lg border-0 shadow-sm">
+                                    <option value="">جميع المدن</option>
+                                    {% for city in cities %}
+                                    <option value="{{ city }}" {% if city == selected_city %}selected{% endif %}>{{ city }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-gradient btn-lg px-4">
+                                <i class="bi bi-funnel me-2"></i>
+                                تصفية
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -107,12 +111,13 @@
 
 <!-- Stores Grid -->
 <section class="stores-section mb-5">
-    <div class="container">
-        <div class="row g-4">
-            {% for store in stores %}
-            <div class="col-lg-4 col-md-6">
-                <div class="store-card-modern h-100 animate-fade-in-up">
-                    <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
+    <div class="container-fluid px-0">
+        <div class="container container-desktop-only px-3">
+            <div class="row g-4">
+                {% for store in stores %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="store-card-modern h-100 animate-fade-in-up">
+                        <div class="card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
                         <!-- Store Image -->
                         <div class="store-image-container position-relative">
                             <img src="https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Modern+fashion+store+interior%2C+elegant+design%2C+clothing+racks%2C+bright+lighting%2C+luxury+atmosphere%2C+{{ store.name|urlencode }}&image_size=landscape_16_9" 
@@ -207,8 +212,9 @@
                     <h4 class="text-muted mb-3">لا توجد متاجر متاحة حالياً</h4>
                     <p class="text-muted">سيتم إضافة متاجر جديدة قريباً</p>
                 </div>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
     </div>
 </section>

@@ -50,7 +50,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container cart-page">
+<div class="container-fluid px-0 cart-page">
+  <div class="container container-desktop-only px-3">
   {% if cart_items %}
   <div class="cart-grid">
     <div>
@@ -92,6 +93,7 @@
   <div class="empty"><div style="font-size:22px;color:#777">Your cart is empty</div><a href="{% url 'store_list' %}" class="cta">Back to Shopping</a></div>
   {% endif %}
   <div id="toast" class="toast"><div class="box"></div></div>
+  </div>
 </div>
 {% endblock %}
 

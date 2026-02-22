@@ -22,8 +22,9 @@
 
 {% block content %}
 <div class="search-header">
-    <div class="container">
-        <form class="row g-2 search-form" action="{% url 'search' %}" method="get">
+    <div class="container-fluid px-0">
+        <div class="container container-desktop-only px-3">
+            <form class="row g-2 search-form" action="{% url 'search' %}" method="get">
             <div class="col-lg-6 col-md-12">
                 <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="ابحث عن منتج أو متجر...">
             </div>
@@ -82,11 +83,13 @@
                     <i class="bi bi-search"></i> تطبيق
                 </button>
             </div>
-        </form>
+            </form>
+        </div>
     </div>
     </div>
 
-<div class="container">
+<div class="container-fluid px-0">
+    <div class="container container-desktop-only px-3">
     {% if q %}
     <div class="mb-4">
         <h2 class="result-title">نتائج عن: "{{ q }}"</h2>
@@ -156,5 +159,6 @@
         <p class="text-white mt-3">لا توجد نتائج مطابقة</p>
     </div>
     {% endif %}
+    </div>
 </div>
 {% endblock %}

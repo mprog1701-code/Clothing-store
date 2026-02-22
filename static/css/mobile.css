@@ -1,0 +1,50 @@
+@media (max-width: 768px) {
+  body.app-shell:not(.is-admin) {
+    overflow-x: hidden;
+  }
+  body.app-shell:not(.is-admin) main,
+  body.app-shell:not(.is-admin) .main-container,
+  body.app-shell:not(.is-admin) .app-container,
+  body.app-shell:not(.is-admin) section {
+    width: 100%;
+    max-width: 100%;
+  }
+  body.app-shell:not(.is-admin) .container-desktop-only {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  body.app-shell:not(.is-admin) .container-fluid {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  body.app-shell:not(.is-admin) main .row {
+    --bs-gutter-x: 0.75rem;
+    --bs-gutter-y: 0.75rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  body.app-shell:not(.is-admin) main .row > * {
+    padding-left: calc(var(--bs-gutter-x) * 0.5);
+    padding-right: calc(var(--bs-gutter-x) * 0.5);
+  }
+  body.app-shell:not(.is-admin) img,
+  body.app-shell:not(.is-admin) video,
+  body.app-shell:not(.is-admin) iframe {
+    max-width: 100%;
+  }
+  body.app-shell:not(.is-admin) .card {
+    margin-bottom: 12px;
+  }
+  body.app-shell:not(.is-admin) .card-title {
+    font-size: 1rem;
+  }
+  body.app-shell:not(.is-admin) .card-text,
+  body.app-shell:not(.is-admin) .text-muted {
+    font-size: 0.9rem;
+  }
+  body.app-shell:not(.is-admin) .mobile-css-check {
+    opacity: 0.123;
+  }
+}

@@ -5,7 +5,8 @@
 
 {% block content %}
 <section class="py-5">
-  <div class="container store-detail-wrap">
+  <div class="container-fluid px-0">
+    <div class="container container-desktop-only px-3 store-detail-wrap">
     <div class="mb-4">
       <h1 class="fw-bold">{{ store.name }}</h1>
       <div class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ store.city }}</div>
@@ -73,6 +74,7 @@
         </div>
       </div>
       {% endfor %}
+    </div>
     </div>
   </div>
 </section>

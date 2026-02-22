@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid px-0 py-4">
+  <div class="container container-desktop-only px-3">
   {% if not order %}
   <div class="alert alert-danger">الرابط غير صالح أو انتهت صلاحية الوصول</div>
   {% else %}
@@ -111,5 +112,6 @@
   })();
   </script>
   {% endif %}
+  </div>
 </div>
 {% endblock %}
