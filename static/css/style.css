@@ -272,6 +272,18 @@ a:hover, .nav-link:hover, .dropdown-item:hover{
   color: var(--primary) !important;
 }
 @media (max-width: 768px){
+  body::before{
+    content:"MOBILE-SCROLL CSS LOADED v100";
+    position:fixed;
+    top:8px;
+    left:8px;
+    z-index:999999;
+    background:#000;
+    color:#fff;
+    padding:6px 10px;
+    border-radius:10px;
+    font-size:12px;
+  }
   .mobile-horizontal-scroll{
     display:flex !important;
     flex-wrap:nowrap !important;
@@ -281,7 +293,6 @@ a:hover, .nav-link:hover, .dropdown-item:hover{
     padding:10px 6px !important;
     scroll-snap-type:x mandatory;
     -webkit-overflow-scrolling:touch;
-    scroll-behavior:smooth;
   }
   .mobile-horizontal-scroll > *{
     flex:0 0 auto !important;
