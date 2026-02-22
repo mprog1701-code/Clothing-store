@@ -519,6 +519,21 @@
     font-weight: normal;
     margin-top: 0.25rem;
 }
+@media (max-width: 768px) {
+    .categories-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 12px;
+        padding-bottom: 6px;
+        scroll-snap-type: x mandatory;
+    }
+    .categories-grid .category-card {
+        min-width: 160px;
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+    }
+}
 
 /* Restaurant Cards */
 .restaurant-cards {
