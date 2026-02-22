@@ -26,7 +26,13 @@
   body.is-admin form .row,
   body.is-admin form .d-flex {
     flex-wrap: wrap !important;
-    gap: 8px !important;
+    gap: 10px !important;
+  }
+  body.is-admin .toolbar,
+  body.is-admin .actions,
+  body.is-admin .filters {
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
   body.is-admin .toolbar .btn,
   body.is-admin .actions .btn,
@@ -38,6 +44,10 @@
     width: 100% !important;
     display: flex !important;
     flex-direction: column !important;
+    gap: 10px !important;
+  }
+  body.is-admin .btn-group .btn {
+    width: 100% !important;
   }
   body.is-admin .form-control,
   body.is-admin .form-select,
@@ -62,36 +72,38 @@
     -webkit-overflow-scrolling: touch !important;
     border-radius: 12px !important;
   }
-  body.is-admin table.table {
-    min-width: 720px !important;
-  }
-  body.is-admin table.table th,
-  body.is-admin table.table td {
-    white-space: nowrap !important;
-    vertical-align: middle !important;
-    padding: 10px 12px !important;
-  }
-  body.is-admin table.admin-stack thead {
+  body.is-admin table.admin-table thead {
     display: none !important;
   }
-  body.is-admin table.admin-stack,
-  body.is-admin table.admin-stack tbody,
-  body.is-admin table.admin-stack tr,
-  body.is-admin table.admin-stack td {
+  body.is-admin table.admin-table,
+  body.is-admin table.admin-table tbody,
+  body.is-admin table.admin-table tr,
+  body.is-admin table.admin-table td {
     display: block !important;
     width: 100% !important;
   }
-  body.is-admin table.admin-stack tr {
-    margin-bottom: 10px !important;
-    border: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
-    border-radius: 14px !important;
-    padding: 10px !important;
-    background: var(--surface, rgba(0, 0, 0, 0.2)) !important;
+  body.is-admin table.admin-table {
+    min-width: 0 !important;
   }
-  body.is-admin table.admin-stack td {
-    white-space: normal !important;
-    padding: 8px 10px !important;
+  body.is-admin table.admin-table tr {
+    margin-bottom: 14px !important;
+    padding: 14px !important;
+    border-radius: 16px !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+  }
+  body.is-admin table.admin-table td {
+    padding: 6px 0 !important;
     border: 0 !important;
+    text-align: right !important;
+  }
+  body.is-admin table.admin-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 4px;
   }
   body.is-admin .navbar {
     position: relative !important;

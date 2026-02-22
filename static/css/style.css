@@ -271,3 +271,33 @@ a:hover, .nav-link:hover, .dropdown-item:hover{
   border-color: var(--primary) !important;
   color: var(--primary) !important;
 }
+@media (max-width: 768px){
+  .mobile-horizontal-scroll{
+    display:flex !important;
+    overflow-x:auto !important;
+    gap:12px;
+    padding:10px 4px;
+    scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;
+    scroll-behavior:smooth;
+  }
+  .mobile-horizontal-scroll > *{
+    flex:0 0 auto;
+    scroll-snap-align:start;
+  }
+  .categories-scroll .category-card{
+    min-width:140px;
+  }
+  .products-scroll .product-card{
+    min-width:180px;
+  }
+  .stores-scroll .store-card{
+    min-width:220px;
+  }
+  .mobile-horizontal-scroll::-webkit-scrollbar{
+    display:none;
+  }
+  .mobile-horizontal-scroll{
+    scrollbar-width:none;
+  }
+}

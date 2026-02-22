@@ -3,29 +3,6 @@
 
 {% block title %}{{ store.name }} - متجر الملابس{% endblock %}
 
-{% block extra_css %}
-<style>
-@media (max-width: 768px) {
-  .store-products-row {
-    display: flex !important;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 12px;
-    padding-bottom: 6px;
-    scroll-snap-type: x mandatory;
-  }
-  .store-products-row > [class*="col"] {
-    flex: 0 0 70%;
-    max-width: 70%;
-    min-width: 70%;
-  }
-  .store-products-row .card {
-    scroll-snap-align: start;
-  }
-}
-</style>
-{% endblock %}
-
 {% block content %}
 <section class="py-5">
   <div class="container">
@@ -65,10 +42,10 @@
       </div>
     </form>
 
-    <div class="row g-3 store-products-row">
+    <div class="row g-3 mobile-horizontal-scroll products-scroll">
       {% for p in products %}
       <div class="col-6 col-md-3">
-        <a href="{% url 'product_detail' p.id %}" class="card h-100 text-decoration-none">
+        <a href="{% url 'product_detail' p.id %}" class="card product-card h-100 text-decoration-none">
           <div class="ratio ratio-1x1">
             {% with img=p.images.all|first %}
               {% if img %}

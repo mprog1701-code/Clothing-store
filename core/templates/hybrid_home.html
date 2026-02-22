@@ -55,7 +55,7 @@
 <section class="categories-section py-5">
     <div class="container">
         <h2 class="section-title text-center mb-4">الأقسام</h2>
-        <div class="categories-grid">
+        <div class="categories-grid mobile-horizontal-scroll categories-scroll">
             <div class="category-card">
                 <div class="category-icon">
                     <i class="bi bi-watch"></i>
@@ -519,21 +519,6 @@
     font-weight: normal;
     margin-top: 0.25rem;
 }
-@media (max-width: 768px) {
-    .categories-grid {
-        display: flex;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 12px;
-        padding-bottom: 6px;
-        scroll-snap-type: x mandatory;
-    }
-    .categories-grid .category-card {
-        min-width: 160px;
-        flex: 0 0 auto;
-        scroll-snap-align: start;
-    }
-}
 
 /* Restaurant Cards */
 .restaurant-cards {
@@ -880,22 +865,6 @@
     .chip { padding: .4rem .8rem; font-size: .85rem; }
     .bottom-nav { padding: .6rem 0; }
 }
-@media (max-width: 768px) {
-    .categories-grid {
-        display: flex !important;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 12px;
-        padding-bottom: 6px;
-        scroll-snap-type: x mandatory;
-    }
-    .categories-grid .category-card {
-        min-width: 160px;
-        flex: 0 0 auto;
-        scroll-snap-align: start;
-    }
-}
-
 /* Animation for countdown */
 @keyframes pulse {
     0% { transform: scale(1); }
