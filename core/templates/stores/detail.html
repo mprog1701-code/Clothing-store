@@ -7,7 +7,7 @@
 <style>
 @media (max-width: 768px) {
   .store-products-row {
-    display: flex;
+    display: flex !important;
     flex-wrap: nowrap;
     overflow-x: auto;
     gap: 12px;
@@ -17,6 +17,7 @@
   .store-products-row > [class*="col"] {
     flex: 0 0 70%;
     max-width: 70%;
+    min-width: 70%;
   }
   .store-products-row .card {
     scroll-snap-align: start;
