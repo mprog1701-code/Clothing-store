@@ -160,6 +160,7 @@
                 }
             }
             function init(){
+                if(window.innerWidth <= 768) return;
                 chunk(document.querySelector('.category-grid'), '.category-card', 15, 'm-row-scroller cats');
                 chunk(document.querySelector('.categories-grid'), '.category-card', 15, 'm-row-scroller cats');
                 var na=document.querySelector('.new-arrivals-scroller');
