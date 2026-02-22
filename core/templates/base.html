@@ -25,8 +25,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=100">
     <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=102">
     <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=1">
     <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
     <script src="{% static 'js/theme.js' %}?v=4" defer></script>
@@ -56,7 +56,7 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="{% if user.is_staff or user.role == 'store_admin' or user.is_superuser %}is-admin{% endif %}" data-path="{{ request.path }}">
+<body class="app-shell {% if user.is_staff or user.role == 'store_admin' or user.is_superuser %}is-admin{% endif %}" data-path="{{ request.path }}">
     <!-- Loading Spinner -->
     <div class="loading-spinner" id="loadingSpinner">
         <div class="spinner-border text-primary" role="status">

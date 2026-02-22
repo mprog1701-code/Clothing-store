@@ -19,6 +19,7 @@ body {
 /* Layout & Containers */
 main { padding-bottom: 2rem; }
 .container, .container-fluid { padding: 0 12px; }
+.app-container, .main-container, main { width: 100%; }
 
 /* Base Elements */
 img, video, iframe { max-width: 100%; height: auto; object-fit: cover; }
@@ -162,6 +163,49 @@ a:hover { color: var(--link); opacity: 0.85; }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    body.app-shell:not(.is-admin) .container,
+    body.app-shell:not(.is-admin) .container-sm,
+    body.app-shell:not(.is-admin) .container-md,
+    body.app-shell:not(.is-admin) .container-lg,
+    body.app-shell:not(.is-admin) .container-xl,
+    body.app-shell:not(.is-admin) .container-xxl {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    body.app-shell:not(.is-admin) main,
+    body.app-shell:not(.is-admin) .main-container,
+    body.app-shell:not(.is-admin) .app-container {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    main .container,
+    main .container-fluid,
+    main [class^="container-"],
+    main [class*=" container-"] {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    .store-list-wrap,
+    .store-detail-wrap {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    .app-container,
+    .main-container,
+    main,
+    .container,
+    .container-fluid {
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
     .product-card { margin-bottom: 0.85rem; }
     .store-card { padding: 14px; }
     .navbar-brand { font-size: 1.2rem; }
