@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=102">
     <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=1">
-    <link rel="stylesheet" href="{% static 'css/mobile.css' %}?v=102">
+    <link rel="stylesheet" href="{% static 'css/mobile.css' %}?v=103">
     <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
     <script src="{% static 'js/theme.js' %}?v=4" defer></script>
     
@@ -161,7 +161,7 @@
                 }
             }
             function init(){
-                if(window.innerWidth <= 768) return;
+                if(window.innerWidth > 768) return;
                 chunk(document.querySelector('.category-grid'), '.category-card', 15, 'm-row-scroller cats');
                 chunk(document.querySelector('.categories-grid'), '.category-card', 15, 'm-row-scroller cats');
                 var na=document.querySelector('.new-arrivals-scroller');
@@ -950,7 +950,7 @@
     (function(){
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/service-worker.js?v=5').catch(function(){});
+          navigator.serviceWorker.register('/service-worker.js?v=6').catch(function(){});
         });
       }
     })();

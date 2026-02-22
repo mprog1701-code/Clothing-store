@@ -1,10 +1,11 @@
-const STATIC_CACHE = 'static-v5';
-const PAGES_CACHE = 'pages-v5';
+const STATIC_CACHE = 'static-v6';
+const PAGES_CACHE = 'pages-v6';
 const OFFLINE_URL = '/offline/';
 const STATIC_ASSETS = [
   '/',
   OFFLINE_URL,
-  '/static/css/style.css?v=99',
+  '/static/css/style.css?v=102',
+  '/static/css/mobile.css?v=103',
   '/static/css/theme.css',
   '/static/js/theme.js',
 ];

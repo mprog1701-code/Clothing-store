@@ -307,7 +307,7 @@
             <button class="showcase-btn" id="scPrev">السابق</button>
             <button class="showcase-btn" id="scNext">التالي</button>
         </div>
-        <div class="showcase-track rail-scroller" id="showcaseTrack" dir="rtl">
+        <div class="showcase-track rail-scroller rail-2rows" id="showcaseTrack" dir="rtl">
             {% for p in showcase_products %}
             <div class="showcase-card rail-item" data-store-id="{{ p.store.id|default:'' }}" data-is-new="0" data-discount="{% if p.discount_price and p.discount_price < p.base_price %}1{% else %}0{% endif %}" data-sold="" data-price="{{ p.discount_price|default:p.base_price }}" data-created-at="{{ p.created_at|date:'c' }}" onclick="window.location.href='{% url 'product_detail' p.id %}'">
                 {% if p.main_image %}
