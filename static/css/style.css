@@ -291,29 +291,25 @@ a:hover, .nav-link:hover, .dropdown-item:hover{
     overflow-y:hidden !important;
     gap:12px !important;
     padding:10px 6px !important;
-    scroll-snap-type:x mandatory;
     -webkit-overflow-scrolling:touch;
-  }
-  .mobile-horizontal-scroll > *{
-    flex:0 0 auto !important;
-    scroll-snap-align:start;
   }
   .mobile-horizontal-scroll.row{
     margin-left:0 !important;
     margin-right:0 !important;
   }
-  .mobile-horizontal-scroll.row > [class*="col"]{
+  .mobile-horizontal-scroll > [class*="col"]{
     flex:0 0 auto !important;
     width:auto !important;
     max-width:none !important;
+    min-width:220px !important;
   }
-  .categories-scroll .category-card{
+  .categories-scroll > [class*="col"]{
     min-width:140px !important;
   }
-  .products-scroll .product-card{
+  .products-scroll > [class*="col"]{
     min-width:180px !important;
   }
-  .stores-scroll .store-card{
+  .stores-scroll > [class*="col"]{
     min-width:220px !important;
   }
   .mobile-horizontal-scroll::-webkit-scrollbar{

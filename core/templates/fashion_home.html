@@ -114,6 +114,13 @@
         gap: 20px;
         margin: 30px 0;
     }
+    .category-grid.row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+    .category-grid.row > [class*="col"] {
+        padding: 0;
+    }
 
     .category-card {
         background: linear-gradient(135deg, var(--black-light) 0%, var(--black) 100%);
@@ -543,104 +550,118 @@
 <!-- Categories Section -->
 <div class="container">
     <h2 class="section-title">تسوق حسب الفئة</h2>
-    <div class="category-grid mobile-horizontal-scroll categories-scroll">
-        {% if features.CATEGORY_WOMEN %}
-        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=women'">
-            <i class="bi bi-bag-heart category-icon"></i>
-            <h3 class="category-name">ملابس نسائية</h3>
-            <p class="category-count">{{ categories.women|default:"150+" }} منتج</p>
+    <div class="category-grid row mobile-horizontal-scroll categories-scroll">
+        <div class="col-6 col-md-3">
+            {% if features.CATEGORY_WOMEN %}
+            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=women'">
+                <i class="bi bi-bag-heart category-icon"></i>
+                <h3 class="category-name">ملابس نسائية</h3>
+                <p class="category-count">{{ categories.women|default:"150+" }} منتج</p>
+            </div>
+            {% else %}
+            <div class="category-card coming-soon">
+                <i class="bi bi-bag-heart category-icon"></i>
+                <h3 class="category-name">ملابس نسائية</h3>
+                <p class="category-count">قريبًا</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="category-card coming-soon">
-            <i class="bi bi-bag-heart category-icon"></i>
-            <h3 class="category-name">ملابس نسائية</h3>
-            <p class="category-count">قريبًا</p>
-        </div>
-        {% endif %}
 
-        {% if features.CATEGORY_MEN %}
-        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=men'">
-            <i class="bi bi-person-workspace category-icon"></i>
-            <h3 class="category-name">ملابس رجالية</h3>
-            <p class="category-count">{{ categories.men|default:"120+" }} منتج</p>
+        <div class="col-6 col-md-3">
+            {% if features.CATEGORY_MEN %}
+            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=men'">
+                <i class="bi bi-person-workspace category-icon"></i>
+                <h3 class="category-name">ملابس رجالية</h3>
+                <p class="category-count">{{ categories.men|default:"120+" }} منتج</p>
+            </div>
+            {% else %}
+            <div class="category-card coming-soon">
+                <i class="bi bi-person-workspace category-icon"></i>
+                <h3 class="category-name">ملابس رجالية</h3>
+                <p class="category-count">قريبًا</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="category-card coming-soon">
-            <i class="bi bi-person-workspace category-icon"></i>
-            <h3 class="category-name">ملابس رجالية</h3>
-            <p class="category-count">قريبًا</p>
-        </div>
-        {% endif %}
 
-        {% if features.CATEGORY_KIDS %}
-        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=kids'">
-            <i class="bi bi-emoji-smile category-icon"></i>
-            <h3 class="category-name">ملابس أطفال</h3>
-            <p class="category-count">{{ categories.kids|default:"100+" }} منتج</p>
+        <div class="col-6 col-md-3">
+            {% if features.CATEGORY_KIDS %}
+            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=kids'">
+                <i class="bi bi-emoji-smile category-icon"></i>
+                <h3 class="category-name">ملابس أطفال</h3>
+                <p class="category-count">{{ categories.kids|default:"100+" }} منتج</p>
+            </div>
+            {% else %}
+            <div class="category-card coming-soon">
+                <i class="bi bi-emoji-smile category-icon"></i>
+                <h3 class="category-name">ملابس أطفال</h3>
+                <p class="category-count">قريبًا</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="category-card coming-soon">
-            <i class="bi bi-emoji-smile category-icon"></i>
-            <h3 class="category-name">ملابس أطفال</h3>
-            <p class="category-count">قريبًا</p>
-        </div>
-        {% endif %}
 
-        {% if features.CATEGORY_PERFUMES %}
-        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=perfumes'">
-            <i class="bi bi-flower1 category-icon"></i>
-            <h3 class="category-name">عطور</h3>
-            <p class="category-count">{{ categories.perfumes|default:"90+" }} منتج</p>
+        <div class="col-6 col-md-3">
+            {% if features.CATEGORY_PERFUMES %}
+            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=perfumes'">
+                <i class="bi bi-flower1 category-icon"></i>
+                <h3 class="category-name">عطور</h3>
+                <p class="category-count">{{ categories.perfumes|default:"90+" }} منتج</p>
+            </div>
+            {% else %}
+            <div class="category-card coming-soon">
+                <i class="bi bi-flower1 category-icon"></i>
+                <h3 class="category-name">عطور</h3>
+                <p class="category-count">قريبًا</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="category-card coming-soon">
-            <i class="bi bi-flower1 category-icon"></i>
-            <h3 class="category-name">عطور</h3>
-            <p class="category-count">قريبًا</p>
-        </div>
-        {% endif %}
 
-        {% if features.CATEGORY_COSMETICS %}
-        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=cosmetics'">
-            <i class="bi bi-palette category-icon"></i>
-            <h3 class="category-name">كوزمتك</h3>
-            <p class="category-count">{{ categories.cosmetics|default:"120+" }} منتج</p>
+        <div class="col-6 col-md-3">
+            {% if features.CATEGORY_COSMETICS %}
+            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=cosmetics'">
+                <i class="bi bi-palette category-icon"></i>
+                <h3 class="category-name">كوزمتك</h3>
+                <p class="category-count">{{ categories.cosmetics|default:"120+" }} منتج</p>
+            </div>
+            {% else %}
+            <div class="category-card coming-soon">
+                <i class="bi bi-palette category-icon"></i>
+                <h3 class="category-name">كوزمتك</h3>
+                <p class="category-count">قريبًا</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="category-card coming-soon">
-            <i class="bi bi-palette category-icon"></i>
-            <h3 class="category-name">كوزمتك</h3>
-            <p class="category-count">قريبًا</p>
-        </div>
-        {% endif %}
 
-        {% if features.CATEGORY_SHOES %}
-        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=shoes'">
-            <i class="bi bi-bag category-icon"></i>
-            <h3 class="category-name">أحذية</h3>
-            <p class="category-count">{{ categories.shoes|default:"80+" }} منتج</p>
+        <div class="col-6 col-md-3">
+            {% if features.CATEGORY_SHOES %}
+            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=shoes'">
+                <i class="bi bi-bag category-icon"></i>
+                <h3 class="category-name">أحذية</h3>
+                <p class="category-count">{{ categories.shoes|default:"80+" }} منتج</p>
+            </div>
+            {% else %}
+            <div class="category-card coming-soon">
+                <i class="bi bi-bag category-icon"></i>
+                <h3 class="category-name">أحذية</h3>
+                <p class="category-count">قريبًا</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="category-card coming-soon">
-            <i class="bi bi-bag category-icon"></i>
-            <h3 class="category-name">أحذية</h3>
-            <p class="category-count">قريبًا</p>
-        </div>
-        {% endif %}
 
-        {% if features.CATEGORY_WATCHES %}
-        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=watches'">
-            <i class="bi bi-watch category-icon"></i>
-            <h3 class="category-name">ساعات</h3>
-            <p class="category-count">{{ categories.watches|default:"50+" }} منتج</p>
+        <div class="col-6 col-md-3">
+            {% if features.CATEGORY_WATCHES %}
+            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=watches'">
+                <i class="bi bi-watch category-icon"></i>
+                <h3 class="category-name">ساعات</h3>
+                <p class="category-count">{{ categories.watches|default:"50+" }} منتج</p>
+            </div>
+            {% else %}
+            <div class="category-card coming-soon">
+                <i class="bi bi-watch category-icon"></i>
+                <h3 class="category-name">ساعات</h3>
+                <p class="category-count">قريبًا</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="category-card coming-soon">
-            <i class="bi bi-watch category-icon"></i>
-            <h3 class="category-name">ساعات</h3>
-            <p class="category-count">قريبًا</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 

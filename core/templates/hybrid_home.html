@@ -55,80 +55,96 @@
 <section class="categories-section py-5">
     <div class="container">
         <h2 class="section-title text-center mb-4">الأقسام</h2>
-        <div class="categories-grid mobile-horizontal-scroll categories-scroll">
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-watch"></i>
-                </div>
-                <div class="category-name">
-                    <div>الساعات</div>
-                    <small>والإكسسوارات</small>
-                </div>
-            </div>
-            
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-heart"></i>
-                </div>
-                <div class="category-name">
-                    <div>الجمال</div>
-                    <small>والعناية</small>
+        <div class="categories-grid row mobile-horizontal-scroll categories-scroll">
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-watch"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>الساعات</div>
+                        <small>والإكسسوارات</small>
+                    </div>
                 </div>
             </div>
             
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-house"></i>
-                </div>
-                <div class="category-name">
-                    <div>المنزل</div>
-                    <small>والمطبخ</small>
-                </div>
-            </div>
-            
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-percent"></i>
-                </div>
-                <div class="category-name">
-                    <div>الخصومات</div>
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>الجمال</div>
+                        <small>والعناية</small>
+                    </div>
                 </div>
             </div>
             
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-laptop"></i>
-                </div>
-                <div class="category-name">
-                    <div>الإلكترونيات</div>
-                </div>
-            </div>
-            
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-bag"></i>
-                </div>
-                <div class="category-name">
-                    <div>الملابس</div>
-                    <small>والأزياء</small>
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-house"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>المنزل</div>
+                        <small>والمطبخ</small>
+                    </div>
                 </div>
             </div>
             
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-emoji-smile"></i>
-                </div>
-                <div class="category-name">
-                    <div>الأطفال</div>
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-percent"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>الخصومات</div>
+                    </div>
                 </div>
             </div>
             
-            <div class="category-card">
-                <div class="category-icon">
-                    <i class="bi bi-star"></i>
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-laptop"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>الإلكترونيات</div>
+                    </div>
                 </div>
-                <div class="category-name">
-                    <div>وصل حديثًا</div>
+            </div>
+            
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-bag"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>الملابس</div>
+                        <small>والأزياء</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-emoji-smile"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>الأطفال</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-6 col-md-3">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="bi bi-star"></i>
+                    </div>
+                    <div class="category-name">
+                        <div>وصل حديثًا</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -478,6 +494,13 @@
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
     margin-top: 2rem;
+}
+.categories-grid.row {
+    margin-left: 0;
+    margin-right: 0;
+}
+.categories-grid.row > [class*="col"] {
+    padding: 0;
 }
 
 .category-card {
