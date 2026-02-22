@@ -1,5 +1,9 @@
 from django.db import models
 import os
+import io
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from PIL import Image
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
@@ -58,6 +62,31 @@ class SiteSettings(models.Model):
     
     def __str__(self):
         return 'إعدادات الموقع'
+
+
+def get_imagefield_thumbnail_url(image_field, size=300, prefix='thumbnails'):
+    try:
+        if not image_field:
+            return None
+        name = image_field.name
+        if not name:
+            return None
+        base = os.path.basename(name)
+        root, _ = os.path.splitext(base)
+        thumb_name = f"{prefix}/{root}_{size}x{size}.jpg"
+        if default_storage.exists(thumb_name):
+            return default_storage.url(thumb_name)
+        with default_storage.open(name, 'rb') as f:
+            img = Image.open(f)
+            img = img.convert('RGB')
+            img.thumbnail((size, size), Image.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format='JPEG', quality=82, optimize=True)
+            buf.seek(0)
+            default_storage.save(thumb_name, ContentFile(buf.read()))
+        return default_storage.url(thumb_name)
+    except Exception:
+        return None
 
 
 class User(AbstractUser):
@@ -133,6 +162,9 @@ class Store(models.Model):
     def main_logo_url(self):
         try:
             if self.logo:
+                thumb = get_imagefield_thumbnail_url(self.logo, 320, 'stores/thumbs')
+                if thumb:
+                    return thumb
                 return self.logo.url
         except Exception:
             pass
@@ -141,7 +173,7 @@ class Store(models.Model):
         if p:
             img = p.main_image or p.images.first()
             if img:
-                u = img.get_image_url()
+                u = img.get_thumbnail_url()
                 if u:
                     return u
         return os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL', 'https://placehold.co/120x120?text=Store')
@@ -328,6 +360,25 @@ class ProductImage(models.Model):
             if self.image_url:
                 return self.image_url
             if self.image:
+                try:
+                    return self.image.url
+                except Exception:
+                    pass
+            placeholder = os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL')
+            if placeholder:
+                return placeholder
+            return 'https://placehold.co/300x300?text=Image'
+        except Exception:
+            return 'https://placehold.co/300x300?text=Image'
+
+    def get_thumbnail_url(self, size=300):
+        try:
+            if self.image_url:
+                return self.image_url
+            if self.image:
+                thumb = get_imagefield_thumbnail_url(self.image, size, 'products/thumbs')
+                if thumb:
+                    return thumb
                 try:
                     return self.image.url
                 except Exception:

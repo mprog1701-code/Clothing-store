@@ -61,6 +61,17 @@
         .store-description { font-size: .95rem; }
         .visit-store-btn { padding: 10px 20px; }
     }
+    @media (max-width: 768px) {
+        .store-card,
+        .showcase-card {
+            box-shadow: none;
+        }
+        .store-card:hover,
+        .showcase-card:hover {
+            transform: none;
+            box-shadow: none;
+        }
+    }
 
     .category-filters {
         background: rgba(255,255,255,0.1);
@@ -296,9 +307,9 @@
             {% for p in showcase_products %}
             <div class="showcase-card rail-item" data-store-id="{{ p.store.id|default:'' }}" data-is-new="0" data-discount="{% if p.discount_price and p.discount_price < p.base_price %}1{% else %}0{% endif %}" data-sold="" data-price="{{ p.discount_price|default:p.base_price }}" data-created-at="{{ p.created_at|date:'c' }}" onclick="window.location.href='{% url 'product_detail' p.id %}'">
                 {% if p.main_image %}
-                    {% with url=p.main_image.get_image_url %}
+                    {% with url=p.main_image.get_thumbnail_url %}
                         {% if url %}
-                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
+                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" width="300" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
                         {% else %}
                             <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
                                 <i class="bi bi-bag" style="font-size:2rem;"></i>
@@ -308,9 +319,9 @@
                 {% elif p.images.all %}
                     {% with img=p.images.all|first %}
                         {% if img %}
-                            {% with url=img.get_image_url %}
+                            {% with url=img.get_thumbnail_url %}
                                 {% if url %}
-                                    <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
+                                    <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" width="300" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
                                 {% else %}
                                     <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
                                         <i class="bi bi-bag" style="font-size:2rem;"></i>
@@ -365,14 +376,14 @@
 
     <!-- Stores Grid -->
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <small id="storesCount" class="text-white-50"></small>
+        <small id="storesCount" class="text-white-50">المعروض: {{ stores_end }} من {{ stores_total }}</small>
     </div>
     <div class="row mobile-horizontal-scroll stores-scroll" id="storesGrid" data-page-size="6">
         {% for store in stores %}
         <div class="col-lg-4 col-md-6 mb-4">
             <div class="store-card">
                 {% if store.main_logo_url %}
-                    <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image" onerror="this.onerror=null;this.src='https://placehold.co/320x220?text=Store'">
+                    <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image" width="320" height="200" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/320x220?text=Store'">
                 {% else %}
                     <div class="store-image d-flex align-items-center justify-content-center" 
                          style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
@@ -408,9 +419,11 @@
         </div>
         {% endfor %}
     </div>
+    {% if stores_has_next and stores_next_url %}
     <div class="text-center my-3">
-        <button id="loadMoreStores" class="btn btn-outline-light px-4 py-2" type="button">عرض المزيد</button>
+        <a id="loadMoreStores" class="btn btn-outline-light px-4 py-2" href="{{ stores_next_url }}">عرض المزيد</a>
     </div>
+    {% endif %}
 </div>
 
 
@@ -435,6 +448,7 @@
         const track = document.getElementById('showcaseTrack');
         const prev = document.getElementById('scPrev');
         const next = document.getElementById('scNext');
+        if(!track || track.dataset.inited === '1') return;
         let timer = null;
         function rotateForward(){ if(track && track.children.length>0){ track.appendChild(track.children[0]); } }
         function rotateBackward(){ if(track && track.children.length>0){ track.insertBefore(track.lastElementChild, track.firstElementChild); } }
@@ -443,38 +457,12 @@
         if(prev){ prev.addEventListener('click', function(){ rotateBackward(); start(); }); }
         if(next){ next.addEventListener('click', function(){ rotateForward(); start(); }); }
         start();
+        track.dataset.inited = '1';
+        document.addEventListener('visibilitychange', function(){
+            if(document.hidden){ stop(); } else { start(); }
+        });
     })();
 
-    // Load more for stores grid
-    (function(){
-        const grid = document.getElementById('storesGrid');
-        if(!grid) return;
-        // إذا تم تفعيل وضع السلايدر الأفقي بالموبايل، عطّل زر التحميل
-        if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches && grid.__chunked) {
-            const btn = document.getElementById('loadMoreStores');
-            if(btn) btn.style.display = 'none';
-            const total = grid.querySelectorAll('[class*="col-"]').length || 0;
-            const info = document.getElementById('storesCount');
-            if(info) info.textContent = `المعروض: ${total} من ${total}`;
-            return;
-        }
-        const pageSize = parseInt(grid.getAttribute('data-page-size')||'6')||6;
-        const items = Array.prototype.slice.call(grid.children);
-        const btn = document.getElementById('loadMoreStores');
-        const info = document.getElementById('storesCount');
-        let shown = 0;
-        function render(){
-            const total = items.length;
-            items.forEach((el, idx)=>{ el.style.display = idx < shown ? '' : 'none'; });
-            if(info){ info.textContent = `المعروض: ${Math.min(shown,total)} من ${total}`; }
-            if(btn){ btn.style.display = shown >= total ? 'none' : 'inline-block'; }
-        }
-        function init(){
-            shown = Math.min(pageSize, items.length);
-            render();
-        }
-        if(btn){ btn.addEventListener('click', function(){ shown = Math.min(shown + pageSize, items.length); render(); }); }
-        init();
-    })();
+    
 </script>
 {% endblock %}

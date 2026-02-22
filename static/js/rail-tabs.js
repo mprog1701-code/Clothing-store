@@ -69,7 +69,7 @@
     ordered.forEach(function(it){
       state.scroller.appendChild(it);
     });
-    state.scroller.scrollTo({left: 0});
+    setPos(state.scroller, 0, true);
   }
   function getPos(scroller){
     var dir = getComputedStyle(scroller).direction;
@@ -81,41 +81,76 @@
     }
     return left;
   }
-  function setPos(scroller, val){
+  function setPos(scroller, val, smooth){
     var max = scroller.scrollWidth - scroller.clientWidth;
     var target = Math.max(0, Math.min(val, max));
     var dir = getComputedStyle(scroller).direction;
     if(dir === 'rtl'){
       if(scroller.scrollLeft < 0){
-        scroller.scrollTo({left: -target, behavior:'smooth'});
+        if(smooth){ scroller.scrollTo({left: -target, behavior:'smooth'}); }
+        else { scroller.scrollLeft = -target; }
       } else {
-        scroller.scrollTo({left: max - target, behavior:'smooth'});
+        if(smooth){ scroller.scrollTo({left: max - target, behavior:'smooth'}); }
+        else { scroller.scrollLeft = max - target; }
       }
     } else {
-      scroller.scrollTo({left: target, behavior:'smooth'});
+      if(smooth){ scroller.scrollTo({left: target, behavior:'smooth'}); }
+      else { scroller.scrollLeft = target; }
     }
   }
+  function tickAuto(state, now){
+    if(!state.scroller || !state.scroller.isConnected){
+      stopAuto(state);
+      return;
+    }
+    if(state.pausedUntil && now < state.pausedUntil){
+      state.scroller.__rafId = requestAnimationFrame(function(t){ tickAuto(state, t); });
+      return;
+    }
+    var max = state.scroller.scrollWidth - state.scroller.clientWidth;
+    if(max > 0){
+      if(!state.animating && now >= state.nextStepAt){
+        var step = state.scroller.clientWidth || 1;
+        var next = getPos(state.scroller) + step;
+        if(next >= max - 2) next = 0;
+        state.animating = true;
+        state.animStart = now;
+        state.animFrom = getPos(state.scroller);
+        state.animTo = next;
+      }
+      if(state.animating){
+        var t = Math.min(1, (now - state.animStart) / state.animMs);
+        var eased = 1 - Math.pow(1 - t, 3);
+        var pos = state.animFrom + (state.animTo - state.animFrom) * eased;
+        setPos(state.scroller, pos, false);
+        if(t >= 1){
+          state.animating = false;
+          state.nextStepAt = now + state.stepMs;
+        }
+      }
+    } else {
+      state.nextStepAt = now + state.stepMs;
+    }
+    state.scroller.__rafId = requestAnimationFrame(function(t){ tickAuto(state, t); });
+  }
   function startAuto(state){
-    if(state.timer) return;
-    state.timer = setInterval(function(){
-      var max = state.scroller.scrollWidth - state.scroller.clientWidth;
-      if(max <= 0) return;
-      var step = state.scroller.clientWidth || 1;
-      var next = getPos(state.scroller) + step;
-      if(next >= max - 2) next = 0;
-      setPos(state.scroller, next);
-    }, 3500);
+    if(state.scroller.__rafId) return;
+    var now = performance.now();
+    state.nextStepAt = now + state.stepMs;
+    state.animating = false;
+    state.scroller.__rafId = requestAnimationFrame(function(t){ tickAuto(state, t); });
   }
   function stopAuto(state){
-    if(state.timer){
-      clearInterval(state.timer);
-      state.timer = null;
+    if(state.scroller && state.scroller.__rafId){
+      cancelAnimationFrame(state.scroller.__rafId);
+      state.scroller.__rafId = null;
     }
   }
   function scheduleResume(state){
     if(state.idleTimer){
       clearTimeout(state.idleTimer);
     }
+    state.pausedUntil = performance.now() + 3000;
     state.idleTimer = setTimeout(function(){
       startAuto(state);
     }, 3000);
@@ -145,26 +180,51 @@
     var rail = document.querySelector('.mobile-product-rail');
     if(!rail) return;
     if(window.innerWidth > 768) return;
+    if(rail.dataset.inited === '1') return;
     var scroller = rail.querySelector('.rail-scroller');
     var tabs = Array.prototype.slice.call(rail.querySelectorAll('.rail-tab'));
     if(!scroller || !tabs.length) return;
     var items = Array.prototype.slice.call(scroller.querySelectorAll('.rail-item'));
     if(!items.length) return;
     prepareItems(items);
+    rail.dataset.inited = '1';
     var state = {
       rail: rail,
       scroller: scroller,
       tabs: tabs,
       allItems: items,
       tab: 'best',
-      timer: null,
-      idleTimer: null
+      idleTimer: null,
+      pausedUntil: 0,
+      stepMs: 3500,
+      animMs: 450,
+      animating: false,
+      animStart: 0,
+      animFrom: 0,
+      animTo: 0,
+      nextStepAt: 0
     };
     applyTab(state);
     bindTabs(state);
     bindInteractions(state);
     startAuto(state);
     Rail.state = state;
+    if(!Rail._visibilityBound){
+      Rail._visibilityBound = true;
+      document.addEventListener('visibilitychange', function(){
+        var s = Rail.state;
+        if(!s) return;
+        if(document.hidden){
+          stopAuto(s);
+        } else {
+          startAuto(s);
+        }
+      });
+      window.addEventListener('pageshow', function(){
+        var s = Rail.state;
+        if(s) startAuto(s);
+      });
+    }
   }
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);

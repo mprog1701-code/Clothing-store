@@ -791,6 +791,7 @@
         (function(){
             var MOBILE_MAX = 820; // أوسع قليلاً لضمان عمل التجميع على أغلب الهواتف
             function setupContainer(grid){
+                if(grid.dataset && grid.dataset.inited === '1') return;
                 var size = parseInt(grid.getAttribute('data-chunk-size')||'4')||4;
                 var items = Array.prototype.filter.call(grid.children, function(el){ return el && el.nodeType===1; });
                 if(items.length <= size) return; // nothing to chunk
@@ -833,9 +834,24 @@
                     }
                 }
                 apply();
+                if(grid._chunkObserver){ try{ grid._chunkObserver.disconnect(); }catch(e){} grid._chunkObserver = null; }
+                if(grid._chunkResizeHandler){ window.removeEventListener('resize', grid._chunkResizeHandler); grid._chunkResizeHandler = null; }
                 var ro;
-                try{ ro = new ResizeObserver(apply); ro.observe(document.documentElement); }catch(e){ window.addEventListener('resize', apply); }
+                var resizeHandler = function(){ apply(); };
+                try{
+                    ro = new ResizeObserver(resizeHandler);
+                    ro.observe(document.documentElement);
+                    grid._chunkObserver = ro;
+                }catch(e){
+                    grid._chunkResizeHandler = resizeHandler;
+                    window.addEventListener('resize', resizeHandler);
+                }
+                window.addEventListener('pagehide', function(){
+                    if(grid._chunkObserver){ try{ grid._chunkObserver.disconnect(); }catch(e){} grid._chunkObserver = null; }
+                    if(grid._chunkResizeHandler){ window.removeEventListener('resize', grid._chunkResizeHandler); grid._chunkResizeHandler = null; }
+                }, { once: true });
                 setTimeout(apply, 50); // تأكيد التطبيق بعد الرسم الأولي
+                if(grid.dataset) grid.dataset.inited = '1';
             }
             function init(){
                 var grids = document.querySelectorAll('.mobile-chunked-grid');

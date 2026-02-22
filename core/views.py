@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from datetime import timedelta
 from django.http import JsonResponse, HttpResponseBadRequest
+from django.core.paginator import Paginator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 import logging
 import re
@@ -103,7 +104,7 @@ def home(request):
 
 
 def store_list(request):
-    stores = Store.objects.filter(is_active=True)
+    stores = Store.objects.filter(is_active=True).order_by('id')
     
     category = request.GET.get('category')
     if category:
@@ -131,11 +132,26 @@ def store_list(request):
     except Exception:
         showcase_products = []
     
+    page_number = request.GET.get('page') or 1
+    page_size = 12
+    paginator = Paginator(stores, page_size)
+    page_obj = paginator.get_page(page_number)
+    base_params = request.GET.copy()
+    next_page_url = None
+    if page_obj.has_next():
+        base_params['page'] = page_obj.next_page_number()
+        next_page_url = f"{request.path}?{base_params.urlencode()}"
+
     cart = request.session.get('cart', [])
     cart_items_count = cart_count(cart)
     
     context = {
-        'stores': stores,
+        'stores': page_obj,
+        'stores_total': paginator.count,
+        'stores_start': page_obj.start_index() if paginator.count else 0,
+        'stores_end': page_obj.end_index() if paginator.count else 0,
+        'stores_has_next': page_obj.has_next(),
+        'stores_next_url': next_page_url,
         'cities': cities,
         'selected_city': city,
         'selected_category': category,
