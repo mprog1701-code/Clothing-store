@@ -88,3 +88,28 @@
     scroll-snap-align:start !important;
   }
 }
+@media (max-width: 768px) {
+  /* 1) فكّ تقييد Bootstrap container خارج main (خصوصاً navbar و bottom nav و footer) */
+  body.app-shell:not(.is-admin) .navbar > .container,
+  body.app-shell:not(.is-admin) .global-bottom-nav > .container,
+  body.app-shell:not(.is-admin) footer > .container,
+  body.app-shell:not(.is-admin) .navbar .container,
+  body.app-shell:not(.is-admin) .global-bottom-nav .container,
+  body.app-shell:not(.is-admin) footer .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: var(--page-pad, 12px) !important;
+    padding-right: var(--page-pad, 12px) !important;
+  }
+
+  /* 2) إذا عندك بلوك “الإطار البرتقالي” (showcase) محدد عرض/متمركز، فكّه */
+  body.app-shell:not(.is-admin) .showcase,
+  body.app-shell:not(.is-admin) .store-list-wrap,
+  body.app-shell:not(.is-admin) .store-detail-wrap {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}
