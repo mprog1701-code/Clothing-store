@@ -1,0 +1,101 @@
+@media (max-width: 768px) {
+  body.app-shell:not(.is-admin) {
+    --page-pad: 12px;
+    --radius: 14px;
+    --card-pad: 12px;
+  }
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    overflow-x: hidden;
+  }
+  body.app-shell:not(.is-admin) .main-container,
+  body.app-shell:not(.is-admin) main,
+  body.app-shell:not(.is-admin) .app-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+  body.app-shell:not(.is-admin) .main-container {
+    overflow-x: hidden;
+  }
+  body.app-shell:not(.is-admin) main {
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+  body.app-shell:not(.is-admin) main .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: var(--page-pad) !important;
+    padding-right: var(--page-pad) !important;
+  }
+  body.app-shell:not(.is-admin) .container-desktop-only {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  body.app-shell:not(.is-admin) .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+  }
+  body.app-shell:not(.is-admin) .global-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+  }
+  body.app-shell:not(.is-admin) img,
+  body.app-shell:not(.is-admin) video,
+  body.app-shell:not(.is-admin) iframe {
+    max-width: 100%;
+  }
+  body.app-shell:not(.is-admin) .card {
+    border-radius: var(--radius);
+  }
+  body.app-shell:not(.is-admin) .card .card-body {
+    padding: var(--card-pad);
+  }
+  body.app-shell:not(.is-admin) .rail-scroller,
+  body.app-shell:not(.is-admin) .mobile-horizontal-scroll,
+  body.app-shell:not(.is-admin) .products-scroll,
+  body.app-shell:not(.is-admin) .m-row-scroller {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.app-shell:not(.is-admin) .rail-scroller > *,
+  body.app-shell:not(.is-admin) .mobile-horizontal-scroll > *,
+  body.app-shell:not(.is-admin) .products-scroll > *,
+  body.app-shell:not(.is-admin) .m-row-scroller > * {
+    flex: 0 0 auto;
+    width: 160px;
+    scroll-snap-align: start;
+  }
+  body.app-shell:not(.is-admin) .rail.two-rows,
+  body.app-shell:not(.is-admin) .rail-2rows {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(2, auto);
+    overflow-x: auto;
+    gap: 12px;
+    scroll-snap-type: x proximity;
+    padding: 8px 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.app-shell:not(.is-admin) .rail.two-rows > *,
+  body.app-shell:not(.is-admin) .rail-2rows > * {
+    width: 160px;
+    scroll-snap-align: start;
+  }
+}

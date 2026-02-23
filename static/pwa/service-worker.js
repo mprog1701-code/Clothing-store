@@ -1,15 +1,15 @@
-const STATIC_CACHE = 'static-v6';
-const PAGES_CACHE = 'pages-v6';
+const STATIC_CACHE = 'static-v7';
+const PAGES_CACHE = 'pages-v7';
 const OFFLINE_URL = '/offline/';
+const DEV_BYPASS = (self.location && String(self.location.search || '').includes('dev'));
 const STATIC_ASSETS = [
   '/',
   OFFLINE_URL,
   '/static/css/style.css?v=102',
-  '/static/css/mobile.css?v=103',
+  '/static/css/app-mobile-shell.css?v=1',
   '/static/css/theme.css',
   '/static/js/theme.js',
 ];
-
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
@@ -49,6 +49,11 @@ self.addEventListener('fetch', (event) => {
         return offline || new Response('<h1>Offline</h1>', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
       })
     );
+    return;
+  }
+
+  if (DEV_BYPASS || String(req.url || '').includes('v=dev')) {
+    event.respondWith(fetch(req));
     return;
   }
 
