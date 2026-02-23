@@ -946,17 +946,15 @@
     
     {% block extra_js %}{% endblock %}
 </body>
-    {% if not debug %}
     <script>
     (function(){
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/service-worker.js?v=7').catch(function(){});
+          navigator.serviceWorker.register('/service-worker.js?v=6').catch(function(){});
         });
       }
     })();
     </script>
-    {% endif %}
     <script>
     (function(){
         function isStandalone(){
