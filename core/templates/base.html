@@ -11,7 +11,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    <link rel="manifest" href="{% static 'pwa/manifest.json' %}">
     <title>{% block title %}متجر الملابس | تسوق بثقة{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -24,10 +23,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=4">
-    <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=102">
-    <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
     <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
     <script src="{% static 'js/theme.js' %}?v=4" defer></script>
     
@@ -135,16 +132,10 @@
                 window.location.assign('/announcements/');
             }
         </script>
-        <script>
-        (function(){
-            // Removed manual scroll restoration which was causing sticky scroll issues
-        })();
-        </script>
         <!-- Main Content -->
-        <main class="container-fluid px-0">
+        <main class="container py-3">
             {% if messages %}
-                <div class="container-fluid px-0 mt-3">
-                    <div class="container container-desktop-only px-3">
+                <div class="mt-3">
                     {% for message in messages %}
                         <div class="alert alert-{{ message.tags }} alert-dismissible fade show custom-alert" role="alert">
                             <div class="d-flex align-items-center">
@@ -165,7 +156,6 @@
                             </button>
                         </div>
                     {% endfor %}
-                    </div>
                 </div>
             {% endif %}
 
@@ -175,15 +165,6 @@
                 {% block content %}{% endblock %}
             </div>
         </main>
-
-        <div id="pwaInstallBanner" role="dialog" aria-hidden="true">
-            <p class="banner-title">ثبّت التطبيق</p>
-            <p class="banner-sub">افتحه مثل أي تطبيق من شاشة الهاتف</p>
-            <div class="banner-actions">
-                <button type="button" class="btn btn-gradient" id="pwaInstallBtn">تثبيت</button>
-                <button type="button" class="btn btn-outline-secondary" id="pwaDismissBtn">لاحقاً</button>
-            </div>
-        </div>
 
         <nav class="global-bottom-nav">
             <div class="container">
@@ -235,7 +216,6 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/rail-tabs.js' %}?v=1"></script>
     <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -379,121 +359,11 @@
             document.getElementById('loadingSpinner').style.display = 'none';
         }
         
-        // Auto-hide non-critical alerts after 5 seconds
-        setTimeout(() => {
-            const alerts = document.querySelectorAll('.alert:not(.alert-danger)');
-            alerts.forEach(alert => {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            });
-        }, 5000);
-        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
-            const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
             updateCartCount();
             hideLoading();
             try{ var h = String(location.hash||''); if(h === '#'){ history.replaceState(null, document.title, location.pathname + location.search); } }catch(e){}
-            
-            // Add animation to cards
-            if(!isMobile && !reduceMotion){
-                const cards = document.querySelectorAll('.card');
-                const limit = Math.min(cards.length, 12);
-                for(let i=0;i<limit;i++){
-                    const card = cards[i];
-                    card.style.animationDelay = `${i * 0.06}s`;
-                    card.classList.add('animate__animated', 'animate__fadeInUp');
-                }
-            }
-            
-            // Enhanced button interactions
-            const buttons = document.querySelectorAll('.btn, .btn-table-action, .btn-management, .quick-action-btn');
-            buttons.forEach(button => {
-                if(!isMobile && !reduceMotion){
-                    button.addEventListener('click', function(e) {
-                        const ripple = document.createElement('span');
-                        const rect = this.getBoundingClientRect();
-                        const size = Math.max(rect.width, rect.height);
-                        const x = e.clientX - rect.left - size / 2;
-                        const y = e.clientY - rect.top - size / 2;
-                        
-                        ripple.style.width = ripple.style.height = size + 'px';
-                        ripple.style.left = x + 'px';
-                        ripple.style.top = y + 'px';
-                        ripple.classList.add('ripple');
-                        
-                        this.appendChild(ripple);
-                        
-                        setTimeout(() => {
-                            ripple.remove();
-                        }, 600);
-                    });
-                }
-                
-                if (button.type === 'submit' || (button.tagName === 'A' && button.href && (button.href.includes('/add') || button.href.includes('/edit')))) {
-                    button.addEventListener('click', function() {
-                        this.classList.add('btn-loading');
-                        setTimeout(() => {
-                            this.classList.remove('btn-loading');
-                        }, 3000);
-                    });
-                }
-            });
-            
-            // Enhanced hover effects for touch devices
-            if (!isMobile && 'ontouchstart' in window) {
-                document.body.classList.add('touch-device');
-                
-                // Add active state on touch
-                buttons.forEach(button => {
-                    button.addEventListener('touchstart', function() {
-                        this.classList.add('touch-active');
-                    });
-                    
-                    button.addEventListener('touchend', function() {
-                        setTimeout(() => {
-                            this.classList.remove('touch-active');
-                        }, 150);
-                    });
-                });
-            }
-            
-            // Keyboard navigation enhancement
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Tab') {
-                    document.body.classList.add('keyboard-navigation');
-                }
-            });
-            
-            document.addEventListener('mousedown', function() {
-                document.body.classList.remove('keyboard-navigation');
-            });
-            try{
-                const shouldShow = sessionStorage.getItem('showAnnouncements') === '1';
-                if(shouldShow){
-                    sessionStorage.removeItem('showAnnouncements');
-                    window.dispatchEvent(new CustomEvent('showAnnouncement'));
-                }
-            }catch(e){}
-            const navLinks = document.querySelectorAll('.global-bottom-nav a.nav-item');
-            navLinks.forEach(a => {
-                a.addEventListener('click', function(e){
-                    const href = this.getAttribute('href');
-                    if(href){
-                        e.preventDefault();
-                        window.location.assign(href);
-                    }
-                });
-            });
-            try{
-                const navCart = document.querySelector('.global-bottom-nav a.nav-item[href$="/cart/"]');
-                if(navCart){
-                    const wrap = navCart.querySelector('.nav-icon-wrap');
-                    const stray = navCart.querySelector(':scope > .cart-badge');
-                    if(stray && wrap){ wrap.appendChild(stray); }
-                }
-            }catch(e){}
         });
         
         // CSRF helper
@@ -715,123 +585,10 @@
             window.openQuickVariantPicker = openQuickVariantPicker;
         })();
         </script>
-        <script>
-        (function(){
-            function send(payload){
-                try{ fetch('/debug/log-js/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); }catch(e){}
-            }
-            window.addEventListener('error', function(e){
-                try{
-                    var msg = String(e.message || e.error || '');
-                    if (msg.indexOf('not a valid selector') > -1 && msg.indexOf('#') > -1) return;
-                    var p={ message: msg, file:String(e.filename|| (e.error && e.error.fileName) || ''), line:parseInt(e.lineno|| (e.error && e.error.lineNumber) || 0)||0, col:parseInt(e.colno||0)||0, url: String(location.href||'') };
-                    send(p);
-                }catch(err){}
-            });
-            window.addEventListener('unhandledrejection', function(e){
-                try{
-                    var reason=e.reason; var msg='';
-                    if(typeof reason==='string'){ msg=reason; }
-                    else if(reason && reason.message){ msg=reason.message; }
-                    else { msg=String(reason||''); }
-                    var p={ message: msg, file: '', line: 0, col: 0, url: String(location.href||'') };
-                    send(p);
-                }catch(err){}
-            });
-        })();
-        </script>
     
     {% block extra_js %}{% endblock %}
-</body>
-    <script>
-    (function(){
-        function isStandalone(){
-            try{
-                return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
-            }catch(e){ return false; }
-        }
-        function now(){ return Date.now ? Date.now() : (new Date()).getTime(); }
-        function shouldSuppress(){
-            try{
-                var until = parseInt(localStorage.getItem('pwaInstallHideUntil') || '0', 10) || 0;
-                var diff = until - now();
-                if(diff <= 0) return false;
-                return diff < (6 * 60 * 60 * 1000);
-            }catch(e){ return false; }
-        }
-        function isIOS(){
-            try{
-                return /iphone|ipad|ipod/i.test(navigator.userAgent || '');
-            }catch(e){ return false; }
-        }
-        function isAndroidChromeLike(){
-            try{
-                var ua = String(navigator.userAgent || '');
-                if(!/android/i.test(ua)) return false;
-                return /(chrome|crios|edga|edg)/i.test(ua);
-            }catch(e){ return false; }
-        }
-        var deferred = null;
-        var banner = document.getElementById('pwaInstallBanner');
-        var installBtn = document.getElementById('pwaInstallBtn');
-        var dismissBtn = document.getElementById('pwaDismissBtn');
-        function show(){
-            if(!banner) return;
-            if(isStandalone()) return;
-            if(shouldSuppress()) return;
-            if(!deferred && !isIOS() && !isAndroidChromeLike()) return;
-            banner.classList.add('show');
-            banner.setAttribute('aria-hidden','false');
-        }
-        function hide(days){
-            if(banner){
-                banner.classList.remove('show');
-                banner.setAttribute('aria-hidden','true');
-            }
-            if(days){
-                try{
-                    var ms = days * 24 * 60 * 60 * 1000;
-                    localStorage.setItem('pwaInstallHideUntil', String(now() + ms));
-                }catch(e){}
-            }
-        }
-        window.addEventListener('beforeinstallprompt', function(e){
-            try{ e.preventDefault(); }catch(err){}
-            deferred = e;
-            show();
-        });
-        if(installBtn){
-            installBtn.addEventListener('click', async function(){
-                if(!deferred){
-                    if(isIOS()){
-                        try{
-                            alert('على iPhone/iPad: افتح الموقع من Safari ثم اضغط زر المشاركة واختر "إضافة إلى الشاشة الرئيسية".');
-                        }catch(e){}
-                        return;
-                    }
-                    try{
-                        alert('للتثبيت: افتح القائمة ⋮ في Chrome/Edge ثم اختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".');
-                    }catch(e){}
-                    return;
-                }
-                try{
-                    deferred.prompt();
-                    await deferred.userChoice;
-                }catch(e){}
-                deferred = null;
-                hide(30);
-            });
-        }
-        if(dismissBtn){
-            dismissBtn.addEventListener('click', function(){ hide(0.25); });
-        }
-        window.addEventListener('appinstalled', function(){ hide(365); });
-        if(!isStandalone()){
-            setTimeout(show, 1200);
-        }
-    })();
     </script>
-
+</body>
     <script>
     (function(){
         window.toggleAppTheme = function(){
