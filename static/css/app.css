@@ -1,0 +1,42 @@
+body {
+  margin: 0;
+  font-family: 'Tajawal', sans-serif;
+  background: #ffffff;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  padding: 12px;
+}
+
+.container {
+  max-width: 100% !important;
+}
+
+.card {
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.global-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: #fff;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+
+main {
+  padding-bottom: 80px;
+}
