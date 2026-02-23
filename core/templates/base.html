@@ -1,24 +1,4 @@
-<!DOCTYPE html>// service-worker.js  (TOP OF FILE)
-self.addEventListener('install', (e) => {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (e) => {
-  e.waitUntil((async () => {
-    // امسح كل الكاشات القديمة
-    const keys = await caches.keys();
-    await Promise.all(keys.map(k => caches.delete(k)));
-
-    // تخلّص من السيطرة نهائياً
-    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    clientsList.forEach(c => c.navigate(c.url));
-  })());
-});
-
-// امنع أي fetch caching
-self.addEventListener('fetch', (e) => {
-  return;
-});
+<!DOCTYPE html>
 {% load static %}
 {% load math_filters %}
 <html lang="ar" dir="rtl">
@@ -47,7 +27,6 @@ self.addEventListener('fetch', (e) => {
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=4">
     <link rel="stylesheet" href="{% static 'css/theme-hotfix.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=102">
-    <link rel="stylesheet" href="{% static 'css/app-mobile-shell.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/admin-mobile.css' %}?v=1">
     <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
     <script src="{% static 'js/theme.js' %}?v=4" defer></script>
@@ -159,50 +138,6 @@ self.addEventListener('fetch', (e) => {
         <script>
         (function(){
             // Removed manual scroll restoration which was causing sticky scroll issues
-        })();
-        </script>
-        <script>
-        (function(){
-            function chunk(container, itemSelector, size, rowClass){
-                if(!container) return;
-                var mq = window.matchMedia && window.matchMedia('(max-width: 768px)');
-                if(!(mq && mq.matches)) return;
-                if(container.__chunked) return;
-                var items = Array.prototype.slice.call(container.querySelectorAll(itemSelector));
-                if(!items.length) return;
-                container.__chunked = true;
-                items.forEach(function(x){ x.parentNode === container && container.removeChild(x); });
-                for(var i=0;i<items.length;i+=size){
-                    var row=document.createElement('div');
-                    row.className=rowClass;
-                    // لا نضبط dir هنا حتى لا نغير اتجاه النصوص تلقائياً
-                    for(var j=i;j<i+size && j<items.length;j++){ row.appendChild(items[j]); }
-                    container.appendChild(row);
-                }
-            }
-            function init(){
-                if(window.innerWidth <= 768) return;
-                chunk(document.querySelector('.category-grid'), '.category-card', 15, 'm-row-scroller cats');
-                chunk(document.querySelector('.categories-grid'), '.category-card', 15, 'm-row-scroller cats');
-                var na=document.querySelector('.new-arrivals-scroller');
-                if(na && !na.hasAttribute('data-no-chunk') && !na.classList.contains('no-chunk')){
-                    var sel='[class*=\"col-\"]';
-                    if(na.querySelectorAll(sel).length){
-                        chunk(na, sel, 15, 'm-row-scroller products');
-                        try{ na.classList.add('chunked'); }catch(e){}
-                    }
-                }
-                var sg=document.getElementById('storesGrid');
-                if(sg){
-                    var ssel='[class*=\"col-\"]';
-                    if(sg.querySelectorAll(ssel).length){ 
-                        chunk(sg, ssel, 15, 'm-row-scroller stores'); 
-                        var btn=document.getElementById('loadMoreStores');
-                        if(btn){ btn.style.display='none'; }
-                    }
-                }
-            }
-            if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); } else { init(); }
         })();
         </script>
         <!-- Main Content -->
@@ -444,24 +379,6 @@ self.addEventListener('fetch', (e) => {
             document.getElementById('loadingSpinner').style.display = 'none';
         }
         
-        // Smooth scrolling
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                if (this.getAttribute('data-bs-toggle') === 'dropdown' || this.closest('.dropdown')) return;
-                e.preventDefault();
-                const href = this.getAttribute('href') || '';
-                if (!href || href === '#' || href.length <= 1) return;
-                const id = href.slice(1);
-                const target = document.getElementById(id);
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-        
         // Auto-hide non-critical alerts after 5 seconds
         setTimeout(() => {
             const alerts = document.querySelectorAll('.alert:not(.alert-danger)');
@@ -475,17 +392,6 @@ self.addEventListener('fetch', (e) => {
         document.addEventListener('DOMContentLoaded', function() {
             const isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
             const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-            try{
-                const probe = document.createElement('div');
-                probe.className = 'mobile-css-check';
-                probe.style.position = 'fixed';
-                probe.style.left = '-9999px';
-                document.body.appendChild(probe);
-                const opacity = window.getComputedStyle(probe).opacity;
-                const mobileCssLoaded = opacity === '0.123';
-                console.log('[mobile-debug]', { width: window.innerWidth || 0, isMobile: isMobile, mobileCssLoaded: mobileCssLoaded });
-                probe.remove();
-            }catch(e){}
             updateCartCount();
             hideLoading();
             try{ var h = String(location.hash||''); if(h === '#'){ history.replaceState(null, document.title, location.pathname + location.search); } }catch(e){}
@@ -580,18 +486,6 @@ self.addEventListener('fetch', (e) => {
                     }
                 });
             });
-            try{
-                const isMobileUA = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                if(isMobileUA){
-                    document.querySelectorAll('a[target=_blank]').forEach(a=>{ a.removeAttribute('target'); a.rel='noopener'; });
-                    const special = document.querySelectorAll('a[href^="tel:"], a[href^="mailto:"], a[href*="wa.me"], a[href^="whatsapp:"]');
-                    special.forEach(a=>{
-                        a.addEventListener('click', function(ev){ ev.preventDefault(); const href=this.getAttribute('href'); if(href){ try{ window.location.assign(href); }catch(err){ window.location.href=href; } } });
-                    });
-                    const originalOpen = window.open;
-                    window.open = function(url){ try{ window.location.assign(url); } catch(e){ window.location.href = url; } return null; };
-                }
-            }catch(e){}
             try{
                 const navCart = document.querySelector('.global-bottom-nav a.nav-item[href$="/cart/"]');
                 if(navCart){
@@ -822,123 +716,6 @@ self.addEventListener('fetch', (e) => {
         })();
         </script>
         <script>
-    (function(){
-        var isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
-        if(isMobile) return;
-        var MOBILE_MAX = 820; // أوسع قليلاً لضمان عمل التجميع على أغلب الهواتف
-            function setupContainer(grid){
-                if(grid.dataset && grid.dataset.inited === '1') return;
-                if(window.matchMedia && window.matchMedia('(max-width: 768px)').matches) return;
-                var size = parseInt(grid.getAttribute('data-chunk-size')||'4')||4;
-                var items = Array.prototype.filter.call(grid.children, function(el){ return el && el.nodeType===1; });
-                if(items.length <= size) return; // nothing to chunk
-                var nav = grid._chunkNav;
-                if(!nav){
-                    nav = document.createElement('div');
-                    nav.className = 'mobile-chunked-grid-nav d-flex justify-content-start';
-                    nav.innerHTML = '<button type="button" class="btn btn-outline-secondary btn-sm me-2" data-dir="prev">السابق</button><button type="button" class="btn btn-secondary btn-sm" data-dir="next">التالي</button>';
-                    grid.parentNode.insertBefore(nav, grid);
-                    nav.addEventListener('click', function(e){
-                        var b = e.target.closest('button'); if(!b) return;
-                        var dir = b.getAttribute('data-dir')||'';
-                        var st = grid._chunkState || { page:0 };
-                        var pages = Math.ceil(items.length/size);
-                        if(dir==='prev') st.page = Math.max(0, st.page-1);
-                        if(dir==='next') st.page = Math.min(pages-1, st.page+1);
-                        grid._chunkState = st; apply();
-                    });
-                    grid._chunkNav = nav;
-                }
-                function apply(){
-                    var isMobile = (window.innerWidth || 0) <= MOBILE_MAX;
-                    var st = grid._chunkState || (grid._chunkState = { page:0 });
-                    var pages = Math.ceil(items.length/size);
-                    if(!isMobile){
-                        items.forEach(function(el){ el.style.removeProperty('display'); });
-                        if(nav) nav.style.display='none';
-                        return;
-                    }
-                    var start = st.page * size, end = start + size;
-                    for(var i=0;i<items.length;i++){
-                        items[i].style.display = (i>=start && i<end) ? '' : 'none';
-                    }
-                    if(nav){
-                        nav.style.display='flex';
-                        var prevBtn = nav.querySelector('[data-dir=\"prev\"]');
-                        var nextBtn = nav.querySelector('[data-dir=\"next\"]');
-                        if(prevBtn) prevBtn.disabled = st.page<=0;
-                        if(nextBtn) nextBtn.disabled = st.page>=pages-1;
-                    }
-                }
-                apply();
-                if(grid._chunkObserver){ try{ grid._chunkObserver.disconnect(); }catch(e){} grid._chunkObserver = null; }
-                if(grid._chunkResizeHandler){ window.removeEventListener('resize', grid._chunkResizeHandler); grid._chunkResizeHandler = null; }
-                var ro;
-                var resizeHandler = function(){ apply(); };
-                try{
-                    ro = new ResizeObserver(resizeHandler);
-                    ro.observe(document.documentElement);
-                    grid._chunkObserver = ro;
-                }catch(e){
-                    grid._chunkResizeHandler = resizeHandler;
-                    window.addEventListener('resize', resizeHandler);
-                }
-                window.addEventListener('pagehide', function(){
-                    if(grid._chunkObserver){ try{ grid._chunkObserver.disconnect(); }catch(e){} grid._chunkObserver = null; }
-                    if(grid._chunkResizeHandler){ window.removeEventListener('resize', grid._chunkResizeHandler); grid._chunkResizeHandler = null; }
-                }, { once: true });
-                setTimeout(apply, 50); // تأكيد التطبيق بعد الرسم الأولي
-                if(grid.dataset) grid.dataset.inited = '1';
-            }
-            function init(){
-            var grids = document.querySelectorAll('.mobile-chunked-grid');
-            grids.forEach(function(g){ try{ setupContainer(g); }catch(e){} });
-            }
-            if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', init); }
-            else { init(); }
-        })();
-        </script>
-        <script>
-        (function(){
-        var isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
-        if(isMobile) return;
-            function isVisible(el){
-                if(!el || el.nodeType !== 1) return false;
-                var cs;
-                try{ cs = window.getComputedStyle(el); }catch(e){ cs = null; }
-                if(cs && (cs.display === 'none' || cs.visibility === 'hidden')) return false;
-                try{
-                    if(el.getClientRects && el.getClientRects().length === 0) return false;
-                }catch(e){}
-                return true;
-            }
-            function update(){
-                try{
-                    document.querySelectorAll('.m-row-scroller').forEach(function(scroller){
-                        var visibleCount = 0;
-                        for(var i=0;i<scroller.children.length;i++){
-                            if(isVisible(scroller.children[i])) visibleCount++;
-                            if(visibleCount > 1) break;
-                        }
-                        scroller.classList.toggle('m-single', visibleCount <= 1);
-                    });
-                }catch(e){}
-            }
-            function schedule(){ try{ requestAnimationFrame(update); }catch(e){ setTimeout(update, 0); } }
-            if(document.readyState === 'loading'){
-                document.addEventListener('DOMContentLoaded', function(){ schedule(); setTimeout(schedule, 150); });
-            }else{
-                schedule(); setTimeout(schedule, 150);
-            }
-            window.addEventListener('resize', schedule);
-            document.addEventListener('click', function(e){
-                try{
-                    if(e && e.target && e.target.closest && e.target.closest('.mobile-chunked-grid-nav button')) setTimeout(schedule, 0);
-                }catch(_e){}
-            }, false);
-        })();
-        </script>
-        <script>
         (function(){
             function send(payload){
                 try{ fetch('/debug/log-js/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); }catch(e){}
@@ -966,15 +743,6 @@ self.addEventListener('fetch', (e) => {
     
     {% block extra_js %}{% endblock %}
 </body>
-    <script>
-    (function(){
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/service-worker.js?v=6').catch(function(){});
-        });
-      }
-    })();
-    </script>
     <script>
     (function(){
         function isStandalone(){
@@ -1061,30 +829,6 @@ self.addEventListener('fetch', (e) => {
         if(!isStandalone()){
             setTimeout(show, 1200);
         }
-    })();
-    </script>
-    <script>
-    (function(){
-        function cleanupScrollLock(){
-            try{
-                var openLayer = document.querySelector('.modal.show, .offcanvas.show');
-                if(openLayer) return;
-                document.body.classList.remove('modal-open');
-                document.body.style.removeProperty('overflow');
-                document.body.style.removeProperty('padding-right');
-                document.documentElement.style.removeProperty('overflow');
-                document.querySelectorAll('.modal-backdrop').forEach(function(el){ try{ el.remove(); }catch(e){} });
-            }catch(e){}
-        }
-        if(document.readyState === 'loading'){
-            document.addEventListener('DOMContentLoaded', function(){ setTimeout(cleanupScrollLock, 0); });
-        } else {
-            setTimeout(cleanupScrollLock, 0);
-        }
-        window.addEventListener('load', function(){ setTimeout(cleanupScrollLock, 0); });
-        document.addEventListener('hidden.bs.modal', function(){ setTimeout(cleanupScrollLock, 0); });
-        document.addEventListener('hidden.bs.offcanvas', function(){ setTimeout(cleanupScrollLock, 0); });
-        document.addEventListener('keyup', function(e){ if(e && e.key === 'Escape') setTimeout(cleanupScrollLock, 0); });
     })();
     </script>
 
