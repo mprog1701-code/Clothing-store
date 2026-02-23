@@ -1,0 +1,295 @@
+@media (max-width: 768px) {
+  body.app-shell:not(.is-admin) {
+    --page-pad: 12px;
+    --radius: 16px;
+    --shadow: 0 10px 28px rgba(0,0,0,.08);
+    --shadow-soft: 0 6px 16px rgba(0,0,0,.06);
+    --copper: #B87333;
+    --copper-2: #D6A15A;
+    --bg: #ffffff;
+    --surface: #F8FAFC;
+    --text: #111827;
+    --muted: #6B7280;
+    --border: rgba(17,24,39,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    body.app-shell:not(.is-admin) {
+      --bg: #0B0F19;
+      --surface: #111827;
+      --text: #E5E7EB;
+      --muted: #9CA3AF;
+      --border: rgba(255,255,255,.08);
+    }
+  }
+  body.app-shell:not(.is-admin) {
+    background: var(--bg);
+    color: var(--text);
+  }
+  body.app-shell:not(.is-admin) main {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: var(--page-pad);
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+  body.app-shell:not(.is-admin) .app-container,
+  body.app-shell:not(.is-admin) .main-container {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: var(--page-pad);
+  }
+  body.app-shell:not(.is-admin) .container,
+  body.app-shell:not(.is-admin) .container-fluid,
+  body.app-shell:not(.is-admin) .container-desktop-only {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: var(--page-pad);
+  }
+  body.app-shell:not(.is-admin) .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+  }
+  body.app-shell:not(.is-admin) .navbar .navbar-brand,
+  body.app-shell:not(.is-admin) .navbar .nav-link,
+  body.app-shell:not(.is-admin) .navbar .dropdown-toggle {
+    color: var(--text);
+  }
+  body.app-shell:not(.is-admin) .navbar .dropdown-menu {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+  }
+  body.app-shell:not(.is-admin) .navbar .dropdown-item {
+    color: var(--text);
+  }
+  body.app-shell:not(.is-admin) .navbar .dropdown-item:focus,
+  body.app-shell:not(.is-admin) .navbar .dropdown-item:hover {
+    background: rgba(184,115,51,.08);
+    color: var(--text);
+  }
+  body.app-shell:not(.is-admin) .navbar .navbar-toggler {
+    border-color: var(--border);
+  }
+  body.app-shell:not(.is-admin) .global-bottom-nav {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  body.app-shell:not(.is-admin) .global-bottom-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex: 1;
+    text-decoration: none;
+    color: var(--muted);
+    font-weight: 700;
+    padding: 6px 4px;
+  }
+  body.app-shell:not(.is-admin) .global-bottom-nav .nav-icon {
+    font-size: 1.4rem;
+  }
+  body.app-shell:not(.is-admin) .global-bottom-nav .nav-text {
+    font-size: .85rem;
+  }
+  body.app-shell:not(.is-admin) .global-bottom-nav .nav-item.active,
+  body.app-shell:not(.is-admin) .global-bottom-nav .nav-item.active .nav-icon,
+  body.app-shell:not(.is-admin) .global-bottom-nav .nav-item.active .nav-text {
+    color: var(--copper);
+  }
+  body.app-shell:not(.is-admin) .cart-badge {
+    background: var(--copper);
+    color: #fff;
+    border: 2px solid var(--surface);
+  }
+  body.app-shell:not(.is-admin) .card,
+  body.app-shell:not(.is-admin) .store-card,
+  body.app-shell:not(.is-admin) .showcase-card,
+  body.app-shell:not(.is-admin) .product-card,
+  body.app-shell:not(.is-admin) .relCard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+  body.app-shell:not(.is-admin) .product-card .ratio,
+  body.app-shell:not(.is-admin) .showcase-img,
+  body.app-shell:not(.is-admin) .store-image,
+  body.app-shell:not(.is-admin) .relImg {
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    overflow: hidden;
+  }
+  body.app-shell:not(.is-admin) .product-card .card-img-top,
+  body.app-shell:not(.is-admin) .showcase-img,
+  body.app-shell:not(.is-admin) .store-image,
+  body.app-shell:not(.is-admin) .relImg img {
+    height: 180px;
+    width: 100%;
+    object-fit: cover;
+  }
+  body.app-shell:not(.is-admin) .product-card .card-body,
+  body.app-shell:not(.is-admin) .showcase-info {
+    color: var(--text);
+    padding: 10px 12px;
+  }
+  body.app-shell:not(.is-admin) .product-card .fw-semibold,
+  body.app-shell:not(.is-admin) .showcase-title,
+  body.app-shell:not(.is-admin) .store-name,
+  body.app-shell:not(.is-admin) .relName {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  body.app-shell:not(.is-admin) .product-card .text-primary,
+  body.app-shell:not(.is-admin) .showcase-price,
+  body.app-shell:not(.is-admin) .relPrice {
+    color: var(--copper);
+    font-weight: 800;
+  }
+  body.app-shell:not(.is-admin) .visit-store-btn,
+  body.app-shell:not(.is-admin) .add-to-cart-btn {
+    width: 100%;
+  }
+  body.app-shell:not(.is-admin) .btn,
+  body.app-shell:not(.is-admin) button,
+  body.app-shell:not(.is-admin) .visit-store-btn {
+    min-height: 44px;
+    font-weight: 700;
+    border-radius: 12px;
+  }
+  body.app-shell:not(.is-admin) .btn-primary,
+  body.app-shell:not(.is-admin) .btn-gradient,
+  body.app-shell:not(.is-admin) .visit-store-btn,
+  body.app-shell:not(.is-admin) .add-to-cart-btn {
+    background: linear-gradient(135deg, var(--copper), var(--copper-2));
+    border: none;
+    color: #fff;
+  }
+  body.app-shell:not(.is-admin) .btn-outline-light,
+  body.app-shell:not(.is-admin) .btn-outline-secondary {
+    color: var(--copper);
+    border-color: var(--copper);
+  }
+  body.app-shell:not(.is-admin) .btn-outline-light:hover,
+  body.app-shell:not(.is-admin) .btn-outline-secondary:hover {
+    background: rgba(184,115,51,.12);
+    color: var(--copper);
+  }
+  body.app-shell:not(.is-admin) .showcase-btn {
+    min-height: 40px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  body.app-shell:not(.is-admin) .showcase-btn:hover {
+    background: rgba(184,115,51,.08);
+  }
+  body.app-shell:not(.is-admin) .form-control,
+  body.app-shell:not(.is-admin) .form-select,
+  body.app-shell:not(.is-admin) .form-check-input {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+    min-height: 44px;
+    border-radius: 12px;
+  }
+  body.app-shell:not(.is-admin) .form-control:focus,
+  body.app-shell:not(.is-admin) .form-select:focus {
+    border-color: var(--copper);
+    box-shadow: 0 0 0 .2rem rgba(184,115,51,.22);
+  }
+  body.app-shell:not(.is-admin) .form-control::placeholder {
+    color: var(--muted);
+  }
+  body.app-shell:not(.is-admin) .navbar,
+  body.app-shell:not(.is-admin) .dropdown-menu,
+  body.app-shell:not(.is-admin) .card,
+  body.app-shell:not(.is-admin) .table,
+  body.app-shell:not(.is-admin) .form-control,
+  body.app-shell:not(.is-admin) .form-select,
+  body.app-shell:not(.is-admin) .form-label,
+  body.app-shell:not(.is-admin) .form-check-label,
+  body.app-shell:not(.is-admin) .dropdown-item,
+  body.app-shell:not(.is-admin) .nav-link,
+  body.app-shell:not(.is-admin) .navbar-brand,
+  body.app-shell:not(.is-admin) .table td,
+  body.app-shell:not(.is-admin) .table th {
+    color: var(--text);
+  }
+  body.app-shell:not(.is-admin) .text-muted,
+  body.app-shell:not(.is-admin) .text-secondary,
+  body.app-shell:not(.is-admin) .small.text-muted {
+    color: var(--muted) !important;
+  }
+  body.app-shell:not(.is-admin) .rail-scroller,
+  body.app-shell:not(.is-admin) .showcase-track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 170px;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  body.app-shell:not(.is-admin) .rail-2rows {
+    grid-template-rows: repeat(2, 1fr);
+  }
+  body.app-shell:not(.is-admin) .rail-item {
+    scroll-snap-align: start;
+  }
+  body.app-shell:not(.is-admin) .rail-scroller::-webkit-scrollbar,
+  body.app-shell:not(.is-admin) .mobile-horizontal-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  body.app-shell:not(.is-admin) .rail-scroller,
+  body.app-shell:not(.is-admin) .mobile-horizontal-scroll {
+    scrollbar-width: none;
+  }
+  body.app-shell:not(.is-admin) .mobile-horizontal-scroll {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.app-shell:not(.is-admin) .mobile-horizontal-scroll > [class*="col-"] {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+  body.app-shell:not(.is-admin) .stores-scroll > [class*="col-"] {
+    width: 80%;
+    max-width: 320px;
+  }
+  body.app-shell:not(.is-admin) .products-scroll > [class*="col-"] {
+    width: 60%;
+    max-width: 220px;
+  }
+  body.app-shell:not(.is-admin) .categories-scroll > [class*="col-"] {
+    width: 140px;
+  }
+  body.app-shell:not(.is-admin) .rail-tabs {
+    gap: 8px;
+  }
+  body.app-shell:not(.is-admin) .rail-tab {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 700;
+  }
+  body.app-shell:not(.is-admin) .rail-tab.active {
+    background: linear-gradient(135deg, var(--copper), var(--copper-2));
+    color: #fff;
+    border-color: transparent;
+  }
+}
