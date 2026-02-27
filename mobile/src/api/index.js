@@ -120,9 +120,27 @@ export async function productVariantPrice(id, color, size) {
 }
 
 export async function listCategories() {
-  const r = await client.get('/api/categories');
-  console.log('[API] GET /api/categories status=', r.status, 'data=', r.data);
-  return r.data;
+  try {
+    const r = await client.get('/api/categories');
+    console.log('[API] GET /api/categories status=', r.status, 'dataLen=', Array.isArray(r.data) ? r.data.length : (r.data?.results?.length || 0));
+    return r.data;
+  } catch (e) {
+    const base = (API_BASE_URL || '').replace(/\/+$/, '');
+    const path = '/api/categories';
+    const full = `${base}${path}`;
+    console.log('[API] AXIOS NetworkError for', full, 'message=', e?.message);
+    try {
+      const resp = await fetch(full, { method: 'GET' });
+      const ct = resp.headers.get('content-type') || '';
+      const ok = resp.ok;
+      console.log('[API] FETCH fallback status=', resp.status, 'ok=', ok, 'ct=', ct);
+      const data = ct.includes('application/json') ? await resp.json() : await resp.text();
+      return data;
+    } catch (fe) {
+      console.log('[API] FETCH fallback failed', fe?.message || fe);
+      throw e;
+    }
+  }
 }
 
 export async function listBanners() {

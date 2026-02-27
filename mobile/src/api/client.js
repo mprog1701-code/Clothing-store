@@ -8,21 +8,30 @@ const client = axios.create({
   timeout: 15000
 });
 
-console.log('[client] API_BASE_URL =', API_BASE_URL || '(empty)');
+console.log('[client] BASE_URL =', API_BASE_URL || '(empty)', 'envDev=', !!__DEV__);
 
 client.interceptors.request.use(async (config) => {
   const state = await NetInfo.fetch();
   if (!state.isConnected) {
     return Promise.reject({ isOffline: true });
   }
-  if (!API_BASE_URL) {
-    return Promise.reject({ message: 'API_BASE_URL is not set', isMisconfig: true });
+  const base = API_BASE_URL && API_BASE_URL.replace(/\/+$/, '');
+  const isProd = !__DEV__;
+  const invalidHost = !base || (isProd && /localhost|127\.0\.0\.1|192\.168\.|10\.0\.2\.2/i.test(base));
+  if (invalidHost) {
+    console.error('[client] INVALID_BASE_URL =', base || '(empty)');
+    return Promise.reject({ message: 'Invalid API_BASE_URL', isMisconfig: true });
   }
   const token = await getAccessToken();
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+  try {
+    const m = (config.method || 'get').toUpperCase();
+    const full = `${base}${config.url || ''}`;
+    console.log('[client] REQUEST', m, full);
+  } catch {}
   return config;
 });
 
@@ -40,6 +49,19 @@ client.interceptors.response.use(
     const status = error.response && error.response.status;
     try {
       console.log('[client] ERROR status=', status, 'url=', cfg?.url, 'message=', error?.message);
+      const details = {
+        isAxiosError: !!error.isAxiosError,
+        code: error.code || '',
+        method: (cfg?.method || '').toUpperCase(),
+        base: API_BASE_URL || '',
+        hasResponse: !!error.response,
+        hasRequest: !!error.request
+      };
+      console.log('[client] ERROR details', details);
+      try {
+        const j = typeof error.toJSON === 'function' ? error.toJSON() : null;
+        if (j) console.log('[client] ERROR toJSON', j);
+      } catch {}
     } catch {}
     if (error.isOffline) {
       return Promise.reject(error);
