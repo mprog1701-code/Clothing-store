@@ -113,17 +113,17 @@ export default function HomeScreen({ navigation }) {
   }, [search]);
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background }}>
         <ActivityIndicator />
-        <Text style={{ marginTop: 8, textAlign: 'center' }}>جاري تحميل المحتوى...</Text>
+        <Text style={{ marginTop: 8, textAlign: 'center', color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>جاري تحميل المحتوى...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-        <Text style={{ color: 'red', marginBottom: 12, textAlign: 'center' }}>{error}</Text>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 16, backgroundColor: theme.colors.background }}>
+        <Text style={{ color: theme.colors.danger, marginBottom: 12, textAlign: 'center', fontFamily: theme.typography.fontRegular }}>{error}</Text>
         <Button title="إعادة المحاولة" onPress={load} />
       </View>
     );
@@ -379,11 +379,13 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
       />
-      <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg }}>
-        <TouchableOpacity onPress={() => Alert.alert('لمس', 'التفاعل يعمل')}>
-          <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>اختبار لمس</Text>
-        </TouchableOpacity>
-      </View>
+      {__DEV__ ? (
+        <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg }}>
+          <TouchableOpacity onPress={() => Alert.alert('لمس', 'التفاعل يعمل')}>
+            <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>اختبار لمس</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
     </View>
   ); };
 
@@ -401,6 +403,7 @@ export default function HomeScreen({ navigation }) {
     <FlatList
       data={newArrivals}
       keyExtractor={(it) => String(it.id)}
+      style={{ backgroundColor: theme.colors.background }}
       numColumns={2}
       columnWrapperStyle={{ paddingHorizontal: theme.spacing.lg }}
       
