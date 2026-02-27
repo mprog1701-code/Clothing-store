@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "DAAR-Mobile",
+    "slug": "DAAR-Mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {}
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "extra": {
+      "apiBaseUrl": ""
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font"
+    ]
+  }
+}

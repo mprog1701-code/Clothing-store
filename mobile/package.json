@@ -1,0 +1,45 @@
+{
+  "name": "clothing-store-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "build:web": "expo export:web",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "backend:dev": "python ../manage.py runserver 0.0.0.0:8000",
+    "backend:migrate": "python ../manage.py migrate",
+    "backend:createsuper": "python ../manage.py createsuperuser"
+  },
+  "dependencies": {
+    "@expo-google-fonts/cairo": "^0.4.2",
+    "@expo/metro-runtime": "~6.1.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/netinfo": "11.4.1",
+    "@react-navigation/bottom-tabs": "6.5.19",
+    "@react-navigation/native": "^6.1.9",
+    "@react-navigation/native-stack": "^6.9.19",
+    "axios": "^1.6.7",
+    "expo": "54",
+    "expo-constants": "~18.0.13",
+    "expo-font": "~14.0.11",
+    "expo-image": "~3.0.11",
+    "expo-linear-gradient": "~15.0.8",
+    "expo-secure-store": "~15.0.8",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-web": "^0.21.0",
+    "react-native-webview": "13.15.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.9",
+    "eslint": "^8.56.0"
+  }
+}

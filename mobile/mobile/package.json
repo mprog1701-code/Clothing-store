@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "clothing-store-mobile": "file:.."
+  }
+}

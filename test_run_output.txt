@@ -1,0 +1,78 @@
+﻿[diagnostic] default_storage backend: django.core.files.storage.filesystem.FileSystemStorage
+[diagnostic] db engine: django.db.backends.sqlite3
+[diagnostic] db name: db.sqlite3
+[diagnostic] db host: 
+[diagnostic] db port: 
+[diagnostic] has DATABASE_URL: True
+Found 17 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: corsheaders, messages, rest_framework, rest_framework_simplejwt, staticfiles, storages
+  Apply all migrations: admin, auth, contenttypes, core, sessions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying core.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying core.0002_productimage_image_url_alter_productimage_image... OK
+  Applying core.0003_product_is_featured... OK
+  Applying core.0004_sitesettings... OK
+  Applying core.0005_sitesettings_footer_copyright_and_more... OK
+  Applying core.0006_alter_sitesettings_footer_link_3_url_and_more... OK
+  Applying core.0007_user_owner_key... OK
+  Applying core.0008_product_discount_price_product_rating_store_category_and_more... OK
+  Applying core.0009_campaign_sitesettings_contact_enabled_and_more... OK
+  Applying core.0010_sitesettings_visitor_count_alter_user_role... OK
+  Applying core.0011_store_logo_alter_product_category_and_more... OK
+  Applying core.0012_product_size_type_alter_productvariant_size... OK
+  Applying core.0013_productcolor_productvariant_uniq_product_color_size_and_more... OK
+  Applying core.0014_migrate_variant_colors... OK
+  Applying core.0015_remove_productvariant_color... OK
+  Applying core.0016_productimage_variant... OK
+  Applying core.0017_address_latitude_address_longitude... OK
+  Applying core.0018_address_extra_fields... OK
+  Applying core.0019_address_is_default_address_plus_code... OK
+  Applying core.0020_admin_portal... OK
+  Applying core.0021_store_free_delivery_threshold_store_primary_color_and_more... OK
+  Applying core.0022_store_currency_store_delivery_time_unit_and_more... OK
+  Applying core.0023_clean_store_categories... OK
+  Applying core.0024_restrict_store_categories... OK
+  Applying core.0025_attributecolor_attributesize_and_more... OK
+  Applying core.0026_productimage_color_attr_productimage_order... OK
+  Applying core.0027_productimage_image_hash_importlog... OK
+  Applying core.0028_order_store_phone_order_tracking_number_and_more... OK
+  Applying core.0029_order_delivery_phone_order_delivery_status_and_more... OK
+  Applying core.0030_order_tracking_token... OK
+  Applying core.0031_sitesettings_delivery_company_phone... OK
+  Applying core.0032_featureflag... OK
+  Applying core.0033_enable_new_arrivals_reports... OK
+  Applying core.0034_store_formatted_address_store_latitude_and_more... OK
+  Applying core.0035_phonereservation_alter_store_owner_alter_user_phone... OK
+  Applying core.0036_store_owner_contact_name_alter_user_phone_and_more... OK
+  Applying core.0037_alter_user_phone... OK
+  Applying core.0038_storeownerinvite_claimed_at... OK
+  Applying core.0039_store_owner_user_alter_store_owner_alter_user_role_and_more... OK
+  Applying core.0040_backfill_storeowners... OK
+  Applying core.0041_trim_store_categories... OK
+  Applying core.0042_product_status_alter_orderitem_product_and_more... OK
+  Applying core.0043_add_indexes... OK
+  Applying core.0044_store_owner_user_foreignkey... OK
+  Applying core.0045_rename_order_created_idx_core_order_created_912d27_idx_and_more... OK
+  Applying sessions.0001_initial... OK
+System check identified no issues (0 silenced).

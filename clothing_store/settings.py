@@ -23,6 +23,7 @@ _ENV_HOSTS = [h.strip() for h in _AH.split(',') if h.strip()]
 _DEFAULT_HOSTS = [
     '127.0.0.1',
     'localhost',
+    '192.168.1.102',
     '.railway.app',
     '.up.railway.app',
     '.onrender.com',
@@ -33,6 +34,10 @@ ALLOWED_HOSTS = list(dict.fromkeys(_ENV_HOSTS + _DEFAULT_HOSTS))
 
 INSTALLED_APPS = [
     'core',
+    'merchants',
+    'catalog',
+    'orders',
+    'ads',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,6 +48,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'storages',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -278,6 +286,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 from datetime import timedelta
@@ -286,6 +295,15 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Clothing Store API',
+    'DESCRIPTION': 'REST API for Clothing Store mobile and web clients',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SCHEMA_PATH_PREFIX': r'/api',
+    'CONTACT': {'name': 'Support', 'email': os.environ.get('CONTACT_EMAIL', '')},
 }
 
 # Feature flags (controlled via environment variables)
@@ -300,11 +318,18 @@ FEATURE_FLAGS = {
     'OWNER_DASHBOARD_REPORTS': config('FEATURE_OWNER_DASHBOARD_REPORTS', default=True, cast=bool),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
+_CORS = (config('CORS_ALLOWED_ORIGINS', default='') or '').strip()
+if _CORS:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _CORS.split(',') if o.strip()]
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:19006",
+        "http://127.0.0.1:19006",
+        "http://localhost:19000",
+        "http://127.0.0.1:19000",
+    ]
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 LOGIN_URL = '/login/'
@@ -329,6 +354,12 @@ else:
         'https://*.onrender.com',
         'https://*.vercel.app',
     ]
+    if DEBUG:
+        CSRF_TRUSTED_ORIGINS += [
+            'http://192.168.1.102:8000',
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+        ]
 SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG

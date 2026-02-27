@@ -16,7 +16,8 @@ from urllib.parse import urlencode
 from urllib.error import URLError, HTTPError
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, StoreSerializer, 
-    ProductSerializer, AddressSerializer, OrderSerializer, OrderCreateSerializer
+    ProductSerializer, AddressSerializer, OrderSerializer, OrderCreateSerializer,
+    CartItemSerializer
 )
 from .permissions import (
     IsCustomer, IsStoreOwner, IsAdmin, IsStoreOwnerOfStore, 
@@ -106,6 +107,10 @@ class AuthViewSet(viewsets.ViewSet):
     def me(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def logout(self, request):
+        return Response({'ok': True})
 
 
 class StoreViewSet(viewsets.ReadOnlyModelViewSet):
@@ -310,6 +315,115 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({'found': True, 'price': vp, 'sale_price': sale_old, 'currency': currency})
         return Response({'found': False, 'price': None, 'sale_price': None, 'currency': currency, 'fallback_price': base_price})
 
+class CategoryList(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def get(self, request):
+        items = []
+        for key, label in Product.CATEGORY_CHOICES:
+            items.append({'key': key, 'label': label})
+        return Response({'categories': items})
+
+class BannerList(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def get(self, request):
+        from .models import Campaign
+        items = []
+        qs = Campaign.objects.filter(is_active=True)
+        for it in qs:
+            items.append({
+                'id': it.id,
+                'title': it.title,
+                'description': it.description,
+                'image': (it.banner_image.url if it.banner_image else ''),
+                'discountPercent': it.discount_percent
+            })
+        if not items:
+            items = [
+                {'id': 1, 'title': 'ترحيب', 'description': 'خصومات الافتتاح', 'image': '', 'discountPercent': 10},
+                {'id': 2, 'title': 'عروض نهاية الأسبوع', 'description': 'خصم 20% على المختارات', 'image': '', 'discountPercent': 20},
+            ]
+        return Response({'banners': items})
+
+class BannerHomeTop(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def get(self, request):
+        from django.utils import timezone
+        try:
+            from ads.models import Banner
+        except Exception:
+            return Response({'results': [], 'count': 0}, status=status.HTTP_200_OK)
+        now = timezone.now()
+        qs = Banner.objects.filter(is_active=True, placement='home_top')
+        qs = qs.filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+        qs = qs.filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+        qs = qs.order_by('-priority', '-id')
+        items = []
+        for b in qs[:20]:
+            try:
+                img = b.image.url if b.image else ''
+                if img and not (img.startswith('http://') or img.startswith('https://')):
+                    try:
+                        img = request.build_absolute_uri(img)
+                    except Exception:
+                        pass
+            except Exception:
+                img = ''
+            items.append({
+                'id': b.id,
+                'title': b.title,
+                'image': img,
+                'placement': b.placement,
+                'priority': int(b.priority or 0),
+                'starts_at': (b.starts_at.isoformat() if b.starts_at else None),
+            })
+        return Response(items)
+
+class CartViewSet(viewsets.ModelViewSet):
+    serializer_class = CartItemSerializer
+    from rest_framework.permissions import IsAuthenticated
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        return __import__('core.models', fromlist=['CartItem']).models.CartItem.objects.filter(user=self.request.user).order_by('-updated_at')
+    def initial(self, request, *args, **kwargs):
+        try:
+            auth_hdr = request.META.get('HTTP_AUTHORIZATION', '')
+            masked = ''
+            if auth_hdr.startswith('Bearer '):
+                tok = auth_hdr[7:]
+                masked = f"Bearer {tok[:6]}...{tok[-4:]}" if len(tok) > 10 else "Bearer ****"
+            logger = logging.getLogger('cart')
+            logger.info(f"[cart] user={getattr(request.user, 'id', None)} role={getattr(request.user, 'role', '')} auth_present={bool(auth_hdr)} auth_masked={masked}")
+        except Exception:
+            pass
+        return super().initial(request, *args, **kwargs)
+
+class DevSeed(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def post(self, request):
+        from django.conf import settings
+        if not settings.DEBUG:
+            return Response({'error': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        from django.core.management import call_command
+        try:
+            call_command('populate_sample_data')
+        except Exception as e:
+            pass
+        try:
+            Product.objects.all().update(status='ACTIVE', is_active=True)
+        except Exception:
+            pass
+        try:
+            from .models import Campaign
+            if not Campaign.objects.filter(is_active=True).exists():
+                Campaign.objects.create(title='افتتاح المنصة', description='خصومات حصرية', discount_percent=15, is_active=True)
+                Campaign.objects.create(title='الشتاء الدافئ', description='خصم 25% على الألبسة الشتوية', discount_percent=25, is_active=True)
+        except Exception:
+            pass
+        return Response({'ok': True})
 
 class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = AddressSerializer

@@ -36,6 +36,7 @@
 ### المتطلبات
 - Python 3.8+
 - PostgreSQL (اختياري، يمكن استخدام SQLite للتطوير)
+- Node.js 18+
 
 ### خطوات التثبيت
 
@@ -75,6 +76,57 @@ python manage.py runserver
 7. **الوصول إلى التطبيق**:
 - الموقع: http://127.0.0.1:8000/
 - لوحة الأدمن: http://127.0.0.1:8000/admin/
+
+## واجهات الجوال والويب (React Native + Web/PWA)
+
+1. الدخول إلى مجلد التطبيق:
+```bash
+cd mobile
+```
+
+2. تثبيت الحزم:
+```bash
+npm install
+```
+
+3. تشغيل النسخة الجوال:
+```bash
+npm run dev
+```
+
+4. تشغيل نسخة الويب (PWA):
+```bash
+npm run web
+```
+
+5. بناء نسخة الويب الجاهزة للنشر:
+```bash
+npm run build:web
+```
+
+6. تشغيل الخادم الخلفي من خلال سكربتات npm:
+```bash
+npm run backend:dev
+```
+
+## الإعدادات
+
+- ملف البيئة `.env`:
+  - API_BASE_URL=http://127.0.0.1:8000
+  - CORS_ALLOWED_ORIGINS=http://127.0.0.1:19006,http://localhost:19006
+- توثيق الـ API:
+  - المخطط: http://127.0.0.1:8000/api/schema/
+  - واجهة Swagger: http://127.0.0.1:8000/api/docs/
+- نقاط JWT القياسية:
+  - الحصول على التوكن: POST /api/token/
+  - التجديد: POST /api/token/refresh/
+
+## قائمة TODO للتوقيع والنشر
+
+- إعداد Keystore لتوقيع Android
+- إعداد شهادات iOS (Developer/Distribution)
+- ضبط API_BASE_URL للبيئة الإنتاجية
+- تفعيل CORS للأصول النهائية للويب
 
 ## API Endpoints
 

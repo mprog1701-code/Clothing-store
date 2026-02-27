@@ -13,16 +13,60 @@
     <meta name="format-detection" content="telephone=no">
     <title>{% block title %}متجر الملابس | تسوق بثقة{% endblock %}</title>
     
+    <!-- Bootstrap CSS -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/app.css' %}?v=1">
-    <link rel="stylesheet" href="{% static 'css/mobile.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/mobile-dark-reset.css' %}?v=301">
+    <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
+    <script src="{% static 'js/theme.js' %}?v=4" defer></script>
+    
+        <style>
+        /* CRITICAL: FONT LOCKDOWN */
+        html, body, div, span, applet, object, iframe,
+        h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+        a, abbr, acronym, address, big, cite, code,
+        del, dfn, em, img, ins, kbd, q, s, samp,
+        small, strike, strong, sub, sup, tt, var,
+        b, u, center,
+        dl, dt, dd, ol, ul, li,
+        fieldset, form, label, legend,
+        table, caption, tbody, tfoot, thead, tr, th, td,
+        article, aside, canvas, details, embed, 
+        figure, figcaption, footer, header, hgroup, 
+        menu, nav, output, ruby, section, summary,
+        time, mark, audio, video, input, textarea, select, button, .btn {
+            font-family: 'Tajawal', sans-serif !important;
+        }
+        /* Fix icons breaking due to font override */
+        i, .bi, .fa, .fas, .far, .fab, .material-icons, [class*=" icon-"], [class^="icon-"] {
+            font-family: 'bootstrap-icons' !important;
+        }
+    </style>
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="app-shell{% if user.is_staff or user.role == 'store_admin' or user.is_superuser %} is-admin{% endif %}">
-    <nav class="navbar bg-light">
-        <div class="container-fluid px-3">
+<body class="app-shell {% if user.is_staff or user.role == 'store_admin' or user.is_superuser %}is-admin{% endif %}" data-path="{{ request.path }}">
+    <!-- Loading Spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+            <div class="container">
                 <a class="navbar-brand" href="{% url 'home' %}">
                     <i class="bi bi-shop"></i> متجر الملابس
                 </a>
@@ -83,48 +127,256 @@
                     </ul>
                 </div>
             </div>
-    </nav>
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-    <nav class="global-bottom-nav">
-        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
-            <i class="bi bi-house nav-icon"></i>
-            <span class="nav-text">الرئيسية</span>
-        </a>
-        <a href="{% url 'store_list' %}" class="nav-item {% if request.path|slice:":8" == '/stores/' %}active{% endif %}">
-            <i class="bi bi-shop nav-icon"></i>
-            <span class="nav-text">المتاجر</span>
-        </a>
-        <a href="{% url 'cart_view' %}" class="nav-item">
-            <span class="nav-icon-wrap">
-                <i class="bi bi-cart nav-icon"></i>
-                {% if request.path|slice:":6" != '/cart/' %}
-                    {% with count=request.session.cart|cart_count %}
-                    {% if count > 0 %}
-                    <span class="cart-badge">{{ count }}</span>
-                    {% endif %}
-                    {% endwith %}
-                {% endif %}
-            </span>
-            <span class="nav-text">السلة</span>
-        </a>
-        <a href="{% url 'account_settings' %}" class="nav-item {% if request.path|slice:":12" == '/my/account/' %}active{% endif %}">
-            <i class="bi bi-person nav-icon"></i>
-            <span class="nav-text">حسابي</span>
-        </a>
-    </nav>
+        </nav>
+        <script>
+            function openAnnouncements(){
+                window.location.assign('/announcements/');
+            }
+        </script>
+        <!-- Main Content -->
+        <main class="container py-3">
+            {% if messages %}
+                <div class="mt-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show custom-alert" role="alert">
+                            <div class="d-flex align-items-center">
+                                {% if 'success' in message.tags %}
+                                    <i class="bi bi-check-circle-fill me-2"></i>
+                                {% elif 'danger' in message.tags %}
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                {% elif 'warning' in message.tags %}
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                {% endif %}
+                                <span>{{ message }}</span>
+                            </div>
+                            <button type="button" class="btn-close btn-close-enhanced" data-bs-dismiss="alert" 
+                                    style="width: 30px; height: 30px; padding: 8px; border-radius: 50%;">
+                                <span class="visually-hidden">إغلاق</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            
+
+            <div class="app-container">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+
+        <nav class="global-bottom-nav">
+            <div class="container">
+                <div class="row">
+                    <div class="col-3">
+                        <a href="/" class="nav-item {% if request.path == '/' %}active{% endif %}">
+                            <i class="bi bi-house nav-icon"></i>
+                            <span class="nav-text" data-i18n="nav_home">الرئيسية</span>
+                        </a>
+                    </div>
+                    <div class="col-3">
+                        <a href="{% url 'store_list' %}" class="nav-item {% if request.path|slice:":8" == '/stores/' %}active{% endif %}">
+                            <i class="bi bi-shop nav-icon"></i>
+                            <span class="nav-text" data-i18n="nav_stores">المتاجر</span>
+                        </a>
+                    </div>
+                    <div class="col-3">
+                        <a href="{% url 'cart_view' %}" class="nav-item">
+                            <span class="nav-icon-wrap">
+                                <i class="bi bi-cart nav-icon"></i>
+                                {% if request.path|slice:":6" != '/cart/' %}
+                                    {% with count=request.session.cart|cart_count %}
+                                    {% if count > 0 %}
+                                    <span class="cart-badge">{{ count }}</span>
+                                    {% endif %}
+                                    {% endwith %}
+                                {% endif %}
+                            </span>
+                            <span class="nav-text" data-i18n="nav_cart">السلة</span>
+                        </a>
+                    </div>
+                    <div class="col-3">
+                        <a href="{% url 'account_settings' %}" class="nav-item {% if request.path|slice:":12" == '/my/account/' %}active{% endif %}">
+                            <i class="bi bi-person nav-icon"></i>
+                            <span class="nav-text" data-i18n="nav_account">حسابي</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Footer -->
+        <footer class="footer mt-auto py-3">
+            <div class="container text-center text-muted">
+                <span>&copy; {% now "Y" %} {{ site_settings.site_name }}. جميع الحقوق محفوظة.</span>
+            </div>
+        </footer>
+    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">سلة من متجر واحد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>لا يمكن الجمع بين متاجر مختلفة في سلة واحدة.</p>
+                    <p class="text-muted mb-0">اختر الإجراء المناسب:</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="msCancelBtn">إلغاء</button>
+                    <button type="button" class="btn btn-gradient" id="msClearBtn">افرغ السلة وابدأ من المتجر الجديد</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
+        (function(){
+            // Removed conflicting theme enforcement script
+        })();
+        window.i18n = {
+            ar: {
+                nav_home: 'الرئيسية',
+                nav_stores: 'المتاجر',
+                nav_cart: 'السلة',
+                nav_account: 'حسابي',
+                account_language: 'اللغة',
+                account_theme: 'مظهر التطبيق',
+                account_notifications: 'الاشعارات',
+                account_services: 'خدماتنا',
+                account_about: 'عن شركتنا',
+                account_merchant: 'صير تاجر ويانة',
+                account_appicon: 'ايقونة التطبيق',
+                account_login: 'تسجيل الدخول',
+                account_register: 'تسجيل',
+                account_logout: 'تسجيل الخروج',
+                account_not_signed: 'غير مسجل',
+                account_owner_login: 'دخول المالك',
+                language_ar: 'العربية',
+                language_en: 'English',
+                language_ku: 'کوردی',
+                theme_dark: 'داكن',
+                theme_light: 'فاتح',
+                theme_system: 'حسب النظام'
+            },
+            en: {
+                nav_home: 'Home',
+                nav_stores: 'Stores',
+                nav_cart: 'Cart',
+                nav_account: 'Account',
+                account_language: 'Language',
+                account_theme: 'App Theme',
+                account_notifications: 'Notifications',
+                account_services: 'Our Services',
+                account_about: 'About Us',
+                account_merchant: 'Become a Merchant',
+                account_appicon: 'App Icon',
+                account_login: 'Login',
+                account_register: 'Register',
+                account_logout: 'Logout',
+                account_not_signed: 'Not signed in',
+                account_owner_login: 'Owner Login',
+                language_ar: 'Arabic',
+                language_en: 'English',
+                language_ku: 'Kurdî',
+                theme_dark: 'Dark',
+                theme_light: 'Light',
+                theme_system: 'System'
+            },
+            ku: {
+                nav_home: 'سەرەتا',
+                nav_stores: 'فرۆشیگا',
+                nav_cart: 'سەبەتە',
+                nav_account: 'هەژمار',
+                account_language: 'زمان',
+                account_theme: 'ڕووخەی ئەپ',
+                account_notifications: 'ئاگەدارییەکان',
+                account_services: 'خزمەتگوزارییەکانمان',
+                account_about: 'دەربارەی ئێمە',
+                account_merchant: 'بە فرۆشیگار بێ',
+                account_appicon: 'نیشانی ئەپلیکەیشن',
+                account_login: 'چوونەژورەوە',
+                account_register: 'تۆماربوون',
+                account_logout: 'دەرچوون',
+                account_not_signed: 'تۆمار نەکراوە',
+                account_owner_login: 'چوونەژوورەوەی خاوند',
+                language_ar: 'عەرەبی',
+                language_en: 'ئینگلیزی',
+                language_ku: 'کوردی',
+                theme_dark: 'تاریک',
+                theme_light: 'کاڵ',
+                theme_system: 'بە سیستەم'
+            }
+        };
+        function applyTranslations(lang){
+            const dict=(window.i18n && window.i18n[lang])? window.i18n[lang] : window.i18n['ar'];
+            document.querySelectorAll('[data-i18n]').forEach(el=>{
+                const k=el.getAttribute('data-i18n');
+                if(dict[k]) el.textContent=dict[k];
+            });
+        }
+        function applyLanguageFromStorage(){
+            let lang='ar';
+            try{
+                const stored=localStorage.getItem('siteLanguage');
+                if(!stored || !window.i18n[stored]){
+                    localStorage.setItem('siteLanguage','ar');
+                    lang='ar';
+                } else {
+                    lang=stored;
+                }
+            }catch(e){ lang='ar'; }
+            applyTranslations(lang);
+        }
+        applyLanguageFromStorage();
+        window.addEventListener('languageChange',function(e){
+            const lang=e.detail&&e.detail.lang? e.detail.lang : (localStorage.getItem('siteLanguage')||'ar');
+            applyTranslations(lang);
+        });
+        
+        // Cart functionality
+            function updateCartCount() {
+                const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+                const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const cartCountElement = document.getElementById('cart-count');
+                if (cartCountElement) {
+                    cartCountElement.textContent = count;
+                    cartCountElement.style.display = count > 0 ? 'block' : 'none';
+                }
+            }
+        
+        // Loading functionality
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+            hideLoading();
+            try{ var h = String(location.hash||''); if(h === '#'){ history.replaceState(null, document.title, location.pathname + location.search); } }catch(e){}
+        });
+        
+        // CSRF helper
         function getCsrfToken(){
             const meta = document.querySelector('meta[name="csrf-token"]');
             if (meta && meta.content && meta.content !== 'NOTPROVIDED') return meta.content;
             const m = document.cookie.match(/csrftoken=([^;]+)/);
             return m ? m[1] : '';
         }
+        // Add to cart via server
         function addToCart(productId, variantId = null, quantity = 1, storeId = null) {
+            showLoading();
             const csrfToken = getCsrfToken();
             const body = { productId: productId, quantity: quantity };
             if (variantId) body.variantId = variantId;
@@ -143,10 +395,87 @@
                             updateCartBadge(parseInt(res.data.cart_items_count || 0));
                         }
                     } catch(e) {}
+                    const toast = document.createElement('div');
+                    toast.className = 'position-fixed top-0 end-0 p-3';
+                    toast.style.zIndex = '9999';
+                    toast.innerHTML = `
+                        <div class="toast show animate__animated animate__slideInRight" role="alert">
+                            <div class="toast-header bg-success text-white">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                <strong class="me-auto">تمت الإضافة</strong>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                            </div>
+                            <div class="toast-body">تمت إضافة المنتج إلى السلة بنجاح!</div>
+                        </div>
+                    `;
+                    document.body.appendChild(toast);
+                    setTimeout(function(){ toast.remove(); }, 6000);
+                } else {
+                    if (res.status === 409 && res.data && res.data.code === 'MULTI_STORE_NOT_ALLOWED') {
+                        try { window._pendingAdd = { productId: productId, variantId: variantId, quantity: quantity, storeId: storeId, details: res.data }; } catch(e){}
+                        const modalEl = document.getElementById('multiStoreModal');
+                        if (modalEl) { new bootstrap.Modal(modalEl).show(); }
+                        hideLoading();
+                        return;
+                    }
+                    const code = res.data && res.data.code;
+                    const msgMap = {
+                        'VARIANT_REQUIRED': 'اختر اللون/القياس قبل الإضافة للسلة.',
+                        'INVALID_VARIANT': 'الخيار المختار غير صالح. اختر مرة أخرى.',
+                        'OUT_OF_STOCK': 'المنتج نفد حالياً.',
+                        'INSUFFICIENT_STOCK': 'الكمية المطلوبة غير متوفرة.',
+                        'MULTI_STORE_NOT_ALLOWED': 'لا يمكن الجمع بين متاجر مختلفة في سلة واحدة.',
+                        'CHECKOUT_STOCK_FAILED': 'بعض المنتجات تغير مخزونها. تم تحديث سلتك.'
+                    };
+                    const msg = (code && msgMap[code]) ? msgMap[code] : ((res.data && res.data.message) ? res.data.message : 'تعذر إضافة المنتج إلى السلة');
+                    const toast = document.createElement('div');
+                    toast.className = 'position-fixed top-0 end-0 p-3';
+                    toast.style.zIndex = '9999';
+                    toast.innerHTML = `
+                        <div class="toast show animate__animated animate__slideInRight" role="alert">
+                            <div class="toast-header bg-danger text-white">
+                                <i class="bi bi-x-circle-fill me-2"></i>
+                                <strong class="me-auto">فشل الإضافة</strong>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                            </div>
+                            <div class="toast-body">${msg}</div>
+                        </div>
+                    `;
+                    document.body.appendChild(toast);
+                    setTimeout(function(){ toast.remove(); }, 3000);
+                    if (code === 'VARIANT_REQUIRED' && productId) {
+                        try { openQuickVariantPicker(productId); } catch(e) {}
+                    }
                 }
+                hideLoading();
             })
-            .catch(function(){});
+            .catch(function(){ hideLoading(); });
         }
+        (function(){
+            const clearBtn = document.getElementById('msClearBtn');
+            const cancelBtn = document.getElementById('msCancelBtn');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function(){
+                    const csrfToken = getCsrfToken();
+                    fetch('/cart/clear/', { method: 'DELETE', credentials: 'same-origin', headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, data:j }; }); })
+                    .then(function(){
+                        try{
+                            const p = window._pendingAdd || {};
+                            const modalEl = document.getElementById('multiStoreModal');
+                            if (modalEl) { bootstrap.Modal.getInstance(modalEl)?.hide(); }
+                            addToCart(p.productId, p.variantId, p.quantity, p.storeId);
+                            window._pendingAdd = null;
+                        }catch(e){}
+                    });
+                });
+            }
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function(){
+                    try{ window._pendingAdd = null; }catch(e){}
+                });
+            }
+        })();
         function updateCartBadge(count){
             try{
                 const inCartPage = (window.location.pathname || '').startsWith('/cart/');
@@ -163,7 +492,160 @@
                 badge.style.display = (!inCartPage && count > 0) ? 'flex' : 'none';
             }catch(e){}
         }
-    </script>
+
+        // Quick Variant Picker (global, lightweight, mobile-friendly)
+        (function(){
+            var qpOverlay = null, qpSheet = null, qpCloseBtn = null;
+            var qpColor = null, qpSize = null, qpQty = null, qpAddBtn = null;
+            var qpCurrent = { productId: null, storeId: null, variants: [] };
+            function ensureQuickPicker(){
+                if(qpOverlay) return;
+                qpOverlay = document.createElement('div');
+                qpOverlay.id = 'qpOverlay';
+                qpOverlay.style.cssText = 'position:fixed;inset:0;display:none;align-items:flex-end;z-index:1060;background:rgba(0,0,0,.35)';
+                qpSheet = document.createElement('div');
+                qpSheet.id = 'qpSheet';
+                qpSheet.style.cssText = 'background:#fff;color:#111;width:100%;max-width:540px;margin:0 auto;border-top-left-radius:16px;border-top-right-radius:16px;box-shadow:0 -6px 24px rgba(0,0,0,.2);transform:translateY(100%);transition:transform .18s ease;';
+                qpSheet.innerHTML = '<div style="padding:12px 16px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center"><strong>اختيار النسخة</strong><button type="button" id="qpClose" class="btn btn-sm btn-outline-secondary">إغلاق</button></div>'+
+                    '<div style="padding:12px 16px">'+
+                    '<div class="mb-2"><label class="form-label">اللون</label><select id="qpColor" class="form-select"><option value="">اختر اللون</option></select></div>'+
+                    '<div class="mb-2"><label class="form-label">المقاس</label><select id="qpSize" class="form-select" disabled><option value="">اختر المقاس</option></select></div>'+
+                    '<div class="mb-3"><label class="form-label">الكمية</label><input id="qpQty" type="number" class="form-control" value="1" min="1" style="max-width:120px"></div>'+
+                    '<div class="text-end"><button type="button" id="qpAdd" class="btn btn-primary">أضف للسلة</button></div>'+
+                    '</div>';
+                qpOverlay.appendChild(qpSheet);
+                document.body.appendChild(qpOverlay);
+                qpCloseBtn = qpSheet.querySelector('#qpClose');
+                qpColor = qpSheet.querySelector('#qpColor');
+                qpSize = qpSheet.querySelector('#qpSize');
+                qpQty = qpSheet.querySelector('#qpQty');
+                qpAddBtn = qpSheet.querySelector('#qpAdd');
+                qpOverlay.addEventListener('click', function(e){ if(e.target===qpOverlay) closeQuickPicker(); });
+                qpCloseBtn.addEventListener('click', closeQuickPicker);
+                qpColor.addEventListener('change', updateSizes);
+                qpSize.addEventListener('change', function(){
+                    var opt = qpSize.options[qpSize.selectedIndex];
+                    var stock = opt ? parseInt(opt.getAttribute('data-stock')||'0') : 0;
+                    qpQty.value = 1;
+                    qpQty.max = stock>0 ? stock : 1;
+                });
+                qpAddBtn.addEventListener('click', function(){
+                    var color = qpColor.value;
+                    var size = qpSize.value;
+                    if(!color || !size) return;
+                    var v = qpCurrent.variants.find(function(x){ return x.color===color && x.size===size; });
+                    if(!v || !v.id) return;
+                    var qty = parseInt(qpQty.value||'1')||1;
+                    try{ addToCart(qpCurrent.productId, v.id, qty, qpCurrent.storeId); }catch(e){}
+                    // auto close after 3s
+                    try{ setTimeout(closeQuickPicker, 3000); }catch(e){}
+                });
+            }
+            function openQuickVariantPicker(productId){
+                ensureQuickPicker();
+                qpCurrent.productId = productId; qpCurrent.storeId = null; qpCurrent.variants = [];
+                qpColor.innerHTML = '<option value="">اختر اللون</option>';
+                qpSize.innerHTML = '<option value="">اختر المقاس</option>';
+                qpSize.disabled = true;
+                qpQty.value = 1; qpQty.removeAttribute('max');
+                // show instantly
+                qpOverlay.style.display = 'flex';
+                setTimeout(function(){ qpSheet.style.transform = 'translateY(0)'; }, 10);
+                // load product variants
+                fetch('/api/products/'+String(productId)+'/', { credentials:'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(p){
+                    try{
+                        var variants = Array.isArray(p.variants) ? p.variants : [];
+                        qpCurrent.storeId = (p.store && p.store.id) ? p.store.id : null;
+                        qpCurrent.variants = variants.map(function(v){ return { id:v.id, color:v.color, size:v.size, stock_qty:parseInt(v.stock_qty||'0'), price:parseFloat(v.price||p.base_price||0) }; });
+                        var colors = Array.from(new Set(qpCurrent.variants.map(function(v){ return v.color; }).filter(Boolean)));
+                        colors.forEach(function(c){ var opt=document.createElement('option'); opt.value=c; opt.textContent=c; qpColor.appendChild(opt); });
+                        // auto select first color with stock
+                        var firstWithStock = qpCurrent.variants.find(function(v){ return v.stock_qty>0; });
+                        if(firstWithStock){ qpColor.value = firstWithStock.color; updateSizes(); }
+                    }catch(e){}
+                }).catch(function(){ /* fallback: keep sheet open for manual selection */ });
+            }
+            function updateSizes(){
+                var color = qpColor.value;
+                qpSize.innerHTML = '<option value="">اختر المقاس</option>';
+                qpSize.disabled = true;
+                qpQty.value = 1; qpQty.removeAttribute('max');
+                if(!color) return;
+                var sizes = qpCurrent.variants.filter(function(v){ return v.color===color; }).map(function(v){ return { size:v.size, id:v.id, stock:v.stock_qty }; });
+                sizes.forEach(function(s){ var out = !s.stock || s.stock<=0; var opt=document.createElement('option'); opt.value=s.size; opt.textContent= out ? (s.size+' (غير متاح)') : s.size; opt.setAttribute('data-id', s.id); opt.setAttribute('data-stock', String(s.stock||0)); qpSize.appendChild(opt); });
+                qpSize.disabled = sizes.length===0;
+                var firstAvail = sizes.find(function(s){ return s.stock>0; });
+                if(firstAvail){ qpSize.value = firstAvail.size; qpSize.dispatchEvent(new Event('change')); }
+            }
+            function closeQuickPicker(){
+                try{ qpSheet.style.transform = 'translateY(100%)'; setTimeout(function(){ qpOverlay.style.display='none'; }, 180); }catch(e){ qpOverlay.style.display='none'; }
+            }
+            // expose globally
+            window.openQuickVariantPicker = openQuickVariantPicker;
+        })();
+        </script>
+    
     {% block extra_js %}{% endblock %}
+    </script>
+</body>
+    <script>
+    (function(){
+        window.toggleAppTheme = function(){
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme') || 'dark';
+            var next = current === 'dark' ? 'light' : 'dark';
+            
+            // Set Attributes
+            html.setAttribute('data-theme', next);
+            html.setAttribute('data-bs-theme', next);
+            
+            // Set Body Classes
+            if(document.body){
+                document.body.classList.remove('theme-light', 'dark-theme');
+                document.body.classList.add(next === 'dark' ? 'dark-theme' : 'theme-light');
+            }
+            
+            // Save
+            try{
+                localStorage.setItem('siteTheme', next);
+                localStorage.setItem('theme', next);
+            }catch(e){}
+            
+            // Dispatch Event
+            window.dispatchEvent(new CustomEvent('themeChange', { detail: { theme: next } }));
+            
+            // Show Feedback Toast
+            var toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 start-50 translate-middle-x p-3';
+            toast.style.zIndex = '1100';
+            toast.innerHTML = '<div class="toast show align-items-center text-white bg-' + (next==='dark'?'dark':'primary') + ' border-0" role="alert" aria-live="assertive" aria-atomic="true"><div class="d-flex"><div class="toast-body">' + (next==='dark' ? 'تم تفعيل الوضع الداكن' : 'تم تفعيل الوضع الفاتح') + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button></div></div>';
+            document.body.appendChild(toast);
+            setTimeout(function(){ toast.remove(); }, 2000);
+            
+            return next;
+        };
+
+        // Expose helper to apply theme on load if needed
+        window.applyCurrentTheme = function(){
+            var stored = localStorage.getItem('siteTheme') || localStorage.getItem('theme') || 'dark';
+            var html = document.documentElement;
+            html.setAttribute('data-theme', stored);
+            html.setAttribute('data-bs-theme', stored);
+            if(document.body){
+                document.body.classList.remove('theme-light', 'dark-theme');
+                document.body.classList.add(stored === 'dark' ? 'dark-theme' : 'theme-light');
+            }
+        };
+
+        // Apply on load
+        if(document.readyState === 'loading'){
+            document.addEventListener('DOMContentLoaded', window.applyCurrentTheme);
+        } else {
+            window.applyCurrentTheme();
+        }
+    })();
+    </script>
 </body>
 </html>

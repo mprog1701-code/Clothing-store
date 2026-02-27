@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تطبيق المتاجر (نسخة بسيطة)</title>
+  <link rel="manifest" href="/manifest.json">
+  <style>
+    body { font-family: system-ui, Tahoma, Arial; margin: 0; background: #f6f6f6; }
+    header { background: #111; color: #fff; padding: 12px 16px; }
+    main { padding: 16px; max-width: 960px; margin: 0 auto; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin: 8px 0; }
+    input { padding: 10px; border: 1px solid #ccc; border-radius: 8px; width: 100%; margin: 6px 0; }
+    button { padding: 10px 16px; border: 0; background: #007bff; color: #fff; border-radius: 8px; cursor: pointer; }
+    button:disabled { background: #999; cursor: not-allowed; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .col { flex: 1 1 300px; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>تطبيق المتاجر</strong>
+  </header>
+  <main>
+    <div class="card">
+      <h3>تسجيل الدخول</h3>
+      <div class="row">
+        <div class="col">
+          <label>اسم المستخدم</label>
+          <input id="username" placeholder="username">
+        </div>
+        <div class="col">
+          <label>كلمة المرور</label>
+          <input id="password" type="password" placeholder="password">
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <button id="loginBtn">دخول</button>
+        <span id="loginStatus" class="muted" style="margin-inline-start:12px"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>المتاجر</h3>
+      <div id="stores"></div>
+    </div>
+
+    <div class="card">
+      <h3>المنتجات</h3>
+      <div id="products"></div>
+    </div>
+  </main>
+
+  <script>
+    const API = '';
+    const accessKey = 'auth_access_token';
+    const refreshKey = 'auth_refresh_token';
+    function setTokens(access, refresh) {
+      if (access) localStorage.setItem(accessKey, access);
+      if (refresh) localStorage.setItem(refreshKey, refresh);
+    }
+    function getAccess() { return localStorage.getItem(accessKey) || ''; }
+    async function fetchJSON(url, opts = {}) {
+      const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+      const access = getAccess();
+      if (access) headers['Authorization'] = 'Bearer ' + access;
+      const resp = await fetch(url, Object.assign({}, opts, { headers }));
+      if (resp.status === 401 && localStorage.getItem(refreshKey)) {
+        try {
+          const r = await fetch('/api/token/refresh/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh: localStorage.getItem(refreshKey) })
+          });
+          const d = await r.json();
+          if (d && d.access) {
+            setTokens(d.access, localStorage.getItem(refreshKey));
+            return fetchJSON(url, opts);
+          }
+        } catch (e) {}
+      }
+      return resp.json();
+    }
+    async function login() {
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      const btn = document.getElementById('loginBtn');
+      const st = document.getElementById('loginStatus');
+      btn.disabled = true; st.textContent = 'جاري...';
+      try {
+        const data = await fetchJSON('/api/auth/login/', {
+          method: 'POST',
+          body: JSON.stringify({ username: u, password: p })
+        });
+        if (data && data.access && data.refresh) {
+          setTokens(data.access, data.refresh);
+          st.textContent = 'تم تسجيل الدخول';
+          await loadStores();
+        } else {
+          st.textContent = 'تعذر تسجيل الدخول';
+        }
+      } catch (e) {
+        st.textContent = 'خطأ في الاتصال';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    async function loadStores() {
+      const el = document.getElementById('stores');
+      el.innerHTML = 'جاري التحميل...';
+      try {
+        const data = await fetchJSON('/api/stores/');
+        el.innerHTML = '';
+        (data || []).forEach(s => {
+          const d = document.createElement('div');
+          d.className = 'card';
+          d.innerHTML = '<strong>' + (s.name || '') + '</strong><div class="muted">' + (s.city || '') + '</div>';
+          d.onclick = () => loadProducts(s.id);
+          el.appendChild(d);
+        });
+      } catch (e) {
+        el.textContent = 'خطأ في التحميل';
+      }
+    }
+    async function loadProducts(storeId) {
+      const el = document.getElementById('products');
+      el.innerHTML = 'جاري التحميل...';
+      try {
+        const qs = storeId ? ('?store=' + encodeURIComponent(storeId)) : '';
+        const data = await fetchJSON('/api/products/' + qs);
+        el.innerHTML = '';
+        (data || []).forEach(p => {
+          const d = document.createElement('div');
+          d.className = 'card';
+          d.innerHTML = '<strong>' + (p.name || '') + '</strong><div class="muted">' + (p.description || '') + '</div>';
+          el.appendChild(d);
+        });
+      } catch (e) {
+        el.textContent = 'خطأ في التحميل';
+      }
+    }
+    document.getElementById('loginBtn').addEventListener('click', login);
+    loadStores();
+  </script>
+</body>
+</html>

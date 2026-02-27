@@ -26,10 +26,10 @@ class Command(BaseCommand):
     def create_sample_users(self):
         """Create sample users with different roles"""
         users_data = [
-            {'username': 'admin_store', 'email': 'admin@example.com', 'role': 'admin', 'first_name': 'أحمد', 'last_name': 'الإداري', 'phone': '07700000001'},
-            {'username': 'fashion_store', 'email': 'fashion@example.com', 'role': 'admin', 'first_name': 'فاطمة', 'last_name': 'أبوالعز', 'phone': '07700000002'},
-            {'username': 'sport_store', 'email': 'sport@example.com', 'role': 'admin', 'first_name': 'محمد', 'last_name': 'الرياضي', 'phone': '07700000003'},
-            {'username': 'luxury_store', 'email': 'luxury@example.com', 'role': 'admin', 'first_name': 'سارة', 'last_name': 'الفاخرة', 'phone': '07700000004'},
+            {'username': 'admin_store', 'email': 'admin@example.com', 'role': 'store_admin', 'first_name': 'أحمد', 'last_name': 'الإداري', 'phone': '07700000001'},
+            {'username': 'fashion_store', 'email': 'fashion@example.com', 'role': 'store_admin', 'first_name': 'فاطمة', 'last_name': 'أبوالعز', 'phone': '07700000002'},
+            {'username': 'sport_store', 'email': 'sport@example.com', 'role': 'store_admin', 'first_name': 'محمد', 'last_name': 'الرياضي', 'phone': '07700000003'},
+            {'username': 'luxury_store', 'email': 'luxury@example.com', 'role': 'store_admin', 'first_name': 'سارة', 'last_name': 'الفاخرة', 'phone': '07700000004'},
             {'username': 'customer1', 'email': 'customer1@example.com', 'role': 'customer', 'first_name': 'عبدالله', 'last_name': 'الزبون', 'phone': '07700000005'},
         ]
         
@@ -113,9 +113,9 @@ class Command(BaseCommand):
                     'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Close-up+view+of+black+evening+dress+showing+embroidery+details%2C+high+quality+fabric+texture&image_size=portrait_4_3'
                 ],
                 'variants': [
-                    {'size': 'S', 'color': 'أسود', 'stock': 5, 'price': Decimal('299.99')},
-                    {'size': 'M', 'color': 'أسود', 'stock': 8, 'price': Decimal('299.99')},
-                    {'size': 'L', 'color': 'أسود', 'stock': 3, 'price': Decimal('299.99')},
+                    {'size': 'S', 'color_name': 'أسود', 'stock': 5, 'price': Decimal('299.99')},
+                    {'size': 'M', 'color_name': 'أسود', 'stock': 8, 'price': Decimal('299.99')},
+                    {'size': 'L', 'color_name': 'أسود', 'stock': 3, 'price': Decimal('299.99')},
                 ]
             },
             {
@@ -129,9 +129,9 @@ class Command(BaseCommand):
                     'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Close-up+view+of+gray+suit+jacket+showing+fabric+texture+and+tailoring+details&image_size=portrait_4_3'
                 ],
                 'variants': [
-                    {'size': 'M', 'color': 'رمادي', 'stock': 4, 'price': Decimal('599.99')},
-                    {'size': 'L', 'color': 'رمادي', 'stock': 6, 'price': Decimal('599.99')},
-                    {'size': 'XL', 'color': 'رمادي', 'stock': 2, 'price': Decimal('599.99')},
+                    {'size': 'M', 'color_name': 'رمادي', 'stock': 4, 'price': Decimal('599.99')},
+                    {'size': 'L', 'color_name': 'رمادي', 'stock': 6, 'price': Decimal('599.99')},
+                    {'size': 'XL', 'color_name': 'رمادي', 'stock': 2, 'price': Decimal('599.99')},
                 ]
             },
             # Sport Store Products
@@ -164,8 +164,8 @@ class Command(BaseCommand):
                     'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Close-up+of+luxury+golden+dress+showing+hand+embroidery+details+and+crystal+work&image_size=portrait_4_3'
                 ],
                 'variants': [
-                    {'size': 'S', 'color': 'ذهبي', 'stock': 1, 'price': Decimal('1299.99')},
-                    {'size': 'M', 'color': 'ذهبي', 'stock': 2, 'price': Decimal('1299.99')},
+                    {'size': 'S', 'color_name': 'ذهبي', 'stock': 1, 'price': Decimal('1299.99')},
+                    {'size': 'M', 'color_name': 'ذهبي', 'stock': 2, 'price': Decimal('1299.99')},
                 ]
             },
             # Basics Store Products
@@ -180,12 +180,12 @@ class Command(BaseCommand):
                     'https://trae-api-sg.mchost.guru/api/ide/v1/text_to_image?prompt=Cotton+t-shirt+fabric+texture+showing+quality+and+comfort&image_size=portrait_4_3'
                 ],
                 'variants': [
-                    {'size': 'S', 'color': 'أبيض', 'stock': 20, 'price': Decimal('49.99')},
-                    {'size': 'M', 'color': 'أبيض', 'stock': 25, 'price': Decimal('49.99')},
-                    {'size': 'L', 'color': 'أبيض', 'stock': 30, 'price': Decimal('49.99')},
-                    {'size': 'XL', 'color': 'أبيض', 'stock': 15, 'price': Decimal('49.99')},
-                    {'size': 'M', 'color': 'أسود', 'stock': 20, 'price': Decimal('49.99')},
-                    {'size': 'L', 'color': 'أسود', 'stock': 25, 'price': Decimal('49.99')},
+                    {'size': 'S', 'color_name': 'أبيض', 'stock': 20, 'price': Decimal('49.99')},
+                    {'size': 'M', 'color_name': 'أبيض', 'stock': 25, 'price': Decimal('49.99')},
+                    {'size': 'L', 'color_name': 'أبيض', 'stock': 30, 'price': Decimal('49.99')},
+                    {'size': 'XL', 'color_name': 'أبيض', 'stock': 15, 'price': Decimal('49.99')},
+                    {'size': 'M', 'color_name': 'أسود', 'stock': 20, 'price': Decimal('49.99')},
+                    {'size': 'L', 'color_name': 'أسود', 'stock': 25, 'price': Decimal('49.99')},
                 ]
             },
         ]
@@ -199,7 +199,9 @@ class Command(BaseCommand):
                     defaults={
                         'category': product_data['category'],
                         'description': product_data['description'],
-                        'base_price': product_data['base_price']
+                        'base_price': product_data['base_price'],
+                        'is_active': True,
+                        'status': 'ACTIVE'
                     }
                 )
                 
@@ -213,11 +215,17 @@ class Command(BaseCommand):
                         )
                     
                     # Create product variants
+                    from core.models import AttributeColor, ProductColor, ProductVariant
                     for variant_data in product_data['variants']:
+                        color_name = variant_data.get('color_name', '')
+                        color_attr, _ = AttributeColor.objects.get_or_create(name=color_name)
+                        # Ensure a ProductColor exists for this product/color
+                        color_obj, _ = ProductColor.objects.get_or_create(product=product, name=color_name)
                         ProductVariant.objects.create(
                             product=product,
                             size=variant_data['size'],
-                            color=variant_data['color'],
+                            color_attr=color_attr,
+                            color_obj=color_obj,
                             stock_qty=variant_data['stock'],
                             price_override=variant_data['price']
                         )

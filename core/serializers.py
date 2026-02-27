@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings
-from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem
+from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem, CartItem
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -222,3 +222,36 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         order.save()
         
         return order
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    variant = ProductVariantSerializer(read_only=True)
+    product_id = serializers.IntegerField(write_only=True, required=True)
+    variant_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    quantity = serializers.IntegerField()
+    
+    class Meta:
+        model = CartItem
+        fields = ['id', 'product', 'variant', 'product_id', 'variant_id', 'quantity', 'proposed_price', 'proposal_status', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'proposed_price', 'proposal_status']
+    
+    def create(self, validated_data):
+        user = self.context['request'].user
+        product_id = validated_data.pop('product_id')
+        variant_id = validated_data.pop('variant_id', None)
+        product = Product.objects.get(id=product_id)
+        variant = None
+        if variant_id:
+            variant = ProductVariant.objects.get(id=variant_id, product=product)
+        item, _ = CartItem.objects.get_or_create(user=user, product=product, variant=variant, defaults={'quantity': validated_data.get('quantity', 1)})
+        if not _:
+            item.quantity = validated_data.get('quantity', item.quantity)
+            item.save()
+        return item
+    
+    def update(self, instance, validated_data):
+        qty = int(validated_data.get('quantity', instance.quantity))
+        instance.quantity = qty
+        instance.save()
+        return instance
