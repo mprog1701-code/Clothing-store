@@ -145,8 +145,22 @@ export async function listCategories() {
 
 export async function listBanners() {
   const r = await client.get('/api/banners');
-  console.log('[API] GET /api/banners status=', r.status, 'data=', r.data);
-  return r.data;
+  const data = r.data;
+  const arr = Array.isArray(data) ? data : (data.results || data.banners || []);
+  console.log('[API] GET /api/banners status=', r.status, 'len=', arr.length);
+  return arr;
+}
+
+export async function listBannersByPlacement(placement) {
+  const p = String(placement || '').trim();
+  const val = p.toUpperCase();
+  const map = { HOME_TOP: 'home_top', HOME_MIDDLE: 'home_middle', HOME_BOTTOM: 'home_bottom' };
+  const q = map[val] ? map[val] : (p || 'home_top');
+  const r = await client.get('/api/banners', { params: { placement: q } });
+  const data = r.data;
+  const arr = Array.isArray(data) ? data : (data.results || data.banners || []);
+  console.log('[API] GET /api/banners placement=', q, 'status=', r.status, 'len=', arr.length);
+  return arr;
 }
 
 export async function listHomeTopBanners() {

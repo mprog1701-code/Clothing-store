@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Linking } from 'react-native';
 import theme from '../theme';
-import { listAds, listBanners } from '../api';
+import { listBannersByPlacement } from '../api';
 
 export default function AdBannerSlot({ position = 'slot1', onNavigate }) {
   const [ad, setAd] = useState(null);
@@ -9,21 +9,15 @@ export default function AdBannerSlot({ position = 'slot1', onNavigate }) {
     (async () => {
       console.log('adslot_fetch_start', position);
       try {
-        const resp = await listAds({ position });
-        const arr = Array.isArray(resp) ? resp : (resp.results || resp.ads || []);
+        const placement =
+          position === 'slot1' ? 'HOME_MIDDLE' :
+          position === 'slot2' ? 'HOME_BOTTOM' : 'HOME_TOP';
+        const arr = await listBannersByPlacement(placement);
         setAd(arr && arr[0]);
-        console.log('adslot_fetch_success', position, arr?.length || 0);
+        console.log('adslot_fetch_success', placement, arr?.length || 0);
       } catch (e) {
-        console.log('adslot_fetch_fail_ads', position, e?.message || e);
-        try {
-          const bn = await listBanners();
-          const arr = bn.banners || [];
-          setAd(arr[0] || null);
-          console.log('adslot_fallback_banners_success', position, arr?.length || 0);
-        } catch (e2) {
-          console.log('adslot_fallback_banners_fail', position, e2?.message || e2);
-          setAd(null);
-        }
+        console.log('adslot_fetch_fail', position, e?.message || e);
+        setAd(null);
       } finally {
         console.log('adslot_fetch_end', position);
       }

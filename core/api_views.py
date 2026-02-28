@@ -328,23 +328,45 @@ class BannerList(APIView):
     permission_classes = []
     authentication_classes = []
     def get(self, request):
-        from .models import Campaign
+        from django.utils import timezone
+        from ads.models import Banner
+        placement = (request.query_params.get('placement') or '').strip()
+        placement_norm = placement.lower().replace('home_', 'home_') if placement else ''
+        allowed = {'home_top', 'home_middle', 'home_bottom'}
+        now = timezone.now()
+        qs = Banner.objects.filter(is_active=True)
+        if placement_norm and placement_norm in allowed:
+            qs = qs.filter(placement=placement_norm)
+        qs = qs.filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+        qs = qs.filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+        qs = qs.order_by('-priority', '-id')
         items = []
-        qs = Campaign.objects.filter(is_active=True)
-        for it in qs:
+        for b in qs[:50]:
+            try:
+                img = b.image.url if b.image else ''
+                if img and not (img.startswith('http://') or img.startswith('https://')):
+                    try:
+                        img = request.build_absolute_uri(img)
+                    except Exception:
+                        pass
+            except Exception:
+                img = ''
             items.append({
-                'id': it.id,
-                'title': it.title,
-                'description': it.description,
-                'image': (it.banner_image.url if it.banner_image else ''),
-                'discountPercent': it.discount_percent
+                'id': b.id,
+                'title': b.title,
+                'image': img,
+                'placement': b.placement,
+                'priority': int(b.priority or 0),
+                'starts_at': (b.starts_at.isoformat() if b.starts_at else None),
+                'ends_at': (b.ends_at.isoformat() if b.ends_at else None),
             })
-        if not items:
-            items = [
-                {'id': 1, 'title': 'ترحيب', 'description': 'خصومات الافتتاح', 'image': '', 'discountPercent': 10},
-                {'id': 2, 'title': 'عروض نهاية الأسبوع', 'description': 'خصم 20% على المختارات', 'image': '', 'discountPercent': 20},
-            ]
-        return Response({'banners': items})
+        try:
+            logger = logging.getLogger('banners')
+            first = items[0] if items else {}
+            logger.info(f"[banners] now={now.isoformat()} first.starts_at={first.get('starts_at')} first.ends_at={first.get('ends_at')} placement={placement or '(any)'} count={len(items)}")
+        except Exception:
+            pass
+        return Response(items)
 
 class BannerHomeTop(APIView):
     permission_classes = []
