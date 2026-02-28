@@ -172,11 +172,6 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        try:
-            if getattr(self, 'action', None) == 'list':
-                queryset = queryset.filter(status='ACTIVE')
-        except Exception:
-            pass
         store_id = self.request.query_params.get('store')
         category = self.request.query_params.get('category')
         city = self.request.query_params.get('city')

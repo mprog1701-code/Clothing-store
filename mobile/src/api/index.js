@@ -180,10 +180,13 @@ export async function listHomeTopBanners() {
 export async function listAds(params = {}) {
   try {
     const r = await client.get('/api/ads/', { params });
-    return r.data;
-  } catch {
-    const bn = await listBanners();
-    return bn;
+    const data = r.data;
+    const arr = Array.isArray(data) ? data : (data.results || data.ads || []);
+    console.log('[API] GET /api/ads status=', r.status, 'len=', arr.length, 'params=', params);
+    return arr;
+  } catch (e) {
+    console.log('[API] GET /api/ads fail', e?.message || e);
+    return [];
   }
 }
 
@@ -218,8 +221,11 @@ export async function addCartItemVariant({ variant_id, qty = 1, size }) {
 }
 
 export async function listProducts(params = {}) {
-  const r = await client.get('/api/products/', { params });
-  console.log('[API] GET /api/products status=', r.status, 'params=', params, 'data.count=', Array.isArray(r.data) ? r.data.length : (r.data?.results?.length || 0));
+  const p = { ...(params || {}) };
+  if (p.limit && !p.page_size) p.page_size = p.limit;
+  if (!p.limit && !p.page_size) p.page_size = 50;
+  const r = await client.get('/api/products/', { params: p });
+  console.log('[API] GET /api/products status=', r.status, 'params=', p, 'data.count=', Array.isArray(r.data) ? r.data.length : (r.data?.results?.length || 0));
   return r.data;
 }
 

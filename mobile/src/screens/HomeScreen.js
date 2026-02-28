@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Image, Button, Alert, I18nManager, Linking } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Image, Button, Alert, I18nManager, Linking, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { listCategories, listProducts, listStores, devSeed, addToCart, listAds, getCart } from '../api';
@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import theme from '../theme';
 import SearchBar from '../components/SearchBar';
 import AdBannerSlot from '../components/AdBannerSlot';
+import BannerPlacement from '../components/BannerPlacement';
 import BannerWidget from '../components/BannerWidget';
 
 export default function HomeScreen({ navigation }) {
@@ -21,6 +22,8 @@ export default function HomeScreen({ navigation }) {
   const [searchResults, setSearchResults] = useState([]);
   const [cartCount, setCartCount] = useState(0);
   const { accessToken } = useAuth();
+  const screenW = Dimensions.get('window').width;
+  const productCardW = Math.floor((screenW - (theme.spacing.lg * 2) - theme.spacing.md) / 2);
 
   const load = async () => {
     setLoading(true);
@@ -90,6 +93,17 @@ export default function HomeScreen({ navigation }) {
           console.log('[Home] dev seed failed:', se?.message || se);
         }
       }
+      try {
+        const [topList, midList, botList] = await Promise.all([
+          import('../api').then(m => m.listBannersByPlacement('HOME_TOP')),
+          import('../api').then(m => m.listBannersByPlacement('HOME_MIDDLE')),
+          import('../api').then(m => m.listBannersByPlacement('HOME_BOTTOM')),
+        ]);
+        const topBanner = (Array.isArray(topList) ? topList : [])[0] || null;
+        const midBanner = (Array.isArray(midList) ? midList : [])[0] || null;
+        const botBanner = (Array.isArray(botList) ? botList : [])[0] || null;
+        console.log('TOP', topBanner?.id, 'MID', midBanner?.id, 'BOT', botBanner?.id);
+      } catch {}
     } catch (e) {
       console.log('[Home] load error:', e?.message || e);
       setError('تعذر تحميل البيانات. تحقق من الاتصال أو السيرفر.');
@@ -283,11 +297,11 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       )}
-      {/* Banners */}
-      <BannerWidget />
-
       {/* Ad Slot 1 */}
       <AdBannerSlot position="slot1" onNavigate={(name, params) => navigation.navigate(name, params)} />
+
+      {/* Banners (HOME_TOP) */}
+      <BannerWidget />
 
       {/* Categories horizontal */}
       <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -308,33 +322,6 @@ export default function HomeScreen({ navigation }) {
             style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, marginRight: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface }}
           >
             <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontRegular }}>{item.label}</Text>
-          </TouchableOpacity>
-        )}
-      />
-
-      {/* Ad Slot 2 */}
-      <AdBannerSlot position="slot2" onNavigate={(name, params) => navigation.navigate(name, params)} />
-
-      {/* Top Stores */}
-      <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: theme.typography.sizes.lg, fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary }}>أفضل المتاجر</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Stores')}>
-          <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>عرض الكل</Text>
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        horizontal
-        data={topStores}
-        keyExtractor={(it) => String(it.id)}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: theme.spacing.lg }}
-        renderItem={({ item: s }) => (
-          <TouchableOpacity onPress={() => navigation.navigate('StoreDetail', { id: s.id })} style={{ width: 220, marginRight: theme.spacing.md }}>
-            <View style={{ height: 110, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.cardBorder, alignItems: 'center', justifyContent: 'center', ...theme.shadows.card }}>
-              {s.logo ? <Image source={{ uri: s.logo }} style={{ width: 220, height: 110, borderRadius: theme.radius.lg }} /> : <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{s.name}</Text>}
-            </View>
-            <Text style={{ fontFamily: theme.typography.fontBold, marginTop: theme.spacing.sm, color: theme.colors.textPrimary, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{s.name}</Text>
-            <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>تقييم: {s.store_rating ?? 0}</Text>
           </TouchableOpacity>
         )}
       />
@@ -362,6 +349,39 @@ export default function HomeScreen({ navigation }) {
               </Text>
             </View>
           </View>
+        )}
+      />
+
+      {/* Banner Middle */}
+      <BannerPlacement placement="HOME_MIDDLE" onNavigate={(name, params) => navigation.navigate(name, params)} />
+
+      {/* Ad Slot 2 */}
+      <AdBannerSlot position="slot2" onNavigate={(name, params) => navigation.navigate(name, params)} />
+
+      {/* Banner Bottom */}
+      <BannerPlacement placement="HOME_BOTTOM" onNavigate={(name, params) => navigation.navigate(name, params)} />
+
+      {/* Top Stores */}
+      <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={{ fontSize: theme.typography.sizes.lg, fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary }}>أفضل المتاجر</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Stores')}>
+          <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>عرض الكل</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        horizontal
+        data={topStores}
+        keyExtractor={(it) => String(it.id)}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: theme.spacing.lg }}
+        renderItem={({ item: s }) => (
+          <TouchableOpacity onPress={() => navigation.navigate('StoreDetail', { id: s.id })} style={{ width: 220, marginRight: theme.spacing.md }}>
+            <View style={{ height: 110, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.cardBorder, alignItems: 'center', justifyContent: 'center', ...theme.shadows.card }}>
+              {s.logo ? <Image source={{ uri: s.logo }} style={{ width: 220, height: 110, borderRadius: theme.radius.lg }} /> : <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{s.name}</Text>}
+            </View>
+            <Text style={{ fontFamily: theme.typography.fontBold, marginTop: theme.spacing.sm, color: theme.colors.textPrimary, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{s.name}</Text>
+            <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>تقييم: {s.store_rating ?? 0}</Text>
+          </TouchableOpacity>
         )}
       />
 
@@ -396,13 +416,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         )}
       />
-      {__DEV__ ? (
-        <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg }}>
-          <TouchableOpacity onPress={() => Alert.alert('لمس', 'التفاعل يعمل')}>
-            <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>اختبار لمس</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
+      
     </View>
   ); };
 
