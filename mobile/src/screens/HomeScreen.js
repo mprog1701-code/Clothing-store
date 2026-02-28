@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Image, Button, Alert, I18nManager, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { listCategories, listProducts, listStores, devSeed, addToCart, listAds } from '../api';
+import { listCategories, listProducts, listStores, devSeed, addToCart, listAds, getCart } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import theme from '../theme';
 import SearchBar from '../components/SearchBar';
@@ -19,6 +19,7 @@ export default function HomeScreen({ navigation }) {
   const [heroAd, setHeroAd] = useState(null);
   const [showHero, setShowHero] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [cartCount, setCartCount] = useState(0);
   const { accessToken } = useAuth();
 
   const load = async () => {
@@ -70,6 +71,15 @@ export default function HomeScreen({ navigation }) {
       setCategories(catItems);
       setProducts(prItems);
       setStores(stItems);
+      if (accessToken) {
+        try {
+          const c = await getCart();
+          const arr = Array.isArray(c) ? c : (c.items || c.results || []);
+          setCartCount((arr || []).length);
+        } catch {}
+      } else {
+        setCartCount(0);
+      }
       if (prItems.length === 0) {
         console.log('[Home] Empty data detected, triggering dev seed...');
         try {
@@ -140,7 +150,14 @@ export default function HomeScreen({ navigation }) {
       <SafeAreaView edges={['top']} style={{ backgroundColor: theme.colors.surface }}>
       <View style={{ height: 60, paddingHorizontal: theme.spacing.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderColor: theme.colors.border, ...theme.shadows.appBar }}>
         <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.lg, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>دار الأزياء</Text>
-        <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, fontSize: theme.typography.sizes.md }}>🛒</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, fontSize: theme.typography.sizes.md }}>🛒</Text>
+          {cartCount > 0 ? (
+            <View style={{ marginLeft: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 12, backgroundColor: theme.colors.accent }}>
+              <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>{cartCount}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
       </SafeAreaView>
 
@@ -430,6 +447,7 @@ export default function HomeScreen({ navigation }) {
                 try {
                   await addToCart(item.id, null, 1);
                   Alert.alert('تم', 'تمت إضافة المنتج إلى السلة');
+                  setCartCount((x) => x + 1);
                 } catch (e) {
                   Alert.alert('خطأ', 'فشل إضافة المنتج للسلة');
                 }
