@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>المنتجات</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cairo,sans-serif;background:#f6f7fb;color:#111}
+.wrap{max-width:1200px;margin:0 auto;padding:16px}
+.filters{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.08);position:sticky;top:0;z-index:10}
+.filters input,.filters select{width:100%;padding:10px;border:1px solid #ddd;border-radius:12px;background:#fafafa}
+.filters .btn{padding:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
+.card{background:#fff;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.08);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.slider{position:relative;height:220px;background:#f2f2f7}
+.slide{position:absolute;top:0;left:0;right:0;bottom:0;opacity:0;transition:.35s}
+.slide.active{opacity:1}
+.dots{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:6px}
+.dot{width:6px;height:6px;border-radius:3px;background:#d0d0da}
+.dot.active{background:#764ba2}
+.badges{position:absolute;top:8px;left:8px;display:flex;gap:6px}
+.badge{padding:6px 8px;border-radius:12px;background:#111;color:#fff;font-size:11px;opacity:.92}
+.badge.sale{background:#ef4444}
+.badge.new{background:#10b981}
+.badge.hot{background:#f59e0b}
+.content{padding:12px}
+.title{font-weight:800;font-size:15px;margin:0 0 6px 0}
+.desc{color:#555;margin:6px 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:52px}
+.row{display:flex;align-items:center;gap:8px}
+.price{font-weight:800;color:#111}
+.old{color:#999;text-decoration:line-through}
+.off{background:#fee2e2;color:#b91c1c;padding:4px 8px;border-radius:10px;font-size:12px}
+.stars{display:flex;gap:2px}
+.stars .s{color:#f59e0b}
+.colors{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.c{width:18px;height:18px;border-radius:50%;border:1px solid #ddd;cursor:pointer;transition:.2s}
+.c.active{outline:2px solid #667eea;transform:scale(1.05)}
+.sizes{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.sz{padding:4px 8px;border-radius:10px;background:#f5f5f9;border:1px solid #e5e7eb;font-size:12px;cursor:pointer}
+.sz.active{background:#e0e7ff;border-color:#667eea}
+.actions{display:flex;gap:8px;margin-top:10px}
+.btn{flex:1;padding:10px;border:none;border-radius:12px;background:#667eea;color:#fff;cursor:pointer}
+.btn.secondary{background:#ececff;color:#222}
+.tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.tag{padding:4px 8px;border-radius:10px;background:#f1f5f9;color:#334155;font-size:12px}
+.stock{margin-top:8px;font-size:12px}
+.stock.ok{color:#2f855a}
+.stock.low{color:#d97706}
+.stock.none{color:#ef4444}
+.hover{position:absolute;inset:0;opacity:0;background:linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.25));transition:.25s}
+.card:hover .hover{opacity:1}
+.quick{position:absolute;right:8px;top:8px;padding:8px 10px;border-radius:10px;background:#ffffffaa;backdrop-filter:blur(6px);color:#111;border:none;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.mcard{background:#fff;border-radius:16px;max-width:760px;width:100%;overflow:hidden}
+.mcontent{display:grid;grid-template-columns:1fr 1fr}
+.mcontent .sld{background:#f5f6fb;position:relative;height:300px}
+.mcontent .sld img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:.35s}
+.mcontent .sld img.active{opacity:1}
+.mcontent .info{padding:16px}
+@media (max-width:1024px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:768px){.filters{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.filters{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <form class="filters" method="get">
+    <input type="text" name="q" placeholder="بحث" value="{{ request.GET.q }}">
+    <select name="category">
+      <option value="">الفئة</option>
+      {% for key,label in product_categories %}
+      <option value="{{ key }}" {% if request.GET.category == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="ordering">
+      <option value="">الترتيب</option>
+      <option value="-created_at" {% if request.GET.ordering == '-created_at' %}selected{% endif %}>الأحدث</option>
+      <option value="-rating" {% if request.GET.ordering == '-rating' %}selected{% endif %}>الأكثر تقييماً</option>
+      <option value='-base_price' {% if request.GET.ordering == '-base_price' %}selected{% endif %}>السعر الأعلى</option>
+      <option value='base_price' {% if request.GET.ordering == 'base_price' %}selected{% endif %}>السعر الأقل</option>
+    </select>
+    <div class="row">
+      <input type="number" name="min_price" placeholder="أدنى سعر" value="{{ request.GET.min_price }}" style="flex:1">
+      <input type="number" name="max_price" placeholder="أعلى سعر" value="{{ request.GET.max_price }}" style="flex:1">
+      <button class="btn" type="submit">تصفية</button>
+    </div>
+  </form>
+  <div class="grid">
+    {% for p in products %}
+    {% with main=p.main_image %}
+    <div class="card" data-id="{{ p.id }}">
+      <div class="slider">
+        {% if p.images.all %}
+          {% for im in p.images.all|slice:":4" %}
+            {% if im.image_url %}
+              <img class="slide {% if forloop.first %}active{% endif %}" src="{{ im.image_url }}">
+            {% elif im.image %}
+              <img class="slide {% if forloop.first %}active{% endif %}" src="{{ im.image.url }}">
+            {% else %}
+              <img class="slide {% if forloop.first %}active{% endif %}" src="https://placehold.co/600x400?text=Image">
+            {% endif %}
+          {% endfor %}
+        {% elif main %}
+          {% if main.image_url %}
+            <img class="slide active" src="{{ main.image_url }}">
+          {% elif main.image %}
+            <img class="slide active" src="{{ main.image.url }}">
+          {% else %}
+            <img class="slide active" src="https://placehold.co/600x400?text=Image">
+          {% endif %}
+        {% else %}
+          <img class="slide active" src="https://placehold.co/600x400?text=Image">
+        {% endif %}
+        <div class="badges">
+          {% if p.is_featured %}<div class="badge new">جديد</div>{% endif %}
+          {% if p.discount_price and p.base_price and p.discount_price < p.base_price %}
+            {% with off=p.base_price|floatformat:2|floatformat:"" %}
+            <div class="badge sale">خصم</div>
+            {% endwith %}
+          {% endif %}
+          {% if p.rating and p.rating|floatformat:0 >= 4 %}<div class="badge hot">الأكثر مبيعاً</div>{% endif %}
+        </div>
+        <div class="dots"></div>
+        <button class="quick">عرض سريع</button>
+        <div class="hover"></div>
+      </div>
+      <div class="content">
+        <h3 class="title">{{ p.name }}</h3>
+        <div class="row">
+          <div class="price">
+            {% if p.discount_price and p.discount_price < p.base_price %}
+              <span>{{ p.discount_price }}</span>
+              <span class="old">{{ p.base_price }}</span>
+              {% with pct=p.base_price|subtract:p.discount_price|divide:p.base_price %}
+              <span class="off">-{{ pct|floatformat:0 }}%</span>
+              {% endwith %}
+            {% else %}
+              <span>{{ p.base_price }}</span>
+            {% endif %}
+          </div>
+          <div class="stars">
+            {% for i in "12345" %}
+              <span class="s">{% if p.rating and i|add:"0"|floatformat:0 <= p.rating %}★{% else %}☆{% endif %}</span>
+            {% endfor %}
+          </div>
+        </div>
+        <p class="desc">{{ p.description }}</p>
+        <div class="colors" data-type="colors">
+          {% for c in p.colors.all %}
+            <div class="c" title="{{ c.name }}" style="background:{{ c.code|default:'#ccc' }}"></div>
+          {% endfor %}
+        </div>
+        <div class="sizes" data-type="sizes">
+          {% for v in p.variants.all %}
+            <div class="sz">{{ v.size_display }}</div>
+          {% endfor %}
+        </div>
+        <div class="actions">
+          <button class="btn secondary wishlist">♡ المفضلة</button>
+          <button class="btn add">أضف للسلة</button>
+        </div>
+        <div class="tags">
+          {% if p.category %}<div class="tag">{{ p.get_category_display }}</div>{% endif %}
+          {% if p.fit_type %}<div class="tag">{{ p.get_fit_type_display }}</div>{% endif %}
+        </div>
+        {% with total=p.variants.all|length %}
+          {% if total > 0 %}
+            {% with in_stock=p.variants.all|dictsort:"stock_qty" %}
+              <div class="stock {% if p.variants.all.0.stock_qty > 10 %}ok{% elif p.variants.all.0.stock_qty > 0 %}low{% else %}none{% endif %}">
+                {% if p.variants.all.0.stock_qty > 10 %}متوفر{% elif p.variants.all.0.stock_qty > 0 %}محدود{% else %}نفذ{% endif %}
+              </div>
+            {% endwith %}
+          {% else %}
+            <div class="stock none">نفذ</div>
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div>لا توجد منتجات</div>
+    {% endfor %}
+  </div>
+</div>
+<div class="modal" id="modal">
+  <div class="mcard">
+    <div class="mcontent">
+      <div class="sld" id="mSld"></div>
+      <div class="info" id="mInfo"></div>
+    </div>
+  </div>
+</div>
+<script>
+function qs(s,root){return (root||document).querySelector(s)}
+function qsa(s,root){return Array.from((root||document).querySelectorAll(s))}
+function setupCard(card){
+  const slides=qsa('.slide',card)
+  const dots=qs('.dots',card)
+  slides.forEach((_,i)=>{const d=document.createElement('div');d.className='dot'+(i===0?' active':'');d.addEventListener('click',()=>show(i));dots.appendChild(d)})
+  let idx=0
+  function show(i){idx=i;slides.forEach((s,j)=>s.classList.toggle('active',j===i));qsa('.dot',card).forEach((d,j)=>d.classList.toggle('active',j===i))}
+  let timer=setInterval(()=>{show((idx+1)%slides.length)},3500)
+  card.addEventListener('mouseenter',()=>clearInterval(timer))
+  card.addEventListener('mouseleave',()=>{timer=setInterval(()=>{show((idx+1)%slides.length)},3500)})
+  qsa('.c',card).forEach((c)=>c.addEventListener('click',()=>{qsa('.c',card).forEach(x=>x.classList.remove('active'));c.classList.add('active')}))
+  qsa('.sz',card).forEach((s)=>s.addEventListener('click',()=>{qsa('.sz',card).forEach(x=>x.classList.remove('active'));s.classList.add('active')}))
+  qs('.quick',card).addEventListener('click',()=>openQuick(card))
+  qs('.wishlist',card).addEventListener('click',()=>{qs('.wishlist',card).textContent='✓ تمت الإضافة'})
+}
+function openQuick(card){
+  const modal=qs('#modal')
+  const sld=qs('#mSld')
+  const info=qs('#mInfo')
+  sld.innerHTML=''
+  qsa('.slide',card).forEach((s,i)=>{const img=document.createElement('img');img.src=s.getAttribute('src');img.className=''+(i===0?'active':'');sld.appendChild(img)})
+  info.innerHTML=card.querySelector('.content').innerHTML
+  modal.classList.add('show')
+  modal.addEventListener('click',()=>modal.classList.remove('show'))
+}
+qsa('.card').forEach(setupCard)
+</script>
+</body>
+</html>

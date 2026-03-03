@@ -452,6 +452,42 @@ def product_detail(request, product_id):
     return render(request, 'products/detail.html', context)
 
 
+def modern_login_page(request):
+    return render(request, 'auth/modern_login.html')
+
+
+def catalog_product_list(request):
+    q = (request.GET.get('q') or '').strip()
+    category = (request.GET.get('category') or '').strip()
+    ordering = (request.GET.get('ordering') or '').strip() or '-created_at'
+    min_price_raw = request.GET.get('min_price')
+    max_price_raw = request.GET.get('max_price')
+    products = Product.objects.filter(is_active=True, status='ACTIVE')\
+        .select_related('store')\
+        .prefetch_related('images', 'variants', 'colors')
+    if q:
+        products = products.filter(Q(name__icontains=q) | Q(description__icontains=q))
+    if category:
+        products = products.filter(category=category)
+    try:
+        from decimal import Decimal
+        if min_price_raw not in [None, '']:
+            products = products.filter(base_price__gte=Decimal(str(min_price_raw)))
+        if max_price_raw not in [None, '']:
+            products = products.filter(base_price__lte=Decimal(str(max_price_raw)))
+    except Exception:
+        pass
+    allowed_ordering = {'-created_at','created_at','-rating','rating','base_price','-base_price'}
+    if ordering not in allowed_ordering:
+        ordering = '-created_at'
+    products = products.order_by(ordering)
+    product_categories = Product.CATEGORY_CHOICES
+    context = {
+        'products': products,
+        'product_categories': product_categories,
+        'selected_category': category,
+    }
+    return render(request, 'catalog/product_list.html', context)
 def register(request):
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
@@ -3470,7 +3506,10 @@ def super_owner_add_product(request):
                         v.save()
                     for vdel in getattr(variant_formset, 'deleted_objects', []):
                         try:
-                            vdel.delete()
+                            # الحذف معطل: تعطيل المتغير بدلاً من حذفه
+                            vdel.is_enabled = False
+                            vdel.stock_qty = 0
+                            vdel.save()
                         except Exception:
                             pass
                     images_to_save = image_formset.save(commit=False)
@@ -3484,7 +3523,9 @@ def super_owner_add_product(request):
                         im.save()
                     for imdel in getattr(image_formset, 'deleted_objects', []):
                         try:
-                            imdel.delete()
+                            # الحذف معطل: إبقاء السجل وعدم الحذف
+                            imdel.is_main = False
+                            imdel.save()
                         except Exception:
                             pass
                     if request.POST.get('finish') == '1':
@@ -3595,7 +3636,8 @@ def super_owner_add_product(request):
             created = 0
             try:
                 with transaction.atomic():
-                    ProductVariant.objects.filter(product=product).delete()
+                    # الحذف معطل: تعطيل كل المتغيرات بدلاً من حذفها
+                    ProductVariant.objects.filter(product=product).update(is_enabled=False, stock_qty=0)
                     if selected_colors and selected_sizes:
                         for c in selected_colors:
                             for s in selected_sizes:
@@ -4245,8 +4287,8 @@ def super_owner_add_product(request):
             except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
                 messages.error(request, 'الصورة غير موجودة')
                 return redirect('super_owner_add_product')
-            img.delete()
-            messages.success(request, 'تم حذف الصورة')
+            # الحذف معطل: لن نقوم بحذف الصورة
+            messages.info(request, 'تم تعطيل حذف الصور مؤقتاً حفاظاً على البيانات')
             return redirect(f"{request.path}?pid={product.id}&step=images")
 
         elif action == 'extract_color_from_image':

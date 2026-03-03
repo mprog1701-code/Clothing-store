@@ -81,24 +81,184 @@ class StoreSerializer(serializers.ModelSerializer):
 class ProductImageSerializer(serializers.ModelSerializer):
     url = serializers.SerializerMethodField()
     image_url = serializers.CharField(read_only=True)
+    color_name = serializers.SerializerMethodField()
+    color_key = serializers.SerializerMethodField()
+    color_obj_id = serializers.SerializerMethodField()
+    color_attr_id = serializers.SerializerMethodField()
+    color_id = serializers.SerializerMethodField()
+    variant_id = serializers.SerializerMethodField()
+    order = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'image_url', 'is_main', 'url']
+        fields = ['id', 'image', 'image_url', 'is_main', 'url', 'color_name', 'color_key', 'color_obj_id', 'color_attr_id', 'color_id', 'variant_id', 'order']
 
     def get_url(self, obj):
         try:
-            return obj.get_image_url()
+            u = obj.get_image_url() or ''
+            s = str(u).strip()
+            if s and not (s.startswith('http://') or s.startswith('https://')):
+                try:
+                    req = self.context.get('request')
+                    if req:
+                        s = req.build_absolute_uri(s)
+                except Exception:
+                    pass
+            return s
         except Exception:
             return ''
+    
+    def get_color_name(self, obj):
+        try:
+            if obj.color_attr:
+                return obj.color_attr.name
+            if obj.color:
+                return obj.color.name
+        except Exception:
+            pass
+        return ''
+    
+    def get_color_key(self, obj):
+        try:
+            if obj.color_attr_id:
+                return f"A{obj.color_attr_id}"
+            if obj.color_id:
+                return str(obj.color_id)
+        except Exception:
+            pass
+        return ''
+    
+    def get_color_obj_id(self, obj):
+        try:
+            return int(obj.color_id) if obj.color_id else None
+        except Exception:
+            return None
+    
+    def get_color_attr_id(self, obj):
+        try:
+            return int(obj.color_attr_id) if obj.color_attr_id else None
+        except Exception:
+            return None
+    
+    def get_color_id(self, obj):
+        try:
+            if obj.color_id:
+                return int(obj.color_id)
+            if obj.color_attr_id:
+                return int(obj.color_attr_id)
+        except Exception:
+            pass
+        return None
+    
+    def get_variant_id(self, obj):
+        try:
+            return int(obj.variant_id) if obj.variant_id else None
+        except Exception:
+            return None
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):
     price = serializers.ReadOnlyField()
+    color_name = serializers.SerializerMethodField()
+    color_hex = serializers.SerializerMethodField()
+    images = ProductImageSerializer(many=True, read_only=True)
+    sizes = serializers.SerializerMethodField()
+    color_key = serializers.SerializerMethodField()
+    color_obj_id = serializers.SerializerMethodField()
+    color_attr_id = serializers.SerializerMethodField()
     
     class Meta:
         model = ProductVariant
-        fields = ['id', 'size', 'color', 'stock_qty', 'price_override', 'price']
+        fields = ['id', 'size', 'color', 'stock_qty', 'price_override', 'price', 'color_name', 'color_hex', 'images', 'sizes', 'color_key', 'color_obj_id', 'color_attr_id']
+
+    def get_color_name(self, obj):
+        try:
+            if obj.color_attr:
+                return obj.color_attr.name
+            if obj.color_obj:
+                return obj.color_obj.name
+        except Exception:
+            pass
+        return ''
+
+    def get_color_hex(self, obj):
+        try:
+            if obj.color_attr and getattr(obj.color_attr, 'code', None):
+                return obj.color_attr.code
+            if obj.color_obj and getattr(obj.color_obj, 'code', None):
+                return obj.color_obj.code
+            name = ''
+            if obj.color_attr and getattr(obj.color_attr, 'name', None):
+                name = str(obj.color_attr.name or '')
+            elif obj.color_obj and getattr(obj.color_obj, 'name', None):
+                name = str(obj.color_obj.name or '')
+            key = name.strip().lower()
+            M = {
+                'أسود': '#000000',
+                'ابيض': '#ffffff',
+                'أبيض': '#ffffff',
+                'احمر': '#ff0000',
+                'أحمر': '#ff3b30',
+                'أزرق': '#007aff',
+                'ازرق': '#007aff',
+                'أخضر': '#34c759',
+                'اخضر': '#34c759',
+                'رمادي': '#8e8e93',
+                'زهري': '#ff2d55',
+                'وردي': '#ff2d55',
+                'بنفسجي': '#af52de',
+                'بني': '#795548',
+                'بيج': '#f5f5dc',
+                'ذهبي': '#d4af37',
+                'فضي': '#c0c0c0',
+                'أزرق داكن': '#003366',
+                'كحلي': '#003366',
+            }
+            if key in M:
+                return M[key]
+        except Exception:
+            pass
+        return ''
+
+    def get_sizes(self, obj):
+        try:
+            qs = obj.product.variants.all()
+            if obj.color_attr_id:
+                qs = qs.filter(color_attr_id=obj.color_attr_id)
+            elif obj.color_obj_id:
+                qs = qs.filter(color_obj_id=obj.color_obj_id)
+            items = []
+            for v in qs:
+                try:
+                    val = v.size_attr.name if v.size_attr else v.size
+                    items.append({'value': val, 'in_stock': v.stock_qty > 0})
+                except Exception:
+                    continue
+            return items
+        except Exception:
+            return []
+    
+    def get_color_key(self, obj):
+        try:
+            if obj.color_attr_id:
+                return f"A{obj.color_attr_id}"
+            if obj.color_obj_id:
+                return str(obj.color_obj_id)
+        except Exception:
+            pass
+        return ''
+    
+    def get_color_obj_id(self, obj):
+        try:
+            return int(obj.color_obj_id) if obj.color_obj_id else None
+        except Exception:
+            return None
+    
+    def get_color_attr_id(self, obj):
+        try:
+            return int(obj.color_attr_id) if obj.color_attr_id else None
+        except Exception:
+            return None
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -106,16 +266,26 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     variants = ProductVariantSerializer(many=True, read_only=True)
     main_image = serializers.SerializerMethodField()
+    colors = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
-        fields = ['id', 'store', 'name', 'description', 'base_price', 'category', 'size_type', 'is_active', 'created_at', 'images', 'variants', 'main_image']
+        fields = ['id', 'store', 'name', 'description', 'base_price', 'category', 'size_type', 'is_active', 'created_at', 'images', 'variants', 'main_image', 'colors']
     
     def get_main_image(self, obj):
         main_image = obj.main_image
         if main_image:
             return ProductImageSerializer(main_image).data
         return None
+    
+    def get_colors(self, obj):
+        data = []
+        try:
+            for c in obj.colors.all():
+                data.append({'id': c.id, 'name': c.name, 'code': c.code})
+        except Exception:
+            pass
+        return data
 
 
 class AddressSerializer(serializers.ModelSerializer):

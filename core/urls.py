@@ -10,11 +10,13 @@ urlpatterns = [
     path('stores/', views.store_list, name='store_list'),
     path('stores/<int:store_id>/', views.store_detail, name='store_detail'),
     path('products/<int:product_id>/', views.product_detail, name='product_detail'),
+    path('products/', views.catalog_product_list, name='catalog_product_list'),
     path('search/', views.search, name='search'),
     path('announcements/', views.announcements, name='announcements'),
     
     path('register/', views.register, name='register'),
     path('login/', views.user_login, name='login'),
+    path('auth/modern/', views.modern_login_page, name='modern_login'),
     path('owner-login/', views.owner_login, name='owner_login'),
     path('admin-portal/login/', views.admin_portal_login, name='admin_portal_login'),
     path('admin-portal/dashboard/', views.admin_portal_dashboard, name='admin_portal_dashboard'),

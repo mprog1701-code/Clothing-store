@@ -35,11 +35,35 @@ export default function ProductDetailScreen({ route, navigation }) {
     try {
       const p = await getProduct(productId);
       setProduct(p);
-      const firstVariant = (p?.variants || [])[0] || null;
-      setSelectedVariantId(firstVariant ? firstVariant.id : null);
-      if (firstVariant) {
-        setColor(firstVariant.color_name || '');
-        const firstSize = (firstVariant.sizes || [])[0]?.value || null;
+      const variants = p?.variants || [];
+      const images = p?.images || [];
+      const pickHasImages = (v) => {
+        const vi = v?.images || [];
+        if (Array.isArray(vi) && vi.length) return true;
+        const ck = String(v?.color_key || '').trim();
+        const cn = String(v?.color_name || '').trim().toLowerCase();
+        const co = v?.color_obj_id || null;
+        const ca = v?.color_attr_id || null;
+        const match = Array.isArray(images)
+          ? images.some((im) => {
+              const imKey = String(im?.color_key || '').trim();
+              const imName = String(im?.color_name || '').trim().toLowerCase();
+              const imCo = im?.color_obj_id || null;
+              const imCa = im?.color_attr_id || null;
+              if (ck && imKey && ck === imKey) return true;
+              if (cn && imName && cn === imName) return true;
+              if (co && imCo && co === imCo) return true;
+              if (ca && imCa && ca === imCa) return true;
+              return false;
+            })
+          : false;
+        return !!match;
+      };
+      const initialVariant = variants.find(pickHasImages) || variants[0] || null;
+      setSelectedVariantId(initialVariant ? initialVariant.id : null);
+      if (initialVariant) {
+        setColor(initialVariant.color_name || '');
+        const firstSize = (initialVariant.sizes || [])[0]?.value || null;
         setSize(firstSize);
       }
     } catch (e) {
@@ -52,17 +76,81 @@ export default function ProductDetailScreen({ route, navigation }) {
   useEffect(() => {
     load();
   }, []);
+  useEffect(() => {
+    if (product) {
+      try {
+        const imagesLen = Array.isArray(product.images) ? product.images.length : 0;
+        const variantsLen = Array.isArray(product.variants) ? product.variants.length : 0;
+        const v0ImagesLen = Array.isArray(product.variants?.[0]?.images) ? product.variants[0].images.length : 0;
+        console.log('[DIAG] product keys:', Object.keys(product || {}));
+        console.log('[DIAG] imagesLen=', imagesLen, 'variantsLen=', variantsLen, 'v0ImagesLen=', v0ImagesLen);
+      } catch {}
+    }
+  }, [product]);
 
   const selectedVariant = useMemo(() => {
     const arr = product?.variants || [];
     return arr.find((v) => v.id === selectedVariantId) || null;
   }, [product, selectedVariantId]);
+  const selectedVariantForSize = useMemo(() => {
+    const arr = product?.variants || [];
+    if (!selectedVariant) return null;
+    const sizeVal = size || (selectedVariant?.sizes || [])[0]?.value || null;
+    if (!sizeVal) return selectedVariant;
+    const co = selectedVariant?.color_obj_id || null;
+    const ca = selectedVariant?.color_attr_id || null;
+    const match = arr.find((v) => {
+      const sameColor =
+        (co && v.color_obj_id === co) ||
+        (ca && v.color_attr_id === ca) ||
+        (!co && !ca && !(v.color_obj_id || v.color_attr_id));
+      const sameSize =
+        (typeof v.size === 'string' && v.size === sizeVal) ||
+        (typeof v.size_display === 'string' && v.size_display === sizeVal);
+      return sameColor && sameSize;
+    });
+    return match || selectedVariant;
+  }, [product, selectedVariant, size]);
 
   const getVariantImages = useCallback((v, p) => {
-    const vi = v?.images || v?.imageUrls || [];
+    const vi = v?.images || [];
     if (Array.isArray(vi) && vi.length) return vi.map((x) => (typeof x === 'string' ? { url: x } : x));
-    const pi = p?.images || p?.imageUrls || [];
-    return Array.isArray(pi) ? pi.map((x) => (typeof x === 'string' ? { url: x } : x)) : [];
+    const pi = p?.images || [];
+    const ck = String(v?.color_key || '').trim();
+    const cn = String(v?.color_name || '').trim().toLowerCase();
+    const co = v?.color_obj_id || null;
+    const ca = v?.color_attr_id || null;
+    const filtered = Array.isArray(pi)
+      ? pi.filter((im) => {
+          const imKey = String(im?.color_key || '').trim();
+          const imName = String(im?.color_name || '').trim().toLowerCase();
+          const imCo = im?.color_obj_id || null;
+          const imCa = im?.color_attr_id || null;
+          if (ck && imKey && ck === imKey) return true;
+          if (cn && imName && cn === imName) return true;
+          if (co && imCo && co === imCo) return true;
+          if (ca && imCa && ca === imCa) return true;
+          return false;
+        })
+      : [];
+    let src = filtered.length ? filtered : pi;
+    const mi = p?.main_image || null;
+    const hasMain = mi && (mi.url || mi.image_url);
+    if (hasMain) {
+      src = [mi, ...src];
+    }
+    const mapped = Array.isArray(src) ? src.map((x) => (typeof x === 'string' ? { url: x } : x)) : [];
+    const seen = new Set();
+    const out = [];
+    for (const im of mapped) {
+      const u = im.url || im.image_url || String(im);
+      const key = String(u).trim();
+      if (!key) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(im);
+    }
+    return out;
   }, []);
 
   const getVariantPrice = useCallback((v, p) => {
@@ -78,14 +166,14 @@ export default function ProductDetailScreen({ route, navigation }) {
   }, []);
 
   const imagesForSelected = useMemo(() => getVariantImages(selectedVariant, product), [getVariantImages, selectedVariant, product]);
-  const priceDisplay = useMemo(() => getVariantPrice(selectedVariant, product), [getVariantPrice, selectedVariant, product]);
+  const priceDisplay = useMemo(() => getVariantPrice(selectedVariantForSize || selectedVariant, product), [getVariantPrice, selectedVariantForSize, selectedVariant, product]);
   const canAdd = useMemo(() => {
-    if (!selectedVariant) return false;
-    if (!isVariantInStock(selectedVariant)) return false;
+    if (!selectedVariantForSize) return false;
     const needsSize = Array.isArray(selectedVariant?.sizes) && selectedVariant.sizes.length > 0;
     if (needsSize && !size) return false;
-    return true;
-  }, [selectedVariant, size, isVariantInStock]);
+    const qty = Number(selectedVariantForSize?.stock_qty ?? 0);
+    return qty > 0;
+  }, [selectedVariantForSize, selectedVariant, size]);
 
   useEffect(() => {
     const preload = async () => {
@@ -112,7 +200,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const onAddToCart = async () => {
-    const variantId = selectedVariant?.id;
+    const variantId = (selectedVariantForSize || selectedVariant)?.id;
     const qtyNum = qty || 1;
     const sizeVal = size || (selectedVariant?.sizes || [])[0]?.value || null;
     if (!variantId) return;
@@ -136,7 +224,13 @@ export default function ProductDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </View>
-      <ImageCarousel images={imagesForSelected} onIndexChange={setCarouselIndex} flatListRef={carouselRef} />
+      {imagesForSelected.length > 0 ? (
+        <ImageCarousel key={`carousel-${selectedVariantId}-${imagesForSelected.length}`} images={imagesForSelected} onIndexChange={setCarouselIndex} flatListRef={carouselRef} />
+      ) : (
+        <View style={{ height: 200, alignItems: 'center', justifyContent: 'center', marginHorizontal: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface }}>
+          <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>لا توجد صور لهذا اللون</Text>
+        </View>
+      )}
       <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.sm }}>
         <View style={{ flexDirection: 'row' }}>
           {imagesForSelected.map((_, idx) => (

@@ -37,7 +37,12 @@ class ProductColorInline(admin.TabularInline):
     extra = 0
     fields = ['name', 'code']
 
-ProductAdmin.inlines = []
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 0
+    fields = ['color', 'color_attr', 'variant', 'image', 'image_url', 'is_main', 'order']
+
+ProductAdmin.inlines = [ProductColorInline, ProductImageInline]
 
 @admin.register(ProductColor)
 class ProductColorAdmin(admin.ModelAdmin):
@@ -62,6 +67,11 @@ class ProductImageAdmin(admin.ModelAdmin):
     list_filter = ['is_main', 'color', 'variant']
     list_select_related = ('product', 'color', 'variant')
     list_per_page = 25
+    actions = []
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        actions.pop('delete_selected', None)
+        return actions
     
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):

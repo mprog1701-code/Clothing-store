@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>تسجيل الدخول / إنشاء حساب</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cairo,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#0b0b0b}
+.wrap{width:100%;max-width:960px;padding:24px}
+.card{background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+.top{padding:28px 28px 8px;background:linear-gradient(135deg,#764ba2,#667eea);color:#fff}
+.brand{font-weight:800;font-size:20px;letter-spacing:.5px}
+.tabs{display:flex;gap:8px;margin-top:16px}
+.tab{flex:1;text-align:center;padding:12px;border-radius:14px;background:rgba(255,255,255,.18);color:#fff;cursor:pointer;user-select:none;transition:.25s}
+.tab.active{background:#fff;color:#0b0b0b;transform:translateY(-2px)}
+.content{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.pane{padding:24px;min-height:420px;display:none}
+.pane.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:.0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.title{font-weight:700;font-size:18px;margin-bottom:12px}
+.desc{color:#666;margin-bottom:20px}
+.field{margin-bottom:14px}
+.label{display:block;font-size:13px;color:#444;margin-bottom:6px}
+.input{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:12px;background:#fafafa;outline:none;transition:.2s}
+.input:focus{border-color:#667eea;background:#fff;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+.row{display:flex;gap:10px}
+.btn{width:100%;padding:12px;border:none;border-radius:12px;background:#667eea;color:#fff;font-weight:700;cursor:pointer;transition:.2s}
+.btn:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn.secondary{background:#ececff;color:#2b2b2b}
+.social{display:flex;gap:10px;margin-top:10px}
+.sbtn{flex:1;padding:10px;border-radius:12px;background:#f7f7fb;border:1px solid #eee;color:#222;cursor:pointer;transition:.2s}
+.sbtn:hover{transform:translateY(-1px)}
+.error{margin-top:6px;color:#c53030;font-size:13px}
+.ok{margin-top:6px;color:#2f855a;font-size:13px}
+.strength{display:flex;height:8px;border-radius:8px;overflow:hidden;background:#eee;margin-top:6px}
+.bar{flex:1;background:#eee;transition:.25s}
+.bar.on1{background:#ff6b6b}
+.bar.on2{background:#f6ad55}
+.bar.on3{background:#68d391}
+.bar.on4{background:#38b2ac}
+.hint{font-size:12px;color:#777;margin-top:6px}
+.micro{transition:.15s}
+.micro:active{transform:scale(.98)}
+.right{padding:24px;background:linear-gradient(180deg,#f9f9ff,#ffffff)}
+.hero{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.hero h2{margin:0 0 10px 0;font-size:22px}
+.hero p{margin:0;color:#555}
+.links{display:flex;gap:10px;margin-top:16px}
+.link{padding:10px 14px;border-radius:12px;background:#ececff;color:#222;text-decoration:none}
+@media (max-width:860px){.content{grid-template-columns:1fr}.right{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="top">
+      <div class="brand">مرحبا بك</div>
+      <div class="tabs">
+        <div class="tab active micro" data-tab="login">تسجيل الدخول</div>
+        <div class="tab micro" data-tab="register">إنشاء حساب</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="pane active" id="pane-login">
+        <div class="title">تسجيل الدخول</div>
+        <div class="desc">ادخل بياناتك للمتابعة</div>
+        <form id="loginForm" method="post" action="/api/auth/login/">
+          {% csrf_token %}
+          <div class="field">
+            <label class="label">رقم الهاتف أو اسم المستخدم</label>
+            <input class="input" type="text" name="username" id="loginUser">
+            <div class="error" id="loginUserErr"></div>
+          </div>
+          <div class="field">
+            <label class="label">كلمة المرور</label>
+            <input class="input" type="password" name="password" id="loginPass">
+            <div class="error" id="loginPassErr"></div>
+          </div>
+          <div class="row">
+            <button class="btn micro" type="submit">دخول</button>
+            <button class="btn secondary micro" type="button" id="toRegister">إنشاء حساب</button>
+          </div>
+          <div class="social">
+            <a class="sbtn micro" href="/auth/google/">Google</a>
+            <a class="sbtn micro" href="/auth/facebook/">Facebook</a>
+          </div>
+          <div class="error" id="loginErr"></div>
+          <div class="ok" id="loginOk"></div>
+        </form>
+      </div>
+      <div class="pane" id="pane-register">
+        <div class="title">إنشاء حساب</div>
+        <div class="desc">أكمل البيانات للانضمام</div>
+        <form id="registerForm" method="post" action="/api/auth/register/">
+          {% csrf_token %}
+          <div class="field">
+            <label class="label">الاسم الكامل</label>
+            <input class="input" type="text" name="full_name" id="regName">
+            <div class="error" id="regNameErr"></div>
+          </div>
+          <div class="field">
+            <label class="label">رقم الهاتف</label>
+            <input class="input" type="tel" name="phone" id="regPhone" placeholder="07XXXXXXXXX">
+            <div class="error" id="regPhoneErr"></div>
+          </div>
+          <div class="field">
+            <label class="label">المدينة</label>
+            <input class="input" type="text" name="city" id="regCity">
+            <div class="error" id="regCityErr"></div>
+          </div>
+          <div class="field">
+            <label class="label">كلمة المرور</label>
+            <input class="input" type="password" name="password" id="regPass">
+            <div class="strength"><div class="bar" id="b1"></div><div class="bar" id="b2"></div><div class="bar" id="b3"></div><div class="bar" id="b4"></div></div>
+            <div class="hint" id="regHint"></div>
+            <div class="error" id="regPassErr"></div>
+          </div>
+          <div class="field">
+            <label class="label">تأكيد كلمة المرور</label>
+            <input class="input" type="password" name="password_confirm" id="regPass2">
+            <div class="error" id="regPass2Err"></div>
+          </div>
+          <div class="row">
+            <button class="btn micro" type="submit">إنشاء الحساب</button>
+            <button class="btn secondary micro" type="button" id="toLogin">لدي حساب</button>
+          </div>
+          <div class="social">
+            <a class="sbtn micro" href="/auth/google/">Google</a>
+            <a class="sbtn micro" href="/auth/facebook/">Facebook</a>
+          </div>
+          <div class="error" id="regErr"></div>
+          <div class="ok" id="regOk"></div>
+        </form>
+      </div>
+      <div class="right">
+        <div class="hero">
+          <h2>تجربة عصرية</h2>
+          <p>واجهة سلسة وخفيفة مع انتقالات وتفاعل جميل</p>
+          <div class="links">
+            <a class="link" href="/">الصفحة الرئيسية</a>
+            <a class="link" href="/products/">المنتجات</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function $(s){return document.querySelector(s)}
+function val(id){return (document.getElementById(id).value||'').trim()}
+function showPane(name){document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));if(name==='login'){document.getElementById('pane-login').classList.add('active');document.querySelector('[data-tab="login"]').classList.add('active')}else{document.getElementById('pane-register').classList.add('active');document.querySelector('[data-tab="register"]').classList.add('active')}}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showPane(t.dataset.tab)))
+document.getElementById('toRegister').addEventListener('click',()=>showPane('register'))
+document.getElementById('toLogin').addEventListener('click',()=>showPane('login'))
+function scorePwd(s){let sc=0;if(s.length>=8)sc++;if(/[A-Z]/.test(s))sc++;if(/[a-z]/.test(s))sc++;if(/[0-9]/.test(s))sc++;if(/[^A-Za-z0-9]/.test(s))sc++;return Math.min(4,Math.max(1,sc))}
+function updateStrength(){const s=val('regPass');const sc=scorePwd(s);['b1','b2','b3','b4'].forEach((id,i)=>{const el=document.getElementById(id);el.className='bar';if(sc>i)el.classList.add('on'+sc)});const h=document.getElementById('regHint');h.textContent=sc<=1?'ضعيفة':sc===2?'متوسطة':sc===3?'جيدة':'قوية'}
+document.getElementById('regPass').addEventListener('input',updateStrength)
+function ok(id,msg){const el=document.getElementById(id);el.textContent=msg;el.className='ok'}
+function err(id,msg){const el=document.getElementById(id);el.textContent=msg;el.className='error'}
+function clearErr(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=''})
+}
+function getCookie(name){const v=('; '+document.cookie).split('; '+name+'=');if(v.length===2)return v.pop().split(';').shift();return ''}
+document.getElementById('loginForm').addEventListener('submit',async(e)=>{e.preventDefault();clearErr(['loginUserErr','loginPassErr','loginErr','loginOk']);const u=val('loginUser');const p=val('loginPass');let bad=false;if(!u){err('loginUserErr','الاسم/الهاتف مطلوب');bad=true}if(!p){err('loginPassErr','كلمة المرور مطلوبة');bad=true}if(bad)return;try{const r=await fetch('/api/auth/login/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},body:JSON.stringify({username:u,password:p})});const d=await r.json();if(r.ok){ok('loginOk','تم تسجيل الدخول بنجاح');setTimeout(()=>{window.location.href='/'},600)}else{err('loginErr',d.error||'فشل تسجيل الدخول')}}catch{err('loginErr','تعذر الاتصال')}}
+)
+document.getElementById('registerForm').addEventListener('submit',async(e)=>{e.preventDefault();clearErr(['regNameErr','regPhoneErr','regCityErr','regPassErr','regPass2Err','regErr','regOk']);const nm=val('regName');const ph=val('regPhone');const ct=val('regCity');const pw=val('regPass');const pw2=val('regPass2');let bad=false;if(nm.length<3){err('regNameErr','الاسم غير صالح');bad=true}if(!(ph.startsWith('07')&&ph.length===11)){err('regPhoneErr','رقم الهاتف يجب أن يبدأ بـ 07 ويكون 11 رقماً');bad=true}if(!ct){err('regCityErr','المدينة مطلوبة');bad=true}if(pw.length<6){err('regPassErr','كلمة المرور قصيرة');bad=true}if(pw!==pw2){err('regPass2Err','كلمات المرور غير متطابقة');bad=true}if(bad)return;try{const r=await fetch('/api/auth/register/',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},body:JSON.stringify({phone:ph,password:pw,password_confirm:pw2,city:ct,full_name:nm})});const d=await r.json();if(r.ok){ok('regOk','تم إنشاء الحساب بنجاح');setTimeout(()=>{showPane('login')},800)}else{err('regErr',Object.values(d).join(' ')||'فشل إنشاء الحساب')}}catch{err('regErr','تعذر الاتصال')}}
+)
+</script>
+</body>
+</html>

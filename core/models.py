@@ -404,11 +404,17 @@ class ProductImage(models.Model):
         return ''
 
     def clean(self):
-        # Ensure consistency with product
         if self.color and self.color.product_id != self.product_id:
             raise ValidationError({'color': 'اللون لا ينتمي إلى نفس المنتج'})
         if self.variant and self.variant.product_id != self.product_id:
             raise ValidationError({'variant': 'النسخة لا تنتمي إلى نفس المنتج'})
+        try:
+            if self.product_id:
+                has_colors = self.product.colors.exists()
+                if has_colors and not (self.color_id or self.color_attr_id or self.variant_id):
+                    raise ValidationError({'color': 'يجب ربط الصورة بلون أو متغير لهذا المنتج'})
+        except Exception:
+            pass
 
 
 class ProductVariant(models.Model):

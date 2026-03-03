@@ -24,6 +24,7 @@ export default function HomeScreen({ navigation }) {
   const { accessToken } = useAuth();
   const screenW = Dimensions.get('window').width;
   const productCardW = Math.floor((screenW - (theme.spacing.lg * 2) - theme.spacing.md) / 2);
+  const PREVIEW_LIMIT = 6;
 
   const load = async () => {
     setLoading(true);
@@ -155,9 +156,9 @@ export default function HomeScreen({ navigation }) {
 
   const isEmpty = (categories.length === 0) && (products.length === 0);
   const ListHeader = () => {
-    const topStores = stores.slice(0, 10);
-    const flashDeals = products.filter(p => (p.discount_price || 0) > 0).slice(0, 10);
-    const recommended = products.slice(0, 10);
+    const topStores = stores.slice(0, PREVIEW_LIMIT);
+    const flashDeals = products.filter(p => (p.discount_price || 0) > 0).slice(0, PREVIEW_LIMIT);
+    const recommended = products.slice(0, PREVIEW_LIMIT);
     return (
     <View style={{ backgroundColor: theme.colors.background }}>
       {/* AppBar */}
@@ -341,7 +342,12 @@ export default function HomeScreen({ navigation }) {
         contentContainerStyle={{ paddingHorizontal: theme.spacing.lg }}
         renderItem={({ item }) => (
           <View style={{ width: 220, marginRight: theme.spacing.md, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, ...theme.shadows.card }}>
-            {item.main_image?.image_url ? <Image source={{ uri: item.main_image.image_url }} style={{ width: 220, height: 110, borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg }} /> : null}
+            {item.main_image?.url || item.main_image?.image_url ? (
+              <Image
+                source={{ uri: item.main_image.url || item.main_image.image_url }}
+                style={{ width: 220, height: 110, borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg }}
+              />
+            ) : null}
             <View style={{ padding: theme.spacing.md }}>
               <Text numberOfLines={1} style={{ fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary }}>{item.name}</Text>
               <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>
@@ -448,7 +454,12 @@ export default function HomeScreen({ navigation }) {
       contentContainerStyle={{ paddingBottom: 100 }}
       renderItem={({ item }) => (
         <View style={{ flex: 1, margin: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, ...theme.shadows.card }}>
-          {item.main_image?.image_url ? <Image source={{ uri: item.main_image.image_url }} style={{ width: '100%', height: 160, borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg }} /> : null}
+          {item.main_image?.url || item.main_image?.image_url ? (
+            <Image
+              source={{ uri: item.main_image.url || item.main_image.image_url }}
+              style={{ width: '100%', height: 160, borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg }}
+            />
+          ) : null}
           <View style={{ padding: theme.spacing.md }}>
             <Text numberOfLines={2} style={{ fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{item.name}</Text>
             <Text style={{ marginTop: theme.spacing.xs, color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{item.base_price}</Text>
