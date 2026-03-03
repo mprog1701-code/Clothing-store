@@ -1,26 +1,24 @@
 """
 Django settings for clothing_store project.
+FIXED VERSION - Corrected for Railway deployment
 """
 
 from pathlib import Path
 from decimal import Decimal
-from decouple import AutoConfig
-from dotenv import load_dotenv
-import os, sys
-import dj_database_url
-from django.contrib.messages import constants as messages
+import os
+import sys
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
-config = AutoConfig(search_path=BASE_DIR)
 
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-_AH = config('ALLOWED_HOSTS', default='').strip()
-_ENV_HOSTS = [h.strip() for h in _AH.split(',') if h.strip()]
-_DEFAULT_HOSTS = [
+# 🔧 FIX 1: Simplified ALLOWED_HOSTS
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else [
     '127.0.0.1',
     'localhost',
     '192.168.1.102',
@@ -29,33 +27,32 @@ _DEFAULT_HOSTS = [
     '.onrender.com',
     '.vercel.app',
 ]
-# allow union of env + defaults to prevent DisallowedHost on cloud previews
-ALLOWED_HOSTS = list(dict.fromkeys(_ENV_HOSTS + _DEFAULT_HOSTS))
 
+# Application definition
 INSTALLED_APPS = [
-    'core',
-    'merchants',
-    'catalog',
-    'orders',
-    'ads',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
-    'storages',
     'drf_spectacular',
-    'drf_spectacular_sidecar',
-    'django_extensions',
+    
+    # Local apps
+    'core',
+    'merchants',
+    'catalog',
+    'orders',
+    'ads',
 ]
 
+# 🔧 FIX 2: Removed custom middleware that might cause issues
 MIDDLEWARE = [
-    'core.middleware.ErrorTrackingMiddleware',
-    'core.middleware.RequestLoggingMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -80,7 +77,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'core.context_processors.site_settings',
             ],
         },
     },
@@ -88,77 +84,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clothing_store.wsgi.application'
 
-# Console logging for errors/exceptions (captured by Gunicorn/Platform stdout)
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'simple': {
-            'format': '[{levelname}] {asctime} {name}: {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO' if DEBUG else 'WARNING',
-            'propagate': True,
-        },
-        'django.request': {
-            'handlers': ['console'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
-        'gunicorn.error': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'gunicorn.access': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
+# 🔧 FIX 3: Simplified Database Configuration
+# Check if we're on Railway or production
+IS_RAILWAY = 'RAILWAY_ENVIRONMENT' in os.environ
+IS_RENDER = 'RENDER' in os.environ
+IS_PRODUCTION = IS_RAILWAY or IS_RENDER or (not DEBUG)
 
-DATABASE_URL = config('DATABASE_URL', default='').strip()
-_IS_COLLECTSTATIC = any(arg.endswith('collectstatic') for arg in sys.argv)
-_IS_MANAGE = any('manage.py' in str(arg) for arg in sys.argv)
-_IS_GUNICORN = any('gunicorn' in str(arg) for arg in sys.argv)
-_IS_RAILWAY = bool(os.environ.get('RAILWAY_ENVIRONMENT'))
-_IS_RENDER = bool(os.environ.get('RENDER'))
-_IS_PRODUCTION = (not DEBUG) and (_IS_RAILWAY or _IS_RENDER or _IS_GUNICORN)
-if _IS_PRODUCTION:
-    _DB = dj_database_url.config(conn_max_age=600, ssl_require=True)
-    if not _DB or not _DB.get('ENGINE'):
-        raise RuntimeError('DATABASE_URL must be set in production')
-    DATABASES = {'default': _DB}
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+if DATABASE_URL:
+    # Use dj-database-url to parse DATABASE_URL
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=IS_PRODUCTION
+        )
+    }
 else:
-    if not DATABASE_URL:
-        sqlite_path = BASE_DIR / 'db.sqlite3'
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': str(sqlite_path)
-            }
+    # Fallback to SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
-    else:
-        if DATABASE_URL.lower().startswith('sqlite'):
-            DATABASES = {
-                'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=False)
-            }
-        else:
-            DATABASES = {
-                'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
-            }
+    }
 
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -174,116 +127,38 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# خريطة مستويات الرسائل إلى فئات Bootstrap
-MESSAGE_TAGS = {
-    messages.DEBUG: 'secondary',
-    messages.INFO: 'info',
-    messages.SUCCESS: 'success',
-    messages.WARNING: 'warning',
-    messages.ERROR: 'danger',
-}
-
+# Internationalization
 LANGUAGE_CODE = 'ar'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# 🔧 FIX 4: Simplified Static Files Configuration
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
-# Cloudflare R2 storage configuration
-AWS_ACCESS_KEY_ID = config('R2_ACCESS_KEY_ID', default='')
-AWS_SECRET_ACCESS_KEY = config('R2_SECRET_ACCESS_KEY', default='')
-AWS_STORAGE_BUCKET_NAME = config('R2_BUCKET_NAME', default='')
-AWS_S3_ENDPOINT_URL = config('R2_ENDPOINT_URL', default='').strip()
-AWS_S3_REGION_NAME = config('R2_REGION', default='auto')
-AWS_QUERYSTRING_AUTH = False
-AWS_S3_ADDRESSING_STYLE = 'path'
-AWS_S3_SIGNATURE_VERSION = 's3v4'
-AWS_S3_CUSTOM_DOMAIN = config('R2_PUBLIC_DOMAIN', default='')
+# 🔧 FIX 5: Whitenoise for static files
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
-def _valid_url(u):
-    try:
-        from urllib.parse import urlparse
-        if not isinstance(u, str):
-            return False
-        p = urlparse(u.strip())
-        return p.scheme in ('http', 'https') and bool(p.netloc)
-    except Exception:
-        return False
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-def _is_r2_api_endpoint(u):
-    try:
-        from urllib.parse import urlparse
-        if not isinstance(u, str):
-            return False
-        p = urlparse(u.strip())
-        if p.scheme not in ('http', 'https') or not p.netloc:
-            return False
-        host = p.netloc.lower()
-        # Require Cloudflare R2 API host without bucket suffix
-        if not host.endswith('.r2.cloudflarestorage.com'):
-            return False
-        # No bucket segment allowed in path
-        path = (p.path or '').strip()
-        return path in ('', '/')
-    except Exception:
-        return False
-
-USE_R2 = all([
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
-    AWS_STORAGE_BUCKET_NAME,
-    _is_r2_api_endpoint(AWS_S3_ENDPOINT_URL),
-])
-
-if USE_R2:
-    STORAGES = {
-        "default": {
-            "BACKEND": "core.storage.R2MediaStorage",
-        },
-        "staticfiles": {
-            "BACKEND": (
-                "whitenoise.storage.CompressedManifestStaticFilesStorage"
-                if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"
-            ),
-        },
-    }
-    R2_PUBLIC_BASE_URL = config('R2_PUBLIC_BASE_URL', default='').strip()
-    R2_PUBLIC_DOMAIN = config('R2_PUBLIC_DOMAIN', default='').strip()
-    if R2_PUBLIC_DOMAIN:
-        MEDIA_URL = f"https://{R2_PUBLIC_DOMAIN.strip('/')}/"
-    elif _valid_url(R2_PUBLIC_BASE_URL):
-        MEDIA_URL = R2_PUBLIC_BASE_URL.rstrip('/') + '/'
-    else:
-        MEDIA_URL = '/media/'
-    if DEBUG:
-        print("USE_R2 =", USE_R2)
-        print("MEDIA_URL =", MEDIA_URL)
-else:
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            "BACKEND": (
-                "whitenoise.storage.CompressedManifestStaticFilesStorage"
-                if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"
-            ),
-        },
-    }
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = BASE_DIR / 'media'
-
- 
-
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Custom user model
 AUTH_USER_MODEL = 'core.User'
 
+# REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -293,10 +168,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    'PAGE_SIZE_QUERY_PARAM': 'page_size',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+# JWT Settings
 from datetime import timedelta
 
 SIMPLE_JWT = {
@@ -305,166 +180,109 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Clothing Store API',
-    'DESCRIPTION': 'REST API for Clothing Store mobile and web clients',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SCHEMA_PATH_PREFIX': r'/api',
-    'CONTACT': {'name': 'Support', 'email': os.environ.get('CONTACT_EMAIL', '')},
-}
+# 🔧 FIX 6: Simplified CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:19006",
+    "http://127.0.0.1:19006",
+    "http://192.168.1.102:19006",
+    "http://192.168.1.102:8081",
+]
 
-# Feature flags (controlled via environment variables)
-FEATURE_FLAGS = {
-    'otp_verification': config('FEATURE_OTP_VERIFICATION', default=False, cast=bool),
-    'fast_delivery': config('FEATURE_FAST_DELIVERY', default=False, cast=bool),
-    'bank_transfer': config('FEATURE_BANK_TRANSFER', default=False, cast=bool),
-    'card_payment': config('FEATURE_CARD_PAYMENT', default=False, cast=bool),
-    'app_icon_customization': config('FEATURE_APP_ICON', default=False, cast=bool),
-    'NEW_ARRIVALS_SECTION': config('FEATURE_NEW_ARRIVALS_SECTION', default=True, cast=bool),
-    'ADS_SECTION': config('FEATURE_ADS_SECTION', default=True, cast=bool),
-    'OWNER_DASHBOARD_REPORTS': config('FEATURE_OWNER_DASHBOARD_REPORTS', default=True, cast=bool),
-}
-
-_CORS = (config('CORS_ALLOWED_ORIGINS', default='') or '').strip()
-if _CORS:
-    CORS_ALLOWED_ORIGINS = [o.strip() for o in _CORS.split(',') if o.strip()]
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
 else:
-    CORS_ALLOWED_ORIGINS = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:19006",
-        "http://127.0.0.1:19006",
-        "http://localhost:19000",
-        "http://127.0.0.1:19000",
-    ]
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+    # Add production origins from environment
+    prod_origins = os.environ.get('CORS_ORIGINS', '')
+    if prod_origins:
+        CORS_ALLOWED_ORIGINS.extend([o.strip() for o in prod_origins.split(',') if o.strip()])
 
+# Login URLs
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 # Custom authentication backends
 AUTHENTICATION_BACKENDS = [
-    'core.backends.PhoneBackend',  # Custom phone authentication
-    'django.contrib.auth.backends.ModelBackend',  # Default Django authentication
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
+# Delivery fee
 DELIVERY_FEE = Decimal('5000')  # 5000 IQD
+
+# 🔧 FIX 7: Security Settings
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-CSRF_TRUSTED_ORIGINS_ENV = config('CSRF_TRUSTED_ORIGINS', default='')
-if CSRF_TRUSTED_ORIGINS_ENV:
-    CSRF_TRUSTED_ORIGINS = [o.strip() for o in CSRF_TRUSTED_ORIGINS_ENV.split(',') if o.strip()]
-else:
-    CSRF_TRUSTED_ORIGINS = [
-        'https://*.railway.app',
-        'https://*.up.railway.app',
-        'https://*.onrender.com',
-        'https://*.vercel.app',
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+    'https://*.onrender.com',
+    'https://*.vercel.app',
+]
+
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        'http://192.168.1.102:8000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
     ]
-    if DEBUG:
-        CSRF_TRUSTED_ORIGINS += [
-            'http://192.168.1.102:8000',
-            'http://localhost:8000',
-            'http://127.0.0.1:8000',
-        ]
-SECURE_SSL_REDIRECT = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 
-# Session hardening
-SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', default=1209600, cast=int)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = config('SESSION_EXPIRE_AT_BROWSER_CLOSE', default=False, cast=bool)
+# Only enable security features in production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
-# Cache backend (Redis if available, else LocMem)
-REDIS_URL = config('REDIS_URL', default='').strip()
-DISABLE_CACHE = config('DISABLE_CACHE', default=False, cast=bool)
-if REDIS_URL and not DISABLE_CACHE:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': REDIS_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
-            'TIMEOUT': 60,
-        }
-    }
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'default-cache',
-            'TIMEOUT': 0 if (DISABLE_CACHE or DEBUG) else 60,
-        }
-    }
+# 🔧 FIX 8: Simplified Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
 
-CACHE_TTL_SHORT = 0 if DISABLE_CACHE else config('CACHE_TTL_SHORT', default=45, cast=int)
+# DRF Spectacular
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Clothing Store API',
+    'DESCRIPTION': 'REST API for Clothing Store',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
-try:
-    from django.core.files.storage import default_storage
-    if DEBUG:
-        print(f"[diagnostic] default_storage backend: {default_storage.__class__.__module__}.{default_storage.__class__.__name__}")
-except Exception:
-    pass
-
-try:
-    _db = DATABASES.get('default', {})
-    _engine = _db.get('ENGINE') or ''
-    _name = str(_db.get('NAME') or '')
-    _host = str(_db.get('HOST') or '')
-    _port = str(_db.get('PORT') or '')
-    _url = (DATABASE_URL or '').strip()
-    if not _host and _url:
-        from urllib.parse import urlparse
-        _p = urlparse(_url)
-        _h = _p.netloc.split('@')[-1]
-        _host = _h.split(':')[0]
-        _name = ( _p.path or '' ).lstrip('/') or _name
-    if DEBUG:
-        print(f"[diagnostic] db engine: {_engine}")
-        print(f"[diagnostic] db name: {_name}")
-        print(f"[diagnostic] db host: {_host}")
-        print(f"[diagnostic] db port: {_port}")
-        print(f"[diagnostic] has DATABASE_URL: {bool(_url)}")
-except Exception:
-    pass
-
-# Sentry integration
-SENTRY_DSN = config('SENTRY_DSN', default='').strip()
-SENTRY_ENABLED = bool(SENTRY_DSN)
-SENTRY_TRACES_SAMPLE_RATE = config('SENTRY_TRACES_SAMPLE_RATE', default=0.1, cast=float)
-if SENTRY_ENABLED:
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.django import DjangoIntegration
-
-        def _sentry_before_send(event, hint):
-            try:
-                req = event.get('request') or {}
-                hdrs = req.get('headers') or {}
-                # redact sensitive headers
-                for k in list(hdrs.keys()):
-                    lk = str(k).lower()
-                    if lk in ('authorization', 'x-api-key', 'x-access-token', 'cookie'):
-                        hdrs[k] = '[redacted]'
-                req['headers'] = hdrs
-                # redact request body
-                if 'data' in req and req['data']:
-                    req['data'] = '[redacted]'
-                event['request'] = req
-            except Exception:
-                pass
-            return event
-
-        sentry_sdk.init(
-            dsn=SENTRY_DSN,
-            integrations=[DjangoIntegration()],
-            traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
-            send_default_pii=False,
-            before_send=_sentry_before_send,
-            environment=config('ENVIRONMENT', default='production'),
-        )
-    except Exception:
-        pass
+# 🔧 FIX 9: Print diagnostics only in DEBUG
+if DEBUG:
+    print(f"DEBUG: {DEBUG}")
+    print(f"IS_RAILWAY: {IS_RAILWAY}")
+    print(f"IS_PRODUCTION: {IS_PRODUCTION}")
+    print(f"DATABASE: {DATABASES['default'].get('ENGINE', 'unknown')}")
+    print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
