@@ -11,6 +11,7 @@ from django.views.decorators.http import require_GET
 from django.contrib.staticfiles import finders
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.http import HttpResponse
 
 def _serve_static(rel_path, content_type):
     file_path = finders.find(rel_path)
@@ -18,8 +19,16 @@ def _serve_static(rel_path, content_type):
     if file_path:
         with open(file_path, 'rb') as f:
             content = f.read()
-    elif staticfiles_storage.exists(rel_path):
-        content = staticfiles_storage.open(rel_path).read()
+    else:
+        try:
+            if staticfiles_storage.exists(rel_path):
+                try:
+                    f = staticfiles_storage.open(rel_path)
+                    content = f.read()
+                except Exception:
+                    content = None
+        except Exception:
+            content = None
     if content is None:
         return HttpResponseNotFound()
     return HttpResponse(content, content_type=content_type)
@@ -36,6 +45,7 @@ urlpatterns = [
     path('manifest.json', lambda request: _serve_static('pwa/manifest.json', 'application/manifest+json')),
     path('service-worker.js', lambda request: _serve_static('pwa/service-worker.js', 'application/javascript')),
     path('app.html', lambda request: _serve_static('pwa/app.html', 'text/html')),
+    path('robots.txt', lambda request: HttpResponse('User-agent: *\nDisallow:', content_type='text/plain')),
 ]
 
 if settings.DEBUG and settings.MEDIA_URL.startswith('/') and hasattr(settings, 'MEDIA_ROOT'):
