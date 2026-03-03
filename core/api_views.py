@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.core.cache import cache
+from django.db import connection
 from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize, FeatureFlag
 import logging
 import json
@@ -397,6 +398,17 @@ class BannerHomeTop(APIView):
                 'starts_at': (b.starts_at.isoformat() if b.starts_at else None),
             })
         return Response(items)
+
+class Health(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def get(self, request):
+        try:
+            connection.ensure_connection()
+            db_ok = True
+        except Exception:
+            db_ok = False
+        return Response({'ok': True, 'db': db_ok})
 
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartItemSerializer

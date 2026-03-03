@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .api_views import AuthViewSet, StoreViewSet, ProductViewSet, AddressViewSet, OrderViewSet, FeatureFlagAdminList, FeatureFlagAdminUpdate, CategoryList, BannerList, BannerHomeTop, CartViewSet, DevSeed
+from .api_views import AuthViewSet, StoreViewSet, ProductViewSet, AddressViewSet, OrderViewSet, FeatureFlagAdminList, FeatureFlagAdminUpdate, CategoryList, BannerList, BannerHomeTop, CartViewSet, DevSeed, Health
 
 router = DefaultRouter()
 router.register(r'auth', AuthViewSet, basename='auth')
@@ -18,4 +18,5 @@ urlpatterns = [
     path('banners', BannerList.as_view()),
     path('banners/home-top/', BannerHomeTop.as_view()),
     path('dev/seed', DevSeed.as_view()),
+    path('health', Health.as_view()),
 ]
