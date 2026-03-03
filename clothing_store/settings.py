@@ -132,25 +132,32 @@ DATABASE_URL = config('DATABASE_URL', default='').strip()
 _IS_COLLECTSTATIC = any(arg.endswith('collectstatic') for arg in sys.argv)
 _IS_MANAGE = any('manage.py' in str(arg) for arg in sys.argv)
 _IS_GUNICORN = any('gunicorn' in str(arg) for arg in sys.argv)
-if not DATABASE_URL:
-    # Fallback to SQLite to prevent cloud boot failures when DATABASE_URL is missing
-    # Recommended to set DATABASE_URL in production; this fallback keeps the app responsive
-    sqlite_path = BASE_DIR / 'db.sqlite3'
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': str(sqlite_path)
-        }
-    }
+_IS_RAILWAY = bool(os.environ.get('RAILWAY_ENVIRONMENT'))
+_IS_RENDER = bool(os.environ.get('RENDER'))
+_IS_PRODUCTION = (not DEBUG) and (_IS_RAILWAY or _IS_RENDER or _IS_GUNICORN)
+if _IS_PRODUCTION:
+    _DB = dj_database_url.config(conn_max_age=600, ssl_require=True)
+    if not _DB or not _DB.get('ENGINE'):
+        raise RuntimeError('DATABASE_URL must be set in production')
+    DATABASES = {'default': _DB}
 else:
-    if DATABASE_URL.lower().startswith('sqlite'):
+    if not DATABASE_URL:
+        sqlite_path = BASE_DIR / 'db.sqlite3'
         DATABASES = {
-            'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=False)
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': str(sqlite_path)
+            }
         }
     else:
-        DATABASES = {
-            'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
-        }
+        if DATABASE_URL.lower().startswith('sqlite'):
+            DATABASES = {
+                'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=False)
+            }
+        else:
+            DATABASES = {
+                'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)
+            }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
