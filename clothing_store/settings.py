@@ -16,7 +16,7 @@ config = AutoConfig(search_path=BASE_DIR)
 
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-production')
 
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 _AH = config('ALLOWED_HOSTS', default='').strip()
 _ENV_HOSTS = [h.strip() for h in _AH.split(',') if h.strip()]
