@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}الرئيسية - الكاتالوج{% endblock %}
+{% block extra_css %}{% endblock %}
+{% block content %}
+<section class="hero mb-4">
+  <div class="d-flex flex-column flex-md-row align-items-center justify-content-between">
+    <div class="mb-3 mb-md-0">
+      <h1 class="h3 mb-2">اكتشف أحدث المنتجات</h1>
+      <div class="text-white-50">عروض، فئات متعددة، وتجربة تسوق سهلة</div>
+    </div>
+    <div class="search-bar p-2 d-flex gap-2 align-items-center">
+      <input id="globalSearchInput" class="form-control form-control-lg" type="search" placeholder="ابحث عن منتج">
+      <button id="globalSearchBtn" class="btn btn-gradient">بحث</button>
+    </div>
+  </div>
+</section>
+<section class="mb-4">
+  <div class="row g-3">
+    <div class="col-6 col-md-3"><a href="/stores/?category=women" class="category-tile"><i class="fa fa-female"></i><span>نسائي</span></a></div>
+    <div class="col-6 col-md-3"><a href="/stores/?category=men" class="category-tile"><i class="fa fa-male"></i><span>رجالي</span></a></div>
+    <div class="col-6 col-md-3"><a href="/stores/?category=kids" class="category-tile"><i class="fa fa-child"></i><span>أطفال</span></a></div>
+    <div class="col-6 col-md-3"><a href="/stores/?category=shoes" class="category-tile"><i class="fa fa-shoe-prints"></i><span>أحذية</span></a></div>
+    <div class="col-6 col-md-3"><a href="/stores/?category=cosmetics" class="category-tile"><i class="fa fa-pump-soap"></i><span>كوزمتك</span></a></div>
+    <div class="col-6 col-md-3"><a href="/stores/?category=perfumes" class="category-tile"><i class="fa fa-spray-can-sparkles"></i><span>عطور</span></a></div>
+    <div class="col-6 col-md-3"><a href="/stores/?category=watches" class="category-tile"><i class="fa fa-clock"></i><span>ساعات</span></a></div>
+    <div class="col-6 col-md-3"><a href="/products/" class="category-tile"><i class="fa fa-shirt"></i><span>الكل</span></a></div>
+  </div>
+</section>
+<section class="mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h2 class="h5 m-0">منتجات مميزة</h2>
+    <a href="/featured-products/" class="btn btn-sm btn-outline-primary">عرض المزيد</a>
+  </div>
+  <div class="row g-3">
+    {% for p in products|default:[] %}
+    <div class="col-6 col-md-3">
+      <div class="card h-100">
+        <img class="card-img-top" src="{{ p.image_url|default:p.image.url }}" alt="{{ p.name }}">
+        <div class="card-body">
+          <div class="fw-bold mb-1">{{ p.name }}</div>
+          <div class="price mb-2">{{ p.price }} د.ع</div>
+          <button class="btn btn-gradient w-100" data-add-to-cart data-product-id="{{ p.id }}">أضف للسلة</button>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-muted">لا توجد منتجات مميزة حالياً.</div>
+    {% endfor %}
+  </div>
+  </section>
+<section class="mb-4">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h2 class="h5 m-0">آراء العملاء</h2>
+  </div>
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="card p-3">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="fa fa-user-circle"></i><strong>أحمد</strong></div>
+        <div class="text-muted">تجربة رائعة، توصيل سريع وجودة ممتازة.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card p-3">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="fa fa-user-circle"></i><strong>سارة</strong></div>
+        <div class="text-muted">تنوع كبير في المنتجات وسهولة في الشراء.</div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card p-3">
+        <div class="d-flex align-items-center gap-2 mb-2"><i class="fa fa-user-circle"></i><strong>محمود</strong></div>
+        <div class="text-muted">الأسعار مناسبة والخدمة ممتازة.</div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

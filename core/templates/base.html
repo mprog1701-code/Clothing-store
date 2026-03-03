@@ -26,6 +26,8 @@
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
     <link rel="stylesheet" href="{% static 'css/mobile-dark-reset.css' %}?v=301">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}?v=1">
     <!-- <link rel="stylesheet" href="{% static 'css/readability-rtl-fix.css' %}"> -->
     <script src="{% static 'js/theme.js' %}?v=4" defer></script>
     
@@ -80,6 +82,36 @@
                     <ul class="navbar-nav me-auto"></ul>
                     
                     <ul class="navbar-nav">
+                        <li class="nav-item dropdown position-static">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa fa-grid-2"></i> الأقسام
+                            </a>
+                            <div class="dropdown-menu w-100 mega-menu p-4">
+                                <div class="row g-3">
+                                    <div class="col-6 col-md-3">
+                                        <a class="mega-item" href="/stores/?category=women"><i class="fa fa-female"></i> نسائي</a>
+                                        <a class="mega-item" href="/stores/?category=men"><i class="fa fa-male"></i> رجالي</a>
+                                        <a class="mega-item" href="/stores/?category=kids"><i class="fa fa-child"></i> أطفال</a>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <a class="mega-item" href="/stores/?category=cosmetics"><i class="fa fa-pump-soap"></i> كوزمتك</a>
+                                        <a class="mega-item" href="/stores/?category=perfumes"><i class="fa fa-spray-can-sparkles"></i> عطور</a>
+                                        <a class="mega-item" href="/stores/?category=watches"><i class="fa fa-clock"></i> ساعات</a>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <a class="mega-item" href="/stores/?category=shoes"><i class="fa fa-shoe-prints"></i> أحذية</a>
+                                        <a class="mega-item" href="/stores/?category=clothing"><i class="fa fa-shirt"></i> ملابس عامة</a>
+                                        <a class="mega-item" href="/products/"><i class="fa fa-store"></i> كل المنتجات</a>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <div class="mega-banner">
+                                            <div class="mb-2 fw-bold">عروض اليوم</div>
+                                            <a href="/featured-products/" class="btn btn-gradient btn-sm">تسوّق الآن</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
                         {% if user.is_authenticated %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -208,9 +240,39 @@
         </nav>
 
         <!-- Footer -->
-        <footer class="footer mt-auto py-3">
-            <div class="container text-center text-muted">
-                <span>&copy; {% now "Y" %} {{ site_settings.site_name }}. جميع الحقوق محفوظة.</span>
+        <footer class="footer mt-auto py-5 footer-advanced">
+            <div class="container">
+                <div class="row g-4">
+                    <div class="col-12 col-md-4">
+                        <div class="fw-bold mb-2"><i class="fa fa-store"></i> {{ site_settings.site_name }}</div>
+                        <div class="text-muted">تسوّق بثقة وأمان من أفضل المتاجر.</div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <div class="fw-bold mb-2">روابط</div>
+                        <ul class="list-unstyled footer-links">
+                            <li><a href="/stores/">المتاجر</a></li>
+                            <li><a href="/products/most-sold/">الأكثر مبيعاً</a></li>
+                            <li><a href="/featured-products/">العروض الخاصة</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="fw-bold mb-2">تواصل</div>
+                        <ul class="list-unstyled footer-links">
+                            <li><a href="/contact/">اتصل بنا</a></li>
+                            <li><a href="/privacy/">الخصوصية</a></li>
+                            <li><a href="/terms/">الشروط</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <div class="fw-bold mb-2">تابعنا</div>
+                        <div class="d-flex gap-2">
+                            <a class="social" href="#"><i class="fab fa-facebook"></i></a>
+                            <a class="social" href="#"><i class="fab fa-instagram"></i></a>
+                            <a class="social" href="#"><i class="fab fa-twitter"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center text-muted mt-4">&copy; {% now "Y" %} {{ site_settings.site_name }}. جميع الحقوق محفوظة.</div>
             </div>
         </footer>
     </div>
@@ -492,7 +554,9 @@
                 badge.style.display = (!inCartPage && count > 0) ? 'flex' : 'none';
             }catch(e){}
         }
-
+        try{ window.WebUI = { showToast: function(type, text){ var cont=document.createElement('div'); cont.className='position-fixed top-0 end-0 p-3'; cont.style.zIndex='9999'; cont.innerHTML='<div class="toast show" role="alert"><div class="toast-header '+(type==='success'?'bg-success text-white':type==='error'?'bg-danger text-white':'bg-primary text-white')+'"><strong class="me-auto">'+(type==='success'?'تم':'إشعار')+'</strong><button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button></div><div class="toast-body">'+text+'</div></div>'; document.body.appendChild(cont); setTimeout(function(){ cont.remove(); }, 4000); } }; }catch(e){}
+    </script>
+    <script src="{% static 'js/main.js' %}?v=1" defer></script>
         // Quick Variant Picker (global, lightweight, mobile-friendly)
         (function(){
             var qpOverlay = null, qpSheet = null, qpCloseBtn = null;

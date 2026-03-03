@@ -100,6 +100,7 @@ urlpatterns = [
     
     path('featured-products/', views.featured_products, name='featured_products'),
     path('products/most-sold/', views.most_sold_products, name='most_sold_products'),
+    path('catalog/home/', views.catalog_home, name='catalog_home'),
     path('healthz/', views.healthz, name='healthz'),
     path('orders/track/<int:order_id>/<str:token>/', views.order_track, name='order_track'),
     path('orders/track/update-json/', views.order_track_update_json, name='order_track_update_json'),

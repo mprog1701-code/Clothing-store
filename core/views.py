@@ -102,6 +102,15 @@ def home(request):
         pass
     return response
 
+def catalog_home(request):
+    site_settings, _ = SiteSettings.objects.get_or_create(id=1)
+    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-updated_at')[:site_settings.featured_products_count]
+    context = {
+        'products': products,
+        'site_settings': site_settings,
+    }
+    return render(request, 'catalog/home.html', context)
+
 
 def store_list(request):
     stores = Store.objects.filter(is_active=True).order_by('id')
