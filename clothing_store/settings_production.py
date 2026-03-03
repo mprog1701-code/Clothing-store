@@ -4,6 +4,9 @@ import os
 DEBUG = False
 ENVIRONMENT = 'production'
 
+ROOT_URLCONF = 'clothing_store.urls'
+WSGI_APPLICATION = 'clothing_store.wsgi.application'
+
 ALLOWED_HOSTS = ['.onrender.com', '.railway.app', '.up.railway.app'] + ALLOWED_HOSTS
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'https://*.railway.app', 'https://*.up.railway.app'] + CSRF_TRUSTED_ORIGINS
 

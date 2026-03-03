@@ -11,7 +11,13 @@ except Exception:
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clothing_store.settings')
+    mod = os.environ.get('DJANGO_SETTINGS_MODULE') or ''
+    if mod.strip() == 'clothing_store.settings.production':
+        mod = 'clothing_store.settings_production'
+    if not mod:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clothing_store.settings')
+    else:
+        os.environ['DJANGO_SETTINGS_MODULE'] = mod
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
