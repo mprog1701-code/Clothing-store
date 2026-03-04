@@ -6,12 +6,31 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-prod-key')
+# -----------------------------------------------------------------------------
+# 1. SECURITY SETTINGS
+# -----------------------------------------------------------------------------
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-prod-key-fallback')
 
 DEBUG = False
 
+# Allowed Hosts
 ALLOWED_HOSTS = ['*']
+env_hosts = os.environ.get('ALLOWED_HOSTS')
+if env_hosts:
+    ALLOWED_HOSTS = [host.strip() for host in env_hosts.split(',') if host.strip()]
 
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = []
+env_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS')
+if env_csrf:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in env_csrf.split(',') if origin.strip()]
+else:
+    # Fallback for Railway domains
+    CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
+
+# -----------------------------------------------------------------------------
+# 2. APPLICATION DEFINITION
+# -----------------------------------------------------------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -19,10 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third-party
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'drf_spectacular',
+    
+    # Local
     'core',
     'merchants',
     'catalog',
@@ -42,7 +65,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'clothing_store.urls'
+# -----------------------------------------------------------------------------
+# 3. CORE SETTINGS (The ones causing issues)
+# -----------------------------------------------------------------------------
+ROOT_URLCONF = "clothing_store.urls"
+WSGI_APPLICATION = "clothing_store.wsgi.application"
 
 TEMPLATES = [
     {
@@ -60,45 +87,51 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'clothing_store.wsgi.application'
-
-# Database
+# -----------------------------------------------------------------------------
+# 4. DATABASE
+# -----------------------------------------------------------------------------
 DATABASE_URL = os.environ.get('DATABASE_URL')
 DATABASES = {
-    'default': dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+    'default': dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
-# Password validation
+# -----------------------------------------------------------------------------
+# 5. PASSWORD VALIDATION
+# -----------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
+# -----------------------------------------------------------------------------
+# 6. I18N & L10N
+# -----------------------------------------------------------------------------
 LANGUAGE_CODE = 'ar'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+# -----------------------------------------------------------------------------
+# 7. STATIC & MEDIA FILES
+# -----------------------------------------------------------------------------
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# -----------------------------------------------------------------------------
+# 8. DRF & API
+# -----------------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+AUTH_USER_MODEL = 'core.User'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -107,4 +140,12 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True  # Simplified for debugging, restrict later if needed
+
+# -----------------------------------------------------------------------------
+# 9. DIAGNOSTICS (Temporary)
+# -----------------------------------------------------------------------------
+print('LOADED SETTINGS: settings_railway')
+print(f'ROOT_URLCONF={ROOT_URLCONF}')
+print(f'WSGI_APPLICATION={WSGI_APPLICATION}')
+print(f'BASE_DIR={BASE_DIR}')

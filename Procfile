@@ -1,1 +1,1 @@
-web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn clothing_store.wsgi:application --bind 0.0.0.0:$PORT
+web: sh -c "export DJANGO_SETTINGS_MODULE=clothing_store.settings_railway && python manage.py migrate --noinput && gunicorn clothing_store.wsgi:application --bind 0.0.0.0:$PORT"
