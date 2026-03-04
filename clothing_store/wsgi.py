@@ -18,14 +18,17 @@ print(f"WSGI: PYTHONPATH={sys.path}")
 
 # Force correct settings module
 current_settings = os.environ.get('DJANGO_SETTINGS_MODULE')
-if current_settings == 'clothing_store.settings.production':
+if current_settings == 'clothing_store.settings.production' or current_settings == 'clothing_store.settings_railway':
     # If production settings is requested but file might be missing or causing issues,
     # try to use the newly created one or fallback to standard settings
-    if os.path.exists(os.path.join(os.path.dirname(__file__), 'settings_production.py')):
+    if os.path.exists(os.path.join(os.path.dirname(__file__), 'settings_railway.py')):
+        print("WSGI: Using clothing_store.settings_railway")
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'clothing_store.settings_railway'
+    elif os.path.exists(os.path.join(os.path.dirname(__file__), 'settings_production.py')):
         print("WSGI: Using clothing_store.settings_production")
         os.environ['DJANGO_SETTINGS_MODULE'] = 'clothing_store.settings_production'
     else:
-        print("WSGI: settings_production.py not found. Forcing 'clothing_store.settings'.")
+        print("WSGI: settings_production/railway.py not found. Forcing 'clothing_store.settings'.")
         os.environ['DJANGO_SETTINGS_MODULE'] = 'clothing_store.settings'
 elif not current_settings:
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clothing_store.settings')
@@ -48,7 +51,9 @@ try:
 except Exception as e:
     print(f"WSGI: Error loading settings: {e}")
     # Last resort fallback
-    if os.path.exists(os.path.join(os.path.dirname(__file__), 'settings_production.py')):
+    if os.path.exists(os.path.join(os.path.dirname(__file__), 'settings_railway.py')):
+         os.environ['DJANGO_SETTINGS_MODULE'] = 'clothing_store.settings_railway'
+    elif os.path.exists(os.path.join(os.path.dirname(__file__), 'settings_production.py')):
          os.environ['DJANGO_SETTINGS_MODULE'] = 'clothing_store.settings_production'
     else:
          os.environ['DJANGO_SETTINGS_MODULE'] = 'clothing_store.settings'
