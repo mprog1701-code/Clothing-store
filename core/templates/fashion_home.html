@@ -18,32 +18,84 @@
         color: #ffffff;
     }
 
-    .fashion-header {
-        background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%);
-        padding: 20px 0;
-        box-shadow: 0 4px 20px rgba(184, 115, 51, 0.3);
+    /* Hero Section */
+    .hero-section {
+        background: url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') center/cover no-repeat;
+        min-height: 600px;
+        position: relative;
+        margin-bottom: 40px;
+    }
+    
+    .hero-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.4), var(--black));
+        z-index: 1;
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        padding-top: 100px;
     }
 
-    .brand-title {
-        font-size: 2.5rem;
+    .hero-title {
+        font-size: 4rem;
         font-weight: 900;
         color: var(--gold);
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        margin-bottom: 20px;
     }
 
-    .brand-subtitle {
+    .hero-subtitle {
         color: #ffffff;
-        font-size: 1.1rem;
-        opacity: 0.9;
+        font-size: 1.5rem;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+        margin-bottom: 40px;
+    }
+
+    .hero-btn {
+        background: var(--copper);
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+        margin: 10px;
+    }
+    
+    .hero-btn:hover {
+        background: var(--copper-dark);
+        transform: translateY(-3px);
+        color: white;
+        box-shadow: 0 10px 20px rgba(184, 115, 51, 0.4);
+    }
+
+    .hero-btn.secondary {
+        background: transparent;
+        border: 2px solid var(--gold);
+        color: var(--gold);
+    }
+    
+    .hero-btn.secondary:hover {
+        background: var(--gold);
+        color: var(--black);
     }
 
     .search-container {
         background: rgba(255,255,255,0.1);
-        border-radius: 25px;
-        padding: 5px;
+        border-radius: 50px;
+        padding: 8px;
         backdrop-filter: blur(10px);
         border: 1px solid var(--copper-light);
+        margin-top: 40px;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .search-input {
@@ -52,10 +104,11 @@
         color: #ffffff;
         padding: 12px 20px;
         width: 100%;
+        font-size: 1.1rem;
     }
 
     .search-input::placeholder {
-        color: rgba(255,255,255,0.7);
+        color: rgba(255,255,255,0.8);
     }
 
     .search-container .form-control {
@@ -64,6 +117,7 @@
         box-shadow: none !important;
         color: #ffffff !important;
     }
+    
     .search-container .form-control:focus {
         background: transparent !important;
         border: none !important;
@@ -76,10 +130,13 @@
         background: var(--copper);
         border: none;
         border-radius: 50%;
-        width: 45px;
-        height: 45px;
+        width: 50px;
+        height: 50px;
         color: white;
         transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .search-btn:hover {
@@ -89,244 +146,131 @@
 
     .section-title {
         color: var(--copper-light);
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         font-weight: bold;
         text-align: center;
-        margin: 40px 0 30px 0;
+        margin: 60px 0 40px 0;
         position: relative;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
     .section-title::after {
         content: '';
         position: absolute;
-        bottom: -10px;
+        bottom: -15px;
         left: 50%;
         transform: translateX(-50%);
-        width: 100px;
-        height: 3px;
+        width: 80px;
+        height: 4px;
         background: var(--copper);
         border-radius: 2px;
     }
 
+    /* Categories Grid 3x3 */
     .category-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
         margin: 30px 0;
-    }
-    .category-grid.row {
-        margin-left: 0;
-        margin-right: 0;
-    }
-    .category-grid.row > [class*="col"] {
-        padding: 0;
     }
 
     .category-card {
-        background: linear-gradient(135deg, var(--black-light) 0%, var(--black) 100%);
-        border-radius: 15px;
-        padding: 30px 20px;
+        background: linear-gradient(145deg, var(--black-light), #2a2a2a);
+        border-radius: 20px;
+        padding: 40px 20px;
         text-align: center;
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
+        transition: all 0.4s ease;
+        border: 1px solid rgba(184, 115, 51, 0.2);
         cursor: pointer;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
 
     .category-card:hover {
         border-color: var(--copper);
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(184, 115, 51, 0.3);
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        background: linear-gradient(145deg, #2a2a2a, var(--black-light));
     }
 
     .category-card.coming-soon {
-        opacity: 1;
+        opacity: 0.7;
         cursor: not-allowed;
         pointer-events: none;
         position: relative;
     }
 
     .category-card.coming-soon::after {
-        content: 'سيتم افتتاحه قريبًا';
+        content: 'قريبًا';
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 15px;
+        right: 15px;
         background: var(--copper);
         color: white;
-        font-size: 0.7rem;
-        padding: 4px 8px;
-        border-radius: 10px;
+        font-size: 0.8rem;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-weight: bold;
     }
 
     .category-icon {
-        font-size: 3rem;
+        font-size: 3.5rem;
         color: var(--copper);
-        margin-bottom: 15px;
-        display: block;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .category-card:hover .category-icon {
+        color: var(--gold);
+        transform: scale(1.1);
     }
 
     .category-name {
-        font-size: 1.2rem;
+        font-size: 1.4rem;
         font-weight: bold;
         color: #ffffff;
-        margin-bottom: 5px;
+        margin-bottom: 10px;
     }
 
     .category-count {
         color: var(--copper-light);
-        font-size: 0.9rem;
+        font-size: 1rem;
     }
 
-    .discount-banner {
-        background: linear-gradient(45deg, var(--copper), var(--copper-dark));
+    /* Product Card */
+    .product-card {
+        background: var(--black-light);
         border-radius: 20px;
-        padding: 40px;
-        margin: 40px 0;
+        padding: 15px;
         text-align: center;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(184, 115, 51, 0.2);
+        height: 100%;
         position: relative;
         overflow: hidden;
     }
 
-    .discount-banner::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 10px,
-            rgba(255,255,255,0.1) 10px,
-            rgba(255,255,255,0.1) 20px
-        );
-        animation: shimmer 3s linear infinite;
-        pointer-events: none;
-    }
-
-    @keyframes shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-    }
-
-    .discount-title {
-        font-size: 2.5rem;
-        font-weight: 900;
-        color: var(--gold);
-        margin-bottom: 10px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .discount-subtitle {
-        font-size: 1.3rem;
-        color: #ffffff;
-        margin-bottom: 20px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .discount-btn {
-        background: var(--black);
-        color: var(--gold);
-        border: 2px solid var(--gold);
-        padding: 15px 40px;
-        border-radius: 30px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        transition: all 0.3s ease;
-        position: relative;
-        z-index: 1;
-    }
-
-    .discount-btn:hover {
-        background: var(--gold);
-        color: var(--black);
-        transform: scale(1.05);
-    }
-
-    /* New Arrivals: mobile horizontal scroller */
-    @media (max-width: 991px) {
-        .new-arrivals-scroller {
-            display: flex !important;
-            flex-wrap: nowrap !important;
-            overflow-x: auto !important;
-            gap: 16px;
-            padding: 4px 12px 24px !important;
-            scroll-snap-type: x proximity;
-            -webkit-overflow-scrolling: touch;
-            margin-left: -12px !important;
-            margin-right: -12px !important;
-            width: calc(100% + 24px) !important;
-            max-width: none !important;
-        }
-        .new-arrivals-scroller::-webkit-scrollbar { display: none; }
-        .new-arrivals-scroller > [class*="col-"] {
-            width: 75vw !important;
-            max-width: 320px !important;
-            min-width: 250px !important;
-            flex: 0 0 auto !important;
-            scroll-snap-align: center;
-            padding: 0 !important;
-            margin: 0 !important;
-            box-sizing: border-box;
-            display: block !important;
-        }
-        .new-arrivals-scroller .product-card { 
-            padding: 12px;
-            height: 100%;
-            width: 100%;
-            margin: 0 !important;
-        }
-        /* Hide the "empty" message column in scroll mode if needed or style it */
-        .new-arrivals-scroller > .col-12 {
-            width: 100% !important;
-            max-width: 100% !important;
-            flex: 0 0 100% !important;
-        }
-    }
-        .new-arrivals-scroller .product-image {
-            width: 100%;
-            aspect-ratio: 4 / 5;
-            object-fit: cover;
-            border-radius: 14px;
-        }
-        .new-arrivals-scroller .product-name { font-size: 1rem; }
-        .new-arrivals-scroller .product-price { font-size: 1rem; }
-    }
-
-    .new-arrivals {
-        background: linear-gradient(135deg, var(--black-light) 0%, var(--black) 100%);
-        border-radius: 20px;
-        padding: 30px;
-        margin: 30px 0;
-        border: 2px solid var(--copper);
-    }
-
-    .product-card {
-        background: var(--black-light);
-        border-radius: 15px;
-        padding: 20px;
-        text-align: center;
-        transition: all 0.3s ease;
-        border: 1px solid var(--copper);
-        height: 100%;
-        position: relative;
-    }
-
     .product-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(184, 115, 51, 0.3);
-        border-color: var(--gold);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        border-color: var(--copper);
     }
 
     .product-image {
         width: 100%;
-        height: 200px;
+        height: 250px;
         object-fit: cover;
-        border-radius: 10px;
+        border-radius: 15px;
         margin-bottom: 15px;
-        border: 2px solid var(--copper);
+        transition: transform 0.5s ease;
+    }
+    
+    .product-card:hover .product-image {
+        transform: scale(1.05);
     }
 
     .product-name {
@@ -334,183 +278,112 @@
         font-weight: bold;
         color: #ffffff;
         margin-bottom: 10px;
-    }
-
-    /* Ensure image and name links are always clickable above any effects */
-    .product-card a,
-    .product-card img {
-        position: relative;
-        z-index: 2;
-        pointer-events: auto;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .product-price {
         font-size: 1.3rem;
         font-weight: bold;
         color: var(--gold);
-        margin-bottom: 10px;
-    }
-
-    .product-discount {
-        text-decoration: line-through;
-        color: #888;
-        font-size: 1rem;
-        margin-right: 10px;
+        margin-bottom: 15px;
     }
 
     .add-to-cart-btn {
         background: var(--copper);
         color: white;
         border: none;
-        padding: 10px 20px;
+        padding: 10px 25px;
         border-radius: 25px;
         transition: all 0.3s ease;
         font-weight: bold;
-        position: relative;
-        z-index: 3;
-        pointer-events: auto;
+        width: 100%;
     }
 
     .add-to-cart-btn:hover {
         background: var(--copper-dark);
-        transform: scale(1.05);
+        transform: translateY(-2px);
     }
 
-    .bottom-nav {
+    /* Testimonials */
+    .testimonial-card {
         background: var(--black-light);
-        border-top: 2px solid var(--copper);
-        padding: 15px 0;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        backdrop-filter: blur(10px);
-    }
-
-    .bottom-nav .nav-item {
-        text-align: center;
-        color: var(--copper-light);
+        border: 1px solid rgba(184, 115, 51, 0.3);
+        padding: 30px;
+        border-radius: 20px;
+        height: 100%;
         transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-    .bottom-nav .nav-item:hover,
-    .bottom-nav .nav-item.active {
-        color: var(--gold);
-    }
-
-    .bottom-nav .nav-icon {
-        font-size: 1.5rem;
-        display: block;
-        margin-bottom: 5px;
-    }
-
-    .bottom-nav .nav-text {
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-
-    .bottom-nav .cart-badge {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        background: var(--gold);
-        color: var(--black);
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        font-size: 0.7rem;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    @media (max-width: 768px) {
-        .brand-title {
-            font-size: 2rem;
-        }
-        
-        .category-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-    }
-    @media (max-width: 600px) {
-        .brand-title { font-size: 1.6rem; }
-        .brand-subtitle { font-size: .9rem; }
-        .search-input { font-size: .9rem; padding: 10px 12px; }
-        .home-ad-media img, .home-ad-media video { height: 200px; }
-        .home-ad-overlay { right: 16px; top: 12px; }
-        .announcement-title { font-size: 1.3rem; }
-        .category-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .product-card { border-radius: 14px; }
-        .product-image { height: 180px; }
-        .add-to-cart-btn { min-height: 44px; font-size: 1rem; border-radius: 12px; }
     }
     
-    .home-ad-wrapper { width: 100%; margin: 0; padding: 0 12px; position: relative; display: none; }
-    .home-ad-card { width: 100%; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 35px rgba(0,0,0,0.35); border: 2px solid var(--copper); background: #000; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-    .home-ad-media img, .home-ad-media video { width: 100%; height: 280px; object-fit: cover; display: block; }
-    .home-ad-overlay { position: absolute; right: 24px; top: 18px; color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
-    .home-ad-overlay h3 { color: var(--gold); font-weight: 900; }
-    .ann-dots { display:flex; justify-content:center; align-items:center; gap:8px; padding: 10px 0; }
-    .ann-dot { width:10px; height:10px; border-radius:50%; background: rgba(255,255,255,0.5); cursor:pointer; }
-    .ann-dot.active { background: var(--gold); width:12px; height:12px; }
-    .ann-close { position:absolute; top:10px; left:16px; background: rgba(0,0,0,0.2); color:#fff; border:none; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-    .ann-close:hover { background: rgba(0,0,0,0.35); }
-    .home-ad-more { display:flex; justify-content:flex-start; padding: 0 16px 10px 16px; }
-    .home-ad-more .btn { background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.7); border-radius: 24px; font-weight: 700; }
-    .home-ad-more .btn:hover { background: rgba(255,255,255,0.15); }
-    .announcement-title {
-        color: var(--gold);
-        font-size: 1.5rem;
-        font-weight: 900;
-        margin-bottom: 10px;
+    .testimonial-card:hover {
+        border-color: var(--gold);
+        transform: translateY(-5px);
     }
-    .announcement-actions .btn {
-        margin: 4px;
-        border-radius: 25px;
+    
+    .testimonial-text {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #ddd;
+        font-style: italic;
+        margin-bottom: 20px;
+    }
+    
+    .testimonial-author {
         font-weight: bold;
-    }
-    .ann-btn-primary {
-        background: var(--black);
         color: var(--gold);
-        border: 2px solid var(--gold);
     }
-    .ann-btn-primary:hover {
-        background: var(--gold);
-        color: var(--black);
+
+    /* Newsletter */
+    .newsletter-section {
+        background: linear-gradient(135deg, var(--black-light), #2a2a2a);
+        padding: 80px 0;
+        margin-top: 80px;
+        border-top: 4px solid var(--copper);
+        position: relative;
+        overflow: hidden;
     }
-    .ann-btn-secondary {
-        background: transparent;
-        color: #fff;
-        border: 2px solid rgba(255,255,255,0.6);
+    
+    .newsletter-section::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: url('{% static "images/pattern.png" %}') repeat;
+        opacity: 0.05;
     }
-    .ann-btn-secondary:hover {
-        background: rgba(255,255,255,0.15);
+
+    /* Responsive */
+    @media (max-width: 991px) {
+        .category-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .hero-title { font-size: 3rem; }
     }
-    .ann-carousel { display: flex; align-items: stretch; gap: 15px; }
-    .ann-slide { flex: 1; display: none; }
-    .ann-slide.active { display: block; }
-    .ann-media { border-radius: 12px; overflow: hidden; border: 2px solid rgba(255,255,255,0.2); }
-    .ann-media img, .ann-media video { width: 100%; height: 220px; object-fit: cover; display: block; }
-    .ann-controls { display:flex; justify-content: flex-end; align-items: center; margin-top: 10px; gap: 10px; }
-    .ann-dots { display:flex; gap:8px; position:absolute; bottom:12px; left:16px; }
-    .ann-dot { width:10px; height:10px; border-radius:50%; background: rgba(255,255,255,0.5); cursor:pointer; }
-    .ann-dot.active { background: var(--gold); }
-    .ann-close { position:absolute; top:10px; left:12px; background: rgba(0,0,0,0.2); color:#fff; border:none; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; }
-    .ann-close:hover { background: rgba(0,0,0,0.35); }
-    .ann-fab { position: fixed; bottom: 110px; left: 20px; z-index: 1100; }
-    .ann-fab .btn { border-radius: 30px; border:2px solid var(--gold); background: var(--black); color: var(--gold); }
-    .ann-fab .btn:hover { background: var(--gold); color: var(--black); }
+    
+    @media (max-width: 768px) {
+        .hero-section { min-height: 500px; }
+        .hero-title { font-size: 2.5rem; }
+        .hero-subtitle { font-size: 1.2rem; }
+        .category-grid { gap: 15px; }
+        .category-card { padding: 20px 15px; }
+        .category-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .category-name { font-size: 1.1rem; }
+    }
+    
+    @media (max-width: 576px) {
+        .category-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Helper classes */
+    .text-gold { color: var(--gold); }
+    .bg-black-light { background: var(--black-light); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid px-0">
-  <div id="app-announcement" class="home-ad-wrapper" role="region" aria-label="إعلان داخل التطبيق">
+  <div id="app-announcement" class="home-ad-wrapper" role="region" aria-label="إعلان داخل التطبيق" style="display:none;">
     <button id="ann-close" class="ann-close" type="button" aria-label="إغلاق">×</button>
     <div class="home-ad-card" id="ann-card">
       <div class="home-ad-media" id="ann-media"></div>
@@ -520,245 +393,297 @@
       </div>
     </div>
     <div id="ann-dots" class="ann-dots"></div>
-    
   </div>
 </div>
-<!-- Fashion Header -->
-<div class="fashion-header">
-    <div class="container-fluid px-0">
-        <div class="container container-desktop-only px-3">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="brand-title">دار الأزياء</h1>
-                    <p class="brand-subtitle">أناقتك تبدأ من هنا</p>
-                </div>
-                <div class="col-md-6">
-                    <div class="search-container">
-                        <form class="input-group" action="{% url 'search' %}" method="get">
-                            <input type="text" name="q" class="form-control search-input" id="liveSearchInput" placeholder="ابحث عن أزياءك المفضلة..." autocomplete="off">
-                            <button class="search-btn" type="submit">
-                                <i class="bi bi-search"></i>
-                            </button>
-                        </form>
-                        <div id="liveSearchResults" class="live-search-results" style="position:absolute; left:0; right:0; top:100%; z-index:1000; display:none;"></div>
-                    </div>
-                </div>
-            </div>
+
+<!-- Hero Section -->
+<div class="hero-section text-center d-flex align-items-center justify-content-center">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+        <h1 class="hero-title">دار الأزياء</h1>
+        <p class="hero-subtitle">أناقتك تبدأ من هنا - اكتشف أحدث صيحات الموضة العالمية</p>
+        
+        <div class="d-flex justify-content-center flex-wrap gap-3">
+            <a href="{% url 'store_list' %}" class="hero-btn">تسوق الآن</a>
+            <a href="#new-arrivals" class="hero-btn secondary">وصل حديثًا</a>
+        </div>
+
+        <div class="search-container">
+            <form class="input-group" action="{% url 'search' %}" method="get">
+                <input type="text" name="q" class="form-control search-input" id="liveSearchInput" placeholder="ابحث عن أزياءك المفضلة..." autocomplete="off">
+                <button class="search-btn" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+            <div id="liveSearchResults" class="live-search-results" style="position:absolute; left:0; right:0; top:100%; z-index:1000; display:none; text-align: right;"></div>
         </div>
     </div>
 </div>
 
+<!-- Categories Grid (3x3) -->
+<div class="container container-desktop-only px-3">
+    <h2 class="section-title">تسوق حسب الفئة</h2>
+    <div class="category-grid">
+        <!-- 1. Women -->
+        {% if features.CATEGORY_WOMEN %}
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=women'">
+            <i class="bi bi-bag-heart category-icon"></i>
+            <h3 class="category-name">ملابس نسائية</h3>
+            <p class="category-count">{{ categories.women|default:"150+" }} منتج</p>
+        </div>
+        {% else %}
+        <div class="category-card coming-soon">
+            <i class="bi bi-bag-heart category-icon"></i>
+            <h3 class="category-name">ملابس نسائية</h3>
+            <p class="category-count">قريبًا</p>
+        </div>
+        {% endif %}
 
-<!-- Categories Section -->
-<div class="container-fluid px-0">
-    <div class="container container-desktop-only px-3">
-        <h2 class="section-title">تسوق حسب الفئة</h2>
-        <div class="category-grid row mobile-horizontal-scroll categories-scroll">
-        <div class="col-6 col-md-3">
-            {% if features.CATEGORY_WOMEN %}
-            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=women'">
-                <i class="bi bi-bag-heart category-icon"></i>
-                <h3 class="category-name">ملابس نسائية</h3>
-                <p class="category-count">{{ categories.women|default:"150+" }} منتج</p>
-            </div>
-            {% else %}
-            <div class="category-card coming-soon">
-                <i class="bi bi-bag-heart category-icon"></i>
-                <h3 class="category-name">ملابس نسائية</h3>
-                <p class="category-count">قريبًا</p>
-            </div>
-            {% endif %}
+        <!-- 2. Men -->
+        {% if features.CATEGORY_MEN %}
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=men'">
+            <i class="bi bi-person-workspace category-icon"></i>
+            <h3 class="category-name">ملابس رجالية</h3>
+            <p class="category-count">{{ categories.men|default:"120+" }} منتج</p>
+        </div>
+        {% else %}
+        <div class="category-card coming-soon">
+            <i class="bi bi-person-workspace category-icon"></i>
+            <h3 class="category-name">ملابس رجالية</h3>
+            <p class="category-count">قريبًا</p>
+        </div>
+        {% endif %}
+
+        <!-- 3. Kids -->
+        {% if features.CATEGORY_KIDS %}
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=kids'">
+            <i class="bi bi-emoji-smile category-icon"></i>
+            <h3 class="category-name">ملابس أطفال</h3>
+            <p class="category-count">{{ categories.kids|default:"100+" }} منتج</p>
+        </div>
+        {% else %}
+        <div class="category-card coming-soon">
+            <i class="bi bi-emoji-smile category-icon"></i>
+            <h3 class="category-name">ملابس أطفال</h3>
+            <p class="category-count">قريبًا</p>
+        </div>
+        {% endif %}
+
+        <!-- 4. Perfumes -->
+        {% if features.CATEGORY_PERFUMES %}
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=perfumes'">
+            <i class="bi bi-flower1 category-icon"></i>
+            <h3 class="category-name">عطور</h3>
+            <p class="category-count">{{ categories.perfumes|default:"90+" }} منتج</p>
+        </div>
+        {% else %}
+        <div class="category-card coming-soon">
+            <i class="bi bi-flower1 category-icon"></i>
+            <h3 class="category-name">عطور</h3>
+            <p class="category-count">قريبًا</p>
+        </div>
+        {% endif %}
+
+        <!-- 5. Cosmetics -->
+        {% if features.CATEGORY_COSMETICS %}
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=cosmetics'">
+            <i class="bi bi-palette category-icon"></i>
+            <h3 class="category-name">كوزمتك</h3>
+            <p class="category-count">{{ categories.cosmetics|default:"120+" }} منتج</p>
+        </div>
+        {% else %}
+        <div class="category-card coming-soon">
+            <i class="bi bi-palette category-icon"></i>
+            <h3 class="category-name">كوزمتك</h3>
+            <p class="category-count">قريبًا</p>
+        </div>
+        {% endif %}
+
+        <!-- 6. Shoes -->
+        {% if features.CATEGORY_SHOES %}
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=shoes'">
+            <i class="bi bi-bag category-icon"></i>
+            <h3 class="category-name">أحذية</h3>
+            <p class="category-count">{{ categories.shoes|default:"80+" }} منتج</p>
+        </div>
+        {% else %}
+        <div class="category-card coming-soon">
+            <i class="bi bi-bag category-icon"></i>
+            <h3 class="category-name">أحذية</h3>
+            <p class="category-count">قريبًا</p>
+        </div>
+        {% endif %}
+        
+        <!-- 7. Watches -->
+        {% if features.CATEGORY_WATCHES %}
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=watches'">
+            <i class="bi bi-watch category-icon"></i>
+            <h3 class="category-name">ساعات</h3>
+            <p class="category-count">{{ categories.watches|default:"50+" }} منتج</p>
+        </div>
+        {% else %}
+        <div class="category-card coming-soon">
+            <i class="bi bi-watch category-icon"></i>
+            <h3 class="category-name">ساعات</h3>
+            <p class="category-count">قريبًا</p>
+        </div>
+        {% endif %}
+
+        <!-- 8. Accessories (Placeholder to make 9 items if needed for 3x3) -->
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=accessories'">
+            <i class="bi bi-gem category-icon"></i>
+            <h3 class="category-name">إكسسوارات</h3>
+            <p class="category-count">60+ منتج</p>
         </div>
 
-        <div class="col-6 col-md-3">
-            {% if features.CATEGORY_MEN %}
-            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=men'">
-                <i class="bi bi-person-workspace category-icon"></i>
-                <h3 class="category-name">ملابس رجالية</h3>
-                <p class="category-count">{{ categories.men|default:"120+" }} منتج</p>
-            </div>
-            {% else %}
-            <div class="category-card coming-soon">
-                <i class="bi bi-person-workspace category-icon"></i>
-                <h3 class="category-name">ملابس رجالية</h3>
-                <p class="category-count">قريبًا</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="col-6 col-md-3">
-            {% if features.CATEGORY_KIDS %}
-            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=kids'">
-                <i class="bi bi-emoji-smile category-icon"></i>
-                <h3 class="category-name">ملابس أطفال</h3>
-                <p class="category-count">{{ categories.kids|default:"100+" }} منتج</p>
-            </div>
-            {% else %}
-            <div class="category-card coming-soon">
-                <i class="bi bi-emoji-smile category-icon"></i>
-                <h3 class="category-name">ملابس أطفال</h3>
-                <p class="category-count">قريبًا</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="col-6 col-md-3">
-            {% if features.CATEGORY_PERFUMES %}
-            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=perfumes'">
-                <i class="bi bi-flower1 category-icon"></i>
-                <h3 class="category-name">عطور</h3>
-                <p class="category-count">{{ categories.perfumes|default:"90+" }} منتج</p>
-            </div>
-            {% else %}
-            <div class="category-card coming-soon">
-                <i class="bi bi-flower1 category-icon"></i>
-                <h3 class="category-name">عطور</h3>
-                <p class="category-count">قريبًا</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="col-6 col-md-3">
-            {% if features.CATEGORY_COSMETICS %}
-            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=cosmetics'">
-                <i class="bi bi-palette category-icon"></i>
-                <h3 class="category-name">كوزمتك</h3>
-                <p class="category-count">{{ categories.cosmetics|default:"120+" }} منتج</p>
-            </div>
-            {% else %}
-            <div class="category-card coming-soon">
-                <i class="bi bi-palette category-icon"></i>
-                <h3 class="category-name">كوزمتك</h3>
-                <p class="category-count">قريبًا</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="col-6 col-md-3">
-            {% if features.CATEGORY_SHOES %}
-            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=shoes'">
-                <i class="bi bi-bag category-icon"></i>
-                <h3 class="category-name">أحذية</h3>
-                <p class="category-count">{{ categories.shoes|default:"80+" }} منتج</p>
-            </div>
-            {% else %}
-            <div class="category-card coming-soon">
-                <i class="bi bi-bag category-icon"></i>
-                <h3 class="category-name">أحذية</h3>
-                <p class="category-count">قريبًا</p>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="col-6 col-md-3">
-            {% if features.CATEGORY_WATCHES %}
-            <div class="category-card" onclick="window.location.href='{% url 'store_list' %}?category=watches'">
-                <i class="bi bi-watch category-icon"></i>
-                <h3 class="category-name">ساعات</h3>
-                <p class="category-count">{{ categories.watches|default:"50+" }} منتج</p>
-            </div>
-            {% else %}
-            <div class="category-card coming-soon">
-                <i class="bi bi-watch category-icon"></i>
-                <h3 class="category-name">ساعات</h3>
-                <p class="category-count">قريبًا</p>
-            </div>
-            {% endif %}
-        </div>
+        <!-- 9. All Categories -->
+        <div class="category-card" onclick="window.location.href='{% url 'store_list' %}'">
+            <i class="bi bi-grid-fill category-icon"></i>
+            <h3 class="category-name">كل الفئات</h3>
+            <p class="category-count">تصفح الكل</p>
         </div>
     </div>
 </div>
 
-<!-- Campaign Banner (Dynamic) -->
+<!-- Campaign Banner -->
 {% if features.ADS_SECTION and campaign %}
-<div class="container-fluid px-0">
-    <div class="container container-desktop-only px-3">
-        <div class="discount-banner">
-            <h2 class="discount-title">{{ campaign.title }}</h2>
-            {% if campaign.description %}<p class="discount-subtitle">{{ campaign.description }}</p>{% endif %}
-            {% if campaign.banner_image %}
-            <div class="mb-3">
-                <img src="{{ campaign.banner_image.url }}" alt="{{ campaign.title }}" class="img-fluid rounded-3" style="max-height:300px; object-fit:cover;">
-            </div>
-            {% endif %}
-            <a href="{{ campaign.action_url|default:'/stores/' }}" class="discount-btn">تسوق الآن</a>
+<div class="container container-desktop-only px-3 mb-5">
+    <div class="p-5 rounded-3 text-center position-relative overflow-hidden" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark));">
+        <div class="position-relative z-index-2">
+            <h2 class="display-4 fw-bold text-white mb-3">{{ campaign.title }}</h2>
+            {% if campaign.description %}<p class="lead text-white mb-4">{{ campaign.description }}</p>{% endif %}
+            <a href="{{ campaign.action_url|default:'/stores/' }}" class="btn btn-light btn-lg rounded-pill px-5 fw-bold" style="color: var(--copper-dark);">تسوق العرض</a>
         </div>
     </div>
 </div>
 {% endif %}
 
-<!-- New Arrivals -->
-<div class="container-fluid px-0">
-    <div class="container container-desktop-only px-3">
-        <h2 class="section-title">وصل حديثًا</h2>
-        {% if features.NEW_ARRIVALS_SECTION %}
-        <div class="row new-arrivals-scroller" data-no-chunk="1">
-        {% for product in new_arrivals %}
-        <div class="col-6 col-md-4 col-lg-3 mb-4">
-            <div class="product-card position-relative">
-                {% if product.main_image %}
-                {% with url=product.main_image.get_image_url %}
-                {% if url %}
-                <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
-                    <img src="{{ url }}" alt="{{ product.name }}" class="product-image">
-                </a>
+<!-- Featured Products Carousel (New Arrivals) -->
+<div id="new-arrivals" class="container container-desktop-only px-3">
+    <h2 class="section-title">وصل حديثًا</h2>
+    {% if features.NEW_ARRIVALS_SECTION %}
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4">
+    {% for product in new_arrivals %}
+    <div class="col">
+        <div class="product-card">
+            {% if product.main_image %}
+            {% with url=product.main_image.get_image_url %}
+            {% if url %}
+            <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
+                <img src="{{ url }}" alt="{{ product.name }}" class="product-image">
+            </a>
+            {% else %}
+            <div class="product-image d-flex align-items-center justify-content-center bg-secondary">
+                <i class="bi bi-image fs-1 text-white"></i>
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% else %}
+            <div class="product-image d-flex align-items-center justify-content-center bg-secondary">
+                <i class="bi bi-image fs-1 text-white"></i>
+            </div>
+            {% endif %}
+            
+            <h4 class="product-name" title="{{ product.name }}">
+                <a href="{% url 'product_detail' product.id %}" class="text-decoration-none text-white">{{ product.name }}</a>
+            </h4>
+            
+            <div class="product-price">
+                {% if product.discount_price %}
+                <span class="text-decoration-line-through text-muted fs-6 me-2">{{ product.base_price|iqd }}</span>
+                {{ product.discount_price|iqd }}
                 {% else %}
-                <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
-                    <div class="product-image d-flex align-items-center justify-content-center" style="background: var(--copper); color: white;">
-                        <i class="bi bi-image" style="font-size: 3rem;"></i>
-                    </div>
-                </a>
+                {{ product.base_price|iqd }}
                 {% endif %}
-                {% endwith %}
-                {% else %}
-                <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
-                    <div class="product-image d-flex align-items-center justify-content-center" style="background: var(--copper); color: white;">
-                        <i class="bi bi-image" style="font-size: 3rem;"></i>
+            </div>
+            
+            <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAdd({{ product.id }})">
+                <i class="bi bi-bag-plus"></i> أضف للسلة
+            </button>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center py-5">
+        <i class="bi bi-bag-x display-1 text-secondary"></i>
+        <h3 class="mt-3 text-muted">لا توجد منتجات جديدة حالياً</h3>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+        <h3>قسم المنتجات الجديدة غير مفعل حالياً</h3>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Testimonials -->
+<div class="container-fluid py-5 mt-5" style="background: var(--black-light); border-top: 1px solid var(--copper);">
+    <div class="container">
+        <h2 class="section-title mt-0">آراء عملائنا</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="text-warning mb-3">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
                     </div>
-                </a>
-                {% endif %}
-                <h4 class="product-name">
-                    <a href="{% url 'product_detail' product.id %}" class="text-decoration-none d-inline-block" style="color: inherit;">{{ product.name }}</a>
-                </h4>
-                <div class="product-price">
-                    {% if product.discount_price %}
-                    <span class="product-discount">{{ product.base_price|iqd }}</span>
-                    {{ product.discount_price|iqd }}
-                    {% else %}
-                    {{ product.base_price|iqd }}
-                    {% endif %}
+                    <p class="testimonial-text">"تجربة تسوق ممتازة! الخامات رائعة والتوصيل كان أسرع مما توقعت. بالتأكيد سأطلب مرة أخرى."</p>
+                    <div class="testimonial-author">- سارة الأحمد</div>
                 </div>
-                <button class="add-to-cart-btn" onclick="event.stopPropagation(); quickAdd({{ product.id }})">
-                    <i class="bi bi-bag-plus"></i> أضف للسلة
-                </button>
-                
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="text-warning mb-3">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                    </div>
+                    <p class="testimonial-text">"أفضل متجر للملابس العصرية. التصاميم فريدة والأسعار مناسبة جداً مقارنة بالجودة."</p>
+                    <div class="testimonial-author">- محمد علي</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="text-warning mb-3">
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-fill"></i>
+                        <i class="bi bi-star-half"></i>
+                    </div>
+                    <p class="testimonial-text">"خدمة العملاء متعاونة جداً وسريعة في الرد. التطبيق سهل الاستخدام وتجربة الشراء سلسة."</p>
+                    <div class="testimonial-author">- نور الهدى</div>
+                </div>
             </div>
         </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="text-center py-5">
-                <i class="bi bi-bag-x" style="font-size: 4rem; color: var(--copper);"></i>
-                <h3 style="color: var(--copper-light); margin-top: 20px;">قريبًا...</h3>
-                <p style="color: #888;">سيتم إضافة منتجات جديدة قريبًا</p>
-            </div>
-        </div>
-        {% endfor %}
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-bag-x" style="font-size: 4rem; color: var(--copper);"></i>
-            <h3 style="color: var(--copper-light); margin-top: 20px;">قريبًا...</h3>
-            <p style="color: #888;">سيتم تفعيل قسم الوصل حديثًا لاحقًا</p>
-        </div>
-        {% endif %}
     </div>
 </div>
 
- 
+<!-- Newsletter Signup -->
+<div class="newsletter-section">
+    <div class="container text-center">
+        <h2 class="display-5 fw-bold mb-3 text-gold">انضم لعائلتنا</h2>
+        <p class="lead text-white mb-5">اشترك في نشرتنا البريدية للحصول على أحدث العروض والخصومات الحصرية</p>
+        
+        <form class="mx-auto" style="max-width: 600px;" onsubmit="event.preventDefault(); alert('شكراً لاشتراكك!');">
+            <div class="input-group input-group-lg">
+                <input type="email" class="form-control bg-transparent text-white border-secondary" placeholder="البريد الإلكتروني" required style="border-radius: 0 30px 30px 0;">
+                <button class="btn btn-primary px-5 fw-bold" type="submit" style="background: var(--copper); border: none; border-radius: 30px 0 0 30px;">اشتراك</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    // Search Functionality
     let __liveTimer;
     const input = document.getElementById('liveSearchInput');
     const box = document.getElementById('liveSearchResults');
@@ -767,39 +692,40 @@
     function renderResults(products, stores){
         const p = (products||[]).slice(0,5);
         const s = (stores||[]).slice(0,5);
-        let html = '<div class="bg-dark bg-opacity-90 border rounded-3 p-2">';
+        let html = '<div class="bg-dark border border-secondary rounded-3 p-2 shadow-lg" style="background: var(--black-light) !important;">';
         if(p.length){
-            html += '<div class="text-white-50 px-2 mb-1">منتجات</div>';
+            html += '<div class="text-white-50 px-2 mb-1 border-bottom border-secondary pb-1">منتجات</div>';
             p.forEach(item=>{
                 const id = item.id;
                 const name = item.name;
                 const price = (item.base_price!=null)? item.base_price : '';
                 html += `<a href="/products/${id}/" class="d-flex align-items-center text-decoration-none text-white p-2 rounded-2 hover-bg">`+
-                        `<i class="bi bi-bag me-2"></i><span class="flex-grow-1">${name}</span>`+
-                        `<small class="text-white-50 ms-2">${price}</small>`+
+                        `<i class="bi bi-bag me-2 text-warning"></i><span class="flex-grow-1">${name}</span>`+
+                        `<small class="text-warning ms-2 fw-bold">${price}</small>`+
                         `</a>`;
             });
         }
         if(s.length){
-            html += '<div class="text-white-50 px-2 mt-2 mb-1">متاجر</div>';
+            html += '<div class="text-white-50 px-2 mt-2 mb-1 border-bottom border-secondary pb-1">متاجر</div>';
             s.forEach(item=>{
                 const id = item.id;
                 const name = item.name;
                 const city = item.city||'';
                 html += `<a href="/stores/${id}/" class="d-flex align-items-center text-decoration-none text-white p-2 rounded-2 hover-bg">`+
-                        `<i class="bi bi-shop me-2"></i><span class="flex-grow-1">${name}</span>`+
+                        `<i class="bi bi-shop me-2 text-warning"></i><span class="flex-grow-1">${name}</span>`+
                         `<small class="text-white-50 ms-2">${city}</small>`+
                         `</a>`;
             });
         }
         if(!p.length && !s.length){
-            html += '<div class="text-center text-white-50 p-2"><i class="bi bi-search"></i> لا توجد نتائج</div>';
+            html += '<div class="text-center text-white-50 p-3"><i class="bi bi-search display-6 mb-2"></i><br>لا توجد نتائج</div>';
         }
-        html += `<a href="/search/?q=${encodeURIComponent(input.value||'')}" class="d-block text-center text-decoration-none text-white-50 p-2">عرض المزيد</a>`;
+        html += `<a href="/search/?q=${encodeURIComponent(input.value||'')}" class="d-block text-center text-decoration-none text-warning p-2 border-top border-secondary mt-1 fw-bold">عرض جميع النتائج</a>`;
         html += '</div>';
         box.innerHTML = html;
         showBox();
     }
+    
     async function fetchLive(q){
         if(!q || q.trim().length<2){ hideBox(); return; }
         try{
@@ -823,248 +749,85 @@
         input.addEventListener('blur', ()=> setTimeout(hideBox, 200));
         input.addEventListener('focus', ()=>{ if((input.value||'').trim().length>=2) fetchLive(input.value); });
     }
-    function quickAdd(productId) {
-        const meta = document.querySelector('meta[name="csrf-token"]');
-        const csrfToken = (meta && meta.content && meta.content !== 'NOTPROVIDED') ? meta.content : (document.cookie.match(/csrftoken=([^;]+)/)||[])[1] || '';
-        fetch(`/api/products/${productId}/`, { credentials: 'same-origin' })
-        .then(function(r){ return r.json(); })
-        .then(function(p){
-            try{
-                const variants = Array.isArray(p.variants) ? p.variants : [];
-                const storeId = (p.store && p.store.id) ? p.store.id : null;
-                if(!variants.length){
-                    addToCart(productId, null, 1, storeId);
-                    return;
-                }
-                showVariantPicker(productId, storeId, variants);
-            }catch(e){ addToCart(productId, null, 1, null); }
-        }).catch(function(){ addToCart(productId, null, 1, null); });
-    }
-    function showVariantPicker(productId, storeId, variants){
-        let overlay = document.getElementById('vpOverlay');
-        if(!overlay){
-            overlay = document.createElement('div');
-            overlay.id = 'vpOverlay';
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1060;display:flex;align-items:flex-end;';
-            const sheet = document.createElement('div');
-            sheet.id = 'vpSheet';
-            sheet.style.cssText = 'background:#fff;color:#000;width:100%;border-top-left-radius:16px;border-top-right-radius:16px;max-height:70vh;overflow:auto;padding:16px;';
-            sheet.innerHTML = '<div class="d-flex justify-content-between align-items-center mb-2"><strong>اختيار النسخة</strong><button type="button" id="vpClose" class="btn btn-sm btn-outline-secondary">إغلاق</button></div><div class="mb-3"><label class="form-label">اللون</label><select id="vpColor" class="form-select"><option value="">اختر اللون</option></select></div><div class="mb-3"><label class="form-label">المقاس</label><select id="vpSize" class="form-select" disabled><option value="">اختر المقاس</option></select></div><div class="mb-3"><label class="form-label">الكمية</label><input id="vpQty" type="number" class="form-control" value="1" min="1" style="max-width:120px"></div><div class="text-end"><button type="button" id="vpAdd" class="btn btn-primary">أضف للسلة</button></div>';
-            overlay.appendChild(sheet);
-            document.body.appendChild(overlay);
-            overlay.addEventListener('click', function(e){ if(e.target===overlay) closeVariantPicker(); });
-            document.getElementById('vpClose').addEventListener('click', closeVariantPicker);
+
+    // Toast Function
+    function showToast(message, type='success') {
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+            document.body.appendChild(toastContainer);
         }
-        const colorSel = document.getElementById('vpColor');
-        const sizeSel = document.getElementById('vpSize');
-        const qtyEl = document.getElementById('vpQty');
-        colorSel.innerHTML = '<option value="">اختر اللون</option>';
-        const colors = Array.from(new Set(variants.map(function(v){ return v.color; }).filter(Boolean)));
-        colors.forEach(function(c){ const opt = document.createElement('option'); opt.value = c; opt.textContent = c; colorSel.appendChild(opt); });
-        sizeSel.innerHTML = '<option value="">اختر المقاس</option>';
-        sizeSel.disabled = true;
-        qtyEl.value = 1;
-        qtyEl.removeAttribute('max');
-        let selectedVariantId = null;
-        function updateSize(){
-            const color = colorSel.value;
-            sizeSel.innerHTML = '<option value="">اختر المقاس</option>';
-            sizeSel.disabled = true;
-            selectedVariantId = null;
-            qtyEl.value = 1;
-            qtyEl.removeAttribute('max');
-            if(!color) return;
-            const sizes = variants.filter(function(v){ return v.color===color; }).map(function(v){ return { size: v.size, id: v.id, stock: v.stock_qty }; });
-            sizes.forEach(function(s){
-                const out = !s.stock || s.stock<=0;
-                const opt = document.createElement('option');
-                opt.value = s.size;
-                opt.textContent = out ? (s.size + ' (غير متاح)') : s.size;
-                opt.dataset.id = s.id;
-                opt.dataset.stock = s.stock;
-                sizeSel.appendChild(opt);
-            });
-            sizeSel.disabled = sizes.length===0;
-            const firstAvail = sizes.find(function(s){ return s.stock>0; });
-            if(firstAvail){ sizeSel.value = firstAvail.size; sizeSel.dispatchEvent(new Event('change')); }
-        }
-        colorSel.onchange = updateSize;
-        sizeSel.onchange = function(){
-            const opt = sizeSel.options[sizeSel.selectedIndex];
-            const id = opt ? parseInt(opt.dataset.id||'') : null;
-            const stock = opt ? parseInt(opt.dataset.stock||'') : 0;
-            selectedVariantId = id || null;
-            qtyEl.value = 1;
-            qtyEl.max = stock>0 ? stock : 1;
-        };
-        document.getElementById('vpAdd').onclick = function(){
-            const qty = parseInt(qtyEl.value||'1')||1;
-            if(!selectedVariantId){ return; }
-            addToCart(productId, selectedVariantId, qty, storeId);
-            closeVariantPicker();
-        };
-        overlay.style.display = 'flex';
-    }
-    function closeVariantPicker(){
-        const overlay = document.getElementById('vpOverlay');
-        if(overlay){ overlay.style.display='none'; }
-    }
-    
-    // Toast Notification
-    function showToast(message) {
+        
         const toast = document.createElement('div');
-        toast.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--copper);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            z-index: 10000;
-            font-weight: bold;
-            box-shadow: 0 4px 20px rgba(184, 115, 51, 0.4);
-            animation: slideIn 0.3s ease;
+        toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : 'success'} border-0 show`;
+        toast.role = 'alert';
+        toast.style.marginBottom = '10px';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body px-4 py-3 fs-6">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" onclick="this.closest('.toast').remove()"></button>
+            </div>
         `;
-        toast.textContent = message;
         
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        document.body.appendChild(toast);
+        toastContainer.appendChild(toast);
         
         setTimeout(() => {
-            toast.style.animation = 'slideIn 0.3s ease reverse';
-            setTimeout(() => toast.remove(), 300);
+            toast.remove();
         }, 3000);
     }
-    const announcementConfig = {
-        enabled: {% if features.ADS_SECTION %}true{% else %}false{% endif %},
-        slides: [],
-        ttlHours: 0.25,
-        autoRotateMs: 12000
-    };
 
-    let annIndex = 0; let annTimer = null; let isVideoPlaying = false;
-
-    function renderSlide(i){
-        const s = announcementConfig.slides[i];
-        document.getElementById('ann-title').textContent = s.title || '';
-        document.getElementById('ann-message').textContent = s.message || '';
-        const media = document.getElementById('ann-media');
-        media.innerHTML = '';
-        if (s.kind === 'image' && s.mediaUrl){
-            media.innerHTML = `<img src="${s.mediaUrl}" alt="announcement">`;
-        } else if (s.kind === 'video' && s.mediaUrl){
-            media.innerHTML = `<video src="${s.mediaUrl}" muted playsinline preload="metadata" controls></video>`;
-            const v = media.querySelector('video');
-            if (v) {
-                // Attempt autoplay on mobile WebView
-                try { v.play().catch(()=>{}); } catch(e){}
-                // Pause auto-rotation while video plays
-                v.addEventListener('play', ()=>{ isVideoPlaying = true; if (annTimer) { clearInterval(annTimer); annTimer = null; } });
-                v.addEventListener('pause', ()=>{ isVideoPlaying = false; restartAuto(); });
-                v.addEventListener('ended', ()=>{ isVideoPlaying = false; restartAuto(); nextSlide(); });
-                v.addEventListener('error', ()=>{ isVideoPlaying = false; restartAuto(); });
-                v.addEventListener('abort', ()=>{ isVideoPlaying = false; restartAuto(); });
-                v.addEventListener('emptied', ()=>{ isVideoPlaying = false; restartAuto(); });
-            }
-        } else {
-            media.innerHTML = `<div style="height:280px; display:flex; align-items:center; justify-content:center; color: var(--gold);">`
-                + `<i class="bi bi-megaphone" style="font-size:3rem;"></i>` + `</div>`;
-        }
-        const dots = document.getElementById('ann-dots'); dots.innerHTML='';
-        if (announcementConfig.slides.length <= 1) {
-            dots.style.display = 'none';
+    // Quick Add Logic
+    function quickAdd(productId) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                          document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+        
+        if (!csrfToken) {
+            // If we can't find CSRF, just redirect to product page
+            window.location.href = `/products/${productId}/`;
             return;
         }
-        dots.style.display = 'flex';
-        announcementConfig.slides.forEach((_, idx)=>{
-            const d = document.createElement('div'); d.className = 'ann-dot'+(idx===i?' active':'');
-            d.addEventListener('click', ()=>{ if (isVideoPlaying) return; annIndex = idx; renderSlide(annIndex); restartAuto(); });
-            dots.appendChild(d);
-        });
-    }
 
-    function nextSlide(){ if (isVideoPlaying) return; annIndex = (annIndex+1) % announcementConfig.slides.length; renderSlide(annIndex); }
-    function prevSlide(){ if (isVideoPlaying) return; annIndex = (annIndex-1+announcementConfig.slides.length) % announcementConfig.slides.length; renderSlide(annIndex); }
-    function restartAuto(){ if (annTimer) clearInterval(annTimer); if (!isVideoPlaying) { annTimer = setInterval(nextSlide, announcementConfig.autoRotateMs); } }
-
-    function loadSlidesFromLocal(){
-        try{
-            const srvSlides = [
-                {% for c in campaigns %}
-                {
-                    kind: {% if c.banner_image %}'image'{% else %}'text'{% endif %},
-                    title: '{{ c.title|escapejs }}',
-                    message: '{{ c.description|default:""|escapejs }}',
-                    mediaUrl: '{% if c.banner_image %}{{ c.banner_image.url }}{% endif %}',
-                    actionText: 'عرض المزيد',
-                    actionUrl: '{{ c.action_url|default:"/stores/" }}',
-                    priority: 0
-                },
-                {% endfor %}
-            ];
-            if (srvSlides.length){
-                announcementConfig.slides = srvSlides;
+        fetch(`/cart/add/${productId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                quantity: 1
+            })
+        })
+        .then(response => {
+            if (response.status === 401) {
+                window.location.href = '/login/?next=' + window.location.pathname;
+                throw new Error('AUTH_REQUIRED');
             }
-            const ttlMinRaw = localStorage.getItem('appAnnouncementsTTLMinutes');
-            if(ttlMinRaw){
-                const m = parseInt(ttlMinRaw, 10);
-                if(!isNaN(m) && m>0){ announcementConfig.ttlHours = m/60; }
+            if (!response.ok) {
+                return response.json().then(d => { throw new Error(d.error || 'Network error'); });
             }
-        }catch(e){}
-        if(!announcementConfig.slides.length){
-            announcementConfig.slides = [
-                { kind:'text', title:'إعلان خاص', message:'خصومات موسمية على الأزياء', actionText:'عرض المزيد', actionUrl:'/announcements/', priority:0 },
-            ];
-        }
-    }
-
-    function showAnnouncement() {
-        if (!announcementConfig.enabled) return;
-        loadSlidesFromLocal();
-        const ttlMs = (announcementConfig.ttlHours || 24) * 3600 * 1000;
-        const dismissedAtStr = localStorage.getItem('appAnnouncementDismissedAt');
-        const dismissedAt = dismissedAtStr ? Date.parse(dismissedAtStr) : 0;
-        const nowMs = Date.now();
-        const dismissedWithinTTL = dismissedAt && (nowMs - dismissedAt) < ttlMs;
-        const navEntries = (performance && performance.getEntriesByType) ? performance.getEntriesByType('navigation') : [];
-        const navType = navEntries && navEntries[0] ? navEntries[0].type : ((performance && performance.navigation && performance.navigation.type === 1) ? 'reload' : '');
-        const reloadOrNavigate = navType === 'reload' || navType === 'navigate';
-        const forceShow = reloadOrNavigate || (sessionStorage.getItem('showAnnouncements') === '1');
-        if (!dismissedWithinTTL) { try { sessionStorage.removeItem('appAnnouncementShown'); } catch(e){} }
-        if (!forceShow && dismissedWithinTTL) return;
-        const banner = document.getElementById('app-announcement');
-        banner.style.display = 'block';
-        renderSlide(annIndex); restartAuto();
-        sessionStorage.setItem('appAnnouncementShown', 'true');
-        sessionStorage.removeItem('showAnnouncements');
-        document.getElementById('ann-close').addEventListener('click', function() {
-            try { localStorage.setItem('appAnnouncementDismissedAt', new Date().toISOString()); localStorage.setItem('appAnnouncementDismissed','true'); } catch(e) {}
-            banner.style.display = 'none';
+            return response.json();
+        })
+        .then(data => {
+            showToast('تمت إضافة المنتج للسلة بنجاح');
+            // Update cart badge if exists
+            const badges = document.querySelectorAll('.cart-count-badge, .badge-cart');
+            badges.forEach(b => {
+                const count = parseInt(b.innerText || '0') + 1;
+                b.innerText = count;
+                b.style.display = 'inline-block';
+            });
+        })
+        .catch(error => {
+            if (error.message !== 'AUTH_REQUIRED') {
+                if(error.message) showToast(error.message, 'error');
+                else window.location.href = `/products/${productId}/`;
+            }
         });
-
-        document.getElementById('ann-card').addEventListener('click', function(e){
-            const tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
-            if(tag==='button' || tag==='a' || tag==='video') return;
-            const current = announcementConfig.slides[annIndex] || {};
-            const url = current.actionUrl || '/announcements/';
-            window.location.assign(url);
-        });
-
-        // Swipe/drag support
-        // REMOVED manual touch handlers to allow native scrolling
     }
-    document.addEventListener('DOMContentLoaded', showAnnouncement);
-    window.addEventListener('showAnnouncement', ()=>{ try{ localStorage.removeItem('appAnnouncementDismissed'); localStorage.removeItem('appAnnouncementDismissedAt'); sessionStorage.removeItem('appAnnouncementShown'); sessionStorage.setItem('showAnnouncements','1'); }catch(e){} showAnnouncement(); });
-
-    function openProduct(id) { window.location.href = `/products/${id}/`; }
 </script>
 {% endblock %}
