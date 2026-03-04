@@ -1,20 +1,34 @@
-# Django settings for clothing_store project.
+"""
+Django settings for clothing_store project.
+FIXED VERSION - Corrected for Railway deployment
+"""
 
 from pathlib import Path
 from decimal import Decimal
 import os
-from decouple import config
+import sys
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='dev-secret-key')
-if not SECRET_KEY:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key')
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
 
-DEBUG = True
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# 🔧 FIX 1: Simplified ALLOWED_HOSTS
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else [
+    '127.0.0.1',
+    'localhost',
+    '192.168.1.102',
+    '.railway.app',
+    '.up.railway.app',
+    '.onrender.com',
+    '.vercel.app',
+]
 
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -22,16 +36,26 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'drf_spectacular',
+    
+    # Local apps
     'core',
+    'merchants',
+    'catalog',
+    'orders',
+    'ads',
 ]
 
+# 🔧 FIX 2: Removed custom middleware that might cause issues
 MIDDLEWARE = [
-    'core.middleware.ErrorTrackingMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,13 +84,34 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clothing_store.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+# 🔧 FIX 3: Simplified Database Configuration
+# Check if we're on Railway or production
+IS_RAILWAY = 'RAILWAY_ENVIRONMENT' in os.environ
+IS_RENDER = 'RENDER' in os.environ
+IS_PRODUCTION = IS_RAILWAY or IS_RENDER or (not DEBUG)
 
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+
+if DATABASE_URL:
+    # Use dj-database-url to parse DATABASE_URL
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=IS_PRODUCTION
+        )
+    }
+else:
+    # Fallback to SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -82,24 +127,38 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Internationalization
 LANGUAGE_CODE = 'ar'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# 🔧 FIX 4: Simplified Static Files Configuration
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
 
+# 🔧 FIX 5: Whitenoise for static files
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Custom user model
 AUTH_USER_MODEL = 'core.User'
 
+# REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -109,8 +168,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+# JWT Settings
 from datetime import timedelta
 
 SIMPLE_JWT = {
@@ -119,12 +180,109 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+# 🔧 FIX 6: Simplified CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:19006",
+    "http://127.0.0.1:19006",
+    "http://192.168.1.102:19006",
+    "http://192.168.1.102:8081",
+]
 
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # Add production origins from environment
+    prod_origins = os.environ.get('CORS_ORIGINS', '')
+    if prod_origins:
+        CORS_ALLOWED_ORIGINS.extend([o.strip() for o in prod_origins.split(',') if o.strip()])
+
+# Login URLs
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
+# Custom authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Delivery fee
 DELIVERY_FEE = Decimal('5000')  # 5000 IQD
 
+# 🔧 FIX 7: Security Settings
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+    'https://*.onrender.com',
+    'https://*.vercel.app',
+]
+
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        'http://192.168.1.102:8000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ]
+
+# Only enable security features in production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# 🔧 FIX 8: Simplified Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
+
+# DRF Spectacular
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Clothing Store API',
+    'DESCRIPTION': 'REST API for Clothing Store',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# 🔧 FIX 9: Print diagnostics only in DEBUG
+if DEBUG:
+    print(f"DEBUG: {DEBUG}")
+    print(f"IS_RAILWAY: {IS_RAILWAY}")
+    print(f"IS_PRODUCTION: {IS_PRODUCTION}")
+    print(f"DATABASE: {DATABASES['default'].get('ENGINE', 'unknown')}")
+    print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
