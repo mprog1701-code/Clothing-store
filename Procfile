@@ -1,1 +1,1 @@
-web: python manage.py migrate --noinput --settings=clothing_store.settings_railway && python manage.py collectstatic --noinput --settings=clothing_store.settings_railway && gunicorn clothing_store.wsgi:application --bind 0.0.0.0:$PORT
+web: python manage.py migrate --noinput && gunicorn clothing_store.wsgi:application --bind 0.0.0.0:$PORT
