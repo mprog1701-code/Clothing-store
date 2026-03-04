@@ -149,8 +149,29 @@ REST_FRAMEWORK = {
 CORS_ALLOW_ALL_ORIGINS = True  # Simplified for debugging, restrict later if needed
 
 # -----------------------------------------------------------------------------
-# 9. DIAGNOSTICS (Temporary)
+# 9. LOGGING & DIAGNOSTICS
 # -----------------------------------------------------------------------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
 print('LOADED SETTINGS: settings_railway')
 print(f'ROOT_URLCONF={ROOT_URLCONF}')
 print(f'WSGI_APPLICATION={WSGI_APPLICATION}')
