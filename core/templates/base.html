@@ -223,7 +223,7 @@
                             <span class="nav-icon-wrap">
                                 <i class="bi bi-cart nav-icon"></i>
                                 {% if request.path|slice:":6" != '/cart/' %}
-                                    {% with count=request.session.cart|cart_count %}
+                                    {% with count=request.session.cart|length %}
                                     {% if count > 0 %}
                                     <span class="cart-badge">{{ count }}</span>
                                     {% endif %}
@@ -331,27 +331,6 @@
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
     <script src="{% static 'js/landing.js' %}"></script>
-
-    <!-- Multi-Store Conflict Modal -->
-    <div class="modal fade" id="multiStoreModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">سلة من متجر واحد</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>لا يمكن الجمع بين متاجر مختلفة في سلة واحدة.</p>
-                    <p class="text-muted mb-0">اختر الإجراء المناسب:</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="msCancelBtn">إلغاء</button>
-                    <button type="button" class="btn btn-gradient" id="msClearBtn">افرغ السلة وابدأ من المتجر الجديد</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <script src="{% static 'js/main.js' %}?v=1" defer></script>
     {% block extra_js %}{% endblock %}
 </body>

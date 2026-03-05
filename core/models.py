@@ -235,6 +235,13 @@ class Product(models.Model):
     def main_image(self):
         return self.images.filter(is_main=True).first()
 
+    @property
+    def discount_percentage(self):
+        if self.base_price and self.discount_price and self.base_price > 0:
+            discount = self.base_price - self.discount_price
+            return int((discount / self.base_price) * 100)
+        return 0
+
 
 class PhoneReservation(models.Model):
     phone = models.CharField(max_length=20, unique=True)

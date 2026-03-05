@@ -1,6 +1,6 @@
 {% extends "core/base.html" %}
 {% load static %}
-{% load mathfilters %}
+{% load math_filters %}
 
 {% block title %}الرئيسية | متجر الملابس العراقي{% endblock %}
 
@@ -206,7 +206,7 @@
                                     {% endif %}
                                     
                                     {% if product.discount_price %}
-                                    <span class="badge bg-danger position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">-{{ product.base_price|sub:product.discount_price|div:product.base_price|mul:100|floatform:0 }}%</span>
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">-{{ product.discount_percentage }}%</span>
                                     {% endif %}
                                     
                                     <div class="product-actions position-absolute bottom-0 start-0 end-0 p-3 d-flex justify-content-center gap-2 opacity-0 transition-all">
@@ -219,10 +219,10 @@
                                     <p class="text-muted small mb-2">{{ product.category.name|default:"عام" }}</p>
                                     <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
                                         {% if product.discount_price %}
-                                        <span class="text-danger fw-bold fs-5">{{ product.discount_price|floatform:0 }} د.ع</span>
-                                        <span class="text-muted text-decoration-line-through small">{{ product.base_price|floatform:0 }}</span>
+                                        <span class="text-danger fw-bold fs-5">{{ product.discount_price|iqd }}</span>
+                                        <span class="text-muted text-decoration-line-through small">{{ product.base_price|iqd }}</span>
                                         {% else %}
-                                        <span class="text-primary fw-bold fs-5">{{ product.base_price|floatform:0 }} د.ع</span>
+                                        <span class="text-primary fw-bold fs-5">{{ product.base_price|iqd }}</span>
                                         {% endif %}
                                     </div>
                                     <button class="btn btn-primary w-100 rounded-pill py-2 add-to-cart-btn">
@@ -259,7 +259,7 @@
                                 <div class="card-body text-center p-4">
                                     <h5 class="card-title fw-bold text-truncate">{{ product.name }}</h5>
                                     <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                                        <span class="text-primary fw-bold fs-5">{{ product.base_price|floatform:0 }} د.ع</span>
+                                        <span class="text-primary fw-bold fs-5">{{ product.base_price|iqd }}</span>
                                     </div>
                                     <a href="{% url 'product_detail' product.id %}" class="btn btn-outline-primary w-100 rounded-pill py-2">
                                         التفاصيل
@@ -291,8 +291,8 @@
                                 <div class="card-body text-center p-4">
                                     <h5 class="card-title fw-bold text-truncate">{{ product.name }}</h5>
                                     <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                                        <span class="text-danger fw-bold fs-5">{{ product.discount_price|floatform:0 }} د.ع</span>
-                                        <span class="text-muted text-decoration-line-through small">{{ product.base_price|floatform:0 }}</span>
+                                        <span class="text-danger fw-bold fs-5">{{ product.discount_price|iqd }}</span>
+                                        <span class="text-muted text-decoration-line-through small">{{ product.base_price|iqd }}</span>
                                     </div>
                                     <a href="{% url 'product_detail' product.id %}" class="btn btn-outline-danger w-100 rounded-pill py-2">
                                         اطلب الآن
