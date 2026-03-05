@@ -41,6 +41,7 @@ def health(request):
 def hybrid_home(request):
     """Fashion marketplace homepage specialized in clothing and fashion"""
     
+    # 1. New Arrivals (Last 24h or just latest 8)
     since = timezone.now() - timedelta(hours=24)
     new_arrivals = list(Product.objects.filter(
         is_active=True,
@@ -49,6 +50,22 @@ def hybrid_home(request):
     if len(new_arrivals) == 0:
         new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
     
+    # 2. Best Selling (Simulated by is_featured for now, or random)
+    # Ideally we should aggregate order items, but for speed we use is_featured or random
+    best_selling_products = Product.objects.filter(
+        is_active=True, 
+        is_featured=True
+    ).select_related('store').prefetch_related('images').order_by('?')[:8]
+    
+    if not best_selling_products:
+        best_selling_products = Product.objects.filter(is_active=True).order_by('?')[:8]
+
+    # 3. Special Offers (Products with discount)
+    special_offers = Product.objects.filter(
+        is_active=True,
+        discount_price__isnull=False
+    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
+
     cart = request.session.get('cart', [])
     cart_items_count = cart_count(cart)
     
@@ -63,12 +80,14 @@ def hybrid_home(request):
 
     context = {
         'new_arrivals': new_arrivals,
+        'best_selling_products': best_selling_products,
+        'special_offers': special_offers,
         'cart_items_count': cart_items_count,
         'campaign': campaign,
         'campaigns': campaigns,
     }
     
-    response = render(request, 'fashion_home.html', context)
+    response = render(request, 'home.html', context)
     try:
         settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
         if not request.COOKIES.get('visitor_id'):

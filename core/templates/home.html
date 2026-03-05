@@ -1,223 +1,442 @@
-{% extends 'base.html' %}
-{% load math_filters %}
+{% extends "core/base.html" %}
+{% load static %}
+{% load mathfilters %}
 
-{% block title %}{{ site_settings.homepage_title }}{% endblock %}
+{% block title %}الرئيسية | متجر الملابس العراقي{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="hero-section">
-    <div class="hero-content">
-        <div class="container-fluid px-0">
-            <div class="container container-desktop-only px-3">
-                <h1 class="hero-title animate__animated animate__fadeInUp">{{ site_settings.site_name }}</h1>
-                <p class="hero-subtitle animate__animated animate__fadeInUp animate__delay-1s">{{ site_settings.site_description|default:"تسوق من أفضل المتاجر واكتشف أحدث صيحات الموضة" }}</p>
-                <div class="animate__animated animate__fadeInUp animate__delay-2s">
-                    <a href="{% url 'store_list' %}" class="btn btn-light btn-lg me-3">
-                        <i class="bi bi-shop"></i> تصفح المتاجر
-                    </a>
-                    <a href="#featured-products" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-star"></i> المنتجات المميزة
-                    </a>
+
+<!-- 1. Hero Section -->
+<section class="hero-section position-relative d-flex align-items-center justify-content-center text-white" style="min-height: 85vh; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); overflow: hidden;" id="hero">
+    <div id="particles-js" class="position-absolute top-0 start-0 w-100 h-100"></div>
+    <div class="container position-relative z-2 text-center">
+        <h1 class="display-3 fw-bold mb-4" data-aos="fade-down">
+            <span id="typed-text" class="text-warning"></span>
+            <br>في العراق
+        </h1>
+        <p class="lead mb-5 fs-4" data-aos="fade-up" data-aos-delay="100">
+            تسوق من أفضل المحلات العراقية مع ضمان الجودة والتوصيل لجميع المحافظات
+        </p>
+        <div class="d-flex justify-content-center gap-3" data-aos="zoom-in" data-aos-delay="200">
+            <a href="#products" class="btn btn-light btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg hover-scale text-primary">
+                <i class="fas fa-shopping-bag me-2"></i> ابدأ التسوق الآن
+            </a>
+            <a href="#categories" class="btn btn-outline-light btn-lg px-5 py-3 rounded-pill fw-bold hover-scale">
+                <i class="fas fa-th-large me-2"></i> الأقسام
+            </a>
+        </div>
+    </div>
+    
+    <!-- Wave Shape Divider -->
+    <div class="position-absolute bottom-0 start-0 w-100 overflow-hidden" style="line-height: 0;">
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" style="width: 100%; height: 60px; fill: #f8f9fa;">
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
+        </svg>
+    </div>
+</section>
+
+<!-- 2. Features Section -->
+<section class="py-5 bg-light">
+    <div class="container py-5">
+        <div class="row g-4 justify-content-center">
+            <!-- Feature 1 -->
+            <div class="col-6 col-md-4 col-lg-2" data-aos="fade-up" data-aos-delay="0">
+                <div class="feature-card text-center h-100 p-3 bg-white rounded-4 shadow-sm hover-top transition-all">
+                    <div class="icon-box mb-3 text-primary fs-2">
+                        <i class="fas fa-truck-fast"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">توصيل شامل</h6>
+                    <small class="text-muted d-block">لجميع المحافظات</small>
+                </div>
+            </div>
+            <!-- Feature 2 -->
+            <div class="col-6 col-md-4 col-lg-2" data-aos="fade-up" data-aos-delay="100">
+                <div class="feature-card text-center h-100 p-3 bg-white rounded-4 shadow-sm hover-top transition-all">
+                    <div class="icon-box mb-3 text-success fs-2">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">دفع عند الاستلام</h6>
+                    <small class="text-muted d-block">نقداً عند بابك</small>
+                </div>
+            </div>
+            <!-- Feature 3 -->
+            <div class="col-6 col-md-4 col-lg-2" data-aos="fade-up" data-aos-delay="200">
+                <div class="feature-card text-center h-100 p-3 bg-white rounded-4 shadow-sm hover-top transition-all">
+                    <div class="icon-box mb-3 text-warning fs-2">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">جودة مضمونة</h6>
+                    <small class="text-muted d-block">أصلي 100%</small>
+                </div>
+            </div>
+            <!-- Feature 4 -->
+            <div class="col-6 col-md-4 col-lg-2" data-aos="fade-up" data-aos-delay="300">
+                <div class="feature-card text-center h-100 p-3 bg-white rounded-4 shadow-sm hover-top transition-all">
+                    <div class="icon-box mb-3 text-info fs-2">
+                        <i class="fas fa-rotate-left"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">استرجاع سهل</h6>
+                    <small class="text-muted d-block">خلال 7 أيام</small>
+                </div>
+            </div>
+            <!-- Feature 5 -->
+            <div class="col-6 col-md-4 col-lg-2" data-aos="fade-up" data-aos-delay="400">
+                <div class="feature-card text-center h-100 p-3 bg-white rounded-4 shadow-sm hover-top transition-all">
+                    <div class="icon-box mb-3 text-danger fs-2">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">أسعار منافسة</h6>
+                    <small class="text-muted d-block">أفضل سعر بالعراق</small>
+                </div>
+            </div>
+            <!-- Feature 6 -->
+            <div class="col-6 col-md-4 col-lg-2" data-aos="fade-up" data-aos-delay="500">
+                <div class="feature-card text-center h-100 p-3 bg-white rounded-4 shadow-sm hover-top transition-all">
+                    <div class="icon-box mb-3 text-secondary fs-2">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1">دعم 24/7</h6>
+                    <small class="text-muted d-block">خدمة زبائن متميزة</small>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Featured Stores -->
-{% if stores %}
-<section class="py-5">
-    <div class="container-fluid px-0">
-        <div class="container container-desktop-only px-3">
-            <div class="section-title">
-                <h2 class="text-center mb-5">المتاجر المميزة</h2>
-            </div>
-            <div class="row">
-                {% for store in stores %}
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card store-card h-100">
-                        <div class="card-body text-center">
-                            <div class="mb-3">
-                                <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                                    <i class="bi bi-shop text-white" style="font-size: 2rem;"></i>
-                                </div>
-                            </div>
-                            <h5 class="card-title">{{ store.name }}</h5>
-                            <p class="card-text text-muted">
-                                <i class="bi bi-geo-alt"></i> {{ store.city }}
-                            </p>
-                            {% if store.description %}
-                            <p class="card-text">{{ store.description|truncatewords:15 }}</p>
-                            {% endif %}
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted">
-                                    <i class="bi bi-calendar"></i> منذ {{ store.created_at|timesince }}
-                                </span>
-                                <a href="{% url 'store_detail' store.id %}" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-arrow-left"></i> زيارة
-                                </a>
-                            </div>
-                        </div>
+<!-- 3. Categories Grid -->
+<section class="py-5" id="categories">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h5 class="text-primary fw-bold text-uppercase ls-2">تصفح المجموعات</h5>
+            <h2 class="fw-bold display-5">تسوق حسب القسم</h2>
+        </div>
+        
+        <div class="row g-3">
+            <!-- Large Item: Women -->
+            <div class="col-md-6" data-aos="fade-right">
+                <a href="/products/?category=women" class="card border-0 rounded-4 overflow-hidden text-white h-100 shadow-sm category-card">
+                    <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="card-img h-100 object-fit-cover transition-transform" alt="ملابس نسائية">
+                    <div class="card-img-overlay d-flex flex-column justify-content-end bg-gradient-dark p-4">
+                        <h3 class="card-title fw-bold">ملابس نسائية</h3>
+                        <p class="card-text">أحدث الموديلات العصرية</p>
                     </div>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="text-center mt-4">
-                <a href="{% url 'store_list' %}" class="btn btn-outline-primary btn-lg">
-                    <i class="bi bi-grid"></i> عرض جميع المتاجر
                 </a>
             </div>
+            
+            <div class="col-md-6">
+                <div class="row g-3">
+                    <!-- Men -->
+                    <div class="col-6" data-aos="fade-down" data-aos-delay="100">
+                        <a href="/products/?category=men" class="card border-0 rounded-4 overflow-hidden text-white shadow-sm category-card" style="height: 200px;">
+                            <img src="https://images.unsplash.com/photo-1488161628813-99c974fc5bce?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" class="card-img h-100 object-fit-cover transition-transform" alt="ملابس رجالية">
+                            <div class="card-img-overlay d-flex flex-column justify-content-end bg-gradient-dark p-3">
+                                <h5 class="card-title fw-bold">ملابس رجالية</h5>
+                            </div>
+                        </a>
+                    </div>
+                    <!-- Kids -->
+                    <div class="col-6" data-aos="fade-down" data-aos-delay="200">
+                        <a href="/products/?category=kids" class="card border-0 rounded-4 overflow-hidden text-white shadow-sm category-card" style="height: 200px;">
+                            <img src="https://images.unsplash.com/photo-1514090458221-65bb69cf63e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" class="card-img h-100 object-fit-cover transition-transform" alt="ملابس أطفال">
+                            <div class="card-img-overlay d-flex flex-column justify-content-end bg-gradient-dark p-3">
+                                <h5 class="card-title fw-bold">ملابس أطفال</h5>
+                            </div>
+                        </a>
+                    </div>
+                    <!-- Cosmetics -->
+                    <div class="col-6" data-aos="fade-up" data-aos-delay="300">
+                        <a href="/products/?category=cosmetics" class="card border-0 rounded-4 overflow-hidden text-white shadow-sm category-card" style="height: 200px;">
+                            <img src="https://images.unsplash.com/photo-1596462502278-27bfdd403cc2?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" class="card-img h-100 object-fit-cover transition-transform" alt="كوزمتك">
+                            <div class="card-img-overlay d-flex flex-column justify-content-end bg-gradient-dark p-3">
+                                <h5 class="card-title fw-bold">كوزمتك</h5>
+                            </div>
+                        </a>
+                    </div>
+                    <!-- Accessories -->
+                    <div class="col-6" data-aos="fade-up" data-aos-delay="400">
+                        <a href="/products/?category=accessories" class="card border-0 rounded-4 overflow-hidden text-white shadow-sm category-card" style="height: 200px;">
+                            <img src="https://images.unsplash.com/photo-1576053139778-7e32f2ae3cfd?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" class="card-img h-100 object-fit-cover transition-transform" alt="اكسسوارات">
+                            <div class="card-img-overlay d-flex flex-column justify-content-end bg-gradient-dark p-3">
+                                <h5 class="card-title fw-bold">ساعات واكسسوارات</h5>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
-{% endif %}
 
-<!-- Featured Products -->
-{% if products %}
-<section class="py-5 bg-light" id="featured-products">
-    <div class="container-fluid px-0">
-        <div class="container container-desktop-only px-3">
-            <div class="section-title">
-                <h2 class="text-center mb-5">منتجات مميزة</h2>
-            </div>
-            <div class="row mobile-chunked-grid" data-chunk-size="4">
-                {% for product in products %}
-                <div class="col-6 col-sm-6 col-md-4 col-lg-3 mb-4">
-                    <div class="card product-card h-100 position-relative">
-                        <div class="position-relative overflow-hidden">
-                            {% if product.main_image %}
-                                {% with url=product.main_image.get_image_url %}
-                                    {% if url %}
-                                        <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}">
-                                            <img src="{{ url }}" class="product-image w-100" alt="{{ product.name }}" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
-                                        </a>
+<!-- 4. Products Section -->
+<section class="py-5 bg-light position-relative" id="products">
+    <!-- Decorative Circle -->
+    <div class="position-absolute top-0 end-0 rounded-circle bg-primary opacity-10" style="width: 300px; height: 300px; transform: translate(30%, -30%);"></div>
+    
+    <div class="container position-relative z-1">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h5 class="text-secondary fw-bold text-uppercase ls-2">مختاراتنا لك</h5>
+            <h2 class="fw-bold display-5">المنتجات الأكثر طلباً</h2>
+            
+            <ul class="nav nav-pills justify-content-center mt-4 gap-2" id="pills-tab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active rounded-pill px-4 py-2" id="pills-best-tab" data-bs-toggle="pill" data-bs-target="#pills-best" type="button" role="tab">الأكثر مبيعاً</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-4 py-2" id="pills-new-tab" data-bs-toggle="pill" data-bs-target="#pills-new" type="button" role="tab">وصل حديثاً</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link rounded-pill px-4 py-2" id="pills-sale-tab" data-bs-toggle="pill" data-bs-target="#pills-sale" type="button" role="tab">عروض خاصة</button>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="tab-content" id="pills-tabContent">
+            <!-- Tab 1: Best Selling -->
+            <div class="tab-pane fade show active" id="pills-best" role="tabpanel">
+                <div class="swiper products-swiper pb-5">
+                    <div class="swiper-wrapper">
+                        {% for product in best_selling_products %}
+                        <div class="swiper-slide">
+                            <div class="card border-0 rounded-4 shadow-sm h-100 product-card overflow-hidden">
+                                <div class="position-relative">
+                                    {% if product.images.first %}
+                                    <img src="{{ product.images.first.image.url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
                                     {% else %}
-                                        <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
-                                            <div class="bg-light d-flex align-items-center justify-content-center product-image w-100">
-                                                <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
-                                            </div>
-                                        </a>
+                                    <img src="https://via.placeholder.com/300x400?text={{ product.name }}" class="card-img-top object-fit-cover" style="height: 280px;">
                                     {% endif %}
-                                {% endwith %}
-                            {% else %}
-                                <a href="{% url 'product_detail' product.id %}" aria-label="عرض {{ product.name }}" class="d-block">
-                                    <div class="bg-light d-flex align-items-center justify-content-center product-image w-100">
-                                        <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                    
+                                    {% if product.discount_price %}
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">-{{ product.base_price|sub:product.discount_price|div:product.base_price|mul:100|floatform:0 }}%</span>
+                                    {% endif %}
+                                    
+                                    <div class="product-actions position-absolute bottom-0 start-0 end-0 p-3 d-flex justify-content-center gap-2 opacity-0 transition-all">
+                                        <button class="btn btn-light rounded-circle shadow-sm" title="إضافة للمفضلة"><i class="far fa-heart"></i></button>
+                                        <a href="{% url 'product_detail' product.id %}" class="btn btn-light rounded-circle shadow-sm" title="مشاهدة"><i class="far fa-eye"></i></a>
                                     </div>
-                                </a>
-                            {% endif %}
-                            <div class="position-absolute top-0 start-0 m-2">
-                                <span class="category-badge">
-                                    {{ product.get_category_display }}
-                                </span>
+                                </div>
+                                <div class="card-body text-center p-4">
+                                    <h5 class="card-title fw-bold text-truncate">{{ product.name }}</h5>
+                                    <p class="text-muted small mb-2">{{ product.category.name|default:"عام" }}</p>
+                                    <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                                        {% if product.discount_price %}
+                                        <span class="text-danger fw-bold fs-5">{{ product.discount_price|floatform:0 }} د.ع</span>
+                                        <span class="text-muted text-decoration-line-through small">{{ product.base_price|floatform:0 }}</span>
+                                        {% else %}
+                                        <span class="text-primary fw-bold fs-5">{{ product.base_price|floatform:0 }} د.ع</span>
+                                        {% endif %}
+                                    </div>
+                                    <button class="btn btn-primary w-100 rounded-pill py-2 add-to-cart-btn">
+                                        <i class="fas fa-cart-plus me-2"></i> إضافة للسلة
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <h6 class="card-title">
-                                <a href="{% url 'product_detail' product.id %}" class="text-decoration-none" style="color: inherit;">
-                                    {{ product.name|truncatechars:30 }}
-                                </a>
-                            </h6>
-                            <p class="card-text text-muted small mb-2">
-                                <i class="bi bi-shop"></i> {{ product.store.name }}
-                            </p>
-                            <div class="mt-auto">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="price-tag">{{ product.base_price|iqd }}</span>
-                                    <small class="text-muted">
-                                        <i class="bi bi-star-fill text-warning"></i> 4.5
-                                    </small>
+                        {% empty %}
+                        <div class="text-center w-100 py-5">
+                            <p class="text-muted">لا توجد منتجات حالياً</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="swiper-pagination"></div>
+                </div>
+            </div>
+            
+            <!-- Tab 2: New Arrivals -->
+            <div class="tab-pane fade" id="pills-new" role="tabpanel">
+                <div class="swiper products-swiper pb-5">
+                    <div class="swiper-wrapper">
+                        {% for product in new_arrivals %}
+                        <div class="swiper-slide">
+                            <div class="card border-0 rounded-4 shadow-sm h-100 product-card overflow-hidden">
+                                <div class="position-relative">
+                                    {% if product.images.first %}
+                                    <img src="{{ product.images.first.image.url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
+                                    {% else %}
+                                    <img src="https://via.placeholder.com/300x400?text={{ product.name }}" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    {% endif %}
+                                    <span class="badge bg-success position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">جديد</span>
                                 </div>
-                                <div class="d-grid">
-                                    <a href="{% url 'product_detail' product.id %}" class="btn btn-primary btn-sm" onclick="event.stopPropagation()">
-                                        <i class="bi bi-eye"></i> عرض التفاصيل
+                                <div class="card-body text-center p-4">
+                                    <h5 class="card-title fw-bold text-truncate">{{ product.name }}</h5>
+                                    <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                                        <span class="text-primary fw-bold fs-5">{{ product.base_price|floatform:0 }} د.ع</span>
+                                    </div>
+                                    <a href="{% url 'product_detail' product.id %}" class="btn btn-outline-primary w-100 rounded-pill py-2">
+                                        التفاصيل
                                     </a>
                                 </div>
                             </div>
                         </div>
+                        {% endfor %}
+                    </div>
+                    <div class="swiper-pagination"></div>
+                </div>
+            </div>
+            
+            <!-- Tab 3: Special Offers -->
+            <div class="tab-pane fade" id="pills-sale" role="tabpanel">
+                <div class="swiper products-swiper pb-5">
+                    <div class="swiper-wrapper">
+                        {% for product in special_offers %}
+                        <div class="swiper-slide">
+                            <div class="card border-0 rounded-4 shadow-sm h-100 product-card overflow-hidden">
+                                <div class="position-relative">
+                                    {% if product.images.first %}
+                                    <img src="{{ product.images.first.image.url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
+                                    {% else %}
+                                    <img src="https://via.placeholder.com/300x400?text={{ product.name }}" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    {% endif %}
+                                    <span class="badge bg-danger position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">عرض خاص</span>
+                                </div>
+                                <div class="card-body text-center p-4">
+                                    <h5 class="card-title fw-bold text-truncate">{{ product.name }}</h5>
+                                    <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                                        <span class="text-danger fw-bold fs-5">{{ product.discount_price|floatform:0 }} د.ع</span>
+                                        <span class="text-muted text-decoration-line-through small">{{ product.base_price|floatform:0 }}</span>
+                                    </div>
+                                    <a href="{% url 'product_detail' product.id %}" class="btn btn-outline-danger w-100 rounded-pill py-2">
+                                        اطلب الآن
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="swiper-pagination"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 5. Testimonials -->
+<section class="py-5 bg-white">
+    <div class="container py-5">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h5 class="text-warning fw-bold text-uppercase ls-2">آراء العملاء</h5>
+            <h2 class="fw-bold display-5">ماذا يقول زبائننا؟</h2>
+        </div>
+        
+        <div class="row g-4">
+            <!-- Review 1 -->
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
+                <div class="card border-0 shadow-sm h-100 p-4 rounded-4 bg-light position-relative">
+                    <div class="position-absolute top-0 end-0 translate-middle-y me-4 text-warning fs-1 opacity-50">
+                        <i class="fas fa-quote-left"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3 text-warning">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="card-text fs-5 fst-italic mb-4">"تجربة ممتازة والتوصيل سريع، وصلني الطلب لبغداد خلال يومين فقط. الملابس نفس الصورة بالضبط."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 50px; height: 50px;">أ</div>
+                            <div class="ms-3">
+                                <h6 class="fw-bold mb-0">أحمد الكرخي</h6>
+                                <small class="text-muted">بغداد</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                {% endfor %}
+            </div>
+            <!-- Review 2 -->
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="card border-0 shadow-sm h-100 p-4 rounded-4 bg-light position-relative">
+                    <div class="position-absolute top-0 end-0 translate-middle-y me-4 text-warning fs-1 opacity-50">
+                        <i class="fas fa-quote-left"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3 text-warning">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+                        <p class="card-text fs-5 fst-italic mb-4">"جودة عالية وأسعار معقولة جداً مقارنة بالسوق. تعامل راقي من خدمة العملاء."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 50px; height: 50px;">ف</div>
+                            <div class="ms-3">
+                                <h6 class="fw-bold mb-0">فاطمة البصراوية</h6>
+                                <small class="text-muted">البصرة</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Review 3 -->
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="card border-0 shadow-sm h-100 p-4 rounded-4 bg-light position-relative">
+                    <div class="position-absolute top-0 end-0 translate-middle-y me-4 text-warning fs-1 opacity-50">
+                        <i class="fas fa-quote-left"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3 text-warning">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <p class="card-text fs-5 fst-italic mb-4">"خدمة محترمة وتعامل راقي. الملابس خاماتها ممتازة ومريحة. شكراً لكم."</p>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 50px; height: 50px;">ع</div>
+                            <div class="ms-3">
+                                <h6 class="fw-bold mb-0">عمر الموصلي</h6>
+                                <small class="text-muted">الموصل</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </section>
-{% endif %}
 
-<!-- Statistics Section -->
-<section class="py-5 bg-primary text-white">
-    <div class="container-fluid px-0">
-        <div class="container container-desktop-only px-3">
-            <div class="row text-center">
-                <div class="col-md-3 mb-4">
-                    <div class="display-4 fw-bold">{{ stores|length }}</div>
-                    <p class="mb-0">متجر نشط</p>
+<!-- 6. Stats Section -->
+<section class="py-5 text-white position-relative overflow-hidden" style="background: var(--dark);">
+    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
+    <div class="container position-relative z-1 py-4">
+        <div class="row g-4 text-center">
+            <div class="col-6 col-md-3" data-aos="fade-up">
+                <div class="stat-item">
+                    <div class="fs-1 fw-bold text-primary mb-2"><span class="count-up" data-target="15000">0</span>+</div>
+                    <p class="mb-0 text-light opacity-75">زبون سعيد</p>
                 </div>
-                <div class="col-md-3 mb-4">
-                    <div class="display-4 fw-bold">{{ products|length }}</div>
-                    <p class="mb-0">منتج مميز</p>
+            </div>
+            <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="100">
+                <div class="stat-item">
+                    <div class="fs-1 fw-bold text-success mb-2"><span class="count-up" data-target="3000">0</span>+</div>
+                    <p class="mb-0 text-light opacity-75">منتج متنوع</p>
                 </div>
-                <div class="col-md-3 mb-4">
-                    <div class="display-4 fw-bold">50+</div>
-                    <p class="mb-0">مدينة مغطاة</p>
+            </div>
+            <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="200">
+                <div class="stat-item">
+                    <div class="fs-1 fw-bold text-warning mb-2"><span class="count-up" data-target="18">0</span></div>
+                    <p class="mb-0 text-light opacity-75">محافظة نوصل لها</p>
                 </div>
-                <div class="col-md-3 mb-4">
-                    <div class="display-4 fw-bold">24/7</div>
-                    <p class="mb-0">دعم مستمر</p>
+            </div>
+            <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="300">
+                <div class="stat-item">
+                    <div class="fs-1 fw-bold text-info mb-2"><span class="count-up" data-target="99">0</span>%</div>
+                    <p class="mb-0 text-light opacity-75">رضا الزبائن</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- CTA Section -->
-<section class="py-5 bg-gradient text-center" style="background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);">
-    <div class="container-fluid px-0">
-        <div class="container container-desktop-only px-3">
-            <h2 class="mb-4 text-white">هل أنت صاحب متجر؟</h2>
-            <p class="lead text-white mb-4">انضم إلينا الآن وابدأ بيع منتجاتك عبر منصتنا</p>
-            <a href="{% url 'register' %}" class="btn btn-light btn-lg me-3">
-                <i class="bi bi-shop"></i> سجل كصاحب متجر
-            </a>
+<!-- 7. Newsletter -->
+<section class="py-5 bg-primary text-white position-relative overflow-hidden">
+    <div class="position-absolute top-0 end-0 w-50 h-100 bg-white opacity-10 transform-skew-x-12"></div>
+    <div class="container position-relative z-1 py-4">
+        <div class="row align-items-center">
+            <div class="col-lg-6 mb-4 mb-lg-0" data-aos="fade-right">
+                <h2 class="fw-bold mb-2">اشترك واحصل على خصم 10%</h2>
+                <p class="lead mb-0 opacity-90">احصل على العروض الحصرية وكوبونات الخصم قبل الجميع</p>
+            </div>
+            <div class="col-lg-6" data-aos="fade-left">
+                <form class="position-relative">
+                    <div class="input-group input-group-lg bg-white rounded-pill overflow-hidden p-1 shadow-lg">
+                        <input type="email" class="form-control border-0 ps-4" placeholder="أدخل بريدك الإلكتروني..." aria-label="Email">
+                        <button class="btn btn-dark rounded-pill px-4 fw-bold" type="button">اشتراك</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </section>
-{% endblock %}
 
-{% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/wow/1.1.2/wow.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-<script>
-    new WOW().init();
-    
-    // Counter animation
-    function animateCounter(element, target) {
-        let current = 0;
-        const increment = target / 100;
-        const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-                element.textContent = target;
-                clearInterval(timer);
-            } else {
-                element.textContent = Math.floor(current);
-            }
-        }, 20);
-    }
-    
-    // Trigger counters when in viewport
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const target = parseInt(entry.target.textContent);
-                animateCounter(entry.target, target);
-                observer.unobserve(entry.target);
-            }
-        });
-    });
-    
-    document.querySelectorAll('.display-4').forEach(el => {
-        observer.observe(el);
-    });
-</script>
 {% endblock %}
