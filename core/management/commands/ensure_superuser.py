@@ -14,7 +14,14 @@ class Command(BaseCommand):
 
         if not User.objects.filter(username=username).exists():
             try:
-                User.objects.create_superuser(username=username, email=email, password=password)
+                # Add required fields for custom User model
+                extra_fields = {}
+                if hasattr(User, 'phone'):
+                    extra_fields['phone'] = '07900000000'  # Dummy phone for admin
+                if hasattr(User, 'city'):
+                    extra_fields['city'] = 'Baghdad'      # Dummy city for admin
+                
+                User.objects.create_superuser(username=username, email=email, password=password, **extra_fields)
                 self.stdout.write(self.style.SUCCESS(f'Superuser "{username}" created!'))
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Error creating superuser: {e}'))
