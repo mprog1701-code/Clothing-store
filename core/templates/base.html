@@ -65,7 +65,7 @@
     </div>
 
     <!-- Main Container -->
-    <div class="main-container">
+    <div class="main-container d-flex flex-column min-vh-100">
         <!-- Navigation -->
         <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
             <div class="container">
@@ -240,39 +240,82 @@
         </nav>
 
         <!-- Footer -->
-        <footer class="footer mt-auto py-5 footer-advanced">
+        <footer class="footer mt-auto py-5 bg-dark text-white footer-advanced">
             <div class="container">
                 <div class="row g-4">
+                    <!-- Brand & Newsletter -->
                     <div class="col-12 col-md-4">
-                        <div class="fw-bold mb-2"><i class="fa fa-store"></i> {{ site_settings.site_name }}</div>
-                        <div class="text-muted">تسوّق بثقة وأمان من أفضل المتاجر.</div>
+                        <div class="fw-bold fs-4 mb-3 d-flex align-items-center">
+                             <i class="bi bi-shop me-2"></i> {{ site_settings.site_name|default:"متجر الملابس" }}
+                        </div>
+                        <p class="text-white-50 mb-4">
+                            وجهتك الأولى للموضة والأناقة. تسوق بثقة من تشكيلة واسعة من الملابس والإكسسوارات العصرية.
+                        </p>
+                        <div class="newsletter-form">
+                            <h6 class="text-uppercase fw-bold mb-3">اشترك في النشرة البريدية</h6>
+                            <div class="input-group mb-3">
+                                <input type="email" class="form-control bg-dark border-secondary text-white" placeholder="البريد الإلكتروني" aria-label="البريد الإلكتروني">
+                                <button class="btn btn-primary" type="button">اشتراك</button>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Quick Links -->
+                    <div class="col-6 col-md-2 offset-md-1">
+                        <h6 class="text-uppercase fw-bold mb-3 text-primary">تسوق</h6>
+                        <ul class="list-unstyled footer-links">
+                            <li class="mb-2"><a href="/stores/?category=women" class="text-white-50 text-decoration-none hover-white">النساء</a></li>
+                            <li class="mb-2"><a href="/stores/?category=men" class="text-white-50 text-decoration-none hover-white">الرجال</a></li>
+                            <li class="mb-2"><a href="/stores/?category=kids" class="text-white-50 text-decoration-none hover-white">الأطفال</a></li>
+                            <li class="mb-2"><a href="/products/most-sold/" class="text-white-50 text-decoration-none hover-white">الأكثر مبيعاً</a></li>
+                            <li class="mb-2"><a href="/featured-products/" class="text-white-50 text-decoration-none hover-white">العروض</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Customer Service -->
                     <div class="col-6 col-md-2">
-                        <div class="fw-bold mb-2">روابط</div>
+                        <h6 class="text-uppercase fw-bold mb-3 text-primary">خدمة العملاء</h6>
                         <ul class="list-unstyled footer-links">
-                            <li><a href="/stores/">المتاجر</a></li>
-                            <li><a href="/products/most-sold/">الأكثر مبيعاً</a></li>
-                            <li><a href="/featured-products/">العروض الخاصة</a></li>
+                            <li class="mb-2"><a href="/contact/" class="text-white-50 text-decoration-none hover-white">اتصل بنا</a></li>
+                            <li class="mb-2"><a href="/privacy/" class="text-white-50 text-decoration-none hover-white">سياسة الخصوصية</a></li>
+                            <li class="mb-2"><a href="/terms/" class="text-white-50 text-decoration-none hover-white">الشروط والأحكام</a></li>
+                            <li class="mb-2"><a href="/faq/" class="text-white-50 text-decoration-none hover-white">الأسئلة الشائعة</a></li>
+                            <li class="mb-2"><a href="/track-order/" class="text-white-50 text-decoration-none hover-white">تتبع الطلب</a></li>
                         </ul>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="fw-bold mb-2">تواصل</div>
-                        <ul class="list-unstyled footer-links">
-                            <li><a href="/contact/">اتصل بنا</a></li>
-                            <li><a href="/privacy/">الخصوصية</a></li>
-                            <li><a href="/terms/">الشروط</a></li>
-                        </ul>
-                    </div>
+
+                    <!-- Contact & Social -->
                     <div class="col-12 col-md-3">
-                        <div class="fw-bold mb-2">تابعنا</div>
-                        <div class="d-flex gap-2">
-                            <a class="social" href="#"><i class="fab fa-facebook"></i></a>
-                            <a class="social" href="#"><i class="fab fa-instagram"></i></a>
-                            <a class="social" href="#"><i class="fab fa-twitter"></i></a>
+                        <h6 class="text-uppercase fw-bold mb-3 text-primary">تواصل معنا</h6>
+                        <ul class="list-unstyled text-white-50 mb-4">
+                            <li class="mb-2"><i class="bi bi-geo-alt me-2"></i> الرياض، المملكة العربية السعودية</li>
+                            <li class="mb-2"><i class="bi bi-envelope me-2"></i> support@clothingstore.com</li>
+                            <li class="mb-2"><i class="bi bi-telephone me-2"></i> +966 50 000 0000</li>
+                        </ul>
+                        <div class="d-flex gap-3 social-icons">
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-linkedin-in"></i></a>
                         </div>
                     </div>
                 </div>
-                <div class="text-center text-muted mt-4">&copy; {% now "Y" %} {{ site_settings.site_name }}. جميع الحقوق محفوظة.</div>
+
+                <hr class="my-4 border-secondary">
+
+                <div class="row align-items-center">
+                    <div class="col-md-6 text-center text-md-end mb-3 mb-md-0">
+                        <p class="mb-0 text-white-50">&copy; {% now "Y" %} {{ site_settings.site_name|default:"متجر الملابس" }}. جميع الحقوق محفوظة.</p>
+                    </div>
+                    <div class="col-md-6 text-center text-md-start">
+                        <div class="payment-methods">
+                            <i class="fab fa-cc-visa fa-2x text-white-50 mx-1"></i>
+                            <i class="fab fa-cc-mastercard fa-2x text-white-50 mx-1"></i>
+                            <i class="fab fa-cc-paypal fa-2x text-white-50 mx-1"></i>
+                            <i class="fab fa-apple-pay fa-2x text-white-50 mx-1"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </footer>
     </div>

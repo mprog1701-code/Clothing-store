@@ -38,6 +38,8 @@ else:
 # 2. APPLICATION DEFINITION
 # -----------------------------------------------------------------------------
 INSTALLED_APPS = [
+    'jazzmin',
+    'mathfilters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -185,3 +187,65 @@ print('LOADED SETTINGS: settings_railway')
 print(f'ROOT_URLCONF={ROOT_URLCONF}')
 print(f'WSGI_APPLICATION={WSGI_APPLICATION}')
 print(f'BASE_DIR={BASE_DIR}')
+
+# -----------------------------------------------------------------------------
+# 10. JAZZMIN SETTINGS
+# -----------------------------------------------------------------------------
+JAZZMIN_SETTINGS = {
+    "site_title": "Clothing Store Admin",
+    "site_header": "Clothing Store",
+    "site_brand": "Fashion Admin",
+    "welcome_sign": "Welcome to the Fashion Store Admin",
+    "copyright": "Clothing Store Ltd",
+    "search_model": ["core.User", "core.Product"],
+    "user_avatar": None,
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "View Site", "url": "/", "new_window": True},
+    ],
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "core.Product": "fas fa-tshirt",
+        "core.Store": "fas fa-store",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": False,
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_cdn": True,
+    "show_ui_builder": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
+    "brand_colour": "navbar-dark",
+    "accent": "accent-primary",
+    "navbar": "navbar-dark",
+    "no_navbar_border": False,
+    "navbar_fixed": False,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": False,
+    "sidebar": "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "theme": "default",
+    "dark_mode_theme": None,
+    "button_classes": {
+        "primary": "btn-primary",
+        "secondary": "btn-secondary",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success"
+    }
+}
