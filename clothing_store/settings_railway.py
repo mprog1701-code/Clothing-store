@@ -1,10 +1,14 @@
 
 import os
 import dj_database_url
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+print(f"DEBUG: Loading settings_railway.py")
+print(f"DEBUG: Env vars keys: {[k for k in os.environ.keys() if 'DATA' in k or 'POST' in k]}")
 
 # -----------------------------------------------------------------------------
 # 1. SECURITY SETTINGS
@@ -98,14 +102,28 @@ TEMPLATES = [
 # -----------------------------------------------------------------------------
 # 4. DATABASE
 # -----------------------------------------------------------------------------
+# Diagnostic: Check DATABASE_URL
 DATABASE_URL = os.environ.get('DATABASE_URL')
-DATABASES = {
-    'default': dj_database_url.config(
-        default=DATABASE_URL,
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
+
+if DATABASE_URL:
+    print(f"DEBUG: DATABASE_URL found (length={len(DATABASE_URL)})")
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    print("WARNING: DATABASE_URL not found in environment variables!")
+    print("WARNING: Using local sqlite3 fallback to prevent crash.")
+    # Fallback to sqlite3 if Postgres is not available
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # -----------------------------------------------------------------------------
 # 5. PASSWORD VALIDATION
@@ -199,10 +217,10 @@ JAZZMIN_SETTINGS = {
     "copyright": "Clothing Store Ltd",
     "search_model": ["core.User", "core.Product"],
     "user_avatar": None,
-    "topmenu_links": [
-        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "View Site", "url": "/", "new_window": True},
-    ],
+    # "topmenu_links": [
+    #     {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+    #     {"name": "View Site", "url": "/"},
+    # ],
     "show_sidebar": True,
     "navigation_expanded": True,
     "hide_apps": [],
@@ -212,7 +230,8 @@ JAZZMIN_SETTINGS = {
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
         "core.Product": "fas fa-tshirt",
-        "core.Store": "fas fa-store",
+        "core.Category": "fas fa-tags",
+        "core.Order": "fas fa-shopping-cart",
     },
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
