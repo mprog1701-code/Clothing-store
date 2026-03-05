@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<!-- 1. Hero Section -->
+<!-- قسم البانر الرئيسي -->
 <section class="hero-section position-relative d-flex align-items-center justify-content-center text-white" style="min-height: 85vh; background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); overflow: hidden;" id="hero">
     <div id="particles-js" class="position-absolute top-0 start-0 w-100 h-100"></div>
     <div class="container position-relative z-2 text-center">
@@ -386,7 +386,7 @@
 </section>
 
 <!-- 6. Stats Section -->
-<section class="py-5 text-white position-relative overflow-hidden" style="background: var(--dark);">
+<section class="py-5 text-white position-relative overflow-hidden stats-section" style="background: var(--dark);">
     <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
     <div class="container position-relative z-1 py-4">
         <div class="row g-4 text-center">
@@ -412,6 +412,61 @@
                 <div class="stat-item">
                     <div class="fs-1 fw-bold text-info mb-2"><span class="count-up" data-target="99">0</span>%</div>
                     <p class="mb-0 text-light opacity-75">رضا الزبائن</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 8. App Download -->
+<section class="py-5 bg-light position-relative overflow-hidden">
+    <div class="container py-5">
+        <div class="row align-items-center">
+            <div class="col-lg-6 order-lg-2 mb-5 mb-lg-0 text-center" data-aos="fade-left">
+                <!-- Phone Mockup with App Screen -->
+                <div class="position-relative d-inline-block">
+                    <div class="phone-mockup" style="border: 8px solid #333; border-radius: 30px; overflow: hidden; max-width: 300px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);">
+                         <img src="https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="تطبيق الهاتف" class="img-fluid">
+                    </div>
+                    <!-- Floating Elements -->
+                    <div class="position-absolute top-50 start-0 translate-middle-x bg-white p-3 rounded-4 shadow animate-float">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="bg-success text-white rounded-circle p-2"><i class="fas fa-check"></i></div>
+                            <div>
+                                <small class="d-block text-muted" style="font-size: 0.7rem;">تم الطلب</small>
+                                <span class="fw-bold text-success">بنجاح!</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 order-lg-1" data-aos="fade-right">
+                <h5 class="text-primary fw-bold text-uppercase ls-2">حمل التطبيق</h5>
+                <h2 class="fw-bold display-4 mb-4">تجربة تسوق أسهل<br>على هاتفك</h2>
+                <p class="lead text-muted mb-5">استمتع بتجربة تسوق فريدة مع تطبيقنا الجديد. تصفح آلاف المنتجات، تابع طلباتك، واحصل على إشعارات بالعروض الحصرية.</p>
+                <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                    <a href="#" class="btn btn-dark btn-lg px-4 py-2 rounded-pill d-flex align-items-center gap-3 shadow hover-top transition-all">
+                        <i class="fab fa-apple fs-1"></i>
+                        <div class="text-start line-height-1">
+                            <small class="d-block text-white-50" style="font-size: 0.7rem;">Download on the</small>
+                            <span class="fw-bold">App Store</span>
+                        </div>
+                    </a>
+                    <a href="#" class="btn btn-dark btn-lg px-4 py-2 rounded-pill d-flex align-items-center gap-3 shadow hover-top transition-all">
+                        <i class="fab fa-google-play fs-1"></i>
+                        <div class="text-start line-height-1">
+                            <small class="d-block text-white-50" style="font-size: 0.7rem;">GET IT ON</small>
+                            <span class="fw-bold">Google Play</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="mt-4 pt-4 border-top">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white p-2 rounded shadow-sm">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://example.com/app" alt="QR Code" width="80" height="80">
+                        </div>
+                        <p class="mb-0 text-muted small">امسح الكود<br>لتحميل التطبيق فوراً</p>
+                    </div>
                 </div>
             </div>
         </div>

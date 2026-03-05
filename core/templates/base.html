@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 {% load static %}
-{% load math_filters %}
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -244,79 +243,80 @@
         </nav>
 
         <!-- Footer -->
-        <footer class="footer mt-auto py-5 bg-dark text-white footer-advanced">
+        <footer class="footer mt-auto py-5 text-white footer-advanced" style="background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border-top: 4px solid var(--primary-color);">
             <div class="container">
                 <div class="row g-4">
                     <!-- Brand & Newsletter -->
                     <div class="col-12 col-md-4">
                         <div class="fw-bold fs-4 mb-3 d-flex align-items-center">
-                             <i class="bi bi-shop me-2"></i> {{ site_settings.site_name|default:"متجر الملابس" }}
+                             <i class="bi bi-shop me-2 text-primary"></i> {{ site_settings.site_name|default:"أزياء العراق" }}
                         </div>
-                        <p class="text-white-50 mb-4">
-                            وجهتك الأولى للموضة والأناقة. تسوق بثقة من تشكيلة واسعة من الملابس والإكسسوارات العصرية.
+                        <p class="text-white-50 mb-4" style="line-height: 1.8;">
+                            وجهتك الأولى للموضة والأناقة في العراق. تسوق بثقة من تشكيلة واسعة من الملابس والإكسسوارات العصرية بأفضل الأسعار.
                         </p>
                         <div class="newsletter-form">
-                            <h6 class="text-uppercase fw-bold mb-3">اشترك في النشرة البريدية</h6>
+                            <h6 class="text-uppercase fw-bold mb-3 text-primary" style="font-size: 0.9rem; letter-spacing: 1px;">اشترك في العروض</h6>
                             <div class="input-group mb-3">
                                 <input type="email" class="form-control bg-dark border-secondary text-white" placeholder="البريد الإلكتروني" aria-label="البريد الإلكتروني">
-                                <button class="btn btn-primary" type="button">اشتراك</button>
+                                <button class="btn btn-primary px-4" type="button">اشتراك</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Quick Links -->
                     <div class="col-6 col-md-2 offset-md-1">
-                        <h6 class="text-uppercase fw-bold mb-3 text-primary">تسوق</h6>
+                        <h6 class="text-uppercase fw-bold mb-3 text-primary" style="font-size: 0.9rem; letter-spacing: 1px;">تسوق</h6>
                         <ul class="list-unstyled footer-links">
-                            <li class="mb-2"><a href="/stores/?category=women" class="text-white-50 text-decoration-none hover-white">النساء</a></li>
-                            <li class="mb-2"><a href="/stores/?category=men" class="text-white-50 text-decoration-none hover-white">الرجال</a></li>
-                            <li class="mb-2"><a href="/stores/?category=kids" class="text-white-50 text-decoration-none hover-white">الأطفال</a></li>
-                            <li class="mb-2"><a href="/products/most-sold/" class="text-white-50 text-decoration-none hover-white">الأكثر مبيعاً</a></li>
-                            <li class="mb-2"><a href="/featured-products/" class="text-white-50 text-decoration-none hover-white">العروض</a></li>
+                            <li class="mb-2"><a href="/stores/?category=women" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>النساء</a></li>
+                            <li class="mb-2"><a href="/stores/?category=men" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>الرجال</a></li>
+                            <li class="mb-2"><a href="/stores/?category=kids" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>الأطفال</a></li>
+                            <li class="mb-2"><a href="/products/most-sold/" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>الأكثر مبيعاً</a></li>
+                            <li class="mb-2"><a href="/featured-products/" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>العروض الحصرية</a></li>
                         </ul>
                     </div>
 
                     <!-- Customer Service -->
                     <div class="col-6 col-md-2">
-                        <h6 class="text-uppercase fw-bold mb-3 text-primary">خدمة العملاء</h6>
+                        <h6 class="text-uppercase fw-bold mb-3 text-primary" style="font-size: 0.9rem; letter-spacing: 1px;">خدمة العملاء</h6>
                         <ul class="list-unstyled footer-links">
-                            <li class="mb-2"><a href="/contact/" class="text-white-50 text-decoration-none hover-white">اتصل بنا</a></li>
-                            <li class="mb-2"><a href="/privacy/" class="text-white-50 text-decoration-none hover-white">سياسة الخصوصية</a></li>
-                            <li class="mb-2"><a href="/terms/" class="text-white-50 text-decoration-none hover-white">الشروط والأحكام</a></li>
-                            <li class="mb-2"><a href="/faq/" class="text-white-50 text-decoration-none hover-white">الأسئلة الشائعة</a></li>
-                            <li class="mb-2"><a href="/track-order/" class="text-white-50 text-decoration-none hover-white">تتبع الطلب</a></li>
+                            <li class="mb-2"><a href="/contact/" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>اتصل بنا</a></li>
+                            <li class="mb-2"><a href="/privacy/" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>سياسة الخصوصية</a></li>
+                            <li class="mb-2"><a href="/terms/" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>الشروط والأحكام</a></li>
+                            <li class="mb-2"><a href="/faq/" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>الأسئلة الشائعة</a></li>
+                            <li class="mb-2"><a href="/track-order/" class="text-white-50 text-decoration-none hover-white transition-all"><i class="bi bi-chevron-left ms-1 small"></i>تتبع الطلب</a></li>
                         </ul>
                     </div>
 
                     <!-- Contact & Social -->
                     <div class="col-12 col-md-3">
-                        <h6 class="text-uppercase fw-bold mb-3 text-primary">تواصل معنا</h6>
+                        <h6 class="text-uppercase fw-bold mb-3 text-primary" style="font-size: 0.9rem; letter-spacing: 1px;">تواصل معنا</h6>
                         <ul class="list-unstyled text-white-50 mb-4">
-                            <li class="mb-2"><i class="bi bi-geo-alt me-2"></i> الرياض، المملكة العربية السعودية</li>
-                            <li class="mb-2"><i class="bi bi-envelope me-2"></i> support@clothingstore.com</li>
-                            <li class="mb-2"><i class="bi bi-telephone me-2"></i> +966 50 000 0000</li>
+                            <li class="mb-3 d-flex align-items-start"><i class="bi bi-geo-alt me-2 text-primary mt-1"></i> <span>بغداد، الكرادة، شارع 62<br>العراق</span></li>
+                            <li class="mb-3 d-flex align-items-center"><i class="bi bi-envelope me-2 text-primary"></i> <span>info@iraq-fashion.com</span></li>
+                            <li class="mb-3 d-flex align-items-center"><i class="bi bi-telephone me-2 text-primary"></i> <span dir="ltr">+964 770 123 4567</span></li>
                         </ul>
-                        <div class="d-flex gap-3 social-icons">
-                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-instagram"></i></a>
-                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle"><i class="fab fa-linkedin-in"></i></a>
+                        <h6 class="text-uppercase fw-bold mb-3 text-white small">تابعنا على</h6>
+                        <div class="d-flex gap-2 social-icons">
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="fab fa-instagram"></i></a>
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="fab fa-tiktok"></i></a>
+                            <a href="#" class="btn btn-outline-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;"><i class="fab fa-snapchat-ghost"></i></a>
                         </div>
                     </div>
                 </div>
 
-                <hr class="my-4 border-secondary">
+                <hr class="my-4 border-secondary opacity-50">
 
                 <div class="row align-items-center">
                     <div class="col-md-6 text-center text-md-end mb-3 mb-md-0">
-                        <p class="mb-0 text-white-50">&copy; {% now "Y" %} {{ site_settings.site_name|default:"متجر الملابس" }}. جميع الحقوق محفوظة.</p>
+                        <p class="mb-0 text-white-50 small">&copy; {% now "Y" %} {{ site_settings.site_name|default:"أزياء العراق" }}. جميع الحقوق محفوظة.</p>
                     </div>
                     <div class="col-md-6 text-center text-md-start">
-                        <div class="payment-methods">
-                            <i class="fab fa-cc-visa fa-2x text-white-50 mx-1"></i>
-                            <i class="fab fa-cc-mastercard fa-2x text-white-50 mx-1"></i>
-                            <i class="fab fa-cc-paypal fa-2x text-white-50 mx-1"></i>
-                            <i class="fab fa-apple-pay fa-2x text-white-50 mx-1"></i>
+                        <div class="payment-methods opacity-75 grayscale-hover transition-all">
+                            <i class="fab fa-cc-visa fa-2x text-white mx-1"></i>
+                            <i class="fab fa-cc-mastercard fa-2x text-white mx-1"></i>
+                            <i class="fas fa-wallet fa-2x text-white mx-1" title="Zain Cash"></i>
+                            <i class="fas fa-money-bill-wave fa-2x text-white mx-1" title="Cash on Delivery"></i>
                         </div>
                     </div>
                 </div>
@@ -332,6 +332,29 @@
     <script src="https://unpkg.com/typed.js@2.1.0/dist/typed.umd.js"></script>
     <script src="{% static 'js/landing.js' %}"></script>
     <script src="{% static 'js/main.js' %}?v=1" defer></script>
+    <script>
+        // Failsafe: Ensure loading spinner is hidden even if main.js fails or is slow
+        (function(){
+            function forceHideLoader(){
+                var loader = document.getElementById('loadingSpinner');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(function(){ loader.style.display = 'none'; }, 500);
+                }
+            }
+            
+            // Hide on window load
+            window.addEventListener('load', forceHideLoader);
+            
+            // Hide on DOMContentLoaded (backup)
+            document.addEventListener('DOMContentLoaded', function(){
+                setTimeout(forceHideLoader, 2000); // 2s timeout after DOM ready
+            });
+            
+            // Ultimate fallback (5 seconds absolute max)
+            setTimeout(forceHideLoader, 5000);
+        })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

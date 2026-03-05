@@ -98,6 +98,10 @@ def hybrid_home(request):
         pass
     return response
 
+def track_order_page(request):
+    """Render the order tracking page"""
+    return render(request, 'track_order.html')
+
 
 @ensure_csrf_cookie
 def home(request):

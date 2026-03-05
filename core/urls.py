@@ -62,6 +62,7 @@ urlpatterns = [
     path('privacy/', views.privacy_page, name='privacy'),
     path('terms/', views.terms_page, name='terms'),
     path('contact/', views.contact_page, name='contact'),
+    path('track-order/', views.track_order_page, name='track_order'),
     
     # Store owner URLs removed - simplified system
     

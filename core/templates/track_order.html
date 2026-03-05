@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}تتبع الطلب | متجر الملابس{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="icon-box bg-primary-subtle text-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 64px; height: 64px; font-size: 24px;">
+                            <i class="fas fa-search-location"></i>
+                        </div>
+                        <h3 class="fw-bold">تتبع طلبك</h3>
+                        <p class="text-muted">أدخل رقم الطلب لمعرفة حالته الحالية</p>
+                    </div>
+
+                    <form method="get" action="{% url 'order_list' %}" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="orderId" class="form-label">رقم الطلب</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-hashtag text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0 ps-0" id="orderId" name="q" placeholder="مثال: 12345" required>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold mb-3">
+                            تتبع الآن
+                        </button>
+                    </form>
+
+                    {% if user.is_authenticated %}
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <p class="mb-2 text-muted">هل تريد استعراض كل طلباتك؟</p>
+                        <a href="{% url 'order_list' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                            طلباتي السابقة
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <p class="mb-2 text-muted">هل لديك حساب؟</p>
+                        <a href="{% url 'login' %}?next={% url 'order_list' %}" class="text-decoration-none fw-bold">تسجيل الدخول</a>
+                        لـ عرض سجل طلباتك
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
