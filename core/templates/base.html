@@ -51,9 +51,61 @@
         time, mark, audio, video, input, textarea, select, button, .btn {
             font-family: 'Tajawal', sans-serif !important;
         }
-        /* Fix icons breaking due to font override */
-        i, .bi, .fa, .fas, .far, .fab, .material-icons, [class*=" icon-"], [class^="icon-"] {
+        
+        /* CORRECT ICON FONT FAMILIES */
+        .bi, [class*=" bi-"], [class^="bi-"] {
             font-family: 'bootstrap-icons' !important;
+        }
+        
+        .fa, .fas, .fa-solid {
+            font-family: "Font Awesome 6 Free" !important;
+            font-weight: 900;
+        }
+        
+        .far, .fa-regular {
+            font-family: "Font Awesome 6 Free" !important;
+            font-weight: 400;
+        }
+        
+        .fab, .fa-brands {
+            font-family: "Font Awesome 6 Brands" !important;
+            font-weight: 400;
+        }
+        
+        .material-icons {
+            font-family: 'Material Icons' !important;
+        }
+
+        /* Top Nav Styling Enhancements */
+        .navbar {
+            background: linear-gradient(to right, #1a1a1a, #2d2d2d) !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .nav-link {
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+            transform: translateY(-2px);
+        }
+        
+        .navbar-brand i {
+            color: var(--primary-color);
+        }
+        
+        /* Hide Bottom Nav on Desktop/Tablet, maybe show on very small screens if requested, 
+           but user asked to move it to top like global pages. So we hide it globally for now 
+           or ensure top nav handles everything. */
+        .global-bottom-nav {
+            display: none !important;
+        }
+        
+        /* Ensure main content doesn't have bottom padding for the missing nav */
+        body {
+            padding-bottom: 0 !important;
         }
     </style>
     
@@ -69,100 +121,89 @@
 
     <!-- Main Container -->
     <div class="main-container d-flex flex-column min-vh-100">
-        <!-- Navigation -->
-        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-            <div class="container">
-                <a class="navbar-brand" href="{% url 'home' %}">
-                    <i class="bi bi-shop"></i> متجر الملابس
-                </a>
-                
-                <button class="navbar-toggler" type="button" id="navbarTogglerBtn" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"
-                        style="padding: 12px; border-radius: 10px; font-size: 1.2rem;">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav me-auto"></ul>
-                    
-                    <ul class="navbar-nav">
-                        <li class="nav-item dropdown position-static">
-                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fa fa-grid-2"></i> الأقسام
-                            </a>
-                            <div class="dropdown-menu w-100 mega-menu p-4">
-                                <div class="row g-3">
-                                    <div class="col-6 col-md-3">
-                                        <a class="mega-item" href="/stores/?category=women"><i class="fa fa-female"></i> نسائي</a>
-                                        <a class="mega-item" href="/stores/?category=men"><i class="fa fa-male"></i> رجالي</a>
-                                        <a class="mega-item" href="/stores/?category=kids"><i class="fa fa-child"></i> أطفال</a>
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <a class="mega-item" href="/stores/?category=cosmetics"><i class="fa fa-pump-soap"></i> كوزمتك</a>
-                                        <a class="mega-item" href="/stores/?category=perfumes"><i class="fa fa-spray-can-sparkles"></i> عطور</a>
-                                        <a class="mega-item" href="/stores/?category=watches"><i class="fa fa-clock"></i> ساعات</a>
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <a class="mega-item" href="/stores/?category=shoes"><i class="fa fa-shoe-prints"></i> أحذية</a>
-                                        <a class="mega-item" href="/stores/?category=clothing"><i class="fa fa-shirt"></i> ملابس عامة</a>
-                                        <a class="mega-item" href="/products/"><i class="fa fa-store"></i> كل المنتجات</a>
-                                    </div>
-                                    <div class="col-6 col-md-3">
-                                        <div class="mega-banner">
-                                            <div class="mb-2 fw-bold">عروض اليوم</div>
-                                            <a href="/featured-products/" class="btn btn-gradient btn-sm">تسوّق الآن</a>
-                                        </div>
-                                    </div>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="z-index: 1030;">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'home' %}">
+                <i class="bi bi-shop fs-4"></i>
+                <span class="fw-bold">متجر الملابس</span>
+            </a>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center gap-2">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active fw-bold text-primary{% endif %}" href="{% url 'home' %}">
+                            <i class="bi bi-house-door d-lg-none me-2"></i>الرئيسية
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/stores/' in request.path %}active fw-bold text-primary{% endif %}" href="{% url 'store_list' %}">
+                            <i class="bi bi-shop d-lg-none me-2"></i>المتاجر
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-grid d-lg-none me-2"></i>الأقسام
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
+                            <li><a class="dropdown-item" href="/stores/?category=women"><i class="fas fa-female me-2 text-primary"></i> نسائي</a></li>
+                            <li><a class="dropdown-item" href="/stores/?category=men"><i class="fas fa-male me-2 text-primary"></i> رجالي</a></li>
+                            <li><a class="dropdown-item" href="/stores/?category=kids"><i class="fas fa-child me-2 text-primary"></i> أطفال</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/products/"><i class="fas fa-th me-2 text-primary"></i> كل المنتجات</a></li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav align-items-lg-center gap-3">
+                    <!-- Cart -->
+                    <li class="nav-item position-relative">
+                        <a class="nav-link" href="{% url 'cart_view' %}">
+                            <i class="bi bi-cart3 fs-5"></i>
+                            <span class="d-lg-none ms-2">السلة</span>
+                            {% with count=request.session.cart|length %}
+                            {% if count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.7rem; top: 5px !important;">
+                                {{ count }}
+                            </span>
+                            {% endif %}
+                            {% endwith %}
+                        </a>
+                    </li>
+
+                    <!-- User Menu -->
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px;">
+                                    {{ user.username|slice:":1"|upper }}
                                 </div>
-                            </div>
+                                <span class="d-none d-lg-block">{{ user.username }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
+                                {% if user.role == 'store_admin' or user.is_staff %}
+                                <li><a class="dropdown-item" href="{% url 'main_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i> لوحة التحكم</a></li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="{% url 'account_settings' %}"><i class="bi bi-person-gear me-2"></i> إعدادات الحساب</a></li>
+                                <li><a class="dropdown-item" href="/track-order/"><i class="bi bi-truck me-2"></i> تتبع الطلبات</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="bi bi-box-arrow-left me-2"></i> تسجيل الخروج</a></li>
+                            </ul>
                         </li>
-                        {% if user.is_authenticated %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-person-circle"></i> {{ user.username }}
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    {% if user.role == 'store_admin' or user.is_staff %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'main_dashboard' %}">
-                                            <i class="bi bi-speedometer2"></i> لوحة التحكم
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                    {% if user.role == 'customer' and not user.is_staff %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'account_settings' %}">
-                                            <i class="bi bi-person"></i> حسابي
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                    {% if user.is_superuser %}
-                                    <li>
-                                        <a class="dropdown-item" href="{% url 'super_owner_dashboard' %}">
-                                            <i class="bi bi-crown"></i> لوحة تحكم المالك
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                    <li><a class="dropdown-item" href="{% url 'logout' %}">
-                                        <i class="bi bi-box-arrow-left"></i> تسجيل الخروج
-                                    </a></li>
-                                </ul>
-                            </li>
-                        {% else %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'login' %}">
-                                    <i class="bi bi-box-arrow-in-right"></i> تسجيل الدخول
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'register' %}">
-                                    <i class="bi bi-person-plus"></i> تسجيل
-                                </a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </div>
+                    {% else %}
+                        <li class="nav-item d-flex gap-2">
+                            <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm px-3 rounded-pill">دخول</a>
+                            <a href="{% url 'register' %}" class="btn btn-primary btn-sm px-3 rounded-pill">تسجيل</a>
+                        </li>
+                    {% endif %}
+                </ul>
             </div>
-        </nav>
+        </div>
+    </nav>
         <script>
             function openAnnouncements(){
                 window.location.assign('/announcements/');

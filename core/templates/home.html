@@ -200,9 +200,9 @@
                             <div class="card border-0 rounded-4 shadow-sm h-100 product-card overflow-hidden">
                                 <div class="position-relative">
                                     {% if product.images.first %}
-                                    <img src="{{ product.images.first.image.url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
+                                    <img src="{{ product.images.first.get_image_url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
                                     {% else %}
-                                    <img src="https://via.placeholder.com/300x400?text={{ product.name }}" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    <img src="https://via.placeholder.com/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
                                     {% endif %}
                                     
                                     {% if product.discount_price %}
@@ -250,9 +250,9 @@
                             <div class="card border-0 rounded-4 shadow-sm h-100 product-card overflow-hidden">
                                 <div class="position-relative">
                                     {% if product.images.first %}
-                                    <img src="{{ product.images.first.image.url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
+                                    <img src="{{ product.images.first.get_image_url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
                                     {% else %}
-                                    <img src="https://via.placeholder.com/300x400?text={{ product.name }}" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    <img src="https://via.placeholder.com/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
                                     {% endif %}
                                     <span class="badge bg-success position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">جديد</span>
                                 </div>
@@ -282,9 +282,9 @@
                             <div class="card border-0 rounded-4 shadow-sm h-100 product-card overflow-hidden">
                                 <div class="position-relative">
                                     {% if product.images.first %}
-                                    <img src="{{ product.images.first.image.url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
+                                    <img src="{{ product.images.first.get_image_url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
                                     {% else %}
-                                    <img src="https://via.placeholder.com/300x400?text={{ product.name }}" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    <img src="https://via.placeholder.com/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
                                     {% endif %}
                                     <span class="badge bg-danger position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">عرض خاص</span>
                                 </div>
