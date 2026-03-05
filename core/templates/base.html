@@ -333,26 +333,53 @@
     <script src="{% static 'js/landing.js' %}"></script>
     <script src="{% static 'js/main.js' %}?v=1" defer></script>
     <script>
-        // Failsafe: Ensure loading spinner is hidden even if main.js fails or is slow
+        // Critical Failsafe: Handle Loading Spinner & AOS Visibility
         (function(){
+            // 1. Force Hide Loader
             function forceHideLoader(){
                 var loader = document.getElementById('loadingSpinner');
-                if(loader) {
+                if(loader && loader.style.display !== 'none') {
                     loader.style.opacity = '0';
                     setTimeout(function(){ loader.style.display = 'none'; }, 500);
                 }
             }
-            
-            // Hide on window load
-            window.addEventListener('load', forceHideLoader);
-            
-            // Hide on DOMContentLoaded (backup)
-            document.addEventListener('DOMContentLoaded', function(){
-                setTimeout(forceHideLoader, 2000); // 2s timeout after DOM ready
+
+            // 2. Force Show Content (AOS Fallback)
+            function forceShowContent(){
+                var hiddenElements = document.querySelectorAll('[data-aos]');
+                if(hiddenElements.length > 0) {
+                    // Check if AOS is actually working (elements might be hidden by CSS)
+                    // We only force show if they don't have 'aos-animate' class yet
+                    var needsFix = false;
+                    hiddenElements.forEach(function(el){
+                        if(getComputedStyle(el).opacity === '0' || getComputedStyle(el).visibility === 'hidden') {
+                            el.style.opacity = '1';
+                            el.style.visibility = 'visible';
+                            el.style.transform = 'none';
+                            el.removeAttribute('data-aos'); // Stop AOS from hiding it
+                            needsFix = true;
+                        }
+                    });
+                    if(needsFix) console.warn('Fixed invisible AOS elements');
+                }
+            }
+
+            // Triggers
+            window.addEventListener('load', function(){
+                forceHideLoader();
+                setTimeout(forceShowContent, 500); // Check shortly after load
             });
-            
-            // Ultimate fallback (5 seconds absolute max)
-            setTimeout(forceHideLoader, 5000);
+
+            document.addEventListener('DOMContentLoaded', function(){
+                setTimeout(forceHideLoader, 2000);
+                setTimeout(forceShowContent, 2500);
+            });
+
+            // Ultimate Fallback
+            setTimeout(function(){
+                forceHideLoader();
+                forceShowContent();
+            }, 5000);
         })();
     </script>
     {% block extra_js %}{% endblock %}
