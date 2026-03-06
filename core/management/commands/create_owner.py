@@ -3,10 +3,14 @@ from core.models import User
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
+        import os
+        username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'owner')
+        email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'owner@clothingstore.iq')
+        password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '25802580')
         user, created = User.objects.get_or_create(
-            username='owner',
+            username=username,
             defaults={
-                'email': 'owner@clothingstore.iq',
+                'email': email,
                 'role': 'store_admin',
                 'phone': '07700000000',
                 'city': 'Baghdad',
@@ -16,7 +20,13 @@ class Command(BaseCommand):
             }
         )
         
-        user.set_password('Owner@2026!Iraq')
+        if not user.email:
+            user.email = email
+        if not user.phone:
+            user.phone = '07700000000'
+        if not user.city:
+            user.city = 'Baghdad'
+        user.set_password(password)
         user.is_staff = True
         user.is_superuser = True
         user.is_active = True
