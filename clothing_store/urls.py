@@ -9,6 +9,8 @@ from django.http import HttpResponse, HttpResponseNotFound
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.decorators.http import require_GET
 from django.contrib.staticfiles import finders
+from django.views.static import serve
+from django.urls import re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.http import HttpResponse
@@ -52,3 +54,8 @@ if settings.DEBUG and settings.MEDIA_URL.startswith('/') and hasattr(settings, '
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+else:
+    # Force serve static files in production if Whitenoise fails
+    urlpatterns += [
+        re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
+    ]

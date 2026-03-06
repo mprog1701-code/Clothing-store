@@ -37,10 +37,7 @@ CSRF_TRUSTED_ORIGINS = [
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-if (BASE_DIR / 'static').exists():
-    STATICFILES_DIRS = [BASE_DIR / 'static']
-else:
-    STATICFILES_DIRS = []
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Whitenoise storage
 STORAGES = {
@@ -51,6 +48,9 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
+# Legacy setting for compatibility
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+WHITENOISE_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
