@@ -15,7 +15,7 @@ print(f"DEBUG: Env vars keys: {[k for k in os.environ.keys() if 'DATA' in k or '
 # -----------------------------------------------------------------------------
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-prod-key-fallback')
 
-DEBUG = False
+DEBUG = True
 
 # Security Headers for Railway
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -196,6 +196,11 @@ print('LOADED SETTINGS: settings_railway')
 print(f'ROOT_URLCONF={ROOT_URLCONF}')
 print(f'WSGI_APPLICATION={WSGI_APPLICATION}')
 print(f'BASE_DIR={BASE_DIR}')
+
+# Admin settings
+ADMIN_SITE_HEADER = "إدارة متجر الملابس"
+ADMIN_SITE_TITLE = "لوحة التحكم"
+ADMIN_INDEX_TITLE = "مرحباً بك في لوحة الإدارة"
 
 # -----------------------------------------------------------------------------
 # 10. JAZZMIN SETTINGS

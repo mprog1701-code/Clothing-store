@@ -1,5 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+
+admin.site.site_header = "إدارة متجر الملابس - العراق"
+admin.site.site_title = "لوحة التحكم"
+admin.site.index_title = "مرحباً بك"
 from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem, SiteSettings, Campaign, ProductColor, AttributeColor, AttributeSize
 
 
