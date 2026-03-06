@@ -27,7 +27,11 @@ CSRF_COOKIE_SECURE = True
 ALLOWED_HOSTS = ['*']
 
 # CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app', 
+    'https://*.up.railway.app',
+    'https://clothing-store-production-4387.up.railway.app',
+]
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'

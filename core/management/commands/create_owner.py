@@ -22,6 +22,8 @@ class Command(BaseCommand):
         user.is_active = True
         user.save()
         
+        self.stdout.write(f'✓ Password updated for user: {user.username}')
+        
         if created:
             self.stdout.write('✓ Owner created successfully')
         else:
