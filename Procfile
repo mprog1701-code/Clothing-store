@@ -1,1 +1,1 @@
-web: sh -c "export DJANGO_SETTINGS_MODULE=clothing_store.settings_railway && python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py ensure_superuser && gunicorn clothing_store.wsgi:application --bind 0.0.0.0:$PORT"
+web: sh -c "export DJANGO_SETTINGS_MODULE=clothing_store.settings_railway && python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py create_owner && gunicorn clothing_store.wsgi:application --bind 0.0.0.0:$PORT"

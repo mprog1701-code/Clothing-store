@@ -210,36 +210,47 @@ print(f'BASE_DIR={BASE_DIR}')
 # 10. JAZZMIN SETTINGS
 # -----------------------------------------------------------------------------
 JAZZMIN_SETTINGS = {
-    "site_title": "Clothing Store Admin",
-    "site_header": "Clothing Store",
-    "site_brand": "Fashion Admin",
-    "welcome_sign": "Welcome to the Fashion Store Admin",
-    "copyright": "Clothing Store Ltd",
-    "search_model": ["core.User", "core.Product"],
-    "user_avatar": None,
-    # "topmenu_links": [
-    #     {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
-    #     {"name": "View Site", "url": "/"},
-    # ],
+    "site_title": "متجر الملابس",
+    "site_header": "لوحة التحكم",
+    "site_brand": "إدارة المتجر",
+    "site_logo": None,
+    "welcome_sign": "مرحباً بك",
+    "copyright": "متجر الملابس - العراق 2026",
+    "search_model": ["core.User", "catalog.Product", "orders.Order"],
+    
+    "topmenu_links": [
+        {"name": "الموقع", "url": "/", "new_window": True},
+        {"name": "المنتجات", "url": "admin:catalog_product_changelist"},
+        {"name": "الطلبات", "url": "admin:orders_order_changelist"},
+    ],
+    
     "show_sidebar": True,
     "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": [],
+    
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        "core.Product": "fas fa-tshirt",
-        "core.Category": "fas fa-tags",
-        "core.Order": "fas fa-shopping-cart",
+        "core.User": "fas fa-user-circle",
+        "catalog.Product": "fas fa-tshirt",
+        "catalog.Category": "fas fa-tags",
+        "catalog.ProductVariant": "fas fa-palette",
+        "catalog.ProductImage": "fas fa-images",
+        "orders.Order": "fas fa-shopping-cart",
+        "orders.OrderItem": "fas fa-list",
+        "merchants.Store": "fas fa-store",
+        "ads.Advertisement": "fas fa-bullhorn",
     },
+    
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
+    
     "related_modal_active": False,
     "custom_css": None,
     "custom_js": None,
-    "use_google_fonts_cdn": True,
     "show_ui_builder": False,
+    "changeform_format": "horizontal_tabs",
+    
+    "language_chooser": False,
 }
 
 JAZZMIN_UI_TWEAKS = {
@@ -247,16 +258,21 @@ JAZZMIN_UI_TWEAKS = {
     "footer_small_text": False,
     "body_small_text": False,
     "brand_small_text": False,
-    "brand_colour": "navbar-dark",
+    "brand_colour": "navbar-primary",
     "accent": "accent-primary",
     "navbar": "navbar-dark",
     "no_navbar_border": False,
-    "navbar_fixed": False,
+    "navbar_fixed": True,
     "layout_boxed": False,
     "footer_fixed": False,
-    "sidebar_fixed": False,
+    "sidebar_fixed": True,
     "sidebar": "sidebar-dark-primary",
     "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": False,
     "theme": "default",
     "dark_mode_theme": None,
     "button_classes": {

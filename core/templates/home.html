@@ -202,7 +202,7 @@
                                     {% if product.images.first %}
                                     <img src="{{ product.images.first.get_image_url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
                                     {% else %}
-                                    <img src="https://via.placeholder.com/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    <img src="https://placehold.co/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
                                     {% endif %}
                                     
                                     {% if product.discount_price %}
@@ -216,7 +216,7 @@
                                 </div>
                                 <div class="card-body text-center p-4">
                                     <h5 class="card-title fw-bold text-truncate">{{ product.name }}</h5>
-                                    <p class="text-muted small mb-2">{{ product.category.name|default:"عام" }}</p>
+                                    <p class="text-muted small mb-2">{{ product.get_category_display|default:"عام" }}</p>
                                     <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
                                         {% if product.discount_price %}
                                         <span class="text-danger fw-bold fs-5">{{ product.discount_price|iqd }}</span>
@@ -252,7 +252,7 @@
                                     {% if product.images.first %}
                                     <img src="{{ product.images.first.get_image_url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
                                     {% else %}
-                                    <img src="https://via.placeholder.com/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    <img src="https://placehold.co/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
                                     {% endif %}
                                     <span class="badge bg-success position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">جديد</span>
                                 </div>
@@ -284,7 +284,7 @@
                                     {% if product.images.first %}
                                     <img src="{{ product.images.first.get_image_url }}" class="card-img-top object-fit-cover" alt="{{ product.name }}" style="height: 280px;">
                                     {% else %}
-                                    <img src="https://via.placeholder.com/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
+                                    <img src="https://placehold.co/300x400?text=No+Image" class="card-img-top object-fit-cover" style="height: 280px;">
                                     {% endif %}
                                     <span class="badge bg-danger position-absolute top-0 start-0 m-3 rounded-pill px-3 py-2">عرض خاص</span>
                                 </div>
@@ -306,192 +306,151 @@
                 </div>
             </div>
         </div>
+        
+        <div class="text-center mt-5">
+            <a href="/products/" class="btn btn-outline-primary btn-lg rounded-pill px-5">
+                عرض كل المنتجات
+            </a>
+        </div>
     </div>
 </section>
 
-<!-- 5. Testimonials -->
-<section class="py-5 bg-white">
-    <div class="container py-5">
-        <div class="text-center mb-5" data-aos="fade-up">
-            <h5 class="text-warning fw-bold text-uppercase ls-2">آراء العملاء</h5>
-            <h2 class="fw-bold display-5">ماذا يقول زبائننا؟</h2>
-        </div>
-        
-        <div class="row g-4">
-            <!-- Review 1 -->
-            <div class="col-md-4" data-aos="fade-up" data-aos-delay="0">
-                <div class="card border-0 shadow-sm h-100 p-4 rounded-4 bg-light position-relative">
-                    <div class="position-absolute top-0 end-0 translate-middle-y me-4 text-warning fs-1 opacity-50">
-                        <i class="fas fa-quote-left"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3 text-warning">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+<!-- 5. App Download Section -->
+<section class="py-5 text-white" style="background: linear-gradient(135deg, var(--secondary) 0%, #000 100%);">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-4 mb-md-0" data-aos="fade-right">
+                <h2 class="display-5 fw-bold mb-3">حمل التطبيق الآن</h2>
+                <p class="lead mb-4 opacity-75">تسوق بسهولة وسرعة من هاتفك. احصل على إشعارات بالعروض الحصرية.</p>
+                <div class="d-flex gap-3">
+                    <button class="btn btn-light btn-lg rounded-pill d-flex align-items-center gap-2 hover-scale">
+                        <i class="fab fa-apple fs-2"></i>
+                        <div class="text-start lh-1">
+                            <small class="d-block" style="font-size: 0.7rem;">Download on the</small>
+                            <span class="fw-bold">App Store</span>
                         </div>
-                        <p class="card-text fs-5 fst-italic mb-4">"تجربة ممتازة والتوصيل سريع، وصلني الطلب لبغداد خلال يومين فقط. الملابس نفس الصورة بالضبط."</p>
-                        <div class="d-flex align-items-center">
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 50px; height: 50px;">أ</div>
-                            <div class="ms-3">
-                                <h6 class="fw-bold mb-0">أحمد الكرخي</h6>
-                                <small class="text-muted">بغداد</small>
-                            </div>
+                    </button>
+                    <button class="btn btn-outline-light btn-lg rounded-pill d-flex align-items-center gap-2 hover-scale">
+                        <i class="fab fa-google-play fs-2"></i>
+                        <div class="text-start lh-1">
+                            <small class="d-block" style="font-size: 0.7rem;">GET IT ON</small>
+                            <span class="fw-bold">Google Play</span>
                         </div>
-                    </div>
+                    </button>
                 </div>
             </div>
-            <!-- Review 2 -->
-            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
-                <div class="card border-0 shadow-sm h-100 p-4 rounded-4 bg-light position-relative">
-                    <div class="position-absolute top-0 end-0 translate-middle-y me-4 text-warning fs-1 opacity-50">
-                        <i class="fas fa-quote-left"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3 text-warning">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <p class="card-text fs-5 fst-italic mb-4">"جودة عالية وأسعار معقولة جداً مقارنة بالسوق. تعامل راقي من خدمة العملاء."</p>
-                        <div class="d-flex align-items-center">
-                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 50px; height: 50px;">ف</div>
-                            <div class="ms-3">
-                                <h6 class="fw-bold mb-0">فاطمة البصراوية</h6>
-                                <small class="text-muted">البصرة</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Review 3 -->
-            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
-                <div class="card border-0 shadow-sm h-100 p-4 rounded-4 bg-light position-relative">
-                    <div class="position-absolute top-0 end-0 translate-middle-y me-4 text-warning fs-1 opacity-50">
-                        <i class="fas fa-quote-left"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3 text-warning">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
-                        </div>
-                        <p class="card-text fs-5 fst-italic mb-4">"خدمة محترمة وتعامل راقي. الملابس خاماتها ممتازة ومريحة. شكراً لكم."</p>
-                        <div class="d-flex align-items-center">
-                            <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 50px; height: 50px;">ع</div>
-                            <div class="ms-3">
-                                <h6 class="fw-bold mb-0">عمر الموصلي</h6>
-                                <small class="text-muted">الموصل</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="col-md-6 text-center" data-aos="fade-left">
+                <img src="https://placehold.co/300x600/png?text=App+Preview" alt="App Preview" class="img-fluid" style="max-height: 400px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); transform: rotate(-5deg);">
             </div>
         </div>
     </div>
 </section>
 
 <!-- 6. Stats Section -->
-<section class="py-5 text-white position-relative overflow-hidden stats-section" style="background: var(--dark);">
-    <div class="position-absolute top-0 start-0 w-100 h-100 opacity-10" style="background-image: url('https://www.transparenttextures.com/patterns/cubes.png');"></div>
-    <div class="container position-relative z-1 py-4">
+<section class="py-5 bg-white stats-section">
+    <div class="container">
         <div class="row g-4 text-center">
-            <div class="col-6 col-md-3" data-aos="fade-up">
-                <div class="stat-item">
-                    <div class="fs-1 fw-bold text-primary mb-2"><span class="count-up" data-target="15000">0</span>+</div>
-                    <p class="mb-0 text-light opacity-75">زبون سعيد</p>
-                </div>
+            <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="0">
+                <h2 class="display-4 fw-bold text-primary counter">5000+</h2>
+                <p class="text-muted">عميل سعيد</p>
             </div>
             <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="100">
-                <div class="stat-item">
-                    <div class="fs-1 fw-bold text-success mb-2"><span class="count-up" data-target="3000">0</span>+</div>
-                    <p class="mb-0 text-light opacity-75">منتج متنوع</p>
-                </div>
+                <h2 class="display-4 fw-bold text-primary counter">1200+</h2>
+                <p class="text-muted">منتج متنوع</p>
             </div>
             <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="200">
-                <div class="stat-item">
-                    <div class="fs-1 fw-bold text-warning mb-2"><span class="count-up" data-target="18">0</span></div>
-                    <p class="mb-0 text-light opacity-75">محافظة نوصل لها</p>
-                </div>
+                <h2 class="display-4 fw-bold text-primary counter">50+</h2>
+                <p class="text-muted">ماركة عالمية</p>
             </div>
             <div class="col-6 col-md-3" data-aos="fade-up" data-aos-delay="300">
-                <div class="stat-item">
-                    <div class="fs-1 fw-bold text-info mb-2"><span class="count-up" data-target="99">0</span>%</div>
-                    <p class="mb-0 text-light opacity-75">رضا الزبائن</p>
-                </div>
+                <h2 class="display-4 fw-bold text-primary counter">18</h2>
+                <p class="text-muted">محافظة مغطاة</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- 8. App Download -->
-<section class="py-5 bg-light position-relative overflow-hidden">
-    <div class="container py-5">
-        <div class="row align-items-center">
-            <div class="col-lg-6 order-lg-2 mb-5 mb-lg-0 text-center" data-aos="fade-left">
-                <!-- Phone Mockup with App Screen -->
-                <div class="position-relative d-inline-block">
-                    <div class="phone-mockup" style="border: 8px solid #333; border-radius: 30px; overflow: hidden; max-width: 300px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);">
-                         <img src="https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80" alt="تطبيق الهاتف" class="img-fluid">
+<!-- 7. Newsletter Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="bg-primary rounded-5 p-5 text-center text-white position-relative overflow-hidden">
+            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: url('https://www.transparenttextures.com/patterns/cubes.png'); opacity: 0.1;"></div>
+            <div class="position-relative z-1">
+                <h2 class="fw-bold mb-3">اشترك في نشرتنا البريدية</h2>
+                <p class="mb-4 opacity-90">احصل على خصم 10% على طلبك الأول عند الاشتراك</p>
+                <form class="row justify-content-center g-3">
+                    <div class="col-md-6">
+                        <input type="email" class="form-control form-control-lg rounded-pill border-0" placeholder="بريدك الإلكتروني">
                     </div>
-                    <!-- Floating Elements -->
-                    <div class="position-absolute top-50 start-0 translate-middle-x bg-white p-3 rounded-4 shadow animate-float">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="bg-success text-white rounded-circle p-2"><i class="fas fa-check"></i></div>
-                            <div>
-                                <small class="d-block text-muted" style="font-size: 0.7rem;">تم الطلب</small>
-                                <span class="fw-bold text-success">بنجاح!</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6 order-lg-1" data-aos="fade-right">
-                <h5 class="text-primary fw-bold text-uppercase ls-2">حمل التطبيق</h5>
-                <h2 class="fw-bold display-4 mb-4">تجربة تسوق أسهل<br>على هاتفك</h2>
-                <p class="lead text-muted mb-5">استمتع بتجربة تسوق فريدة مع تطبيقنا الجديد. تصفح آلاف المنتجات، تابع طلباتك، واحصل على إشعارات بالعروض الحصرية.</p>
-                <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
-                    <a href="#" class="btn btn-dark btn-lg px-4 py-2 rounded-pill d-flex align-items-center gap-3 shadow hover-top transition-all">
-                        <i class="fab fa-apple fs-1"></i>
-                        <div class="text-start line-height-1">
-                            <small class="d-block text-white-50" style="font-size: 0.7rem;">Download on the</small>
-                            <span class="fw-bold">App Store</span>
-                        </div>
-                    </a>
-                    <a href="#" class="btn btn-dark btn-lg px-4 py-2 rounded-pill d-flex align-items-center gap-3 shadow hover-top transition-all">
-                        <i class="fab fa-google-play fs-1"></i>
-                        <div class="text-start line-height-1">
-                            <small class="d-block text-white-50" style="font-size: 0.7rem;">GET IT ON</small>
-                            <span class="fw-bold">Google Play</span>
-                        </div>
-                    </a>
-                </div>
-                <div class="mt-4 pt-4 border-top">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-white p-2 rounded shadow-sm">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://example.com/app" alt="QR Code" width="80" height="80">
-                        </div>
-                        <p class="mb-0 text-muted small">امسح الكود<br>لتحميل التطبيق فوراً</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- 7. Newsletter -->
-<section class="py-5 bg-primary text-white position-relative overflow-hidden">
-    <div class="position-absolute top-0 end-0 w-50 h-100 bg-white opacity-10 transform-skew-x-12"></div>
-    <div class="container position-relative z-1 py-4">
-        <div class="row align-items-center">
-            <div class="col-lg-6 mb-4 mb-lg-0" data-aos="fade-right">
-                <h2 class="fw-bold mb-2">اشترك واحصل على خصم 10%</h2>
-                <p class="lead mb-0 opacity-90">احصل على العروض الحصرية وكوبونات الخصم قبل الجميع</p>
-            </div>
-            <div class="col-lg-6" data-aos="fade-left">
-                <form class="position-relative">
-                    <div class="input-group input-group-lg bg-white rounded-pill overflow-hidden p-1 shadow-lg">
-                        <input type="email" class="form-control border-0 ps-4" placeholder="أدخل بريدك الإلكتروني..." aria-label="Email">
-                        <button class="btn btn-dark rounded-pill px-4 fw-bold" type="button">اشتراك</button>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-dark btn-lg rounded-pill px-4">اشترك الآن</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </section>
+
+<!-- 8. Brands Section -->
+<section class="py-5">
+    <div class="container text-center">
+        <p class="text-muted mb-4 text-uppercase ls-2">شركاء النجاح</p>
+        <div class="d-flex flex-wrap justify-content-center gap-5 opacity-50 grayscale-hover transition-all">
+            <i class="fab fa-cc-visa fa-3x"></i>
+            <i class="fab fa-cc-mastercard fa-3x"></i>
+            <i class="fab fa-dhl fa-3x"></i>
+            <i class="fas fa-shipping-fast fa-3x"></i>
+            <i class="fab fa-apple-pay fa-3x"></i>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Init Typed.js
+        if(document.getElementById('typed-text')) {
+            new Typed('#typed-text', {
+                strings: ['أفضل الأزياء', 'أحدث الموديلات', 'أرخص الأسعار'],
+                typeSpeed: 50,
+                backSpeed: 30,
+                loop: true,
+                backDelay: 2000
+            });
+        }
+        
+        // Init Swiper
+        new Swiper('.products-swiper', {
+            slidesPerView: 1,
+            spaceBetween: 20,
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            breakpoints: {
+                640: {
+                    slidesPerView: 2,
+                },
+                768: {
+                    slidesPerView: 3,
+                },
+                1024: {
+                    slidesPerView: 4,
+                },
+            }
+        });
+
+        // Force show content if AOS fails
+        setTimeout(function() {
+            if (typeof forceShowContent === 'function') {
+                forceShowContent();
+            } else {
+                document.querySelectorAll('[data-aos]').forEach(el => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'none';
+                });
+            }
+        }, 1000);
+    });
+</script>
 
 {% endblock %}
