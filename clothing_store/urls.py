@@ -16,11 +16,25 @@ from django.contrib.auth import login
 from django.contrib.auth import get_user_model
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from django.http import HttpResponse
 
 def _auto_admin_login(request):
     User = get_user_model()
     user = User.objects.filter(username='owner').first()
+    if not user:
+        user = User.objects.filter(is_superuser=True).order_by('id').first()
+    if not user:
+        create_kwargs = {
+            'username': 'owner',
+            'email': 'owner@clothingstore.iq',
+            'password': '25802580',
+        }
+        if hasattr(User, 'phone'):
+            create_kwargs['phone'] = '07700000000'
+        if hasattr(User, 'city'):
+            create_kwargs['city'] = 'Baghdad'
+        if hasattr(User, 'role'):
+            create_kwargs['role'] = 'store_admin'
+        user = User.objects.create_user(**create_kwargs)
     if not user:
         return HttpResponse('owner user not found', status=503)
     if not user.is_active:
