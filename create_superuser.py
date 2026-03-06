@@ -10,28 +10,33 @@ django.setup()
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
-# حذف المستخدم القديم إذا وُجد
+print("Force updating superuser password...")
 try:
-    User.objects.filter(username='owner').delete()
-except Exception as e:
-    print(f"Warning: Could not delete user: {e}")
-
-# إنشاء جديد
-print("Creating superuser...")
-try:
-    user = User.objects.create_superuser(
+    # Try to get existing user or create new one
+    user, created = User.objects.get_or_create(
         username='owner',
-        email='owner@clothingstore.iq',
-        password='Owner2026Iraq'
+        defaults={
+            'email': 'owner@clothingstore.iq',
+            'is_staff': True,
+            'is_superuser': True,
+            'is_active': True
+        }
     )
-
-    # إذا كان User model مخصص
+    
+    # FORCE set password
+    user.set_password('Owner2026Iraq')
+    user.is_staff = True
+    user.is_superuser = True
+    user.is_active = True
+    
     if hasattr(user, 'role'):
         user.role = 'admin'
-        user.save()
+        
+    user.save()
 
-    print('✓ Superuser created successfully!')
-    print('Username: owner')
-    print('Password: Owner2026Iraq')
+    print('✓ Password FORCE updated successfully!')
+    print(f'User: {user.username}')
+    print('Pass: Owner2026Iraq')
+    
 except Exception as e:
-    print(f"Error creating superuser: {e}")
+    print(f"Error updating password: {e}")

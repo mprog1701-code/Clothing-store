@@ -52,8 +52,8 @@ STORAGES = {
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 INSTALLED_APPS = [
-    'jazzmin',
-    'mathfilters',
+    # 'jazzmin',
+    # 'mathfilters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -329,7 +329,7 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar": "sidebar-dark-success",
     "sidebar_nav_small_text": False,
     "theme": "flatly",
-    "dark_mode_theme": "darkly",
+    # "dark_mode_theme": "darkly",  # Deprecated
     "button_classes": {
         "primary": "btn-success",
         "secondary": "btn-secondary",
