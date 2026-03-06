@@ -35,21 +35,22 @@ class OrderAdmin(admin.ModelAdmin):
     def status_badge(self, obj):
         colors = {
             'pending': '#ffc107',
-            'confirmed': '#17a2b8',
+            'accepted': '#17a2b8',
+            'packed': '#6f42c1',
             'preparing': '#007bff',
-            'shipped': '#6c757d',
+            'on_the_way': '#6c757d',
             'delivered': '#28a745',
-            'cancelled': '#dc3545',
+            'canceled': '#dc3545',
         }
         color = colors.get(obj.status, '#6c757d')
         labels = {
             'pending': 'قيد الانتظار',
-            'confirmed': 'مؤكد',
+            'accepted': 'تم القبول',
+            'packed': 'تم التعبئة',
             'preparing': 'قيد التجهيز',
-            'shipped': 'تم الشحن',
+            'on_the_way': 'في الطريق',
             'delivered': 'تم التوصيل',
-            'cancelled': 'ملغي',
-            'open': 'مفتوح',
+            'canceled': 'ملغي',
         }
         return format_html(
             '<span style="background:{};color:white;padding:5px 12px;border-radius:5px;font-weight:bold;">{}</span>',
