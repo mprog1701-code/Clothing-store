@@ -30,17 +30,29 @@ if env_hosts:
     ALLOWED_HOSTS = [host.strip() for host in env_hosts.split(',') if host.strip()]
 
 # CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS = []
-env_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS')
-if env_csrf:
-    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in env_csrf.split(',') if origin.strip()]
-else:
-    # Fallback for Railway domains
-    CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
+CSRF_TRUSTED_ORIGINS = ['https://*.railway.app', 'https://*.up.railway.app']
 
-# -----------------------------------------------------------------------------
-# 2. APPLICATION DEFINITION
-# -----------------------------------------------------------------------------
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+if (BASE_DIR / 'static').exists():
+    STATICFILES_DIRS = [BASE_DIR / 'static']
+else:
+    STATICFILES_DIRS = []
+
+# Whitenoise storage
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 INSTALLED_APPS = [
     'jazzmin',
     'mathfilters',
@@ -66,9 +78,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -142,25 +154,6 @@ LANGUAGE_CODE = 'ar'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-
-# -----------------------------------------------------------------------------
-# 7. STATIC & MEDIA FILES
-# -----------------------------------------------------------------------------
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Include the root 'static' directory
-if (BASE_DIR / 'static').exists():
-    STATICFILES_DIRS = [BASE_DIR / 'static']
-else:
-    # Fallback or empty if not found, though it should exist
-    STATICFILES_DIRS = []
-
-# Use non-manifest storage to avoid crashes on missing files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # -----------------------------------------------------------------------------
 # 8. DRF & API
