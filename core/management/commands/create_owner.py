@@ -3,15 +3,26 @@ from core.models import User
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        if not User.objects.filter(username='owner').exists():
-            User.objects.create_superuser(
-                username='owner',
-                email='owner@clothingstore.iq',
-                password='Owner@2026!Iraq',
-                role='store_admin',  # Use a valid choice from ROLE_CHOICES if needed, or just rely on is_superuser
-                phone='07700000000',
-                city='Baghdad'
-            )
-            self.stdout.write('✓ Owner created')
+        user, created = User.objects.get_or_create(
+            username='owner',
+            defaults={
+                'email': 'owner@clothingstore.iq',
+                'role': 'store_admin',
+                'phone': '07700000000',
+                'city': 'Baghdad',
+                'is_staff': True,
+                'is_superuser': True,
+                'is_active': True
+            }
+        )
+        
+        user.set_password('Owner@2026!Iraq')
+        user.is_staff = True
+        user.is_superuser = True
+        user.is_active = True
+        user.save()
+        
+        if created:
+            self.stdout.write('✓ Owner created successfully')
         else:
-            self.stdout.write('Owner already exists')
+            self.stdout.write('✓ Owner updated (password reset)')
