@@ -8,9 +8,9 @@ django.setup()
 from django.contrib.auth import get_user_model, authenticate
 User = get_user_model()
 
-username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'owner')
-email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'owner@clothingstore.iq')
-password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '25802580')
+username = 'owner'
+email = 'owner@clothingstore.iq'
+password = '25802580'
 
 print("=== CREATE OR RESET OWNER USER ===")
 
@@ -42,6 +42,6 @@ user.save()
 
 login_ok = authenticate(username=username, password=password) is not None
 print(f"Username: {username}")
-print(f"Password set from env/fallback: {password}")
+print(f"Password: {password}")
 print(f"Login test: {login_ok}")
 print("=== SUPERUSER CREATION COMPLETED ===")
