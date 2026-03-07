@@ -1,0 +1,65 @@
+:root {
+    --bg: #ffffff;
+    --surface: #f8f9fa;
+    --text: #212529;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --primary: #B87333; /* Copper/Gold Branding */
+    --primary-rgb: 184, 115, 51;
+    --on-primary: #ffffff;
+    --link: #8B4513;
+    color-scheme: light;
+}
+
+:root[data-bs-theme="dark"],
+:root[data-theme="dark"] {
+    --bg: #0b0f19;
+    --surface: #111827;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #1f2937;
+    --primary: #B87333;
+    --primary-rgb: 184, 115, 51;
+    --secondary: #1f2937;
+    --on-primary: #0b0f19;
+    --link: #f0c27b;
+    color-scheme: dark;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+.card, .modal-content, .offcanvas, .dropdown-menu, .list-group-item, .toast {
+    background-color: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+.text-muted {
+    color: var(--muted) !important;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+}
+
+a {
+    color: var(--link);
+}
+
+.form-control, .form-select {
+    background-color: var(--bg);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--bg);
+    color: var(--text);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-rgb), 0.25);
+}
