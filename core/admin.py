@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.utils.html import format_html
+from django.db.models import Sum
 
 admin.site.site_header = "إدارة متجر الملابس - العراق"
 admin.site.site_title = "لوحة التحكم"
@@ -29,10 +31,42 @@ class StoreAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'store', 'category', 'size_type', 'base_price', 'is_active', 'is_featured', 'created_at']
-    list_filter = ['category', 'size_type', 'is_active', 'is_featured', 'created_at']
-    list_editable = ['is_active', 'is_featured', 'base_price']
-    search_fields = ['name', 'store__name']
+    list_display = [
+        'id',
+        'thumbnail',
+        'name',
+        'store',
+        'category',
+        'base_price',
+        'stock_total',
+        'is_active',
+        'created_at',
+    ]
+    
+    list_filter = ['is_active', 'category', 'store', 'created_at']
+    search_fields = ['id', 'name', 'description']
+    list_editable = ['is_active', 'base_price']
+    
+    # عرض كل المنتجات (لا تخفي شيء)
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs  # لا filters
+    
+    def stock_total(self, obj):
+        total = obj.variants.aggregate(total=Sum('stock_qty'))['total'] or 0
+        return total
+    stock_total.short_description = 'المخزون'
+    
+    def thumbnail(self, obj):
+        img = obj.images.filter(is_main=True).first() or obj.images.first()
+        if img and img.image:
+            return format_html(
+                '<img src="{}" width="60" height="60" style="border-radius:8px;"/>',
+                img.image.url
+            )
+        return '📷'
+    thumbnail.short_description = 'صورة'
+
     inlines = []
     list_select_related = ('store',)
     list_per_page = 25

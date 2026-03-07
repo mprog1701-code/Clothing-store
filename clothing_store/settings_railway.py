@@ -290,6 +290,13 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
+# 🔧 FIX 10: Disable Cache Temporarily
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}
+
 # 🔧 FIX 9: Print diagnostics only in DEBUG
 if DEBUG:
     print(f"DEBUG: {DEBUG}")
