@@ -3,10 +3,9 @@ from core.models import User
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        import os
-        username = os.environ.get('DJANGO_SUPERUSER_USERNAME', 'owner')
-        email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'owner@clothingstore.iq')
-        password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '25802580')
+        username = 'owner'
+        email = 'owner@clothingstore.iq'
+        password = '25802580'
         user, created = User.objects.get_or_create(
             username=username,
             defaults={

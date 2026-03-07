@@ -1,59 +1,37 @@
+"""
+Django settings for clothing_store project.
+FIXED VERSION - Corrected for Railway deployment
+"""
 
-import os
-import dj_database_url
-import sys
 from pathlib import Path
+from decimal import Decimal
+import os
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-print(f"DEBUG: Loading settings_railway.py")
-print(f"DEBUG: Env vars keys: {[k for k in os.environ.keys() if 'DATA' in k or 'POST' in k]}")
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-production')
 
-# -----------------------------------------------------------------------------
-# 1. SECURITY SETTINGS
-# -----------------------------------------------------------------------------
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-prod-key-fallback')
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
-DEBUG = True
-
-# Security Headers for Railway
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
-# Allowed Hosts
-ALLOWED_HOSTS = ['*']
-
-# CSRF Trusted Origins
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.railway.app', 
-    'https://*.up.railway.app',
-    'https://clothing-store-production-4387.up.railway.app',
+# 🔧 FIX 1: Simplified ALLOWED_HOSTS
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else [
+    '127.0.0.1',
+    'localhost',
+    '192.168.1.102',
+    '.railway.app',
+    '.up.railway.app',
+    '.onrender.com',
+    '.vercel.app',
 ]
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-STATICFILES_DIRS = [BASE_DIR / 'static']
-
-# Whitenoise storage
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Application definition
 INSTALLED_APPS = [
-    # 'jazzmin',
-    # 'mathfilters',
+    'jazzmin',
+    'mathfilters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -61,13 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Third-party
+    # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
     'drf_spectacular',
     
-    # Local
+    # Local apps
     'core',
     'merchants',
     'catalog',
@@ -75,10 +53,11 @@ INSTALLED_APPS = [
     'ads',
 ]
 
+# 🔧 FIX 2: Removed custom middleware that might cause issues
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -87,11 +66,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# -----------------------------------------------------------------------------
-# 3. CORE SETTINGS (The ones causing issues)
-# -----------------------------------------------------------------------------
-ROOT_URLCONF = "clothing_store.urls"
-WSGI_APPLICATION = "clothing_store.wsgi.application"
+ROOT_URLCONF = 'clothing_store.urls'
 
 TEMPLATES = [
     {
@@ -109,25 +84,28 @@ TEMPLATES = [
     },
 ]
 
-# -----------------------------------------------------------------------------
-# 4. DATABASE
-# -----------------------------------------------------------------------------
-# Diagnostic: Check DATABASE_URL
-DATABASE_URL = os.environ.get('DATABASE_URL')
+WSGI_APPLICATION = 'clothing_store.wsgi.application'
+
+# 🔧 FIX 3: Simplified Database Configuration
+# Check if we're on Railway or production
+IS_RAILWAY = 'RAILWAY_ENVIRONMENT' in os.environ
+IS_RENDER = 'RENDER' in os.environ
+IS_PRODUCTION = IS_RAILWAY or IS_RENDER or (not DEBUG)
+
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
 
 if DATABASE_URL:
-    print(f"DEBUG: DATABASE_URL found (length={len(DATABASE_URL)})")
+    # Use dj-database-url to parse DATABASE_URL
+    import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
-            conn_max_age=60,
-            conn_health_checks=True,
+            conn_max_age=60,  # Reduced from 600 to 60 to prevent backend max conn errors
+            ssl_require=IS_PRODUCTION
         )
     }
 else:
-    print("WARNING: DATABASE_URL not found in environment variables!")
-    print("WARNING: Using local sqlite3 fallback to prevent crash.")
-    # Fallback to sqlite3 if Postgres is not available
+    # Fallback to SQLite for local development
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -135,48 +113,147 @@ else:
         }
     }
 
-# -----------------------------------------------------------------------------
-# 5. PASSWORD VALIDATION
-# -----------------------------------------------------------------------------
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
-# -----------------------------------------------------------------------------
-# 6. I18N & L10N
-# -----------------------------------------------------------------------------
+# Internationalization
 LANGUAGE_CODE = 'ar'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# -----------------------------------------------------------------------------
-# 8. DRF & API
-# -----------------------------------------------------------------------------
+# 🔧 FIX 4: Simplified Static Files Configuration
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
+
+# 🔧 FIX 5: Whitenoise for static files
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        # Changed from CompressedManifestStaticFilesStorage to avoid 500 errors if files are missing
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Custom user model
 AUTH_USER_MODEL = 'core.User'
 
+# REST Framework
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-CORS_ALLOW_ALL_ORIGINS = True  # Simplified for debugging, restrict later if needed
+# JWT Settings
+from datetime import timedelta
 
-# -----------------------------------------------------------------------------
-# 9. LOGGING & DIAGNOSTICS
-# -----------------------------------------------------------------------------
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+}
+
+# 🔧 FIX 6: Simplified CORS Configuration
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:19006",
+    "http://127.0.0.1:19006",
+    "http://192.168.1.102:19006",
+    "http://192.168.1.102:8081",
+]
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # Add production origins from environment
+    prod_origins = os.environ.get('CORS_ORIGINS', '')
+    if prod_origins:
+        CORS_ALLOWED_ORIGINS.extend([o.strip() for o in prod_origins.split(',') if o.strip()])
+
+# Login URLs
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
+
+# Custom authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Delivery fee
+DELIVERY_FEE = Decimal('5000')  # 5000 IQD
+
+# 🔧 FIX 7: Security Settings
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',
+    'https://*.up.railway.app',
+    'https://*.onrender.com',
+    'https://*.vercel.app',
+]
+
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        'http://192.168.1.102:8000',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ]
+
+# Only enable security features in production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# 🔧 FIX 8: Simplified Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
     'root': {
@@ -187,96 +264,52 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
         },
     },
 }
 
-print('LOADED SETTINGS: settings_railway')
-print(f'ROOT_URLCONF={ROOT_URLCONF}')
-print(f'WSGI_APPLICATION={WSGI_APPLICATION}')
-print(f'BASE_DIR={BASE_DIR}')
+# DRF Spectacular
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Clothing Store API',
+    'DESCRIPTION': 'REST API for Clothing Store',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
-# Admin settings
-ADMIN_SITE_HEADER = "إدارة متجر الملابس"
-ADMIN_SITE_TITLE = "لوحة التحكم"
-ADMIN_INDEX_TITLE = "مرحباً بك في لوحة الإدارة"
+# 🔧 FIX 9: Print diagnostics only in DEBUG
+if DEBUG:
+    print(f"DEBUG: {DEBUG}")
+    print(f"IS_RAILWAY: {IS_RAILWAY}")
+    print(f"IS_PRODUCTION: {IS_PRODUCTION}")
+    print(f"DATABASE: {DATABASES['default'].get('ENGINE', 'unknown')}")
+    print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
 
-# -----------------------------------------------------------------------------
-# 10. JAZZMIN SETTINGS
-# -----------------------------------------------------------------------------
+###################
+# JAZZMIN SETTINGS #
+###################
 JAZZMIN_SETTINGS = {
-    # title of the window (Will default to current_admin_site.site_title if absent or None)
-    "site_title": "إدارة المتجر العراقي",
-
-    # Title on the login screen (19 chars max) (defaults to current_admin_site.site_header if absent or None)
-    "site_header": "المتجر العراقي",
-
-    # Title on the brand (19 chars max) (defaults to current_admin_site.site_header if absent or None)
-    "site_brand": "المتجر العراقي",
-
-    # Logo to use for your site, must be present in static files, used for brand on top left
-    # "site_logo": "img/logo.png",
-
-    # CSS classes that are applied to the logo above
-    "site_logo_classes": "img-circle",
-
-    # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
-    "site_icon": None,
-
-    # Welcome text on the login screen
-    "welcome_sign": "مرحباً بك في لوحة التحكم",
-
-    # Copyright on the footer
-    "copyright": "Clothing Store Iraq Ltd",
-
-    # The model admin to search from the search bar, search bar omitted if excluded
-    "search_model": "core.User",
-
-    # Field name on user model that contains avatar ImageField/URLField/Charfield or a callable that receives the user
+    "site_title": "متجر الملابس",
+    "site_header": "إدارة المتجر",
+    "site_brand": "لوحة التحكم",
+    "welcome_sign": "مرحباً بك في لوحة تحكم المتجر",
+    "copyright": "Clothing Store Ltd",
+    "search_model": ["core.User", "core.Store"],
     "user_avatar": None,
-
-    ############
-    # Top Menu #
-    ############
-
-    # Links to put along the top menu
-    "topmenu_links": [
-        {"name": "الرئيسية", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "الموقع", "url": "/", "new_window": True},
-    ],
-
-    #############
-    # User Menu #
-    #############
-
-    # Additional links to include in the user menu on the top right ("app" url type is not allowed)
     "usermenu_links": [
         {"name": "الدعم الفني", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
         {"model": "core.User"}
     ],
-
-    #############
-    # Side Menu #
-    #############
-
-    # Whether to display the side menu
     "show_sidebar": True,
-
-    # Whether to aut expand the menu
     "navigation_expanded": True,
-
-    # Hide these apps when generating side menu e.g (auth)
     "hide_apps": [],
-
-    # Hide these models when generating side menu (e.g auth.user)
     "hide_models": [],
-
-    # List of apps (and/or models) to base side menu ordering off of (does not need to contain all apps/models)
     "order_with_respect_to": ["core", "catalog", "orders", "auth"],
-
-    # Custom icons for side menu apps/models See https://fontawesome.com/icons?d=gallery&m=free&v=5.0.0,5.0.1,5.0.10,5.0.11,5.0.12,5.0.13,5.1.0,5.1.1,5.2.0,5.3.0,5.3.1,5.4.0,5.4.1,5.4.2,5.13.0,5.12.0,5.11.2,5.11.1,5.10.0,5.9.0,5.8.0,5.7.0,5.6.0,5.1.0,5.2.0,5.3.0,5.4.0,5.5.0,5.6.0
-    # for the full list of 5.13.0 free icon classes
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
@@ -289,27 +322,13 @@ JAZZMIN_SETTINGS = {
         "orders.Order": "fas fa-shopping-cart",
         "orders.OrderItem": "fas fa-receipt",
     },
-    # Icons that are used when one is not specified
     "default_icon_parents": "fas fa-chevron-circle-right",
     "default_icon_children": "fas fa-circle",
-
-    #################
-    # Related Modal #
-    #################
-    # Use modals instead of popups
     "related_modal_active": False,
-
-    #############
-    # UI Tweaks #
-    #############
-    # Relative paths to custom CSS/JS scripts (must be present in static files)
     "custom_css": None,
     "custom_js": None,
-    # Whether to show the UI customizer on the sidebar
     "show_ui_builder": False,
-
     "changeform_format": "horizontal_tabs",
-    # override change forms on a per modeladmin basis
     "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
 }
 
@@ -340,3 +359,9 @@ JAZZMIN_UI_TWEAKS = {
     }
 }
 
+# Disable caching in development/testing to see changes immediately
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
+}

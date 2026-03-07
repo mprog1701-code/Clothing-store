@@ -30,10 +30,10 @@ class VariantInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['thumbnail', 'title', 'store', 'category', 'price_display', 'stock_badge', 'is_active', 'created_at']
-    list_filter = ['is_active', 'category', 'store', 'created_at']
+    list_display = ['thumbnail', 'title', 'store', 'category', 'price_display', 'stock_badge', 'is_active', 'is_featured', 'created_at']
+    list_filter = ['is_active', 'is_featured', 'category', 'store', 'created_at']
     search_fields = ['title', 'description']
-    list_editable = ['is_active']
+    list_editable = ['is_active', 'is_featured']
     readonly_fields = ['created_at', 'updated_at']
     prepopulated_fields = {'slug': ('title',)} if hasattr(Product, 'slug') else {}
     inlines = [VariantInline]
@@ -43,7 +43,7 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('title', 'store', 'category')
         }),
         ('التفاصيل', {
-            'fields': ('description', 'base_price', 'is_active')
+            'fields': ('description', 'base_price', 'is_active', 'is_featured')
         }),
         ('معلومات إضافية', {
             'fields': ('created_at', 'updated_at'),

@@ -218,7 +218,7 @@ class Product(models.Model):
     fit_type = models.CharField(max_length=10, choices=FIT_TYPE_CHOICES, default='standard')
     is_active = models.BooleanField(default=True)
     status = models.CharField(max_length=10, choices=[('DRAFT','مسودة'),('ACTIVE','نشط'),('DISABLED','غير نشط')], default='DRAFT', db_index=True)
-    is_featured = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False, verbose_name='منتج مميز')
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
     

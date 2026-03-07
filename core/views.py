@@ -18,6 +18,11 @@ import json
 import uuid
 import urllib.parse
 from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign, CartItem
+try:
+    from catalog.models import Category
+except ImportError:
+    Category = None
+
 from django.db.utils import OperationalError, ProgrammingError
 from django.db import transaction
 from .serializers import UserRegistrationSerializer
@@ -41,26 +46,31 @@ def health(request):
 def hybrid_home(request):
     """Fashion marketplace homepage specialized in clothing and fashion"""
     
-    # 1. New Arrivals (Last 24h or just latest 8)
+    # 1. New Arrivals (Latest Products)
     since = timezone.now() - timedelta(hours=24)
-    new_arrivals = list(Product.objects.filter(
-        is_active=True,
-        created_at__gte=since
-    ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8])
-    if len(new_arrivals) == 0:
-        new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
+    latest_products = Product.objects.filter(
+        is_active=True
+    ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
     
-    # 2. Best Selling (Simulated by is_featured for now, or random)
-    # Ideally we should aggregate order items, but for speed we use is_featured or random
-    best_selling_products = Product.objects.filter(
+    # 2. Featured Products (Selected in Admin)
+    featured_products = Product.objects.filter(
         is_active=True, 
         is_featured=True
-    ).select_related('store').prefetch_related('images').order_by('?')[:8]
+    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
     
-    if not best_selling_products:
-        best_selling_products = Product.objects.filter(is_active=True).order_by('?')[:8]
+    if not featured_products:
+        # Fallback to random if no featured products
+        featured_products = Product.objects.filter(is_active=True).order_by('?')[:8]
 
-    # 3. Special Offers (Products with discount)
+    # 3. Categories
+    categories = []
+    if Category:
+        try:
+            categories = Category.objects.filter(is_active=True).order_by('id')
+        except Exception:
+            pass
+            
+    # 4. Special Offers (Products with discount)
     special_offers = Product.objects.filter(
         is_active=True,
         discount_price__isnull=False
@@ -79,8 +89,11 @@ def hybrid_home(request):
         campaign = None
 
     context = {
-        'new_arrivals': new_arrivals,
-        'best_selling_products': best_selling_products,
+        'latest_products': latest_products,
+        'new_arrivals': latest_products, # Backward compatibility
+        'featured_products': featured_products,
+        'best_selling_products': featured_products, # Backward compatibility
+        'categories': categories,
         'special_offers': special_offers,
         'cart_items_count': cart_items_count,
         'campaign': campaign,
