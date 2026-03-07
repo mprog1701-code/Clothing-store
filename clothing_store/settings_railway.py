@@ -16,6 +16,11 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-produc
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
+if not DEBUG:
+    # Fallback to allow seeing errors if specifically requested via env var
+    # This is useful for debugging 500 errors in production
+    if os.environ.get('FORCE_DEBUG', 'False') == 'True':
+        DEBUG = True
 
 # 🔧 FIX 1: Simplified ALLOWED_HOSTS
 ALLOWED_HOSTS = ['*']
@@ -92,7 +97,7 @@ if DATABASE_URL:
         'default': dj_database_url.config(
             default=DATABASE_URL,
             conn_max_age=60,  # Reduced from 600 to 60 to prevent backend max conn errors
-            ssl_require=IS_PRODUCTION
+            conn_health_checks=True,
         )
     }
 else:
