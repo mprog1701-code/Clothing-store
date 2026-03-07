@@ -197,7 +197,6 @@ def store_list(request):
         'selected_category': category,
         'store_categories': filtered_categories,
         'cart_items_count': cart_items_count,
-        'showcase_products': showcase_products,
     }
     return render(request, 'store/store_list.html', context)
 
