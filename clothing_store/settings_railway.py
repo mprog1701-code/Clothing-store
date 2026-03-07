@@ -93,14 +93,31 @@ DATABASE_URL = os.environ.get('DATABASE_URL', '')
 if DATABASE_URL:
     # Use dj-database-url to parse DATABASE_URL
     import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=60,  # Reduced from 600 to 60 to prevent backend max conn errors
-            conn_health_checks=True,
-        )
-    }
+    
+    # Debug logging
+    print(f"DEBUG: DATABASE_URL found: {DATABASE_URL[:15]}...", file=sys.stderr)
+    
+    db_config = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=60,
+        conn_health_checks=True,
+    )
+    
+    # Validate configuration
+    if not db_config or 'ENGINE' not in db_config:
+        print("CRITICAL ERROR: DATABASE_URL is invalid or missing scheme! Falling back to SQLite to prevent crash.", file=sys.stderr)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+    else:
+        DATABASES = {
+            'default': db_config
+        }
 else:
+    print("DEBUG: DATABASE_URL not set. Using SQLite.", file=sys.stderr)
     # Fallback to SQLite for local development
     DATABASES = {
         'default': {
