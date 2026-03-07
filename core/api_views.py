@@ -199,6 +199,10 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             allowed = ['created_at', '-created_at', 'base_price', '-base_price', 'rating', '-rating', 'name', '-name']
             if ordering in allowed:
                 queryset = queryset.order_by(ordering)
+        
+        # 🔧 DIAGNOSTIC: Check query results
+        print(f"[API] Returning {queryset.count()} products")
+        
         return queryset
     
     @action(detail=False, methods=['get', 'post', 'put', 'patch', 'delete'], permission_classes=[IsStoreOwner])

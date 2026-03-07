@@ -52,6 +52,11 @@ def hybrid_home(request):
         is_active=True
     ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
     
+    # 🔧 DIAGNOSTIC: Check query results
+    print(f"[VIEW] Found {latest_products.count()} latest products")
+    for p in latest_products[:3]:
+        print(f"  - {p.name} (ID: {p.id})")
+
     # 2. Featured Products (Selected in Admin)
     featured_products = Product.objects.filter(
         is_active=True, 
