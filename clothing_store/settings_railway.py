@@ -88,43 +88,40 @@ IS_RAILWAY = 'RAILWAY_ENVIRONMENT' in os.environ
 IS_RENDER = 'RENDER' in os.environ
 IS_PRODUCTION = IS_RAILWAY or IS_RENDER or (not DEBUG)
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
+# Default to SQLite to prevent ImproperlyConfigured error
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Use dj-database-url to parse DATABASE_URL
-    import dj_database_url
-    
-    # Debug logging
-    print(f"DEBUG: DATABASE_URL found: {DATABASE_URL[:15]}...", file=sys.stderr)
-    
-    db_config = dj_database_url.config(
-        default=DATABASE_URL,
-        conn_max_age=60,
-        conn_health_checks=True,
-    )
-    
-    # Validate configuration
-    if not db_config or 'ENGINE' not in db_config:
-        print("CRITICAL ERROR: DATABASE_URL is invalid or missing scheme! Falling back to SQLite to prevent crash.", file=sys.stderr)
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
-    else:
-        DATABASES = {
-            'default': db_config
-        }
+    try:
+        # Use dj-database-url to parse DATABASE_URL
+        import dj_database_url
+        
+        print(f"DEBUG: Parsing DATABASE_URL...", file=sys.stderr)
+        
+        db_config = dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=60,
+            conn_health_checks=True,
+        )
+        
+        # Verify we got a valid config with an engine
+        if db_config and db_config.get('ENGINE'):
+            DATABASES = {'default': db_config}
+            print(f"DEBUG: Configured Database with engine: {db_config['ENGINE']}", file=sys.stderr)
+        else:
+            print("WARNING: DATABASE_URL parsed but yielded no ENGINE. Keeping SQLite.", file=sys.stderr)
+            
+    except Exception as e:
+        print(f"ERROR: Failed to configure database: {e}. Keeping SQLite.", file=sys.stderr)
 else:
-    print("DEBUG: DATABASE_URL not set. Using SQLite.", file=sys.stderr)
-    # Fallback to SQLite for local development
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+    print("DEBUG: No DATABASE_URL found in environment. Using SQLite.", file=sys.stderr)
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
