@@ -8,275 +8,167 @@
         --primary: #e94560;
         --secondary: #8b2f97;
         --gold: #FFD700;
-        --black: #000000;
-        --black-light: #1a1a1a;
     }
 
-    body {
-        background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%);
-        color: #ffffff;
-    }
+    /* Remove body override to match homepage light theme */
+    /* body { background: ...; color: ...; } */
 
-    .fashion-header {
+    /* Hero Section Override for Inner Pages */
+    .hero-section {
+        position: relative;
+        min-height: 400px;
         background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        padding: 30px 0;
-        margin-bottom: 40px;
+        color: white;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        border-radius: 0 0 50px 50px;
+        margin-bottom: 50px;
+        box-shadow: 0 10px 30px rgba(233, 69, 96, 0.2);
     }
 
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 900;
-        color: var(--gold);
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        margin-bottom: 10px;
-    }
-
-    .page-subtitle {
-        color: #ffffff;
-        font-size: 1.2rem;
-        opacity: 0.9;
-    }
-
-    .showcase { background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%); border: 2px solid var(--primary); border-radius: 18px; padding: 12px; margin-bottom: 24px; position: relative; overflow: hidden; }
-    .showcase-track { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; align-items: stretch; }
-    .showcase-card { background: #0f0f0f; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
-    .showcase-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(233, 69, 96, 0.25); }
-    .showcase-img { width: 100%; height: 130px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.15); }
-    .showcase-info { padding: 10px; }
-    .showcase-title { color: var(--gold); font-weight: 800; font-size: .95rem; margin-bottom: 4px; }
-    .showcase-store { color: #bbb; font-size: .8rem; }
-    .showcase-price { color: var(--primary); font-weight: 700; font-size: .9rem; }
-    .showcase-controls { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; }
-    .showcase-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); color: #fff; padding: 6px 10px; border-radius: 20px; font-size: .85rem; font-weight: 700; }
-    
-    @media (max-width: 576px) {
-        .showcase-track { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .showcase-img { height: 110px; }
-        .showcase-title { font-size: .9rem; }
-        .showcase-price { font-size: .85rem; }
-        .showcase-info { padding: 8px; }
-        .store-image { height: 160px; }
-        .store-name { font-size: 1.2rem; }
-        .store-description { font-size: .95rem; }
-        .visit-store-btn { padding: 10px 20px; }
-    }
-    @media (max-width: 768px) {
-        .store-card,
-        .showcase-card {
-            box-shadow: none;
-        }
-        .store-card:hover,
-        .showcase-card:hover {
-            transform: none;
-            box-shadow: none;
-        }
-    }
-
-    .category-filters {
-        background: rgba(255,255,255,0.1);
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 30px;
-        backdrop-filter: blur(10px);
-        border: 1px solid var(--primary);
-    }
-
-    .filter-label {
-        color: var(--gold);
-        font-weight: 700;
-        margin-bottom: 8px;
-        display: inline-block;
-    }
-
-    .filter-select {
+    #particles-js {
+        position: absolute;
         width: 100%;
-        background: transparent;
-        color: var(--primary);
-        border: 2px solid var(--primary);
-        border-radius: 25px;
-        padding: 10px 16px;
-        font-weight: bold;
-        appearance: none;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 1;
     }
 
-    .filter-select:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+    .hero-content {
+        position: relative;
+        z-index: 2;
+        text-align: center;
     }
 
-    .filter-btn {
-        background: transparent;
-        border: 2px solid var(--primary);
-        color: var(--primary);
-        padding: 10px 20px;
-        border-radius: 25px;
-        margin: 5px;
-        transition: all 0.3s ease;
-        font-weight: bold;
+    .hero-title {
+        font-weight: 900;
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     }
 
-    .filter-btn:hover,
-    .filter-btn.active {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
-    }
-
-    .rail-tab {
-        background: transparent;
-        border: 1px solid rgba(255,255,255,0.2);
-        color: #ccc;
-        padding: 8px 16px;
-        border-radius: 20px;
-        margin-left: 8px;
-        transition: all 0.3s ease;
-    }
-    .rail-tab.active {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        border-color: transparent;
-        color: white;
-    }
-    .rail-tab:hover {
-        border-color: var(--primary);
-        color: var(--primary);
+    .hero-text {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
     .store-card {
-        background: linear-gradient(135deg, var(--black-light) 0%, var(--black) 100%);
+        background: var(--surface);
         border-radius: 20px;
-        padding: 25px;
+        padding: 0;
         margin-bottom: 30px;
         transition: all 0.3s ease;
-        border: 2px solid transparent;
+        border: 1px solid var(--border);
         height: 100%;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        overflow: hidden;
     }
 
     .store-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         border-color: var(--primary);
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(233, 69, 96, 0.3);
+    }
+
+    .store-image-container {
+        position: relative;
+        height: 200px;
+        overflow: hidden;
     }
 
     .store-image {
         width: 100%;
-        height: 200px;
+        height: 100%;
         object-fit: cover;
-        border-radius: 15px;
-        margin-bottom: 20px;
-        border: 3px solid var(--primary);
+        transition: transform 0.5s ease;
+        border-radius: 0;
+        margin-bottom: 0;
+        border: none;
     }
 
-    .store-name {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: var(--gold);
-        margin-bottom: 10px;
+    .store-card:hover .store-image {
+        transform: scale(1.1);
     }
 
-    .store-category {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        color: white;
+    .store-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--primary);
         padding: 5px 15px;
         border-radius: 20px;
-        font-size: 0.9rem;
-        display: inline-block;
-        margin-bottom: 15px;
-    }
-
-    .store-description {
-        color: #cccccc;
-        margin-bottom: 20px;
-        line-height: 1.6;
-    }
-
-    .store-info {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-    }
-
-    .store-location {
-        color: #ccc;
-        font-size: 0.9rem;
-    }
-
-    .store-rating {
-        color: var(--gold);
         font-weight: bold;
-    }
-
-    .visit-store-btn {
-        background: transparent;
-        color: var(--primary);
-        border: 2px solid var(--primary);
-        padding: 12px 30px;
-        border-radius: 25px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-        width: 100%;
-    }
-
-    .visit-store-btn:hover {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-        color: white;
-        transform: scale(1.05);
-        box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
-    }
-
-    .coming-soon-card {
-        opacity: 0.6;
-        position: relative;
-    }
-
-    .coming-soon-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.8);
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        font-size: 0.8rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         z-index: 2;
     }
 
-    .coming-soon-text {
-        color: var(--gold);
-        font-size: 1.5rem;
-        font-weight: bold;
-        text-align: center;
-        border: 2px solid var(--gold);
-        padding: 20px;
-        border-radius: 15px;
-        background: rgba(0,0,0,0.9);
+    .store-details {
+        padding: 25px;
     }
 
+    .store-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 10px;
+    }
+
+    .store-meta {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+
+    .store-meta i {
+        color: var(--primary);
+    }
+    
+    .visit-btn {
+        width: 100%;
+        padding: 12px;
+        border-radius: 12px;
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+
+    .visit-btn:hover {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+    }
+    
     .no-stores {
         text-align: center;
         padding: 60px 20px;
-        background: rgba(255,255,255,0.1);
+        background: var(--surface);
         border-radius: 20px;
         margin: 30px 0;
-    }
-
-    .no-stores-icon {
-        font-size: 4rem;
-        color: var(--primary);
-        margin-bottom: 20px;
+        border: 1px solid var(--border);
     }
 
     .no-stores-title {
-        color: var(--gold);
+        color: var(--text);
         font-size: 1.5rem;
         margin-bottom: 10px;
     }
 
     .no-stores-text {
-        color: #cccccc;
+        color: var(--muted);
         font-size: 1.1rem;
     }
 
@@ -298,138 +190,110 @@
 {% endblock %}
 
 {% block content %}
-<!-- Fashion Header -->
-<div class="fashion-header">
-    <div class="container-fluid px-0">
-        <div class="container container-desktop-only px-3">
-            <div class="row">
-                <div class="col-12 text-center">
-                    <h1 class="page-title">متاجر الأزياء</h1>
-                    <p class="page-subtitle">أحدث صيحات الموضة من أفضل المتاجر • الخدمة متاحة في جميع محافظات العراق</p>
-                </div>
-            </div>
-        </div>
+<!-- Hero Section -->
+<section class="hero-section">
+    <div id="particles-js"></div>
+    <div class="container hero-content">
+        <h1 class="hero-title" data-aos="fade-down">أرقى المتاجر</h1>
+        <p class="hero-text" data-aos="fade-up" data-aos-delay="100">
+            اكتشف أفضل متاجر الأزياء في العراق. تسوق أحدث الصيحات والماركات العالمية مع ضمان الجودة والتوصيل السريع.
+        </p>
     </div>
-</div>
+    <!-- Wave Shape -->
+    <div class="position-absolute bottom-0 start-0 w-100 overflow-hidden" style="line-height: 0;">
+        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none" style="width: 100%; height: 60px; fill: var(--surface);">
+            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
+        </svg>
+    </div>
+</section>
 
-<div class="container-fluid px-0 store-list-wrap">
-    <div class="container container-desktop-only px-3">
-    <div class="showcase mobile-product-rail">
-    <div class="showcase mobile-product-rail">
-        <div class="rail-tabs">
-            <button type="button" class="rail-tab active" data-tab="best">الأكثر مبيعاً</button>
-            <button type="button" class="rail-tab" data-tab="discount">خصومات</button>
-            <button type="button" class="rail-tab" data-tab="new">جديد</button>
-            <button type="button" class="rail-tab" data-tab="price">حسب السعر</button>
-        </div>
-        <div class="showcase-controls">
-            <button class="showcase-btn" id="scPrev">السابق</button>
-            <button class="showcase-btn" id="scNext">التالي</button>
-        </div>
-        <div class="showcase-track rail-scroller rail-2rows" id="showcaseTrack" dir="rtl">
-            {% for p in showcase_products %}
-            <div class="showcase-card rail-item" data-store-id="{{ p.store.id|default:'' }}" data-is-new="0" data-discount="{% if p.discount_price and p.discount_price < p.base_price %}1{% else %}0{% endif %}" data-sold="" data-price="{{ p.discount_price|default:p.base_price }}" data-created-at="{{ p.created_at|date:'c' }}" onclick="window.location.href='{% url 'product_detail' p.id %}'">
-                {% if p.main_image %}
-                    {% with url=p.main_image.get_thumbnail_url %}
-                        {% if url %}
-                            <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" width="300" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
-                        {% else %}
-                            <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
-                                <i class="bi bi-bag" style="font-size:2rem;"></i>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
-                {% elif p.images.all %}
-                    {% with img=p.images.all|first %}
-                        {% if img %}
-                            {% with url=img.get_thumbnail_url %}
-                                {% if url %}
-                                    <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" width="300" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
-                                {% else %}
-                                    <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
-                                        <i class="bi bi-bag" style="font-size:2rem;"></i>
-                                    </div>
-                                {% endif %}
-                            {% endwith %}
-                        {% else %}
-                            <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
-                                <i class="bi bi-bag" style="font-size:2rem;"></i>
-                            </div>
-                        {% endif %}
-                    {% endwith %}
-                {% else %}
-                <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
-                    <i class="bi bi-bag" style="font-size:2rem;"></i>
-                </div>
-                {% endif %}
-                <div class="showcase-info">
-                    <div class="showcase-title">{{ p.name|truncatechars:32 }}</div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="showcase-store">{{ p.store.name|truncatechars:22 }}</div>
-                        <div class="showcase-price">{{ p.base_price|iqd }}</div>
+<!-- Filters Section -->
+    <div class="container mb-5" style="margin-top: -80px; position: relative; z-index: 10;">
+        <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <div class="card-body p-4 bg-white">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold text-muted small text-uppercase">تصفية حسب الفئة</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-grid text-primary"></i></span>
+                            <select name="category" class="form-select border-0 bg-light" onchange="this.form.submit()" style="padding: 12px;">
+                                <option value="" {% if not selected_category %}selected{% endif %}>جميع الفئات</option>
+                                {% for val, name in store_categories %}
+                                <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    <!-- Category Filters -->
-    <div class="category-filters">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-6">
-                <label class="filter-label"><i class="bi bi-grid me-2"></i>الفئة</label>
-                <select id="categorySelect" class="filter-select" onchange="applyFilters()">
-                    <option value="" {% if not selected_category %}selected{% endif %}>الكل</option>
-                    {% for val, name in store_categories %}
-                    <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>{{ name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="filter-label"><i class="bi bi-geo-alt me-2"></i>المحافظة</label>
-                <select id="citySelect" class="filter-select" onchange="applyFilters()">
-                    <option value="" {% if not selected_city %}selected{% endif %}>الكل</option>
-                    {% for c in cities %}
-                    <option value="{{ c }}" {% if c == selected_city %}selected{% endif %}>{{ c }}</option>
-                    {% endfor %}
-                </select>
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold text-muted small text-uppercase">تصفية حسب المحافظة</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-geo-alt text-primary"></i></span>
+                            <select name="city" class="form-select border-0 bg-light" onchange="this.form.submit()" style="padding: 12px;">
+                                <option value="" {% if not selected_city %}selected{% endif %}>جميع المحافظات</option>
+                                {% for c in cities %}
+                                <option value="{{ c }}" {% if c == selected_city %}selected{% endif %}>{{ c }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{% url 'store_list' %}" class="btn btn-outline-danger w-100 fw-bold" style="padding: 12px; border-radius: 10px;">
+                            <i class="bi bi-x-circle me-1"></i> إلغاء
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     <!-- Stores Grid -->
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <small id="storesCount" class="text-white-50">المعروض: {{ stores_end }} من {{ stores_total }}</small>
-    </div>
-    <div class="row mobile-horizontal-scroll stores-scroll" id="storesGrid" data-page-size="6">
+    <div class="container pb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="section-title h4 mb-0 fw-bold position-relative d-inline-block">
+                المتاجر المتاحة
+                <span class="position-absolute bottom-0 start-0 w-50" style="height: 3px; background: var(--primary); opacity: 0.5;"></span>
+            </h2>
+            <span class="badge bg-light text-dark border rounded-pill px-3 py-2">
+                {{ stores_total }} متجر
+            </span>
+        </div>
+
+        <div class="row" id="storesGrid">
         {% for store in stores %}
-        <div class="col-lg-4 col-md-6 mb-4">
-            <div class="store-card">
-                {% if store.main_logo_url %}
-                    <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image" width="320" height="200" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/320x220?text=Store'">
-                {% else %}
-                    <div class="store-image d-flex align-items-center justify-content-center" 
-                         style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white;">
-                        <i class="bi bi-shop" style="font-size: 4rem;"></i>
-                    </div>
-                {% endif %}
+        <div class="col-lg-4 col-md-6 mb-4" data-aos="fade-up">
+            <div class="store-card h-100 position-relative">
+                <span class="store-badge">
+                    <i class="bi bi-star-fill text-warning me-1"></i> {{ store.rating|default:"4.5" }}
+                </span>
                 
-                <h3 class="store-name">{{ store.name }}</h3>
-                <span class="store-category">{{ store.get_category_display }}</span>
-                <p class="store-description">{{ store.description|default:"متجر متخصص في أحدث صيحات الموضة"|truncatewords:15 }}</p>
-                
-                <div class="store-info">
-                    <div class="store-location">
-                        <i class="bi bi-geo-alt"></i> {{ store.city }}
-                    </div>
-                    <div class="store-rating">
-                        <i class="bi bi-star-fill"></i> {{ store.rating|default:"4.5" }}
-                    </div>
+                <div class="store-image-container">
+                    {% if store.main_logo_url %}
+                        <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/600x400?text={{ store.name|urlencode }}'">
+                    {% else %}
+                        <div class="store-image d-flex align-items-center justify-content-center" 
+                             style="background: linear-gradient(135deg, var(--muted) 0%, var(--text) 100%); color: white;">
+                            <i class="bi bi-shop display-4"></i>
+                        </div>
+                    {% endif %}
                 </div>
                 
-                <button class="visit-store-btn" onclick="window.location.href='{% url 'store_detail' store.id %}'">
-                    <i class="bi bi-bag-heart"></i> تسوق الآن
-                </button>
+                <div class="store-details">
+                    <h3 class="store-name">{{ store.name }}</h3>
+                    
+                    <div class="store-meta">
+                        <span><i class="bi bi-geo-alt-fill"></i> {{ store.city }}</span>
+                        <span><i class="bi bi-tag-fill"></i> {{ store.get_category_display }}</span>
+                    </div>
+                    
+                    <p class="text-muted mb-4 small" style="line-height: 1.6;">
+                        {{ store.description|default:"متجر متخصص في أحدث صيحات الموضة والأزياء العصرية."|truncatewords:15 }}
+                    </p>
+                    
+                    <a href="{% url 'store_detail' store.id %}" class="btn visit-btn d-flex align-items-center justify-content-center gap-2">
+                        <span>تسوق الآن</span>
+                        <i class="bi bi-arrow-left"></i>
+                    </a>
+                </div>
             </div>
         </div>
         {% empty %}
@@ -453,39 +317,4 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    function applyFilters() {
-        const categoryEl = document.getElementById('categorySelect');
-        const cityEl = document.getElementById('citySelect');
-        const category = categoryEl ? categoryEl.value : '';
-        const city = cityEl ? cityEl.value : '';
-        const params = new URLSearchParams(window.location.search || '');
-        params.delete('page');
-        if (category) { params.set('category', category); } else { params.delete('category'); }
-        if (city) { params.set('city', city); } else { params.delete('city'); }
-        const url = '{% url 'store_list' %}' + (params.toString() ? ('?' + params.toString()) : '');
-        window.location.href = url;
-    }
-    (function(){
-        if(window.innerWidth <= 768) return;
-        const track = document.getElementById('showcaseTrack');
-        const prev = document.getElementById('scPrev');
-        const next = document.getElementById('scNext');
-        if(!track || track.dataset.inited === '1') return;
-        let timer = null;
-        function rotateForward(){ if(track && track.children.length>0){ track.appendChild(track.children[0]); } }
-        function rotateBackward(){ if(track && track.children.length>0){ track.insertBefore(track.lastElementChild, track.firstElementChild); } }
-        function start(){ stop(); timer = setInterval(rotateForward, 5000); }
-        function stop(){ if(timer){ clearInterval(timer); timer=null; } }
-        if(prev){ prev.addEventListener('click', function(){ rotateBackward(); start(); }); }
-        if(next){ next.addEventListener('click', function(){ rotateForward(); start(); }); }
-        start();
-        track.dataset.inited = '1';
-        document.addEventListener('visibilitychange', function(){
-            if(document.hidden){ stop(); } else { start(); }
-        });
-    })();
-
-    
-</script>
 {% endblock %}

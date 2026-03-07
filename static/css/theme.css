@@ -4,10 +4,13 @@
     --text: #212529;
     --muted: #6c757d;
     --border: #dee2e6;
-    --primary: #B87333; /* Copper/Gold Branding */
-    --primary-rgb: 184, 115, 51;
+    --primary: #e94560; /* Red-Pink Branding */
+    --primary-rgb: 233, 69, 96;
+    --bs-primary: #e94560;
+    --bs-primary-rgb: 233, 69, 96;
     --on-primary: #ffffff;
-    --link: #8B4513;
+    --link: #8b2f97;
+    --bs-link-color: #8b2f97;
     color-scheme: light;
 }
 
@@ -18,12 +21,23 @@
     --text: #e5e7eb;
     --muted: #9ca3af;
     --border: #1f2937;
-    --primary: #B87333;
-    --primary-rgb: 184, 115, 51;
+    --primary: #e94560;
+    --primary-rgb: 233, 69, 96;
+    --bs-primary: #e94560;
+    --bs-primary-rgb: 233, 69, 96;
     --secondary: #1f2937;
-    --on-primary: #0b0f19;
+    --on-primary: #ffffff;
     --link: #f0c27b;
+    --bs-link-color: #f0c27b;
     color-scheme: dark;
+}
+
+.text-primary {
+    color: var(--primary) !important;
+}
+
+.bg-primary {
+    background-color: var(--primary) !important;
 }
 
 body {

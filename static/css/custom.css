@@ -1,9 +1,9 @@
 :root {
-  --brand-primary: #c67a2b;
-  --brand-secondary: #0d6efd;
+  --brand-primary: #e94560;
+  --brand-secondary: #8b2f97;
   --brand-dark: #121212;
   --text-muted: #6c757d;
-  --gradient-1: linear-gradient(135deg, #c67a2b 0%, #ff9f40 100%);
+  --gradient-1: linear-gradient(135deg, #e94560 0%, #8b2f97 100%);
   --gradient-2: linear-gradient(135deg, #0d6efd 0%, #5bc0de 100%);
 }
 body {
