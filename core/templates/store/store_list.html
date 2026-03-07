@@ -5,12 +5,11 @@
 {% block extra_css %}
 <style>
     :root {
-        --copper: #B87333;
-        --copper-light: #D4A574;
-        --copper-dark: #8B4513;
+        --primary: #e94560;
+        --secondary: #8b2f97;
+        --gold: #FFD700;
         --black: #000000;
         --black-light: #1a1a1a;
-        --gold: #FFD700;
     }
 
     body {
@@ -19,7 +18,7 @@
     }
 
     .fashion-header {
-        background: linear-gradient(135deg, var(--copper) 0%, var(--copper-dark) 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         padding: 30px 0;
         margin-bottom: 40px;
     }
@@ -38,15 +37,15 @@
         opacity: 0.9;
     }
 
-    .showcase { background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%); border: 2px solid var(--copper); border-radius: 18px; padding: 12px; margin-bottom: 24px; position: relative; overflow: hidden; }
+    .showcase { background: linear-gradient(135deg, var(--black) 0%, var(--black-light) 100%); border: 2px solid var(--primary); border-radius: 18px; padding: 12px; margin-bottom: 24px; position: relative; overflow: hidden; }
     .showcase-track { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; align-items: stretch; }
     .showcase-card { background: #0f0f0f; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; overflow: hidden; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
-    .showcase-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(184,115,51,.25); }
+    .showcase-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(233, 69, 96, 0.25); }
     .showcase-img { width: 100%; height: 130px; object-fit: cover; display: block; border-bottom: 1px solid rgba(255,255,255,0.15); }
     .showcase-info { padding: 10px; }
     .showcase-title { color: var(--gold); font-weight: 800; font-size: .95rem; margin-bottom: 4px; }
     .showcase-store { color: #bbb; font-size: .8rem; }
-    .showcase-price { color: var(--copper-light); font-weight: 700; font-size: .9rem; }
+    .showcase-price { color: var(--primary); font-weight: 700; font-size: .9rem; }
     .showcase-controls { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; }
     .showcase-btn { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35); color: #fff; padding: 6px 10px; border-radius: 20px; font-size: .85rem; font-weight: 700; }
     
@@ -79,7 +78,7 @@
         padding: 20px;
         margin-bottom: 30px;
         backdrop-filter: blur(10px);
-        border: 1px solid var(--copper-light);
+        border: 1px solid var(--primary);
     }
 
     .filter-label {
@@ -92,8 +91,8 @@
     .filter-select {
         width: 100%;
         background: transparent;
-        color: var(--copper-light);
-        border: 2px solid var(--copper);
+        color: var(--primary);
+        border: 2px solid var(--primary);
         border-radius: 25px;
         padding: 10px 16px;
         font-weight: bold;
@@ -107,8 +106,8 @@
 
     .filter-btn {
         background: transparent;
-        border: 2px solid var(--copper);
-        color: var(--copper-light);
+        border: 2px solid var(--primary);
+        color: var(--primary);
         padding: 10px 20px;
         border-radius: 25px;
         margin: 5px;
@@ -118,10 +117,29 @@
 
     .filter-btn:hover,
     .filter-btn.active {
-        background: var(--copper);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         color: white;
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(184, 115, 51, 0.4);
+        box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
+    }
+
+    .rail-tab {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        color: #ccc;
+        padding: 8px 16px;
+        border-radius: 20px;
+        margin-left: 8px;
+        transition: all 0.3s ease;
+    }
+    .rail-tab.active {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        border-color: transparent;
+        color: white;
+    }
+    .rail-tab:hover {
+        border-color: var(--primary);
+        color: var(--primary);
     }
 
     .store-card {
@@ -135,9 +153,9 @@
     }
 
     .store-card:hover {
-        border-color: var(--copper);
+        border-color: var(--primary);
         transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(184, 115, 51, 0.3);
+        box-shadow: 0 15px 40px rgba(233, 69, 96, 0.3);
     }
 
     .store-image {
@@ -146,7 +164,7 @@
         object-fit: cover;
         border-radius: 15px;
         margin-bottom: 20px;
-        border: 3px solid var(--copper);
+        border: 3px solid var(--primary);
     }
 
     .store-name {
@@ -157,7 +175,7 @@
     }
 
     .store-category {
-        background: var(--copper);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         color: white;
         padding: 5px 15px;
         border-radius: 20px;
@@ -180,7 +198,7 @@
     }
 
     .store-location {
-        color: var(--copper-light);
+        color: #ccc;
         font-size: 0.9rem;
     }
 
@@ -190,9 +208,9 @@
     }
 
     .visit-store-btn {
-        background: linear-gradient(45deg, var(--copper), var(--copper-dark));
-        color: white;
-        border: none;
+        background: transparent;
+        color: var(--primary);
+        border: 2px solid var(--primary);
         padding: 12px 30px;
         border-radius: 25px;
         font-weight: bold;
@@ -201,9 +219,10 @@
     }
 
     .visit-store-btn:hover {
-        background: linear-gradient(45deg, var(--copper-dark), var(--copper));
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
         transform: scale(1.05);
-        box-shadow: 0 5px 20px rgba(184, 115, 51, 0.4);
+        box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
     }
 
     .coming-soon-card {
@@ -246,7 +265,7 @@
 
     .no-stores-icon {
         font-size: 4rem;
-        color: var(--copper);
+        color: var(--primary);
         margin-bottom: 20px;
     }
 
@@ -315,7 +334,7 @@
                         {% if url %}
                             <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" width="300" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
                         {% else %}
-                            <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
+                            <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
                                 <i class="bi bi-bag" style="font-size:2rem;"></i>
                             </div>
                         {% endif %}
@@ -327,19 +346,19 @@
                                 {% if url %}
                                     <img src="{{ url }}" alt="{{ p.name }}" class="showcase-img" width="300" height="130" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/300x300?text=Image'">
                                 {% else %}
-                                    <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
+                                    <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
                                         <i class="bi bi-bag" style="font-size:2rem;"></i>
                                     </div>
                                 {% endif %}
                             {% endwith %}
                         {% else %}
-                            <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
+                            <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
                                 <i class="bi bi-bag" style="font-size:2rem;"></i>
                             </div>
                         {% endif %}
                     {% endwith %}
                 {% else %}
-                <div class="showcase-img" style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); display:flex; align-items:center; justify-content:center; color:#fff;">
+                <div class="showcase-img" style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); display:flex; align-items:center; justify-content:center; color:#fff;">
                     <i class="bi bi-bag" style="font-size:2rem;"></i>
                 </div>
                 {% endif %}
@@ -390,7 +409,7 @@
                     <img src="{{ store.main_logo_url }}" alt="{{ store.name }}" class="store-image" width="320" height="200" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/320x220?text=Store'">
                 {% else %}
                     <div class="store-image d-flex align-items-center justify-content-center" 
-                         style="background: linear-gradient(45deg, var(--copper), var(--copper-dark)); color: white;">
+                         style="background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%); color: white;">
                         <i class="bi bi-shop" style="font-size: 4rem;"></i>
                     </div>
                 {% endif %}
