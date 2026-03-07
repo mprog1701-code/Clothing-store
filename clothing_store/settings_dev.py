@@ -55,9 +55,9 @@ INSTALLED_APPS = [
 
 # 🔧 FIX 2: Removed custom middleware that might cause issues
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # يجب أن يكون هنا!
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -138,7 +138,12 @@ USE_TZ = True
 # 🔧 FIX 4: Simplified Static Files Configuration
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
+
+# Create static directory if not exists
+static_dir = BASE_DIR / 'static'
+static_dir.mkdir(exist_ok=True)
+
+STATICFILES_DIRS = [static_dir]
 
 # 🔧 FIX 5: Whitenoise for static files
 STORAGES = {
@@ -149,6 +154,10 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
+
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
+WHITENOISE_MANIFEST_STRICT = False
 
 # Disable caching in development/testing to see changes immediately
 CACHES = {

@@ -18,15 +18,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-produc
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # 🔧 FIX 1: Simplified ALLOWED_HOSTS
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else [
-    '127.0.0.1',
-    'localhost',
-    '192.168.1.102',
-    '.railway.app',
-    '.up.railway.app',
-    '.onrender.com',
-    '.vercel.app',
-]
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -55,9 +47,9 @@ INSTALLED_APPS = [
 
 # 🔧 FIX 2: Removed custom middleware that might cause issues
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # يجب أن يكون هنا!
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -138,7 +130,12 @@ USE_TZ = True
 # 🔧 FIX 4: Simplified Static Files Configuration
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static'] if (BASE_DIR / 'static').exists() else []
+
+# Create static directory if not exists
+static_dir = BASE_DIR / 'static'
+static_dir.mkdir(exist_ok=True)
+
+STATICFILES_DIRS = [static_dir]
 
 # 🔧 FIX 5: Whitenoise for static files
 STORAGES = {
@@ -146,10 +143,13 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        # Changed from CompressedManifestStaticFilesStorage to avoid 500 errors if files are missing
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
+
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
+WHITENOISE_MANIFEST_STRICT = False
 
 # Media files
 MEDIA_URL = '/media/'
