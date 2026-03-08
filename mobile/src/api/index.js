@@ -1,5 +1,5 @@
 import client from './client';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from './config';
 import { saveTokens } from '../auth/tokenStorage';
 
 export async function login(identifier, password) {

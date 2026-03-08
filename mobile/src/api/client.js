@@ -1,6 +1,6 @@
 import axios from 'axios';
 import NetInfo from '@react-native-community/netinfo';
-import { API_BASE_URL } from '../config';
+import { API_BASE_URL } from './config';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from '../auth/tokenStorage';
 
 const client = axios.create({

@@ -7,7 +7,7 @@ function sanitize(u) {
     .replace(/\s+/g, '')
     .replace(/\/+$/g, '');
 }
-const DEV_DEFAULT = 'http://192.168.1.102:8000';
+const DEV_DEFAULT = 'https://clothing-store-production-4387.up.railway.app';
 const PROD_DEFAULT = 'https://clothing-store-production-4387.up.railway.app';
 const FROM_ENV = sanitize(RAW);
 export const API_BASE_URL =
