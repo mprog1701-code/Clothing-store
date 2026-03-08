@@ -21,7 +21,7 @@ const ProductCard = ({ product, addToCart }) => {
           source={
             product.image 
               ? { uri: product.image } 
-              : require('../../assets/placeholder-product.png')
+              : { uri: 'https://placehold.co/400x400?text=Product' }
           } 
           style={styles.image} 
         />

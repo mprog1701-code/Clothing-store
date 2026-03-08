@@ -22,7 +22,11 @@ const BannerCarousel = ({ banners }) => {
             onPress={() => banner.url && Linking.openURL(banner.url)}
           >
             <Image
-              source={{ uri: banner.image }}
+              source={
+                banner.image 
+                  ? { uri: banner.image } 
+                  : { uri: 'https://placehold.co/800x400?text=Banner' }
+              }
               style={styles.image}
             />
           </TouchableOpacity>
