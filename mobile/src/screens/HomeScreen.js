@@ -11,7 +11,7 @@ import {
   I18nManager
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-// import Animated, { FadeInDown } from 'react-native-reanimated'; // Disabled temporarily
+// import Animated, { FadeInDown } from 'react-native-reanimated'; 
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import ProductCard from '../components/ProductCard';
@@ -144,10 +144,7 @@ const HomeScreen = ({ navigation }) => {
       
       <View style={styles.productsGrid}>
         {products.map((item, index) => (
-          <View 
-            key={item.id} 
-            // entering={FadeInDown.delay(index * 100)} // Disabled temporarily
-          >
+          <View key={item.id}>
             <ProductCard 
               product={item} 
               addToCart={handleAddToCart}
