@@ -1,576 +1,224 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import {
-  ScrollView,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-  StyleSheet,
-  ActivityIndicator,
-  RefreshControl,
-  TextInput,
-  Alert,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/Colors';
-import ProductCard from '../components/ProductCard';
-import { listProducts, listCategories, listAds, addToCart } from '../api';
-
-const { width } = Dimensions.get('window');
+import theme from '../theme';
 
 const HomeScreen = ({ navigation }) => {
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [banners, setBanners] = useState([]);
-  const [email, setEmail] = useState('');
-
-  const loadData = useCallback(async () => {
-    try {
-      const [productsData, categoriesData, adsData] = await Promise.all([
-        listProducts({ limit: 10 }),
-        listCategories(),
-        listAds({ position: 'hero' })
-      ]);
-
-      setProducts(Array.isArray(productsData) ? productsData : (productsData.results || []));
-      
-      const catArr = Array.isArray(categoriesData) ? categoriesData : (categoriesData.results || []);
-      setCategories(catArr);
-      
-      setBanners(Array.isArray(adsData) ? adsData : (adsData.results || adsData.ads || []));
-    } catch (error) {
-      console.error('Error loading home data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadData();
-  };
-
-  const handleAddToCart = async (product) => {
-    try {
-      await addToCart(product.id);
-      Alert.alert('تمت الإضافة', `تم إضافة ${product.name} إلى السلة بنجاح!`);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      Alert.alert('خطأ', 'يرجى تسجيل الدخول لإضافة المنتجات إلى السلة');
-    }
-  };
-
-  const handleSubscribe = () => {
-    if (!email || !email.includes('@')) {
-      Alert.alert('خطأ', 'يرجى إدخال بريد إلكتروني صحيح');
-      return;
-    }
-    Alert.alert('نجاح', 'تم الاشتراك في النشرة البريدية بنجاح!');
-    setEmail('');
-  };
-
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
+  const [query, setQuery] = useState('');
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-      }
-    >
-      {/* Hero Banner */}
-      <View style={styles.heroSection}>
-        <LinearGradient
-          colors={[COLORS.gradientStart, COLORS.gradientEnd]}
-          style={styles.heroBanner}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Text style={styles.heroTitle}>أفضل الماركات العالمية</Text>
-          <Text style={styles.heroSubtitle}>في العراق</Text>
-          <Text style={styles.heroDescription}>
-            تسوق من أفضل المحلات العراقية مع ضمان الجودة والتوصيل
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.heroCTA}
-            onPress={() => navigation.navigate('Search')}
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.iconButton}>
+          <Ionicons name="cart-outline" size={20} color={theme.colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>دار الأزياء</Text>
+      </View>
+
+      <View style={styles.searchBar}>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="ابحث عن منتج..."
+          placeholderTextColor={theme.colors.textSecondary}
+          style={styles.searchInput}
+        />
+        <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
+      </View>
+
+      <View style={styles.adSlot}>
+        <Text style={styles.adText}>مساحة إعلانية</Text>
+      </View>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>العروض (1)</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'offers' })}>
+          <Text style={styles.sectionLink}>عرض الكل</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.offerCard}>
+        <Text style={styles.offerTitle}>عرض العروض</Text>
+      </View>
+      <Text style={styles.offerLink}>عرض العروض</Text>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>الأقسام</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Categories')}>
+          <Text style={styles.sectionLink}>عرض الكل</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+        {['رجالي', 'نسائي', 'أطفال', 'كوزمتك', 'عطور', 'عرض الكل'].map((label) => (
+          <TouchableOpacity
+            key={label}
+            style={[styles.chip, label === 'عرض الكل' && styles.chipActive]}
+            onPress={() => navigation.navigate('Products', { category: label })}
           >
-            <Text style={styles.heroCTAText}>ابدأ التسوق الآن</Text>
-            <Ionicons name="arrow-back" size={20} color="#fff" />
+            <Text style={[styles.chipText, label === 'عرض الكل' && styles.chipTextActive]}>{label}</Text>
           </TouchableOpacity>
-        </LinearGradient>
+        ))}
+      </ScrollView>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>عروض فلاش</Text>
+      </View>
+      <View style={styles.flashCard}>
+        <Text style={styles.flashTitle}>عرض فلاش</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'flash' })}>
+          <Text style={styles.flashLink}>عرض العروض</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Flash Sale Banner */}
-      <View style={styles.flashSale}>
-        <LinearGradient
-          colors={['#ff6b6b', '#ee5a6f']}
-          style={styles.flashBanner}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
-          <View style={styles.flashContent}>
-            <Ionicons name="flash" size={24} color="#fff" />
-            <Text style={styles.flashText}>تخفيضات اليوم - خصم حتى 50%</Text>
-          </View>
-          <Text style={styles.flashTimer}>⏰ 12:45:32</Text>
-        </LinearGradient>
-      </View>
-
-      {/* Categories */}
-      <View style={styles.section}>
-        <SectionHeader title="تسوق حسب القسم" onPress={() => navigation.navigate('Categories')} />
-        
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 15 }}>
-          <CategoryCard icon="👔" title="رجالي" gradient={['#667eea', '#764ba2']} onPress={() => navigation.navigate('Products', { category: 'men' })} />
-          <CategoryCard icon="👗" title="نسائي" gradient={['#f093fb', '#f5576c']} onPress={() => navigation.navigate('Products', { category: 'women' })} />
-          <CategoryCard icon="👶" title="أطفال" gradient={['#4facfe', '#00f2fe']} onPress={() => navigation.navigate('Products', { category: 'kids' })} />
-          <CategoryCard icon="💄" title="كوزمتك" gradient={['#43e97b', '#38f9d7']} onPress={() => navigation.navigate('Products', { category: 'cosmetics' })} />
-          <CategoryCard icon="👟" title="أحذية" gradient={['#fa709a', '#fee140']} onPress={() => navigation.navigate('Products', { category: 'shoes' })} />
-          <CategoryCard icon="⌚" title="ساعات" gradient={['#30cfd0', '#330867']} onPress={() => navigation.navigate('Products', { category: 'watches' })} />
-        </ScrollView>
-      </View>
-
-      {/* Ad Banner 1 */}
-      <TouchableOpacity style={styles.adBanner}>
-        <Image
-          source={{ uri: banners[0]?.image || 'https://placehold.co/800x200/e94560/ffffff?text=Ad+Banner' }}
-          style={styles.adImage}
-        />
-        <View style={styles.adOverlay}>
-          <Text style={styles.adText}>عرض خاص - خصم 30%</Text>
-          <Text style={styles.adSubtext}>على جميع الملابس النسائية</Text>
-        </View>
-      </TouchableOpacity>
-
-      {/* Brands Grid */}
-      <View style={styles.section}>
-        <SectionHeader title="الماركات العالمية" onPress={() => {}} />
-        <View style={styles.brandsGrid}>
-          <BrandLogo name="ZARA" icon="shirt-outline" />
-          <BrandLogo name="NIKE" icon="footsteps-outline" />
-          <BrandLogo name="ADIDAS" icon="briefcase-outline" />
-          <BrandLogo name="GUCCI" icon="glasses-outline" />
-          <BrandLogo name="CHANEL" icon="flask-outline" />
-          <BrandLogo name="H&M" icon="body-outline" />
-        </View>
-      </View>
-
-      {/* Featured Products */}
-      <View style={styles.section}>
-        <SectionHeader 
-          title="المنتجات المميزة" 
-          onPress={() => navigation.navigate('Products', { mode: 'featured' })} 
-        />
-        
-        <View style={styles.productsGrid}>
-          {products.slice(0, 4).map(item => (
-            <ProductCard 
-              key={item.id}
-              product={item}
-              addToCart={handleAddToCart}
-            />
-          ))}
-        </View>
-      </View>
-
-      {/* Ad Banner 2 */}
-      <TouchableOpacity style={styles.adBanner}>
-        <LinearGradient
-          colors={[COLORS.gradientStart, COLORS.gradientEnd]}
-          style={styles.gradientAd}
-        >
-          <Text style={styles.adTitle}>🎁 عرض محدود</Text>
-          <Text style={styles.adDesc}>اشترِ 2 واحصل على 1 مجاناً</Text>
-          <View style={styles.adButton}>
-            <Text style={styles.adButtonText}>تسوق الآن</Text>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
-
-      {/* New Arrivals */}
-      <View style={styles.section}>
-        <SectionHeader title="وصل حديثاً" onPress={() => navigation.navigate('Products', { mode: 'all' })} />
-        
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 15 }}>
-          {products.slice(4, 10).map(item => (
-            <View key={item.id} style={{ marginLeft: 15 }}>
-              <ProductCard 
-                product={item}
-                addToCart={handleAddToCart}
-              />
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Newsletter */}
-      <View style={styles.newsletter}>
-        <LinearGradient
-          colors={[COLORS.dark, COLORS.surface]}
-          style={styles.newsletterGradient}
-        >
-          <Ionicons name="mail" size={40} color={COLORS.primary} />
-          <Text style={styles.newsletterTitle}>اشترك في نشرتنا البريدية</Text>
-          <Text style={styles.newsletterText}>احصل على عروض حصرية وخصومات خاصة</Text>
-          
-          <View style={styles.newsletterInput}>
-            <TextInput 
-              placeholder="البريد الإلكتروني"
-              placeholderTextColor="#666"
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <LinearGradient
-              colors={[COLORS.gradientStart, COLORS.gradientEnd]}
-              style={styles.subscribeBtn}
-            >
-              <TouchableOpacity style={styles.subscribeBtnTouch} onPress={handleSubscribe}>
-                <Text style={styles.subscribeBtnText}>اشتراك</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-        </LinearGradient>
-      </View>
-
-      <View style={{ height: 30 }} />
+      <View style={{ height: theme.spacing.xl }} />
     </ScrollView>
   );
 };
 
-// Sub-components
-
-const SectionHeader = ({ title, onPress }) => (
-  <View style={styles.sectionHeader}>
-    <Text style={styles.sectionTitle}>{title}</Text>
-    <TouchableOpacity onPress={onPress}>
-      <Text style={styles.seeAll}>عرض الكل ←</Text>
-    </TouchableOpacity>
-  </View>
-);
-
-const CategoryCard = ({ icon, title, gradient, onPress }) => (
-  <TouchableOpacity style={styles.categoryCard} onPress={onPress}>
-    <LinearGradient
-      colors={gradient}
-      style={styles.categoryGradient}
-    >
-      <Text style={styles.categoryIcon}>{icon}</Text>
-      <Text style={styles.categoryTitle}>{title}</Text>
-    </LinearGradient>
-  </TouchableOpacity>
-);
-
-const BrandLogo = ({ name, icon }) => (
-  <TouchableOpacity style={styles.brandItem}>
-    <View style={styles.brandIconContainer}>
-      <Ionicons name={icon} size={24} color={COLORS.primary} />
-    </View>
-    <Text style={styles.brandName}>{name}</Text>
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.dark,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.dark,
-  },
-  
-  // Hero Section
-  heroSection: {
-    height: 300,
-    marginBottom: 20,
-  },
-  heroBanner: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  heroSubtitle: {
-    fontSize: 24,
-    color: '#fff',
-    marginBottom: 10,
-  },
-  heroDescription: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-    opacity: 0.9,
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  heroCTA: {
+  header: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 25,
-    gap: 10,
-  },
-  heroCTAText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  
-  // Flash Sale
-  flashSale: {
-    marginHorizontal: 15,
-    marginBottom: 20,
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  flashBanner: {
-    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
+    marginBottom: theme.spacing.lg,
   },
-  flashContent: {
+  headerTitle: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.lg,
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchBar: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 10,
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
   },
-  flashText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+  searchInput: {
+    flex: 1,
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.md,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
-  flashTimer: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+  adSlot: {
+    height: 140,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.lg,
   },
-  
-  // Section
-  section: {
-    marginBottom: 25,
+  adText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.md,
   },
   sectionHeader: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    marginBottom: 15,
+    marginBottom: theme.spacing.sm,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.lg,
   },
-  seeAll: {
-    fontSize: 14,
-    color: COLORS.primary,
+  sectionLink: {
+    color: theme.colors.accent,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.sm,
   },
-  
-  // Category Card
-  categoryCard: {
-    marginLeft: 15,
-    borderRadius: 15,
-    overflow: 'hidden',
-  },
-  categoryGradient: {
-    width: 100,
+  offerCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
     height: 120,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
+    marginBottom: theme.spacing.sm,
   },
-  categoryIcon: {
-    fontSize: 40,
+  offerTitle: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.md,
   },
-  categoryTitle: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+  offerLink: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.sm,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    marginBottom: theme.spacing.lg,
   },
-  
-  // Brands Grid
-  brandsGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    paddingHorizontal: 15,
-    justifyContent: 'space-between',
+  chipsRow: {
+    paddingVertical: theme.spacing.sm,
+    paddingRight: I18nManager.isRTL ? 0 : theme.spacing.sm,
+    paddingLeft: I18nManager.isRTL ? theme.spacing.sm : 0,
   },
-  brandItem: {
-    width: (width - 60) / 3,
-    alignItems: 'center',
-    marginBottom: 15,
-    backgroundColor: COLORS.card,
-    paddingVertical: 15,
-    borderRadius: 15,
+  chip: {
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  brandIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(233, 69, 96, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  brandName: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-
-  // Ad Banner
-  adBanner: {
-    marginHorizontal: 15,
-    marginBottom: 20,
-    borderRadius: 15,
-    overflow: 'hidden',
-    height: 150,
-  },
-  adImage: {
-    width: '100%',
-    height: '100%',
-  },
-  adOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  adText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  adSubtext: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  gradientAd: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  adTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  adDesc: {
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 15,
-  },
-  adButton: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 25,
-    paddingVertical: 8,
+    borderColor: theme.colors.cardBorder,
     borderRadius: 20,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    marginLeft: theme.spacing.sm,
   },
-  adButtonText: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
+  chipActive: {
+    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.accent,
   },
-  
-  // Products Grid
-  productsGrid: {
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
-    paddingHorizontal: 15,
-    justifyContent: 'space-between',
+  chipText: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.sm,
   },
-
-  // Newsletter
-  newsletter: {
-    marginHorizontal: 15,
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginTop: 20,
+  chipTextActive: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
   },
-  newsletterGradient: {
-    padding: 30,
-    alignItems: 'center',
-  },
-  newsletterTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 10,
-  },
-  newsletterText: {
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  newsletterInput: {
-    flexDirection: 'row-reverse',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 30,
-    padding: 5,
-    width: '100%',
+  flashCard: {
+    backgroundColor: theme.colors.surfaceAlt,
+    borderRadius: theme.radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: theme.colors.cardBorder,
+    padding: theme.spacing.md,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.lg,
   },
-  input: {
-    flex: 1,
-    paddingHorizontal: 20,
-    color: '#fff',
-    textAlign: 'right',
+  flashTitle: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.md,
   },
-  subscribeBtn: {
-    borderRadius: 25,
-    overflow: 'hidden',
+  flashLink: {
+    color: theme.colors.accent,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.sm,
   },
-  subscribeBtnTouch: {
-    paddingHorizontal: 25,
-    paddingVertical: 10,
-  },
-  subscribeBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  }
 });
 
 export default HomeScreen;
