@@ -1,21 +1,45 @@
-import React, { useState } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
 
 const HomeScreen = ({ navigation }) => {
   const [query, setQuery] = useState('');
+  const headerAnim = useRef(new Animated.Value(0)).current;
+  const searchAnim = useRef(new Animated.Value(0)).current;
+  const adAnim = useRef(new Animated.Value(0)).current;
+  const offersAnim = useRef(new Animated.Value(0)).current;
+  const categoriesAnim = useRef(new Animated.Value(0)).current;
+  const flashAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.stagger(120, [
+      Animated.timing(headerAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(searchAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(adAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(offersAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(categoriesAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+      Animated.timing(flashAnim, { toValue: 1, duration: 420, useNativeDriver: true }),
+    ]).start();
+  }, [adAnim, categoriesAnim, flashAnim, headerAnim, offersAnim, searchAnim]);
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      alwaysBounceVertical
+      scrollEventThrottle={16}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Animated.View style={[styles.header, styles.fadeUp(headerAnim)]}>
         <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.iconButton}>
           <Ionicons name="cart-outline" size={20} color={theme.colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>دار الأزياء</Text>
-      </View>
+      </Animated.View>
 
-      <View style={styles.searchBar}>
+      <Animated.View style={[styles.searchBar, styles.fadeUp(searchAnim)]}>
         <TextInput
           value={query}
           onChangeText={setQuery}
@@ -24,50 +48,65 @@ const HomeScreen = ({ navigation }) => {
           style={styles.searchInput}
         />
         <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
-      </View>
+      </Animated.View>
 
-      <View style={styles.adSlot}>
+      <Animated.View style={[styles.adSlot, styles.fadeUp(adAnim)]}>
         <Text style={styles.adText}>مساحة إعلانية</Text>
-      </View>
+      </Animated.View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>العروض (1)</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'offers' })}>
-          <Text style={styles.sectionLink}>عرض الكل</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.offerCard}>
-        <Text style={styles.offerTitle}>عرض العروض</Text>
-      </View>
-      <Text style={styles.offerLink}>عرض العروض</Text>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>الأقسام</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Categories')}>
-          <Text style={styles.sectionLink}>عرض الكل</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-        {['رجالي', 'نسائي', 'أطفال', 'كوزمتك', 'عطور', 'عرض الكل'].map((label) => (
-          <TouchableOpacity
-            key={label}
-            style={[styles.chip, label === 'عرض الكل' && styles.chipActive]}
-            onPress={() => navigation.navigate('Products', { category: label })}
-          >
-            <Text style={[styles.chipText, label === 'عرض الكل' && styles.chipTextActive]}>{label}</Text>
+      <Animated.View style={styles.fadeUp(offersAnim)}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>العروض (1)</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'offers', title: 'العروض' })}>
+            <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        </View>
+        <View style={styles.offerCard}>
+          <Text style={styles.offerTitle}>عرض العروض</Text>
+        </View>
+        <Text style={styles.offerLink}>عرض العروض</Text>
+      </Animated.View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>عروض فلاش</Text>
-      </View>
-      <View style={styles.flashCard}>
-        <Text style={styles.flashTitle}>عرض فلاش</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'flash' })}>
-          <Text style={styles.flashLink}>عرض العروض</Text>
-        </TouchableOpacity>
-      </View>
+      <Animated.View style={styles.fadeUp(categoriesAnim)}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>الأقسام</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'categories', title: 'الأقسام' })}>
+            <Text style={styles.sectionLink}>عرض الكل</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+          {['رجالي', 'نسائي', 'أطفال', 'كوزمتك', 'عطور', 'عرض الكل'].map((label) => (
+            <TouchableOpacity
+              key={label}
+              style={[styles.chip, label === 'عرض الكل' && styles.chipActive]}
+              onPress={() =>
+                navigation.navigate('Products', {
+                  mode: 'category',
+                  categoryLabel: label,
+                  title: label,
+                })
+              }
+            >
+              <Text style={[styles.chipText, label === 'عرض الكل' && styles.chipTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </Animated.View>
+
+      <Animated.View style={styles.fadeUp(flashAnim)}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>عروض فلاش</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'flash', title: 'عروض فلاش' })}>
+            <Text style={styles.sectionLink}>عرض الكل</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.flashCard}>
+          <Text style={styles.flashTitle}>عرض فلاش</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'flash', title: 'عروض فلاش' })}>
+            <Text style={styles.flashLink}>عرض العروض</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
 
       <View style={{ height: theme.spacing.xl }} />
     </ScrollView>
@@ -78,9 +117,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  content: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl * 2,
   },
+  fadeUp: (anim) => ({
+    opacity: anim,
+    transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }],
+  }),
   header: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
