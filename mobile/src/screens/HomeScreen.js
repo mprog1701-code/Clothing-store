@@ -1,4 +1,3 @@
-// Global Mobile App UI Transformation Completed
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   ScrollView,
