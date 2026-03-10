@@ -124,6 +124,288 @@
     </div>
   </div>
 
+  <div class="management-section">
+    <div class="section-header">
+      <h3>
+        <i class="fas fa-cog"></i>
+        لوحة الإدارة الكاملة
+      </h3>
+    </div>
+    <div class="management-grid">
+      <a href="{% url 'super_owner_announcements' %}" class="management-card card-ads">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-bullhorn"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة الإعلانات</h4>
+          <p>إنشاء وتعديل الإعلانات</p>
+          <div class="card-badge">
+            <span class="badge bg-info">3 نشط</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_inventory' %}" class="management-card card-inventory">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-boxes"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة المخزون</h4>
+          <p>متابعة وإدارة المخزون</p>
+          <div class="card-badge">
+            <span class="badge bg-warning">5 منخفض</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_products' %}" class="management-card card-products">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-tshirt"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة المنتجات</h4>
+          <p>إضافة وتعديل المنتجات</p>
+          <div class="card-badge">
+            <span class="badge bg-success">248 منتج</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-media">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-images"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة الملفات</h4>
+          <p>الصور والفيديوهات</p>
+          <div class="card-badge">
+            <span class="badge bg-info">1.2 GB</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_stores' %}" class="management-card card-stores">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-store"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة المتاجر</h4>
+          <p>المتاجر والتجار</p>
+          <div class="card-badge">
+            <span class="badge bg-primary">12 متجر</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_orders' %}" class="management-card card-orders">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة الطلبات</h4>
+          <p>جميع الطلبات والمبيعات</p>
+          <div class="card-badge">
+            <span class="badge bg-warning">4 معلقة</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-offers">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-tags"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة العروض</h4>
+          <p>العروض والخصومات</p>
+          <div class="card-badge">
+            <span class="badge bg-danger">2 نشط</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-categories">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-list"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة الفئات</h4>
+          <p>الأقسام والتصنيفات</p>
+          <div class="card-badge">
+            <span class="badge bg-info">8 فئات</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_owners' %}" class="management-card card-customers">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة العملاء</h4>
+          <p>قاعدة بيانات العملاء</p>
+          <div class="card-badge">
+            <span class="badge bg-success">1,245 عميل</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-reviews">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة المراجعات</h4>
+          <p>التقييمات والتعليقات</p>
+          <div class="card-badge">
+            <span class="badge bg-warning">12 جديد</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-shipping">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-truck"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة الشحن</h4>
+          <p>شركات التوصيل والشحن</p>
+          <div class="card-badge">
+            <span class="badge bg-info">3 شركات</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-payments">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="card-content">
+          <h4>إدارة المدفوعات</h4>
+          <p>طرق الدفع والمعاملات</p>
+          <div class="card-badge">
+            <span class="badge bg-success">نشط</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_reports' %}" class="management-card card-reports">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-chart-bar"></i>
+        </div>
+        <div class="card-content">
+          <h4>التقارير</h4>
+          <p>تقارير مفصلة وإحصائيات</p>
+          <div class="card-badge">
+            <span class="badge bg-primary">جديد</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_settings' %}" class="management-card card-settings">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-cog"></i>
+        </div>
+        <div class="card-content">
+          <h4>إعدادات النظام</h4>
+          <p>إعدادات عامة ومتقدمة</p>
+          <div class="card-badge">
+            <span class="badge bg-secondary">متقدم</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-backup">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-database"></i>
+        </div>
+        <div class="card-content">
+          <h4>النسخ الاحتياطي</h4>
+          <p>حفظ واستعادة البيانات</p>
+          <div class="card-badge">
+            <span class="badge bg-success">آخر: اليوم</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+
+      <a href="{% url 'super_owner_issues' %}" class="management-card card-logs">
+        <div class="card-icon-wrapper">
+          <div class="card-icon-bg"></div>
+          <i class="fas fa-file-alt"></i>
+        </div>
+        <div class="card-content">
+          <h4>السجلات</h4>
+          <p>سجلات النشاط والأخطاء</p>
+          <div class="card-badge">
+            <span class="badge bg-info">مراقبة</span>
+          </div>
+        </div>
+        <div class="card-arrow">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+      </a>
+    </div>
+  </div>
+
   {% if alert_count > 0 %}
   <div class="mb-4">
     <div class="card bg-dark p-4 d-flex flex-wrap align-items-center justify-content-between">
