@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'drf_spectacular',
+    'storages',
     
     # Local apps
     'core',
@@ -161,7 +162,19 @@ WHITENOISE_USE_FINDERS = True
 
 # Media files
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+_railway_volume = os.environ.get('RAILWAY_VOLUME_PATH')
+MEDIA_ROOT = (Path(_railway_volume) if _railway_volume else BASE_DIR) / 'media'
+
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'auto')
+AWS_S3_SIGNATURE_VERSION = os.environ.get('AWS_S3_SIGNATURE_VERSION', 's3v4')
+AWS_S3_ADDRESSING_STYLE = os.environ.get('AWS_S3_ADDRESSING_STYLE', 'path')
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_CUSTOM_DOMAIN = os.environ.get('R2_PUBLIC_DOMAIN') or os.environ.get('R2_PUBLIC_BASE_URL') or os.environ.get('AWS_S3_CUSTOM_DOMAIN')
+
+if AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL:
+    DEFAULT_FILE_STORAGE = 'core.storage.R2MediaStorage'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
