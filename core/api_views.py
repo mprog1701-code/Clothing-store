@@ -379,6 +379,8 @@ class AdsList(APIView):
             return Response([])
         now = timezone.now()
         qs = Campaign.objects.filter(is_active=True, start_date__lte=now, end_date__gte=now).order_by('-start_date', '-id')
+        if not qs.exists():
+            qs = Campaign.objects.filter(is_active=True).order_by('-start_date', '-id')
         items = []
         for c in qs[:50]:
             try:

@@ -89,6 +89,8 @@ def hybrid_home(request):
     try:
         now = timezone.now()
         campaigns = list(Campaign.objects.filter(is_active=True, start_date__lte=now, end_date__gte=now).order_by('-start_date'))
+        if not campaigns:
+            campaigns = list(Campaign.objects.filter(is_active=True).order_by('-start_date'))
         campaign = campaigns[0] if campaigns else None
     except (OperationalError, ProgrammingError):
         campaigns = []
@@ -129,10 +131,23 @@ def home(request):
     
     stores = Store.objects.filter(is_active=True)[:site_settings.featured_stores_count]
     products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
+    campaign = None
+    campaigns = []
+    try:
+        now = timezone.now()
+        campaigns = list(Campaign.objects.filter(is_active=True, start_date__lte=now, end_date__gte=now).order_by('-start_date'))
+        if not campaigns:
+            campaigns = list(Campaign.objects.filter(is_active=True).order_by('-start_date'))
+        campaign = campaigns[0] if campaigns else None
+    except (OperationalError, ProgrammingError):
+        campaigns = []
+        campaign = None
     context = {
         'stores': stores,
         'products': products,
         'site_settings': site_settings,
+        'campaign': campaign,
+        'campaigns': campaigns,
     }
     response = render(request, 'home.html', context)
     try:
