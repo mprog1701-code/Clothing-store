@@ -153,7 +153,10 @@ CACHES = {
 # Media files
 MEDIA_URL = '/media/'
 _railway_volume = os.environ.get('RAILWAY_VOLUME_PATH')
-MEDIA_ROOT = (Path(_railway_volume) if _railway_volume else BASE_DIR) / 'media'
+if _railway_volume:
+    MEDIA_ROOT = Path(_railway_volume) / 'media'
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
 AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '')
@@ -162,8 +165,10 @@ AWS_S3_SIGNATURE_VERSION = os.environ.get('AWS_S3_SIGNATURE_VERSION', 's3v4')
 AWS_S3_ADDRESSING_STYLE = os.environ.get('AWS_S3_ADDRESSING_STYLE', 'path')
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_CUSTOM_DOMAIN = os.environ.get('R2_PUBLIC_DOMAIN') or os.environ.get('R2_PUBLIC_BASE_URL') or os.environ.get('AWS_S3_CUSTOM_DOMAIN')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 
-if AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL:
+if AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
     DEFAULT_FILE_STORAGE = 'core.storage.R2MediaStorage'
 
 # Default primary key field type
