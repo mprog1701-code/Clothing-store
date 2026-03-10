@@ -47,6 +47,8 @@ export default function ProductsScreen({ navigation, route }) {
     if (title) return title;
     if (mode === 'offers') return 'العروض';
     if (mode === 'flash') return 'عروض فلاش';
+    if (mode === 'banners') return 'بنرات';
+    if (mode === 'categories') return 'الأقسام';
     if (mode === 'category' && categoryLabel) return categoryLabel;
     if (mode === 'search' && q) return `نتائج البحث: ${q}`;
     return 'المنتجات';

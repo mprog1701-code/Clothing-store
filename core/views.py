@@ -87,7 +87,8 @@ def hybrid_home(request):
     campaign = None
     campaigns = []
     try:
-        campaigns = list(Campaign.objects.filter(is_active=True).order_by('-start_date'))
+        now = timezone.now()
+        campaigns = list(Campaign.objects.filter(is_active=True, start_date__lte=now, end_date__gte=now).order_by('-start_date'))
         campaign = campaigns[0] if campaigns else None
     except (OperationalError, ProgrammingError):
         campaigns = []

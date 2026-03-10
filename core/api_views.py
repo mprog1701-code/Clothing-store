@@ -368,6 +368,40 @@ class BannerList(APIView):
             pass
         return Response(items)
 
+class AdsList(APIView):
+    permission_classes = []
+    authentication_classes = []
+    def get(self, request):
+        from django.utils import timezone
+        try:
+            from core.models import Campaign
+        except Exception:
+            return Response([])
+        now = timezone.now()
+        qs = Campaign.objects.filter(is_active=True, start_date__lte=now, end_date__gte=now).order_by('-start_date', '-id')
+        items = []
+        for c in qs[:50]:
+            try:
+                img = c.banner_image.url if c.banner_image else ''
+                if img and not (img.startswith('http://') or img.startswith('https://')):
+                    try:
+                        img = request.build_absolute_uri(img)
+                    except Exception:
+                        pass
+            except Exception:
+                img = ''
+            items.append({
+                'id': c.id,
+                'title': c.title,
+                'description': c.description,
+                'image': img,
+                'discount_percent': int(c.discount_percent or 0),
+                'starts_at': c.start_date.isoformat() if c.start_date else None,
+                'ends_at': c.end_date.isoformat() if c.end_date else None,
+                'action_url': c.action_url or '',
+            })
+        return Response(items)
+
 class BannerHomeTop(APIView):
     permission_classes = []
     authentication_classes = []
