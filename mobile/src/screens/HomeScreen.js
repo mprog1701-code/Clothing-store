@@ -88,8 +88,8 @@ const HomeScreen = ({ navigation }) => {
       </Animated.View>
 
       <Animated.View style={[styles.adSlot, styles.fadeUp(adAnim)]}>
-        {middleAd && middleAd.image ? (
-          <Image source={{ uri: middleAd.image }} style={styles.adImage} />
+        {middleAd && (middleAd.image_url || middleAd.image) ? (
+          <Image source={{ uri: middleAd.image_url || middleAd.image }} style={styles.adImage} />
         ) : (
           <Text style={styles.adText}>مساحة إعلانية</Text>
         )}
@@ -159,8 +159,8 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.bannerGrid}>
           {(topAds.length ? topAds : [{ id: 't1' }, { id: 't2' }]).map((item) => (
             <View key={item.id} style={styles.bannerCardSquare}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.bannerImage} />
+              {item.image_url || item.image ? (
+                <Image source={{ uri: item.image_url || item.image }} style={styles.bannerImage} />
               ) : (
                 <Text style={styles.bannerText}>مساحة إعلانية</Text>
               )}
@@ -170,8 +170,8 @@ const HomeScreen = ({ navigation }) => {
       </Animated.View>
 
       <Animated.View style={[styles.adSlot, styles.fadeUp(searchAnim)]}>
-        {ads[5] && ads[5].image ? (
-          <Image source={{ uri: ads[5].image }} style={styles.adImage} />
+        {ads[5] && (ads[5].image_url || ads[5].image) ? (
+          <Image source={{ uri: ads[5].image_url || ads[5].image }} style={styles.adImage} />
         ) : (
           <Text style={styles.adText}>مساحة إعلانية</Text>
         )}
@@ -187,8 +187,8 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.bannerGrid}>
           {(bottomAds.length ? bottomAds : [{ id: 'b1' }, { id: 'b2' }]).map((item) => (
             <View key={item.id} style={styles.bannerCardSquare}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.bannerImage} />
+              {item.image_url || item.image ? (
+                <Image source={{ uri: item.image_url || item.image }} style={styles.bannerImage} />
               ) : (
                 <Text style={styles.bannerText}>مساحة إعلانية</Text>
               )}

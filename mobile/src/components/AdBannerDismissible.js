@@ -63,17 +63,16 @@ export default function AdBannerDismissible({ position = 'stores-hero' }) {
       </View>
       <TouchableOpacity
         onPress={() => {
-          const type = ad?.linkType || ad?.type;
-          const value = ad?.linkValue || ad?.value || ad?.url;
-          if (type === 'url' && value) {
+          const value = ad?.link || ad?.linkValue || ad?.value || ad?.url;
+          if (value) {
             Linking.openURL(value);
           }
         }}
         style={{ marginTop: theme.spacing.xs }}
       >
         <View style={{ height: 180, borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, backgroundColor: theme.colors.surface, ...theme.shadows.card, overflow: 'hidden' }}>
-          {ad?.image ? (
-            <Image source={{ uri: ad.image }} style={{ width: '100%', height: '100%' }} />
+          {ad?.image_url || ad?.image ? (
+            <Image source={{ uri: ad?.image_url || ad?.image }} style={{ width: '100%', height: '100%' }} />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{ad?.title || 'إعلان'}</Text>

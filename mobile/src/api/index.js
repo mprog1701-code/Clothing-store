@@ -179,6 +179,15 @@ export async function listHomeTopBanners() {
 
 export async function listAds(params = {}) {
   try {
+    const r = await client.get('/api/advertisements/', { params });
+    const data = r.data;
+    const arr = Array.isArray(data) ? data : (data.results || data.ads || []);
+    console.log('[API] GET /api/advertisements status=', r.status, 'len=', arr.length, 'params=', params);
+    if (arr.length) return arr;
+  } catch (e) {
+    console.log('[API] GET /api/advertisements fail', e?.message || e);
+  }
+  try {
     const r = await client.get('/api/ads/', { params });
     const data = r.data;
     const arr = Array.isArray(data) ? data : (data.results || data.ads || []);

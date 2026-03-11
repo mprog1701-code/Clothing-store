@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 import os
 from django.conf import settings
 
@@ -76,6 +77,61 @@ class Banner(models.Model):
 
     def __str__(self):
         return self.title
+
+class Advertisement(models.Model):
+    POSITIONS = (
+        ("home_top", "Home Top"),
+        ("home_middle", "Home Middle"),
+        ("home_bottom", "Home Bottom"),
+    )
+    AD_TYPES = (
+        ("image", "Image"),
+        ("banner", "Banner"),
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    image = models.ImageField(upload_to="ads/")
+    link = models.CharField(max_length=255, blank=True)
+    position = models.CharField(max_length=20, choices=POSITIONS, default="home_top")
+    ad_type = models.CharField(max_length=20, choices=AD_TYPES, default="image")
+    order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    starts_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("order", "-updated_at")
+        indexes = [
+            models.Index(fields=["position"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def __str__(self):
+        return self.title
+
+    def is_valid(self):
+        from django.utils import timezone
+        if not self.is_active:
+            return False
+        now = timezone.now()
+        if self.starts_at and self.starts_at > now:
+            return False
+        if self.ends_at and self.ends_at < now:
+            return False
+        return True
+
+    @classmethod
+    def get_active_ads(cls, position=None):
+        from django.utils import timezone
+        now = timezone.now()
+        qs = cls.objects.filter(is_active=True)
+        if position:
+            qs = qs.filter(position=position)
+        qs = qs.filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+        qs = qs.filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+        return qs.order_by("order", "-updated_at")
 
     def get_image_url(self):
         try:

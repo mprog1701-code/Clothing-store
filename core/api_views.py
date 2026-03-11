@@ -20,6 +20,7 @@ from .serializers import (
     ProductSerializer, AddressSerializer, OrderSerializer, OrderCreateSerializer,
     CartItemSerializer
 )
+from ads.serializers import AdvertisementSerializer
 from .permissions import (
     IsCustomer, IsStoreOwner, IsAdmin, IsStoreOwnerOfStore, 
     IsOwnerOfOrder, IsStoreOwnerOfOrder
@@ -138,6 +139,19 @@ class StoreViewSet(viewsets.ReadOnlyModelViewSet):
             if ordering in allowed:
                 queryset = queryset.order_by(ordering)
         return queryset
+
+
+class AdvertisementViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = AdvertisementSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        try:
+            from ads.models import Advertisement
+        except Exception:
+            return []
+        position = self.request.query_params.get('position')
+        return Advertisement.get_active_ads(position=position)
     
     @action(detail=False, methods=['get', 'post', 'put', 'patch'], permission_classes=[IsStoreOwner])
     def my_store(self, request):
@@ -355,6 +369,7 @@ class BannerList(APIView):
                 'id': b.id,
                 'title': b.title,
                 'image': img,
+                'image_url': img,
                 'placement': b.placement,
                 'priority': int(b.priority or 0),
                 'starts_at': (b.starts_at.isoformat() if b.starts_at else None),
@@ -373,6 +388,43 @@ class AdsList(APIView):
     authentication_classes = []
     def get(self, request):
         from django.utils import timezone
+        position = (request.query_params.get('position') or '').strip()
+        if position:
+            try:
+                from ads.models import Banner
+            except Exception:
+                return Response([])
+            placement_norm = position.lower().replace('home_', 'home_')
+            allowed = {'home_top', 'home_middle', 'home_bottom'}
+            now = timezone.now()
+            qs = Banner.objects.filter(is_active=True)
+            if placement_norm in allowed:
+                qs = qs.filter(placement=placement_norm)
+            qs = qs.filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
+            qs = qs.filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
+            qs = qs.order_by('-priority', '-id')
+            items = []
+            for b in qs[:50]:
+                try:
+                    img = b.get_image_url() if hasattr(b, 'get_image_url') else (b.image.url if b.image else '')
+                    if img and not (img.startswith('http://') or img.startswith('https://')):
+                        try:
+                            img = request.build_absolute_uri(img)
+                        except Exception:
+                            pass
+                except Exception:
+                    img = ''
+                items.append({
+                    'id': b.id,
+                    'title': b.title,
+                    'image': img,
+                    'image_url': img,
+                    'placement': b.placement,
+                    'priority': int(b.priority or 0),
+                    'starts_at': (b.starts_at.isoformat() if b.starts_at else None),
+                    'ends_at': (b.ends_at.isoformat() if b.ends_at else None),
+                })
+            return Response(items)
         try:
             from core.models import Campaign
         except Exception:
@@ -397,6 +449,7 @@ class AdsList(APIView):
                 'title': c.title,
                 'description': c.description,
                 'image': img,
+                'image_url': img,
                 'discount_percent': int(c.discount_percent or 0),
                 'starts_at': c.start_date.isoformat() if c.start_date else None,
                 'ends_at': c.end_date.isoformat() if c.end_date else None,
