@@ -76,4 +76,5 @@ class R2MediaStorage(S3Boto3Storage):
             return f"https://{str(cd).strip('/').strip()}/{key}"
         if base and (base.startswith('http://') or base.startswith('https://')):
             return f"{base.rstrip('/')}/{key}"
-        return super().url(name, parameters=parameters, expire=expire)
+        media_base = getattr(settings, 'MEDIA_URL', '/media/')
+        return f"{media_base.rstrip('/')}/{key}"

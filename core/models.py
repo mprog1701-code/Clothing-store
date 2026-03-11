@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 import os
 import io
 from django.core.files.storage import default_storage
@@ -23,6 +24,29 @@ def _normalize_url(value):
         s = 'http://' + s[len('http//'):]
     if s.startswith('//'):
         s = 'https:' + s
+    try:
+        from urllib.parse import urlparse
+        p = urlparse(s)
+        host = (p.netloc or '').lower()
+        if host.endswith('r2.cloudflarestorage.com') or host.endswith('r2.dev'):
+            base = (
+                getattr(settings, 'R2_PUBLIC_BASE_URL', '')
+                or os.environ.get('R2_PUBLIC_BASE_URL', '')
+                or getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')
+                or os.environ.get('R2_PUBLIC_DOMAIN', '')
+            )
+            if base:
+                base = str(base).strip().replace('https://https//', 'https://').replace('http://http//', 'http://')
+                if base.startswith('https//'):
+                    base = 'https://' + base[len('https//'):]
+                if base.startswith('http//'):
+                    base = 'http://' + base[len('http//'):]
+                if base.startswith('http://') or base.startswith('https://'):
+                    return f"{base.rstrip('/')}{p.path}"
+            if p.path:
+                return p.path if p.path.startswith('/') else f"/{p.path}"
+    except Exception:
+        pass
     return s
 
 

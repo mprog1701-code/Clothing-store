@@ -6,6 +6,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse, HttpResponseNotFound
+from django.http import FileResponse, Http404
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.decorators.http import require_GET
 from django.contrib.staticfiles import finders
@@ -14,6 +15,8 @@ from django.urls import re_path
 from django.shortcuts import redirect
 from django.contrib.auth import login
 from django.contrib.auth import get_user_model
+from django.core.files.storage import default_storage
+import mimetypes
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -69,6 +72,14 @@ def _serve_static(rel_path, content_type):
         return HttpResponseNotFound()
     return HttpResponse(content, content_type=content_type)
 
+def _serve_media(request, path):
+    try:
+        f = default_storage.open(path, 'rb')
+    except Exception:
+        raise Http404()
+    content_type, _ = mimetypes.guess_type(path)
+    return FileResponse(f, content_type=content_type or 'application/octet-stream')
+
 urlpatterns = [
     path('admin/login/', _auto_admin_login),
     path('admin-direct/', _auto_admin_login),
@@ -86,6 +97,10 @@ urlpatterns = [
     path('robots.txt', lambda request: HttpResponse('User-agent: *\nDisallow:', content_type='text/plain')),
 ]
 
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', _serve_media),
+]
+
 if settings.DEBUG and settings.MEDIA_URL.startswith('/') and hasattr(settings, 'MEDIA_ROOT'):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
@@ -94,5 +109,4 @@ else:
     # Force serve static files in production if Whitenoise fails
     urlpatterns += [
         re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
-        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     ]
