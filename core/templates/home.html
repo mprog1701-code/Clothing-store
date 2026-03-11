@@ -44,7 +44,7 @@
                 <a href="{{ c.action_url|default:'#' }}" class="text-decoration-none">
                     <div class="card border-0 shadow-sm overflow-hidden">
                         {% if c.banner_image %}
-                        <img src="{{ c.banner_image.url }}" alt="{{ c.title }}" class="w-100" style="height: 220px; object-fit: cover;">
+                        <img src="{{ c.get_banner_url }}" alt="{{ c.title }}" class="w-100" style="height: 220px; object-fit: cover;">
                         {% endif %}
                         <div class="card-body">
                             <h5 class="fw-bold text-dark mb-1">{{ c.title }}</h5>

@@ -343,18 +343,12 @@ class BannerList(APIView):
         items = []
         for b in qs[:50]:
             try:
-                img = b.image.url if b.image else ''
+                img = b.get_image_url() if hasattr(b, 'get_image_url') else (b.image.url if b.image else '')
                 if img and not (img.startswith('http://') or img.startswith('https://')):
                     try:
                         img = request.build_absolute_uri(img)
                     except Exception:
                         pass
-                if img:
-                    img = str(img).replace('https://https//', 'https://').replace('http://http//', 'http://')
-                    if img.startswith('https//'):
-                        img = 'https://' + img[len('https//'):]
-                    if img.startswith('http//'):
-                        img = 'http://' + img[len('http//'):]
             except Exception:
                 img = ''
             items.append({
@@ -390,18 +384,12 @@ class AdsList(APIView):
         items = []
         for c in qs[:50]:
             try:
-                img = c.banner_image.url if c.banner_image else ''
+                img = c.get_banner_url() if hasattr(c, 'get_banner_url') else (c.banner_image.url if c.banner_image else '')
                 if img and not (img.startswith('http://') or img.startswith('https://')):
                     try:
                         img = request.build_absolute_uri(img)
                     except Exception:
                         pass
-                if img:
-                    img = str(img).replace('https://https//', 'https://').replace('http://http//', 'http://')
-                    if img.startswith('https//'):
-                        img = 'https://' + img[len('https//'):]
-                    if img.startswith('http//'):
-                        img = 'http://' + img[len('http//'):]
             except Exception:
                 img = ''
             items.append({

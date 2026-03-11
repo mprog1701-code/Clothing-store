@@ -670,6 +670,14 @@ class Campaign(models.Model):
     def __str__(self):
         return self.title
 
+    def get_banner_url(self):
+        try:
+            if self.banner_image:
+                return _normalize_url(self.banner_image.url)
+        except Exception:
+            pass
+        return ''
+
     @property
     def is_running(self):
         from django.utils import timezone

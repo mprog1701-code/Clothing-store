@@ -89,7 +89,7 @@
           </div>
           <p class="card-text text-muted">{{ c.description|default:'' }}</p>
           {% if c.banner_image %}
-            <img src="{{ c.banner_image.url }}" alt="{{ c.title }}" class="img-fluid rounded mb-2" style="max-height:160px; object-fit:cover;">
+            <img src="{{ c.get_banner_url }}" alt="{{ c.title }}" class="img-fluid rounded mb-2" style="max-height:160px; object-fit:cover;">
           {% endif %}
           <div class="small text-muted">من {{ c.start_date }} إلى {{ c.end_date }}</div>
         </div>

@@ -74,7 +74,16 @@ def _serve_static(rel_path, content_type):
 
 def _serve_media(request, path):
     try:
-        f = default_storage.open(path, 'rb')
+        key = path
+        try:
+            loc = getattr(default_storage, 'location', '') or ''
+            if loc:
+                loc = str(loc).strip('/')
+                if key.startswith(loc + '/'):
+                    key = key[len(loc) + 1:]
+        except Exception:
+            pass
+        f = default_storage.open(key, 'rb')
     except Exception:
         raise Http404()
     content_type, _ = mimetypes.guess_type(path)
