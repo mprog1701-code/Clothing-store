@@ -9,6 +9,22 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 import logging
 
+def _normalize_url(value):
+    try:
+        s = str(value).strip()
+    except Exception:
+        return ''
+    if not s:
+        return ''
+    s = s.replace('https://https//', 'https://').replace('http://http//', 'http://')
+    if s.startswith('https//'):
+        s = 'https://' + s[len('https//'):]
+    if s.startswith('http//'):
+        s = 'http://' + s[len('http//'):]
+    if s.startswith('//'):
+        s = 'https:' + s
+    return s
+
 
 class SiteSettings(models.Model):
     """Site-wide settings that can be customized by the super owner"""
@@ -164,8 +180,8 @@ class Store(models.Model):
             if self.logo:
                 thumb = get_imagefield_thumbnail_url(self.logo, 320, 'stores/thumbs')
                 if thumb:
-                    return thumb
-                return self.logo.url
+                    return _normalize_url(thumb)
+                return _normalize_url(self.logo.url)
         except Exception:
             pass
         from .models import Product
@@ -175,8 +191,8 @@ class Store(models.Model):
             if img:
                 u = img.get_thumbnail_url()
                 if u:
-                    return u
-        return os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL', 'https://placehold.co/120x120?text=Store')
+                    return _normalize_url(u)
+        return _normalize_url(os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL', 'https://placehold.co/120x120?text=Store'))
 
 
 class Product(models.Model):
@@ -360,50 +376,55 @@ class ProductImage(models.Model):
             logging.getLogger(__name__).debug(f"[ProductImage.save] product_id={self.product_id} color_id={getattr(self, 'color_id', None)} color_attr_id={getattr(self, 'color_attr_id', None)} variant_id={getattr(self, 'variant_id', None)} is_main={self.is_main} order={self.order}")
         except Exception:
             pass
+        try:
+            if self.image_url:
+                self.image_url = _normalize_url(self.image_url)
+        except Exception:
+            pass
         super().save(*args, **kwargs)
     
     def get_image_url(self):
         try:
             if self.image_url:
-                return self.image_url
+                return _normalize_url(self.image_url)
             if self.image:
                 try:
-                    return self.image.url
+                    return _normalize_url(self.image.url)
                 except Exception:
                     pass
             placeholder = os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL')
             if placeholder:
-                return placeholder
-            return 'https://placehold.co/300x300?text=Image'
+                return _normalize_url(placeholder)
+            return _normalize_url('https://placehold.co/300x300?text=Image')
         except Exception:
-            return 'https://placehold.co/300x300?text=Image'
+            return _normalize_url('https://placehold.co/300x300?text=Image')
 
     def get_thumbnail_url(self, size=300):
         try:
             if self.image_url:
-                return self.image_url
+                return _normalize_url(self.image_url)
             if self.image:
                 thumb = get_imagefield_thumbnail_url(self.image, size, 'products/thumbs')
                 if thumb:
-                    return thumb
+                    return _normalize_url(thumb)
                 try:
-                    return self.image.url
+                    return _normalize_url(self.image.url)
                 except Exception:
                     pass
             placeholder = os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL')
             if placeholder:
-                return placeholder
-            return 'https://placehold.co/300x300?text=Image'
+                return _normalize_url(placeholder)
+            return _normalize_url('https://placehold.co/300x300?text=Image')
         except Exception:
-            return 'https://placehold.co/300x300?text=Image'
+            return _normalize_url('https://placehold.co/300x300?text=Image')
 
     def get_video_url(self):
         try:
             if self.video_url:
-                return self.video_url
+                return _normalize_url(self.video_url)
             if self.video_file:
                 try:
-                    return self.video_file.url
+                    return _normalize_url(self.video_file.url)
                 except Exception:
                     pass
         except Exception:

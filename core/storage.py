@@ -16,13 +16,21 @@ class R2MediaStorage(S3Boto3Storage):
         )
         if custom:
             cd = str(custom).strip()
+            if cd.startswith('https//'):
+                cd = cd.replace('https//', 'https://', 1)
+            if cd.startswith('http//'):
+                cd = cd.replace('http//', 'http://', 1)
             if cd.startswith('http://') or cd.startswith('https://'):
                 try:
                     from urllib.parse import urlparse
                     p = urlparse(cd)
-                    cd = p.netloc
+                    if p.netloc in ('http', 'https') and p.path.startswith('//'):
+                        cd = p.path.lstrip('/').split('/')[0]
+                    else:
+                        cd = p.netloc or p.path.split('/')[0]
                 except Exception:
                     pass
+            cd = cd.replace('https://https//', 'https://').replace('http://http//', 'http://')
             kwargs['custom_domain'] = cd
 
         self.bucket_name = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', None)
@@ -48,6 +56,18 @@ class R2MediaStorage(S3Boto3Storage):
             getattr(settings, 'R2_PUBLIC_BASE_URL', '')
             or os.environ.get('R2_PUBLIC_BASE_URL', '')
         )
+        if isinstance(cd, str):
+            cd = cd.replace('https://https//', 'https://').replace('http://http//', 'http://')
+            if cd.startswith('https//'):
+                cd = cd.replace('https//', 'https://', 1)
+            if cd.startswith('http//'):
+                cd = cd.replace('http//', 'http://', 1)
+        if isinstance(base, str):
+            base = base.replace('https://https//', 'https://').replace('http://http//', 'http://')
+            if base.startswith('https//'):
+                base = base.replace('https//', 'https://', 1)
+            if base.startswith('http//'):
+                base = base.replace('http//', 'http://', 1)
         key = str(name).lstrip('/')
         prefix = str(getattr(self, 'location', '') or '').strip('/')
         if prefix and not key.startswith(prefix + '/'):

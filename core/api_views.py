@@ -349,6 +349,12 @@ class BannerList(APIView):
                         img = request.build_absolute_uri(img)
                     except Exception:
                         pass
+                if img:
+                    img = str(img).replace('https://https//', 'https://').replace('http://http//', 'http://')
+                    if img.startswith('https//'):
+                        img = 'https://' + img[len('https//'):]
+                    if img.startswith('http//'):
+                        img = 'http://' + img[len('http//'):]
             except Exception:
                 img = ''
             items.append({
@@ -390,6 +396,12 @@ class AdsList(APIView):
                         img = request.build_absolute_uri(img)
                     except Exception:
                         pass
+                if img:
+                    img = str(img).replace('https://https//', 'https://').replace('http://http//', 'http://')
+                    if img.startswith('https//'):
+                        img = 'https://' + img[len('https//'):]
+                    if img.startswith('http//'):
+                        img = 'http://' + img[len('http//'):]
             except Exception:
                 img = ''
             items.append({
