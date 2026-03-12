@@ -1,5 +1,6 @@
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 import os
 from django.conf import settings
 
@@ -79,30 +80,39 @@ class Banner(models.Model):
         return self.title
 
 class Advertisement(models.Model):
-    POSITIONS = (
-        ("home_top", "Home Top"),
-        ("home_middle", "Home Middle"),
-        ("home_bottom", "Home Bottom"),
-    )
-    AD_TYPES = (
-        ("image", "Image"),
-        ("banner", "Banner"),
-    )
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    image = models.ImageField(upload_to="ads/")
-    link = models.CharField(max_length=255, blank=True)
-    position = models.CharField(max_length=20, choices=POSITIONS, default="home_top")
-    ad_type = models.CharField(max_length=20, choices=AD_TYPES, default="image")
-    order = models.IntegerField(default=0)
-    is_active = models.BooleanField(default=True)
-    starts_at = models.DateTimeField(null=True, blank=True)
-    ends_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    POSITION_CHOICES = [
+        ('home_top', 'الصفحة الرئيسية - أعلى'),
+        ('home_middle', 'الصفحة الرئيسية - منتصف'),
+        ('home_bottom', 'الصفحة الرئيسية - أسفل'),
+        ('sidebar', 'الشريط الجانبي'),
+        ('product_page', 'صفحة المنتج'),
+        ('mobile_banner', 'التطبيق - بانر رئيسي'),
+        ('mobile_card', 'التطبيق - كارد'),
+        ('mobile_popup', 'التطبيق - نافذة منبثقة'),
+    ]
+    TYPE_CHOICES = [
+        ('banner', 'بانر'),
+        ('card', 'كارد'),
+        ('popup', 'نافذة منبثقة'),
+        ('slider', 'سلايدر'),
+    ]
+    title = models.CharField('العنوان', max_length=200)
+    description = models.TextField('الوصف', blank=True)
+    image = models.ImageField('الصورة', upload_to='ads/')
+    link = models.URLField('الرابط', blank=True)
+    position = models.CharField('الموضع', max_length=50, choices=POSITION_CHOICES)
+    ad_type = models.CharField('النوع', max_length=20, choices=TYPE_CHOICES, default='banner')
+    order = models.IntegerField('الترتيب', default=0)
+    is_active = models.BooleanField('نشط', default=True)
+    start_date = models.DateTimeField('تاريخ البدء', default=timezone.now)
+    end_date = models.DateTimeField('تاريخ الانتهاء', null=True, blank=True)
+    impressions = models.IntegerField('المشاهدات', default=0)
+    clicks = models.IntegerField('النقرات', default=0)
+    created_at = models.DateTimeField('تاريخ الإنشاء', auto_now_add=True)
+    updated_at = models.DateTimeField('تاريخ التعديل', auto_now=True)
 
     class Meta:
-        ordering = ("order", "-updated_at")
+        ordering = ['order', '-created_at'],
         indexes = [
             models.Index(fields=["position"]),
             models.Index(fields=["is_active"]),
@@ -112,26 +122,27 @@ class Advertisement(models.Model):
         return self.title
 
     def is_valid(self):
-        from django.utils import timezone
+        now = timezone.now()
         if not self.is_active:
             return False
-        now = timezone.now()
-        if self.starts_at and self.starts_at > now:
+        if self.start_date > now:
             return False
-        if self.ends_at and self.ends_at < now:
+        if self.end_date and self.end_date < now:
             return False
         return True
 
     @classmethod
     def get_active_ads(cls, position=None):
-        from django.utils import timezone
         now = timezone.now()
-        qs = cls.objects.filter(is_active=True)
+        queryset = cls.objects.filter(
+            is_active=True,
+            start_date__lte=now,
+        ).filter(
+            Q(end_date__isnull=True) | Q(end_date__gte=now)
+        )
         if position:
-            qs = qs.filter(position=position)
-        qs = qs.filter(Q(starts_at__isnull=True) | Q(starts_at__lte=now))
-        qs = qs.filter(Q(ends_at__isnull=True) | Q(ends_at__gte=now))
-        return qs.order_by("order", "-updated_at")
+            queryset = queryset.filter(position=position)
+        return queryset.order_by('order', '-created_at')
 
     def get_image_url(self):
         try:

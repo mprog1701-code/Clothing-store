@@ -99,6 +99,23 @@ def hybrid_home(request):
         campaigns = []
         campaign = None
 
+    top_ads = []
+    middle_ads = []
+    bottom_ads = []
+    try:
+        from ads.models import Advertisement
+        top_ads = Advertisement.get_active_ads(position='home_top')
+        middle_ads = Advertisement.get_active_ads(position='home_middle')
+        bottom_ads = Advertisement.get_active_ads(position='home_bottom')
+        logger = logging.getLogger(__name__)
+        logger.info(f"Top Ads: {top_ads.count()}")
+        logger.info(f"Middle Ads: {middle_ads.count()}")
+        logger.info(f"Bottom Ads: {bottom_ads.count()}")
+    except Exception:
+        top_ads = []
+        middle_ads = []
+        bottom_ads = []
+
     context = {
         'latest_products': latest_products,
         'new_arrivals': latest_products, # Backward compatibility
@@ -109,6 +126,9 @@ def hybrid_home(request):
         'cart_items_count': cart_items_count,
         'campaign': campaign,
         'campaigns': campaigns,
+        'top_ads': top_ads,
+        'middle_ads': middle_ads,
+        'bottom_ads': bottom_ads,
     }
     
     response = render(request, 'home.html', context)
@@ -145,12 +165,31 @@ def home(request):
     except (OperationalError, ProgrammingError):
         campaigns = []
         campaign = None
+    top_ads = []
+    middle_ads = []
+    bottom_ads = []
+    try:
+        from ads.models import Advertisement
+        top_ads = Advertisement.get_active_ads(position='home_top')
+        middle_ads = Advertisement.get_active_ads(position='home_middle')
+        bottom_ads = Advertisement.get_active_ads(position='home_bottom')
+        logger = logging.getLogger(__name__)
+        logger.info(f"Top Ads: {top_ads.count()}")
+        logger.info(f"Middle Ads: {middle_ads.count()}")
+        logger.info(f"Bottom Ads: {bottom_ads.count()}")
+    except Exception:
+        top_ads = []
+        middle_ads = []
+        bottom_ads = []
     context = {
         'stores': stores,
         'products': products,
         'site_settings': site_settings,
         'campaign': campaign,
         'campaigns': campaigns,
+        'top_ads': top_ads,
+        'middle_ads': middle_ads,
+        'bottom_ads': bottom_ads,
     }
     response = render(request, 'home.html', context)
     try:

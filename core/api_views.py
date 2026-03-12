@@ -139,20 +139,6 @@ class StoreViewSet(viewsets.ReadOnlyModelViewSet):
             if ordering in allowed:
                 queryset = queryset.order_by(ordering)
         return queryset
-
-
-class AdvertisementViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = AdvertisementSerializer
-    permission_classes = [AllowAny]
-
-    def get_queryset(self):
-        try:
-            from ads.models import Advertisement
-        except Exception:
-            return []
-        position = self.request.query_params.get('position')
-        return Advertisement.get_active_ads(position=position)
-    
     @action(detail=False, methods=['get', 'post', 'put', 'patch'], permission_classes=[IsStoreOwner])
     def my_store(self, request):
         try:
@@ -178,6 +164,35 @@ class AdvertisementViewSet(viewsets.ReadOnlyModelViewSet):
                     serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdvertisementViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = AdvertisementSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        try:
+            from ads.models import Advertisement
+        except Exception:
+            return []
+        position = self.request.query_params.get('position')
+        logger = logging.getLogger(__name__)
+        logger.info(f"API Ads requested for position: {position}")
+        qs = Advertisement.get_active_ads(position=position)
+        logger.info(f"Found {qs.count()} ads")
+        return qs
+
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def click(self, request, pk=None):
+        from ads.models import Advertisement
+        Advertisement.objects.filter(id=pk).update(clicks=F('clicks') + 1)
+        return Response({'ok': True})
+
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+    def impression(self, request, pk=None):
+        from ads.models import Advertisement
+        Advertisement.objects.filter(id=pk).update(impressions=F('impressions') + 1)
+        return Response({'ok': True})
 
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):

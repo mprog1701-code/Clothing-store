@@ -35,6 +35,48 @@
     </div>
 </section>
 
+{% if top_ads %}
+<div class="ads-section ads-top py-4 bg-light">
+    <div class="container">
+        {% for ad in top_ads %}
+        <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
+            <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
+                <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="w-100">
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if middle_ads %}
+<div class="ads-section ads-middle py-4 bg-light">
+    <div class="container">
+        {% for ad in middle_ads %}
+        <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
+            <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
+                <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="w-100">
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if bottom_ads %}
+<div class="ads-section ads-bottom py-4 bg-light">
+    <div class="container">
+        {% for ad in bottom_ads %}
+        <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
+            <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
+                <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="w-100">
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% if campaigns %}
 <section class="py-4 bg-light">
     <div class="container">
@@ -58,6 +100,36 @@
     </div>
 </section>
 {% endif %}
+
+<script>
+function trackAdClick(adId) {
+  fetch(`/api/advertisements/${adId}/click/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.ad-banner').forEach(function(ad) {
+    const adId = ad.dataset.adId;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          fetch(`/api/advertisements/${adId}/impression/`, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': '{{ csrf_token }}',
+            }
+          });
+          observer.unobserve(ad);
+        }
+      });
+    });
+    observer.observe(ad);
+  });
+});
+</script>
 
 <!-- 2. Features Section -->
 <section class="py-5 bg-light">
