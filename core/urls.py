@@ -18,20 +18,19 @@ urlpatterns = [
     path('login/', views.user_login, name='login'),
     path('auth/modern/', views.modern_login_page, name='modern_login'),
     path('owner-login/', views.owner_login, name='owner_login'),
-    path('admin-portal/login/', views.admin_portal_login, name='admin_portal_login'),
-    path('admin-portal/dashboard/', views.admin_portal_dashboard, name='admin_portal_dashboard'),
-    path('admin-portal/orders/', views.admin_portal_orders, name='admin_portal_orders'),
-    path('admin-portal/products/', views.admin_portal_products, name='admin_portal_products'),
-    path('admin-portal/stores/', views.admin_portal_stores, name='admin_portal_stores'),
-    path('admin-portal/customers/', views.admin_portal_customers, name='admin_portal_customers'),
-    path('admin-portal/settings/', views.admin_portal_settings, name='admin_portal_settings'),
+    path('admin-portal/login/', views.dashboard_redirect, name='admin_portal_login'),
+    path('admin-portal/dashboard/', views.dashboard_redirect, name='admin_portal_dashboard'),
+    path('admin-portal/orders/', views.dashboard_redirect, name='admin_portal_orders'),
+    path('admin-portal/products/', views.dashboard_redirect, name='admin_portal_products'),
+    path('admin-portal/stores/', views.dashboard_redirect, name='admin_portal_stores'),
+    path('admin-portal/customers/', views.dashboard_redirect, name='admin_portal_customers'),
+    path('admin-portal/settings/', views.dashboard_redirect, name='admin_portal_settings'),
     path('owner-password-reset/', views.owner_password_reset, name='owner_password_reset'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     
-    # Main Dashboard
-    path('dashboard/', views.main_dashboard, name='main_dashboard'),
-    path('dashboard/store/products/', views.store_products, name='store_products'),
-    path('dashboard/store/orders/', views.store_orders, name='store_orders'),
+    path('dashboard/', views.dashboard_redirect, name='main_dashboard'),
+    path('dashboard/store/products/', views.dashboard_redirect, name='store_products'),
+    path('dashboard/store/orders/', views.dashboard_redirect, name='store_orders'),
     
     path('cart/', views.cart_view, name='cart_view'),
     path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
@@ -66,9 +65,9 @@ urlpatterns = [
     
     # Store owner URLs removed - simplified system
     
-    path('dashboard/admin/', views.admin_overview, name='admin_overview'),
-    path('dashboard/admin/stores/', views.admin_stores, name='admin_stores'),
-    path('dashboard/admin/db-diagnostics/', views.admin_db_diagnostics, name='admin_db_diagnostics'),
+    path('dashboard/admin/', views.dashboard_redirect, name='admin_overview'),
+    path('dashboard/admin/stores/', views.dashboard_redirect, name='admin_stores'),
+    path('dashboard/admin/db-diagnostics/', views.dashboard_redirect, name='admin_db_diagnostics'),
     
     # Super Owner Dashboard URLs
     path('dashboard/super-owner/', views.super_owner_dashboard, name='super_owner_dashboard'),

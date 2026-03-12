@@ -39,6 +39,9 @@ def is_super_owner(user):
     if getattr(user, 'username', '') == 'super_owner':
         return True
     return False
+
+def dashboard_redirect(request):
+    return redirect('super_owner_dashboard')
 def health(request):
     return JsonResponse({'status': 'ok'})
 # Fashion marketplace view
