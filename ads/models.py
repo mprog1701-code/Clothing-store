@@ -79,6 +79,14 @@ class Banner(models.Model):
     def __str__(self):
         return self.title
 
+    def get_image_url(self):
+        try:
+            if self.image:
+                return _normalize_url(self.image.url)
+        except Exception:
+            pass
+        return ''
+
 class Advertisement(models.Model):
     POSITION_CHOICES = [
         ('home_top', 'الصفحة الرئيسية - أعلى'),
