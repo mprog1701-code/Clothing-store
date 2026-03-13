@@ -107,7 +107,7 @@ class Advertisement(models.Model):
     updated_at = models.DateTimeField('تاريخ التعديل', auto_now=True)
 
     class Meta:
-        ordering = ['order', '-created_at'],
+        ordering = ['order', '-created_at']
         indexes = [
             models.Index(fields=["position"]),
             models.Index(fields=["is_active"]),
