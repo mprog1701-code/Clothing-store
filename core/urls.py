@@ -112,6 +112,7 @@ urlpatterns = [
     path('debug-owner-login/', views.debug_owner_login, name='debug_owner_login'),
     path('debug/log-js/', views.log_js_error, name='log_js_error'),
     path('dashboard/super-owner/technical-debugger/', views.technical_debugger, name='technical_debugger'),
+    path('run-migrations/', views.run_migrations, name='run_migrations'),
 ]
 
 # Serving media files in production (Critical Fix for Railway filesystem)
