@@ -113,3 +113,18 @@ urlpatterns = [
     path('debug/log-js/', views.log_js_error, name='log_js_error'),
     path('dashboard/super-owner/technical-debugger/', views.technical_debugger, name='technical_debugger'),
 ]
+
+# Serving media files in production (Critical Fix for Railway filesystem)
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.static import serve
+from django.urls import re_path
+
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -41,7 +41,7 @@
         {% for ad in top_ads %}
         <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
             <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
-                <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="w-100">
+                <img src="{{ ad.get_image_url }}" alt="{{ ad.title }}" class="w-100">
             </a>
         </div>
         {% endfor %}
@@ -55,7 +55,7 @@
         {% for ad in middle_ads %}
         <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
             <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
-                <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="w-100">
+                <img src="{{ ad.get_image_url }}" alt="{{ ad.title }}" class="w-100">
             </a>
         </div>
         {% endfor %}
@@ -69,7 +69,7 @@
         {% for ad in bottom_ads %}
         <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
             <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
-                <img src="{{ ad.image.url }}" alt="{{ ad.title }}" class="w-100">
+                <img src="{{ ad.get_image_url }}" alt="{{ ad.title }}" class="w-100">
             </a>
         </div>
         {% endfor %}
