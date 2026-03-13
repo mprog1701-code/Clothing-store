@@ -12,12 +12,18 @@ class AdvertisementSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'description',
+            'media_type',
             'image',
             'image_url',
+            'video',
+            'video_url',
             'link',
+            'open_in_app',
             'position',
             'ad_type',
             'order',
+            'auto_slide',
+            'slide_duration',
         ]
 
     def get_image_url(self, obj):

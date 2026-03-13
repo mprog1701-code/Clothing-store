@@ -81,13 +81,23 @@ class Advertisement(models.Model):
         ('popup', 'نافذة منبثقة'),
         ('slider', 'سلايدر'),
     ]
+    MEDIA_TYPES = [
+        ('image', 'صورة'),
+        ('video', 'فيديو'),
+    ]
     title = models.CharField('العنوان', max_length=200)
     description = models.TextField('الوصف', blank=True)
-    image = models.ImageField('الصورة', upload_to='ads/')
+    media_type = models.CharField('نوع الوسائط', max_length=10, choices=MEDIA_TYPES, default='image')
+    image = models.ImageField('الصورة', upload_to='ads/', blank=True, null=True)
+    video = models.FileField('فيديو', upload_to='ads/videos/', blank=True, null=True)
+    video_url = models.URLField('رابط فيديو خارجي', blank=True)
     link = models.URLField('الرابط', blank=True)
+    open_in_app = models.BooleanField('فتح داخل التطبيق', default=True)
     position = models.CharField('الموضع', max_length=50, choices=POSITION_CHOICES)
     ad_type = models.CharField('النوع', max_length=20, choices=TYPE_CHOICES, default='banner')
     order = models.IntegerField('الترتيب', default=0)
+    auto_slide = models.BooleanField('تقليب تلقائي', default=True)
+    slide_duration = models.IntegerField('مدة العرض (ثواني)', default=5)
     is_active = models.BooleanField('نشط', default=True)
     start_date = models.DateTimeField('تاريخ البدء', default=timezone.now)
     end_date = models.DateTimeField('تاريخ الانتهاء', null=True, blank=True)

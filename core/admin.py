@@ -38,19 +38,57 @@ class ProductAdmin(admin.ModelAdmin):
         'store',
         'category',
         'base_price',
+        'is_on_offer',  # Added
         'stock_total',
         'is_active',
         'created_at',
     ]
     
-    list_filter = ['is_active', 'category', 'store', 'created_at']
+    list_filter = ['is_active', 'is_on_offer', 'category', 'store', 'created_at']
     search_fields = ['id', 'name', 'description']
-    list_editable = ['is_active', 'base_price']
+    list_editable = ['is_active', 'base_price', 'is_on_offer']
+    
+    fieldsets = (
+        ('معلومات المنتج', {
+            'fields': ('name', 'description', 'store', 'category', 'is_active', 'is_featured')
+        }),
+        ('الأسعار والمخزون', {
+            'fields': ('base_price', 'discount_price', 'size_type', 'fit_type')
+        }),
+        ('🏷️ إعدادات العرض', {
+            'fields': (
+                'is_on_offer',
+                'offer_price',
+                'offer_discount_percent',
+                'offer_start',
+                'offer_end',
+                'offer_badge_text',
+            ),
+            'classes': ('collapse',),
+            'description': '''
+                <strong>ملاحظة:</strong> نسبة الخصم تُحسب تلقائياً<br>
+                المنتجات في العروض تظهر في قسم "العروض" بالتطبيق
+            '''
+        }),
+    )
+    
+    readonly_fields = ['offer_discount_percent']
     
     # عرض كل المنتجات (لا تخفي شيء)
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs  # لا filters
+    
+    def save_model(self, request, obj, form, change):
+        # Calculate discount percent
+        if obj.offer_price and obj.base_price:
+            try:
+                discount = obj.base_price - obj.offer_price
+                if discount > 0:
+                    obj.offer_discount_percent = int((discount / obj.base_price) * 100)
+            except Exception:
+                pass
+        super().save_model(request, obj, form, change)
     
     def stock_total(self, obj):
         total = obj.variants.aggregate(total=Sum('stock_qty'))['total'] or 0

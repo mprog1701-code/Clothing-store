@@ -259,6 +259,15 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     status = models.CharField(max_length=10, choices=[('DRAFT','مسودة'),('ACTIVE','نشط'),('DISABLED','غير نشط')], default='DRAFT', db_index=True)
     is_featured = models.BooleanField(default=False, verbose_name='منتج مميز')
+    
+    # Offer Fields
+    is_on_offer = models.BooleanField('في العروض', default=False)
+    offer_price = models.DecimalField('سعر العرض', max_digits=10, decimal_places=2, null=True, blank=True)
+    offer_discount_percent = models.IntegerField('نسبة الخصم', default=0)
+    offer_start = models.DateTimeField('بداية العرض', null=True, blank=True)
+    offer_end = models.DateTimeField('نهاية العرض', null=True, blank=True)
+    offer_badge_text = models.CharField('نص الشارة', max_length=50, blank=True)
+
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
     
