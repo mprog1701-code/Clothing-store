@@ -81,9 +81,19 @@ class R2MediaStorage(S3Boto3Storage):
         prefix = str(getattr(self, 'location', '') or '').strip('/')
         if prefix and not key.startswith(prefix + '/'):
             key = f"{prefix}/{key}"
+        
         if cd:
-            return f"https://{str(cd).strip('/').strip()}/{key}"
-        if base and (base.startswith('http://') or base.startswith('https://')):
-            return f"{base.rstrip('/')}/{key}"
+            cd_str = str(cd).strip().strip('/')
+            # Remove double protocols just in case
+            cd_str = cd_str.replace('https://https//', 'https://').replace('http://http//', 'http://')
+            if cd_str.startswith('http://') or cd_str.startswith('https://'):
+                return f"{cd_str}/{key}"
+            return f"https://{cd_str}/{key}"
+            
+        if base:
+            base_str = str(base).strip().strip('/')
+            if base_str.startswith('http://') or base_str.startswith('https://'):
+                return f"{base_str}/{key}"
+                
         media_base = getattr(settings, 'MEDIA_URL', '/media/')
         return f"{media_base.rstrip('/')}/{key}"
