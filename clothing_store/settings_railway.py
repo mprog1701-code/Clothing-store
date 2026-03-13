@@ -183,6 +183,15 @@ AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 if AWS_STORAGE_BUCKET_NAME:
     if AWS_S3_ENDPOINT_URL and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
         print("✅ R2 Storage Enabled", file=sys.stderr)
+        print(f"   Bucket: {AWS_STORAGE_BUCKET_NAME}", file=sys.stderr)
+        
+        # Check Public Domain
+        r2_domain = os.environ.get('R2_PUBLIC_DOMAIN') or os.environ.get('R2_PUBLIC_BASE_URL') or os.environ.get('AWS_S3_CUSTOM_DOMAIN')
+        if r2_domain:
+            print(f"   Public Domain: {r2_domain}", file=sys.stderr)
+        else:
+            print("⚠️ WARNING: No R2_PUBLIC_DOMAIN set! Images URLs might be broken.", file=sys.stderr)
+            
         DEFAULT_FILE_STORAGE = 'core.storage.R2MediaStorage'
     else:
         print("⚠️ WARNING: AWS_STORAGE_BUCKET_NAME is set but missing other R2 credentials! Using local storage.", file=sys.stderr)

@@ -469,6 +469,10 @@ class AdsList(APIView):
                 'starts_at': c.start_date.isoformat() if c.start_date else None,
                 'ends_at': c.end_date.isoformat() if c.end_date else None,
                 'action_url': c.action_url or '',
+                # Add missing fields to match Banner structure to prevent app crash
+                'placement': 'campaign',
+                'priority': 0,
+                'media_type': 'image', # For new app version compatibility
             })
         return Response(items)
 
