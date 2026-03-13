@@ -47,6 +47,15 @@ class R2MediaStorage(S3Boto3Storage):
             _log.exception('r2_storage_init_failed', extra={'bucket': self.bucket_name, 'endpoint': self.endpoint_url})
             raise
 
+    def _save(self, name, content):
+        import sys
+        print(f"DEBUG: R2 Storage attempt to save '{name}' to bucket '{self.bucket_name}'...", file=sys.stderr)
+        try:
+            return super()._save(name, content)
+        except Exception as e:
+            print(f"ERROR: R2 Storage failed to save '{name}': {e}", file=sys.stderr)
+            raise
+
     def url(self, name, parameters=None, expire=None):
         cd = (
             getattr(settings, 'AWS_S3_CUSTOM_DOMAIN', '')

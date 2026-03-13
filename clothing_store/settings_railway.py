@@ -165,10 +165,9 @@ MEDIA_URL = '/media/'
 _railway_volume = os.environ.get('RAILWAY_VOLUME_PATH')
 if _railway_volume:
     MEDIA_ROOT = Path(_railway_volume) / 'media'
-elif os.name == 'nt':
-    MEDIA_ROOT = BASE_DIR / 'media'
 else:
-    MEDIA_ROOT = Path('/tmp') / 'media'
+    # Use project directory for media if no volume provided (simpler for quick start)
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
 AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '')
@@ -180,8 +179,16 @@ AWS_S3_CUSTOM_DOMAIN = os.environ.get('R2_PUBLIC_DOMAIN') or os.environ.get('R2_
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
 
-if AWS_STORAGE_BUCKET_NAME and AWS_S3_ENDPOINT_URL and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-    DEFAULT_FILE_STORAGE = 'core.storage.R2MediaStorage'
+# Re-enable R2 Storage as user confirmed it's working
+if AWS_STORAGE_BUCKET_NAME:
+    if AWS_S3_ENDPOINT_URL and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+        print("✅ R2 Storage Enabled", file=sys.stderr)
+        DEFAULT_FILE_STORAGE = 'core.storage.R2MediaStorage'
+    else:
+        print("⚠️ WARNING: AWS_STORAGE_BUCKET_NAME is set but missing other R2 credentials! Using local storage.", file=sys.stderr)
+        print(f"   Endpoint: {bool(AWS_S3_ENDPOINT_URL)}", file=sys.stderr)
+        print(f"   Access Key: {bool(AWS_ACCESS_KEY_ID)}", file=sys.stderr)
+        print(f"   Secret Key: {bool(AWS_SECRET_ACCESS_KEY)}", file=sys.stderr)
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
