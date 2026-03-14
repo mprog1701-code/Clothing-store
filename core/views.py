@@ -42,13 +42,16 @@ def health(request):
 def hybrid_home(request):
     """Fashion marketplace homepage specialized in clothing and fashion"""
     
-    since = timezone.now() - timedelta(hours=24)
-    new_arrivals = list(Product.objects.filter(
-        is_active=True,
-        created_at__gte=since
-    ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8])
-    if len(new_arrivals) == 0:
-        new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
+    try:
+        since = timezone.now() - timedelta(hours=24)
+        new_arrivals = list(Product.objects.filter(
+            is_active=True,
+            created_at__gte=since
+        ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8])
+        if len(new_arrivals) == 0:
+            new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
+    except (OperationalError, ProgrammingError):
+        new_arrivals = []
     
     cart = request.session.get('cart', [])
     cart_items_count = cart_count(cart)
@@ -95,7 +98,10 @@ def home(request):
     site_settings, created = SiteSettings.objects.get_or_create(id=1)
     
     stores = Store.objects.filter(is_active=True)[:site_settings.featured_stores_count]
-    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
+    try:
+        products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
+    except (OperationalError, ProgrammingError):
+        products = []
     context = {
         'stores': stores,
         'products': products,
