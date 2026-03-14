@@ -109,7 +109,7 @@
             <div class="row g-3">
                 {% for c in campaigns %}
                 <div class="col-md-6">
-                    <a href="{{ c.action_url|default:'#' }}" class="text-decoration-none">
+                    <a href="{% if c.action_url == '/stores/' %}/products/{% else %}{{ c.action_url|default:'#' }}{% endif %}" class="text-decoration-none">
                         <div class="card border-0 shadow-sm overflow-hidden">
                             {% if c.banner_image %}
                             <img src="{{ c.get_banner_url }}" alt="{{ c.title }}" class="w-100" style="height: 200px; object-fit: cover;">

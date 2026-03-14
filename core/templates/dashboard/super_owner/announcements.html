@@ -27,7 +27,7 @@
         </div>
         <div class="col-md-6">
           <label class="form-label">رابط الإجراء</label>
-          <input type="text" name="action_url" class="form-control" value="/stores/">
+          <input type="text" name="action_url" class="form-control" value="/products/">
         </div>
         <div class="col-12">
           <label class="form-label">الوصف</label>
@@ -107,7 +107,7 @@
             <input type="hidden" name="action" value="update_url">
             <input type="hidden" name="campaign_id" value="{{ c.id }}">
             <div class="input-group input-group-sm">
-              <input type="text" class="form-control" name="action_url" value="{{ c.action_url|default:'/stores/' }}">
+              <input type="text" class="form-control" name="action_url" value="{{ c.action_url|default:'/products/' }}">
               <button class="btn btn-outline-primary">تحديث الرابط</button>
             </div>
           </form>

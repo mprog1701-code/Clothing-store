@@ -670,7 +670,7 @@ class Campaign(models.Model):
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=False)
-    action_url = models.CharField(max_length=255, blank=True, default='/stores/')
+    action_url = models.CharField(max_length=255, blank=True, default='/products/')
 
     class Meta:
         verbose_name = 'حملة'
