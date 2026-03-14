@@ -35,6 +35,22 @@ def is_super_owner(user):
     if getattr(user, 'username', '') == 'super_owner':
         return True
     return False
+
+
+def _products_qs_safe():
+    try:
+        return Product.objects.defer(
+            'is_on_offer',
+            'offer_badge_text',
+            'offer_discount_percent',
+            'offer_start',
+            'offer_end',
+            'offer_price',
+        )
+    except Exception:
+        return Product.objects
+
+
 def health(request):
     return JsonResponse({'status': 'ok'})
 # Fashion marketplace view
@@ -99,7 +115,12 @@ def home(request):
     
     stores = Store.objects.filter(is_active=True)[:site_settings.featured_stores_count]
     try:
-        products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
+        products = list(
+            _products_qs_safe()
+            .filter(is_active=True)
+            .select_related('store')
+            .prefetch_related('images')[:site_settings.featured_products_count]
+        )
     except (OperationalError, ProgrammingError):
         products = []
     context = {
@@ -126,7 +147,7 @@ def store_list(request):
         from django.db.models import Q, Exists, OuterRef
         stores = stores.filter(
             Q(category=category) |
-            Exists(Product.objects.filter(store=OuterRef('pk'), category=category))
+            Exists(_products_qs_safe().filter(store=OuterRef('pk'), category=category))
         )
     
     city = request.GET.get('city')
@@ -138,7 +159,7 @@ def store_list(request):
     filtered_categories = [c for c in Store.CATEGORY_CHOICES if c[0] in allowed_store_categories]
     showcase_products = []
     try:
-        prod_qs = Product.objects.filter(is_active=True)
+        prod_qs = _products_qs_safe().filter(is_active=True)
         if category:
             prod_qs = prod_qs.filter(store__category=category)
         if city:
@@ -182,7 +203,7 @@ def store_detail(request, store_id):
     if not store or not store.is_active:
         messages.error(request, 'المتجر غير متوفر أو تم إيقافه')
         return redirect('store_list')
-    products = Product.objects.filter(store=store, is_active=True).prefetch_related('images', 'variants')
+    products = _products_qs_safe().filter(store=store, is_active=True).prefetch_related('images', 'variants')
     category = request.GET.get('category')
     if category:
         products = products.filter(category=category)
@@ -220,7 +241,7 @@ def store_detail(request, store_id):
 
 
 def product_detail(request, product_id):
-    product = Product.objects.select_related('store').prefetch_related('images', 'variants').filter(id=product_id).first()
+    product = _products_qs_safe().select_related('store').prefetch_related('images', 'variants').filter(id=product_id).first()
     if not product or not product.is_active or getattr(product, 'status', 'ACTIVE') == 'DISABLED':
         messages.error(request, 'المنتج غير موجود أو تم إيقافه')
         return redirect('home')
@@ -5757,7 +5778,7 @@ def super_owner_settings(request):
 
 def featured_products(request):
     """Display featured products"""
-    featured_products = Product.objects.filter(is_featured=True, is_active=True).select_related('store').prefetch_related('images')
+    featured_products = _products_qs_safe().filter(is_featured=True, is_active=True).select_related('store').prefetch_related('images')
     
     context = {
         'products': featured_products,
@@ -6584,7 +6605,7 @@ def most_sold_products(request):
     """Display most sold products"""
     # Get products ordered by sales count or popularity
     # For now, we'll show products with highest base_price as a proxy for popularity
-    most_sold = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-base_price')[:12]
+    most_sold = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images').order_by('-base_price')[:12]
     
     context = {
         'products': most_sold,
@@ -6606,7 +6627,7 @@ def search(request):
 
     from django.db.models import Q
 
-    product_qs = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')
+    product_qs = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images')
     store_qs = Store.objects.filter(is_active=True)
 
     product_types_map = {
@@ -6974,7 +6995,7 @@ def modern_login_page(request):
 
 
 def catalog_product_list(request):
-    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-created_at')
+    products = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images').order_by('-created_at')
     q = (request.GET.get('q') or '').strip()
     if q:
         products = products.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(store__name__icontains=q))
