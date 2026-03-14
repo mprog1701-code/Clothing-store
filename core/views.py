@@ -6986,6 +6986,7 @@ def catalog_product_list(request):
         'q': q,
         'selected_category': category,
         'categories': Product.CATEGORY_CHOICES,
+        'product_categories': Product.CATEGORY_CHOICES,
     }
     return render(request, 'catalog/product_list.html', context)
 

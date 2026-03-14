@@ -111,7 +111,13 @@
                         <!-- Image -->
                         <a href="{% url 'product_detail' product.id %}" class="d-block position-relative overflow-hidden bg-light rounded-top-4" style="padding-top: 125%;">
                             {% if product.images.first %}
-                            <img src="{{ product.images.first.image.url }}" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover transition-transform" alt="{{ product.name }}">
+                            {% with image_url=product.images.first.get_image_url %}
+                            {% if image_url %}
+                            <img src="{{ image_url }}" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover transition-transform" alt="{{ product.name }}">
+                            {% else %}
+                            <img src="https://placehold.co/400x500?text=No+Image" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover" alt="No Image">
+                            {% endif %}
+                            {% endwith %}
                             {% else %}
                             <img src="https://placehold.co/400x500?text=No+Image" class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover" alt="No Image">
                             {% endif %}

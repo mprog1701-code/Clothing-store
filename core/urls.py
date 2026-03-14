@@ -3,10 +3,10 @@ from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
-    path('', views.hybrid_home, name='home'),
+    path('', views.home, name='home'),
     path('offline/', views.offline_fallback, name='offline'),
     path('health/', views.health, name='health'),
-    path('classic/', views.home, name='home_classic'),
+    path('classic/', views.hybrid_home, name='home_classic'),
     path('stores/', views.store_list, name='store_list'),
     path('stores/<int:store_id>/', views.store_detail, name='store_detail'),
     path('products/<int:product_id>/', views.product_detail, name='product_detail'),
