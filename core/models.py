@@ -208,14 +208,6 @@ class Store(models.Model):
                 return _normalize_url(self.logo.url)
         except Exception:
             pass
-        from .models import Product
-        p = Product.objects.filter(store=self).prefetch_related('images').first()
-        if p:
-            img = p.main_image or p.images.first()
-            if img:
-                u = img.get_thumbnail_url()
-                if u:
-                    return _normalize_url(u)
         return _normalize_url(os.environ.get('DEFAULT_PLACEHOLDER_IMAGE_URL', 'https://placehold.co/120x120?text=Store'))
 
 
