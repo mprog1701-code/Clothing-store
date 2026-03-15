@@ -29,6 +29,22 @@ from django.db import transaction
 from .serializers import UserRegistrationSerializer
 from .forms import AddressForm, ProductForm, VariantFormSet, ImageFormSet
 from .templatetags.math_filters import cart_count
+
+
+def _products_qs_safe():
+    try:
+        return Product.objects.defer(
+            'is_on_offer',
+            'offer_badge_text',
+            'offer_discount_percent',
+            'offer_start',
+            'offer_end',
+            'offer_price',
+        )
+    except Exception:
+        return Product.objects
+
+
 def is_super_owner(user):
     if not user or not getattr(user, 'is_authenticated', False):
         return False
@@ -52,7 +68,7 @@ def hybrid_home(request):
     
     # 1. New Arrivals (Latest Products)
     since = timezone.now() - timedelta(hours=24)
-    latest_products = Product.objects.filter(
+    latest_products = _products_qs_safe().filter(
         is_active=True
     ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
     
@@ -62,14 +78,14 @@ def hybrid_home(request):
         print(f"  - {p.name} (ID: {p.id})")
 
     # 2. Featured Products (Selected in Admin)
-    featured_products = Product.objects.filter(
+    featured_products = _products_qs_safe().filter(
         is_active=True, 
         is_featured=True
     ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
     
     if not featured_products:
         # Fallback to random if no featured products
-        featured_products = Product.objects.filter(is_active=True).order_by('?')[:8]
+        featured_products = _products_qs_safe().filter(is_active=True).order_by('?')[:8]
 
     # 3. Categories
     categories = []
@@ -80,7 +96,7 @@ def hybrid_home(request):
             pass
             
     # 4. Special Offers (Products with discount)
-    special_offers = Product.objects.filter(
+    special_offers = _products_qs_safe().filter(
         is_active=True,
         discount_price__isnull=False
     ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
@@ -154,7 +170,7 @@ def home(request):
     site_settings, created = SiteSettings.objects.get_or_create(id=1)
     
     stores = Store.objects.filter(is_active=True)[:site_settings.featured_stores_count]
-    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
+    products = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
     campaign = None
     campaigns = []
     try:
@@ -204,7 +220,7 @@ def home(request):
 
 def catalog_home(request):
     site_settings, _ = SiteSettings.objects.get_or_create(id=1)
-    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-updated_at')[:site_settings.featured_products_count]
+    products = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images').order_by('-updated_at')[:site_settings.featured_products_count]
     context = {
         'products': products,
         'site_settings': site_settings,
@@ -220,7 +236,7 @@ def store_list(request):
         from django.db.models import Q, Exists, OuterRef
         stores = stores.filter(
             Q(category=category) |
-            Exists(Product.objects.filter(store=OuterRef('pk'), category=category))
+            Exists(_products_qs_safe().filter(store=OuterRef('pk'), category=category))
         )
     
     city = request.GET.get('city')
@@ -265,7 +281,7 @@ def store_detail(request, store_id):
     if not store or not store.is_active:
         messages.error(request, 'المتجر غير متوفر أو تم إيقافه')
         return redirect('store_list')
-    products = Product.objects.filter(store=store, is_active=True).prefetch_related('images', 'variants')
+    products = _products_qs_safe().filter(store=store, is_active=True).prefetch_related('images', 'variants')
     category = request.GET.get('category')
     if category:
         products = products.filter(category=category)
@@ -303,7 +319,7 @@ def store_detail(request, store_id):
 
 
 def product_detail(request, product_id):
-    product = Product.objects.select_related('store').prefetch_related('images', 'variants').filter(id=product_id).first()
+    product = _products_qs_safe().select_related('store').prefetch_related('images', 'variants').filter(id=product_id).first()
     if not product or not product.is_active or getattr(product, 'status', 'ACTIVE') == 'DISABLED':
         messages.error(request, 'المنتج غير موجود أو تم إيقافه')
         return redirect('home')
@@ -5882,7 +5898,7 @@ def super_owner_settings(request):
 
 def featured_products(request):
     """Display featured products"""
-    featured_products = Product.objects.filter(is_featured=True, is_active=True).select_related('store').prefetch_related('images')
+    featured_products = _products_qs_safe().filter(is_featured=True, is_active=True).select_related('store').prefetch_related('images')
     
     context = {
         'products': featured_products,
@@ -6709,7 +6725,7 @@ def most_sold_products(request):
     """Display most sold products"""
     # Get products ordered by sales count or popularity
     # For now, we'll show products with highest base_price as a proxy for popularity
-    most_sold = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-base_price')[:12]
+    most_sold = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images').order_by('-base_price')[:12]
     
     context = {
         'products': most_sold,
@@ -6731,7 +6747,7 @@ def search(request):
 
     from django.db.models import Q
 
-    product_qs = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')
+    product_qs = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images')
     store_qs = Store.objects.filter(is_active=True)
 
     product_types_map = {
@@ -6828,7 +6844,7 @@ def announcements(request):
     products = []
     try:
         campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
-        products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('?')[:12]
+        products = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images').order_by('?')[:12]
     except Exception:
         campaigns = []
         products = []
