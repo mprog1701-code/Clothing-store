@@ -2,14 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.management import call_command
 from django.db.models import Q, Sum, F, ExpressionWrapper, DecimalField, IntegerField, Case, When
 from django.db.models import Max, Avg
 from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
 from datetime import timedelta
-from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 import logging
@@ -19,6 +18,11 @@ import json
 import uuid
 import urllib.parse
 from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign, CartItem
+try:
+    from catalog.models import Category
+except ImportError:
+    Category = None
+
 from django.db.utils import OperationalError, ProgrammingError
 from django.db import transaction
 from .serializers import UserRegistrationSerializer
@@ -36,21 +40,8 @@ def is_super_owner(user):
         return True
     return False
 
-
-def _products_qs_safe():
-    try:
-        return Product.objects.defer(
-            'is_on_offer',
-            'offer_badge_text',
-            'offer_discount_percent',
-            'offer_start',
-            'offer_end',
-            'offer_price',
-        )
-    except Exception:
-        return Product.objects
-
-
+def dashboard_redirect(request):
+    return redirect('super_owner_dashboard')
 def health(request):
     return JsonResponse({'status': 'ok'})
 # Fashion marketplace view
@@ -58,17 +49,41 @@ def health(request):
 def hybrid_home(request):
     """Fashion marketplace homepage specialized in clothing and fashion"""
     
-    try:
-        since = timezone.now() - timedelta(hours=24)
-        new_arrivals = list(Product.objects.filter(
-            is_active=True,
-            created_at__gte=since
-        ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8])
-        if len(new_arrivals) == 0:
-            new_arrivals = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
-    except (OperationalError, ProgrammingError):
-        new_arrivals = []
+    # 1. New Arrivals (Latest Products)
+    since = timezone.now() - timedelta(hours=24)
+    latest_products = Product.objects.filter(
+        is_active=True
+    ).select_related('store').prefetch_related('images','variants').order_by('-created_at')[:8]
     
+    # 🔧 DIAGNOSTIC: Check query results
+    print(f"[VIEW] Found {latest_products.count()} latest products")
+    for p in latest_products[:3]:
+        print(f"  - {p.name} (ID: {p.id})")
+
+    # 2. Featured Products (Selected in Admin)
+    featured_products = Product.objects.filter(
+        is_active=True, 
+        is_featured=True
+    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
+    
+    if not featured_products:
+        # Fallback to random if no featured products
+        featured_products = Product.objects.filter(is_active=True).order_by('?')[:8]
+
+    # 3. Categories
+    categories = []
+    if Category:
+        try:
+            categories = Category.objects.filter(is_active=True).order_by('id')
+        except Exception:
+            pass
+            
+    # 4. Special Offers (Products with discount)
+    special_offers = Product.objects.filter(
+        is_active=True,
+        discount_price__isnull=False
+    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
+
     cart = request.session.get('cart', [])
     cart_items_count = cart_count(cart)
     
@@ -76,27 +91,47 @@ def hybrid_home(request):
     campaigns = []
     try:
         now = timezone.now()
-        campaigns = list(
-            Campaign.objects.filter(is_active=True, start_date__lte=now)
-            .filter(Q(end_date__isnull=True) | Q(end_date__gte=now))
-            .order_by('-start_date')
-        )
-        for c in campaigns:
-            if getattr(c, 'action_url', '') == '/stores/':
-                c.action_url = '/products/'
+        campaigns = list(Campaign.objects.filter(is_active=True, start_date__lte=now, end_date__gte=now).order_by('-start_date'))
+        if not campaigns:
+            campaigns = list(Campaign.objects.filter(is_active=True).order_by('-start_date'))
         campaign = campaigns[0] if campaigns else None
     except (OperationalError, ProgrammingError):
         campaigns = []
         campaign = None
 
+    top_ads = []
+    middle_ads = []
+    bottom_ads = []
+    try:
+        from ads.models import Advertisement
+        top_ads = Advertisement.get_active_ads(position='home_top')
+        middle_ads = Advertisement.get_active_ads(position='home_middle')
+        bottom_ads = Advertisement.get_active_ads(position='home_bottom')
+        logger = logging.getLogger(__name__)
+        logger.info(f"Top Ads: {top_ads.count()}")
+        logger.info(f"Middle Ads: {middle_ads.count()}")
+        logger.info(f"Bottom Ads: {bottom_ads.count()}")
+    except Exception:
+        top_ads = []
+        middle_ads = []
+        bottom_ads = []
+
     context = {
-        'new_arrivals': new_arrivals,
+        'latest_products': latest_products,
+        'new_arrivals': latest_products, # Backward compatibility
+        'featured_products': featured_products,
+        'best_selling_products': featured_products, # Backward compatibility
+        'categories': categories,
+        'special_offers': special_offers,
         'cart_items_count': cart_items_count,
         'campaign': campaign,
         'campaigns': campaigns,
+        'top_ads': top_ads,
+        'middle_ads': middle_ads,
+        'bottom_ads': bottom_ads,
     }
     
-    response = render(request, 'fashion_home.html', context)
+    response = render(request, 'home.html', context)
     try:
         settings_obj, _ = SiteSettings.objects.get_or_create(id=1)
         if not request.COOKIES.get('visitor_id'):
@@ -107,6 +142,10 @@ def hybrid_home(request):
         pass
     return response
 
+def track_order_page(request):
+    """Render the order tracking page"""
+    return render(request, 'track_order.html')
+
 
 @ensure_csrf_cookie
 def home(request):
@@ -114,19 +153,43 @@ def home(request):
     site_settings, created = SiteSettings.objects.get_or_create(id=1)
     
     stores = Store.objects.filter(is_active=True)[:site_settings.featured_stores_count]
+    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
+    campaign = None
+    campaigns = []
     try:
-        products = list(
-            _products_qs_safe()
-            .filter(is_active=True)
-            .select_related('store')
-            .prefetch_related('images')[:site_settings.featured_products_count]
-        )
+        now = timezone.now()
+        campaigns = list(Campaign.objects.filter(is_active=True, start_date__lte=now, end_date__gte=now).order_by('-start_date'))
+        if not campaigns:
+            campaigns = list(Campaign.objects.filter(is_active=True).order_by('-start_date'))
+        campaign = campaigns[0] if campaigns else None
     except (OperationalError, ProgrammingError):
-        products = []
+        campaigns = []
+        campaign = None
+    top_ads = []
+    middle_ads = []
+    bottom_ads = []
+    try:
+        from ads.models import Advertisement
+        top_ads = Advertisement.get_active_ads(position='home_top')
+        middle_ads = Advertisement.get_active_ads(position='home_middle')
+        bottom_ads = Advertisement.get_active_ads(position='home_bottom')
+        logger = logging.getLogger(__name__)
+        logger.info(f"Top Ads: {top_ads.count()}")
+        logger.info(f"Middle Ads: {middle_ads.count()}")
+        logger.info(f"Bottom Ads: {bottom_ads.count()}")
+    except Exception:
+        top_ads = []
+        middle_ads = []
+        bottom_ads = []
     context = {
         'stores': stores,
         'products': products,
         'site_settings': site_settings,
+        'campaign': campaign,
+        'campaigns': campaigns,
+        'top_ads': top_ads,
+        'middle_ads': middle_ads,
+        'bottom_ads': bottom_ads,
     }
     response = render(request, 'home.html', context)
     try:
@@ -138,6 +201,15 @@ def home(request):
         pass
     return response
 
+def catalog_home(request):
+    site_settings, _ = SiteSettings.objects.get_or_create(id=1)
+    products = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-updated_at')[:site_settings.featured_products_count]
+    context = {
+        'products': products,
+        'site_settings': site_settings,
+    }
+    return render(request, 'catalog/home.html', context)
+
 
 def store_list(request):
     stores = Store.objects.filter(is_active=True).order_by('id')
@@ -147,7 +219,7 @@ def store_list(request):
         from django.db.models import Q, Exists, OuterRef
         stores = stores.filter(
             Q(category=category) |
-            Exists(_products_qs_safe().filter(store=OuterRef('pk'), category=category))
+            Exists(Product.objects.filter(store=OuterRef('pk'), category=category))
         )
     
     city = request.GET.get('city')
@@ -157,16 +229,6 @@ def store_list(request):
     cities = Store.objects.filter(is_active=True).values_list('city', flat=True).distinct()
     allowed_store_categories = ['women','men','kids','cosmetics','watches','perfumes','shoes']
     filtered_categories = [c for c in Store.CATEGORY_CHOICES if c[0] in allowed_store_categories]
-    showcase_products = []
-    try:
-        prod_qs = _products_qs_safe().filter(is_active=True)
-        if category:
-            prod_qs = prod_qs.filter(store__category=category)
-        if city:
-            prod_qs = prod_qs.filter(store__city=city)
-        showcase_products = prod_qs.select_related('store').prefetch_related('images').order_by('?')[:12]
-    except Exception:
-        showcase_products = []
     
     page_number = request.GET.get('page') or 1
     page_size = 12
@@ -193,7 +255,6 @@ def store_list(request):
         'selected_category': category,
         'store_categories': filtered_categories,
         'cart_items_count': cart_items_count,
-        'showcase_products': showcase_products,
     }
     return render(request, 'store/store_list.html', context)
 
@@ -203,7 +264,7 @@ def store_detail(request, store_id):
     if not store or not store.is_active:
         messages.error(request, 'المتجر غير متوفر أو تم إيقافه')
         return redirect('store_list')
-    products = _products_qs_safe().filter(store=store, is_active=True).prefetch_related('images', 'variants')
+    products = Product.objects.filter(store=store, is_active=True).prefetch_related('images', 'variants')
     category = request.GET.get('category')
     if category:
         products = products.filter(category=category)
@@ -241,7 +302,7 @@ def store_detail(request, store_id):
 
 
 def product_detail(request, product_id):
-    product = _products_qs_safe().select_related('store').prefetch_related('images', 'variants').filter(id=product_id).first()
+    product = Product.objects.select_related('store').prefetch_related('images', 'variants').filter(id=product_id).first()
     if not product or not product.is_active or getattr(product, 'status', 'ACTIVE') == 'DISABLED':
         messages.error(request, 'المنتج غير موجود أو تم إيقافه')
         return redirect('home')
@@ -488,6 +549,42 @@ def product_detail(request, product_id):
     return render(request, 'products/detail.html', context)
 
 
+def modern_login_page(request):
+    return render(request, 'auth/modern_login.html')
+
+
+def catalog_product_list(request):
+    q = (request.GET.get('q') or '').strip()
+    category = (request.GET.get('category') or '').strip()
+    ordering = (request.GET.get('ordering') or '').strip() or '-created_at'
+    min_price_raw = request.GET.get('min_price')
+    max_price_raw = request.GET.get('max_price')
+    products = Product.objects.filter(is_active=True, status='ACTIVE')\
+        .select_related('store')\
+        .prefetch_related('images', 'variants', 'colors')
+    if q:
+        products = products.filter(Q(name__icontains=q) | Q(description__icontains=q))
+    if category:
+        products = products.filter(category=category)
+    try:
+        from decimal import Decimal
+        if min_price_raw not in [None, '']:
+            products = products.filter(base_price__gte=Decimal(str(min_price_raw)))
+        if max_price_raw not in [None, '']:
+            products = products.filter(base_price__lte=Decimal(str(max_price_raw)))
+    except Exception:
+        pass
+    allowed_ordering = {'-created_at','created_at','-rating','rating','base_price','-base_price'}
+    if ordering not in allowed_ordering:
+        ordering = '-created_at'
+    products = products.order_by(ordering)
+    product_categories = Product.CATEGORY_CHOICES
+    context = {
+        'products': products,
+        'product_categories': product_categories,
+        'selected_category': category,
+    }
+    return render(request, 'catalog/product_list.html', context)
 def register(request):
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
@@ -2488,7 +2585,7 @@ def super_owner_announcements(request):
             if action == 'create':
                 title = request.POST.get('title') or ''
                 description = request.POST.get('description') or ''
-                action_url = request.POST.get('action_url') or '/products/'
+                action_url = request.POST.get('action_url') or '/stores/'
                 discount_percent = int(request.POST.get('discount_percent') or 0)
                 start_raw = request.POST.get('start_date') or ''
                 end_raw = request.POST.get('end_date') or ''
@@ -2529,7 +2626,7 @@ def super_owner_announcements(request):
                     campaign.save()
                     messages.success(request, 'تم تعطيل الإعلان')
                 elif action == 'update_url':
-                    new_url = request.POST.get('action_url') or '/products/'
+                    new_url = request.POST.get('action_url') or '/stores/'
                     campaign.action_url = new_url
                     campaign.save()
                     messages.success(request, 'تم تحديث رابط الإعلان')
@@ -3506,7 +3603,10 @@ def super_owner_add_product(request):
                         v.save()
                     for vdel in getattr(variant_formset, 'deleted_objects', []):
                         try:
-                            vdel.delete()
+                            # الحذف معطل: تعطيل المتغير بدلاً من حذفه
+                            vdel.is_enabled = False
+                            vdel.stock_qty = 0
+                            vdel.save()
                         except Exception:
                             pass
                     images_to_save = image_formset.save(commit=False)
@@ -3520,7 +3620,9 @@ def super_owner_add_product(request):
                         im.save()
                     for imdel in getattr(image_formset, 'deleted_objects', []):
                         try:
-                            imdel.delete()
+                            # الحذف معطل: إبقاء السجل وعدم الحذف
+                            imdel.is_main = False
+                            imdel.save()
                         except Exception:
                             pass
                     if request.POST.get('finish') == '1':
@@ -3631,7 +3733,8 @@ def super_owner_add_product(request):
             created = 0
             try:
                 with transaction.atomic():
-                    ProductVariant.objects.filter(product=product).delete()
+                    # الحذف معطل: تعطيل كل المتغيرات بدلاً من حذفها
+                    ProductVariant.objects.filter(product=product).update(is_enabled=False, stock_qty=0)
                     if selected_colors and selected_sizes:
                         for c in selected_colors:
                             for s in selected_sizes:
@@ -4281,8 +4384,8 @@ def super_owner_add_product(request):
             except (Product.DoesNotExist, ProductImage.DoesNotExist, ValueError, TypeError):
                 messages.error(request, 'الصورة غير موجودة')
                 return redirect('super_owner_add_product')
-            img.delete()
-            messages.success(request, 'تم حذف الصورة')
+            # الحذف معطل: لن نقوم بحذف الصورة
+            messages.info(request, 'تم تعطيل حذف الصور مؤقتاً حفاظاً على البيانات')
             return redirect(f"{request.path}?pid={product.id}&step=images")
 
         elif action == 'extract_color_from_image':
@@ -5778,7 +5881,7 @@ def super_owner_settings(request):
 
 def featured_products(request):
     """Display featured products"""
-    featured_products = _products_qs_safe().filter(is_featured=True, is_active=True).select_related('store').prefetch_related('images')
+    featured_products = Product.objects.filter(is_featured=True, is_active=True).select_related('store').prefetch_related('images')
     
     context = {
         'products': featured_products,
@@ -6605,7 +6708,7 @@ def most_sold_products(request):
     """Display most sold products"""
     # Get products ordered by sales count or popularity
     # For now, we'll show products with highest base_price as a proxy for popularity
-    most_sold = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images').order_by('-base_price')[:12]
+    most_sold = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images').order_by('-base_price')[:12]
     
     context = {
         'products': most_sold,
@@ -6627,7 +6730,7 @@ def search(request):
 
     from django.db.models import Q
 
-    product_qs = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images')
+    product_qs = Product.objects.filter(is_active=True).select_related('store').prefetch_related('images')
     store_qs = Store.objects.filter(is_active=True)
 
     product_types_map = {
@@ -6984,47 +7087,3 @@ def bind_image_to_color(request):
                     
 def offline_fallback(request):
     return render(request, 'pwa/offline.html')
-
-
-def dashboard_redirect(request):
-    return redirect('/dashboard/super-owner/')
-
-
-def modern_login_page(request):
-    return render(request, 'registration/login.html')
-
-
-def catalog_product_list(request):
-    products = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images').order_by('-created_at')
-    q = (request.GET.get('q') or '').strip()
-    if q:
-        products = products.filter(Q(name__icontains=q) | Q(description__icontains=q) | Q(store__name__icontains=q))
-    category = (request.GET.get('category') or '').strip()
-    if category:
-        products = products.filter(category=category)
-    context = {
-        'products': products[:60],
-        'q': q,
-        'selected_category': category,
-        'categories': Product.CATEGORY_CHOICES,
-        'product_categories': Product.CATEGORY_CHOICES,
-    }
-    return render(request, 'catalog/product_list.html', context)
-
-
-def catalog_home(request):
-    return redirect('catalog_product_list')
-
-
-def track_order_page(request):
-    return render(request, 'track_order.html')
-
-
-def run_migrations(request):
-    if not request.user.is_authenticated or not request.user.is_superuser:
-        return HttpResponse("Unauthorized - Superuser required", status=403)
-    try:
-        call_command('migrate')
-        return HttpResponse("Migrations applied successfully! Database is now up to date.")
-    except Exception as e:
-        return HttpResponse(f"Error applying migrations: {str(e)}", status=500)
