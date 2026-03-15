@@ -8,7 +8,8 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
 from datetime import timedelta
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 import logging
@@ -7087,3 +7088,13 @@ def bind_image_to_color(request):
                     
 def offline_fallback(request):
     return render(request, 'pwa/offline.html')
+
+
+def run_migrations(request):
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        return HttpResponse("Unauthorized - Superuser required", status=403)
+    try:
+        call_command('migrate')
+        return HttpResponse("Migrations applied successfully! Database is now up to date.")
+    except Exception as e:
+        return HttpResponse(f"Error applying migrations: {str(e)}", status=500)
