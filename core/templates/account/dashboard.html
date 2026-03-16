@@ -33,29 +33,90 @@
   </section>
 
   <section class="mb-3">
+    {% if user.is_authenticated %}
+    <div class="card bg-white text-dark shadow-sm mb-2">
+      <div class="card-body">
+        <div class="fw-bold mb-2">معلوماتي</div>
+        <form method="post" class="row g-2">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_profile">
+          <div class="col-md-4">
+            <input class="form-control" name="full_name" placeholder="الاسم الكامل" value="{{ full_name|default:'' }}">
+          </div>
+          <div class="col-md-4">
+            <input class="form-control" name="email" placeholder="البريد الإلكتروني" value="{{ user.email|default:'' }}">
+          </div>
+          <div class="col-md-3">
+            <input class="form-control" name="city" placeholder="المدينة" value="{{ profile_city|default:'' }}">
+          </div>
+          <div class="col-md-1 d-grid">
+            <button class="btn btn-primary">حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
     <div class="row g-2 quick-actions">
       <div class="col-6">
-        <a href="{% url 'order_list' %}" class="qa btn btn-light w-100"><i class="bi bi-bag"></i><span>طلباتي</span></a>
+        <a href="{% url 'order_list' %}" class="qa btn btn-light w-100"><i class="bi bi-bag"></i><span>طلباتي</span><span class="ms-auto badge text-bg-secondary">{{ order_count|default:0 }}</span></a>
       </div>
       <div class="col-6">
-        <a href="{% url 'address_list' %}" class="qa btn btn-light w-100"><i class="bi bi-geo-alt"></i><span>العناوين</span></a>
+        <a href="{% url 'address_list' %}" class="qa btn btn-light w-100"><i class="bi bi-geo-alt"></i><span>العناوين</span><span class="ms-auto badge text-bg-secondary">{{ address_count|default:0 }}</span></a>
       </div>
       <div class="col-6">
-        <a href="#" class="qa btn btn-light w-100" data-action="favorite"><i class="bi bi-heart"></i><span>المفضلة</span></a>
+        <a href="{% url 'featured_products' %}" class="qa btn btn-light w-100"><i class="bi bi-heart"></i><span>المفضلة</span><span class="ms-auto badge text-bg-secondary">{{ favorites_count|default:0 }}</span></a>
       </div>
       <div class="col-6">
-        <a href="{% url 'notifications' %}" class="qa btn btn-light w-100"><i class="bi bi-bell"></i><span>الإشعارات</span></a>
+        <a href="{% url 'notifications' %}" class="qa btn btn-light w-100"><i class="bi bi-bell"></i><span>الإشعارات</span><span class="ms-auto badge text-bg-secondary">{{ notifications_count|default:0 }}</span></a>
       </div>
       <div class="col-6">
-        <a href="#" class="qa btn btn-light w-100" data-action="payments"><i class="bi bi-credit-card"></i><span>طرق الدفع</span></a>
+        <a href="{% url 'order_list' %}" class="qa btn btn-light w-100"><i class="bi bi-credit-card"></i><span>طرق الدفع</span><span class="ms-auto badge text-bg-secondary">{{ payment_methods_count|default:0 }}</span></a>
       </div>
       <div class="col-6">
-        <a href="{% url 'services' %}" class="qa btn btn-light w-100"><i class="bi bi-headset"></i><span>الدعم</span></a>
+        <a href="{% url 'contact' %}" class="qa btn btn-light w-100"><i class="bi bi-headset"></i><span>الدعم</span></a>
       </div>
     </div>
   </section>
 
-  
+  <section class="mb-3">
+    <div class="card bg-white text-dark shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold">آخر طلباتي</span>
+          <a href="{% url 'order_list' %}" class="small">عرض الكل</a>
+        </div>
+        {% if orders %}
+          <div class="list-group">
+            {% for o in orders %}
+              <a href="{% url 'order_detail' o.id %}" class="list-group-item d-flex justify-content-between align-items-center">
+                <span>طلب #{{ o.id }} - {{ o.get_status_display }}</span>
+                <small class="text-muted">{{ o.created_at|date:"Y-m-d H:i" }}</small>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-muted small">لا توجد طلبات حالياً</div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-3">
+    <div class="card bg-white text-dark shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold">آخر عنوان</span>
+          <a href="{% url 'address_list' %}" class="small">إدارة العناوين</a>
+        </div>
+        {% if last_address %}
+          <div>{{ last_address.city }} - {{ last_address.area }} - {{ last_address.street }}</div>
+          {% if last_address.formatted_address %}<div class="small text-muted">{{ last_address.formatted_address }}</div>{% endif %}
+        {% else %}
+          <div class="text-muted small">لا يوجد عنوان محفوظ</div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
 
   <section class="mb-3">
     <div class="card bg-white text-dark shadow-sm">
@@ -91,7 +152,7 @@
         <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-info-circle"></i><span class="fw-bold">عن التطبيق</span></div>
         <div class="list-group">
           <a href="{% url 'about' %}" class="list-group-item d-flex align-items-center gap-2"><i class="bi bi-file-earmark-text"></i><span>عنّا</span></a>
-          <a href="{% url 'services' %}" class="list-group-item d-flex align-items-center gap-2"><i class="bi bi-shield-check"></i><span>الشروط والأحكام</span></a>
+          <a href="{% url 'terms' %}" class="list-group-item d-flex align-items-center gap-2"><i class="bi bi-shield-check"></i><span>الشروط والأحكام</span></a>
           <a href="#" class="list-group-item d-flex align-items-center gap-2" data-action="rate"><i class="bi bi-star"></i><span>تقييم التطبيق</span></a>
           <a href="#" class="list-group-item d-flex align-items-center gap-2" data-action="share"><i class="bi bi-share"></i><span>مشاركة التطبيق</span></a>
         </div>
@@ -117,7 +178,6 @@
 <script>
 (function(){
   function showToast(text,type){var holder=document.getElementById('toastHolder');if(!holder)return;var cls=type==='success'?'bg-success':'bg-secondary';var d=document.createElement('div');d.className='toast show';d.innerHTML='<div class="toast-header '+cls+' text-white"><strong class="me-auto">'+(type==='success'?'تم':'تنبيه')+'</strong><button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button></div><div class="toast-body">'+text+'</div>';holder.appendChild(d);setTimeout(function(){try{d.remove()}catch(e){}},6000)}
-  document.querySelectorAll('.quick-actions a.qa[data-action]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();var act=this.getAttribute('data-action');if(act==='favorite'){showToast('المفضلة ستتوفر قريباً','secondary')}else if(act==='payments'){showToast('طرق الدفع Placeholder','secondary')}})});
   function applyLanguageLabel(){var el=document.getElementById('currentLanguage');var lang='ar';try{var s=localStorage.getItem('siteLanguage');if(s&&window.i18n&&window.i18n[s])lang=s;else localStorage.setItem('siteLanguage','ar')}catch(e){lang='ar'};var dict=(window.i18n&&window.i18n[lang])?window.i18n[lang]:window.i18n['ar'];if(el){el.textContent=dict['language_'+lang]||dict.language_ar}}
   function getCurrentTheme(){var t='dark';try{t=localStorage.getItem('siteTheme')||localStorage.getItem('theme')||'dark'}catch(e){};return t==='light'?'light':'dark'}
   function applyThemeLabel(){var el=document.getElementById('currentTheme');var icon=document.getElementById('themeIcon');var t=getCurrentTheme();if(el){el.textContent=t==='light'?'فاتح':'داكن'};if(icon){icon.className=t==='light'?'bi bi-sun':'bi bi-moon-stars'}}

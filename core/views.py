@@ -57,6 +57,19 @@ def is_super_owner(user):
         return True
     return False
 
+
+def _related_user_ids_for_user(user):
+    if not user or not getattr(user, 'is_authenticated', False):
+        return []
+    try:
+        phone = (getattr(user, 'phone', '') or '').strip()
+        if not phone:
+            return [user.id]
+        ids = list(User.objects.filter(phone=phone).values_list('id', flat=True))
+        return ids or [user.id]
+    except Exception:
+        return [user.id]
+
 def dashboard_redirect(request):
     return redirect('super_owner_dashboard')
 def health(request):
@@ -685,13 +698,12 @@ def user_login(request):
         except Exception:
             pass
         
-        user = None
+        users = []
         try:
-            user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+            users = list(User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined'))
         except Exception:
-            user = None
-        
-        if user:
+            users = []
+        for user in users:
             user_auth = authenticate(request, username=user.username, password=password)
             if user_auth is not None:
                 login(request, user_auth)
@@ -718,16 +730,15 @@ def owner_login(request):
         except Exception:
             pass
         
-        user = None
+        users = []
         try:
-            user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+            users = list(User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined'))
         except Exception:
-            user = None
-        if not user:
+            users = []
+        if not users:
             messages.error(request, 'رقم الجوال غير مسجل')
             return render(request, 'registration/owner_login.html')
-
-        if user:
+        for user in users:
             user_auth = authenticate(request, username=user.username, password=password)
             if user_auth is not None:
                 login(request, user_auth)
@@ -735,8 +746,8 @@ def owner_login(request):
                     messages.success(request, 'تم تسجيل دخول المدير بنجاح!')
                     return redirect('main_dashboard')
                 messages.error(request, 'ليس لديك صلاحية المدير')
-            else:
-                messages.error(request, 'بيانات الدخول غير صحيحة')
+                return render(request, 'registration/owner_login.html')
+        messages.error(request, 'بيانات الدخول غير صحيحة')
     
     return render(request, 'registration/owner_login.html')
 
@@ -1714,7 +1725,8 @@ def apply_coupon_json(request):
 
 def order_list(request):
     if request.user.is_authenticated:
-        orders = Order.objects.filter(user=request.user).order_by('-created_at')
+        user_ids = _related_user_ids_for_user(request.user)
+        orders = Order.objects.filter(user_id__in=user_ids).order_by('-created_at')
     else:
         orders = []
     context = {
@@ -1764,7 +1776,8 @@ def order_detail(request, order_id):
 
 @login_required
 def address_list(request):
-    addresses = Address.objects.filter(user=request.user)
+    user_ids = _related_user_ids_for_user(request.user)
+    addresses = Address.objects.filter(user_id__in=user_ids).order_by('-is_default', '-id')
     context = {
         'addresses': addresses,
     }
@@ -1976,22 +1989,74 @@ def account_settings(request):
     return render(request, 'account/settings.html')
 
 def account_dashboard(request):
+    profile_user = request.user if request.user.is_authenticated else None
+    user_ids = _related_user_ids_for_user(request.user) if request.user.is_authenticated else []
+
+    if request.method == 'POST' and request.user.is_authenticated:
+        action = (request.POST.get('action') or '').strip()
+        if action == 'update_profile':
+            full_name = (request.POST.get('full_name') or '').strip()
+            email = (request.POST.get('email') or '').strip()
+            city = (request.POST.get('city') or '').strip()
+            try:
+                first_name = full_name
+                last_name = ''
+                if ' ' in full_name:
+                    first_name, last_name = full_name.split(' ', 1)
+                request.user.first_name = first_name[:150]
+                request.user.last_name = last_name[:150]
+                request.user.email = email
+                if hasattr(request.user, 'city'):
+                    request.user.city = city
+                request.user.save()
+                messages.success(request, 'تم تحديث معلومات الحساب بنجاح')
+            except Exception:
+                messages.error(request, 'تعذر تحديث معلومات الحساب حالياً')
+            return redirect('account_settings')
+
     if request.user.is_authenticated:
-        orders = Order.objects.filter(user=request.user).order_by('-created_at')
-        addr = Address.objects.filter(user=request.user, is_default=True).first()
+        orders = Order.objects.filter(user_id__in=user_ids).order_by('-created_at')
+        addresses_qs = Address.objects.filter(user_id__in=user_ids).order_by('-is_default', '-id')
+        addr = addresses_qs.filter(is_default=True).first()
         if not addr:
-            addr = Address.objects.filter(user=request.user).order_by('-id').first()
+            addr = addresses_qs.first()
+        order_count = orders.count()
+        address_count = addresses_qs.count()
+        payment_methods_count = orders.values('payment_method').distinct().count()
+        notifications_count = orders.exclude(status='pending').count()
     else:
         orders = []
         addr = None
+        order_count = 0
+        address_count = 0
+        payment_methods_count = 0
+        notifications_count = 0
     context = {
-        'orders': orders,
+        'orders': orders[:5],
         'last_address': addr,
+        'order_count': order_count,
+        'address_count': address_count,
+        'favorites_count': 0,
+        'notifications_count': notifications_count,
+        'payment_methods_count': payment_methods_count,
+        'full_name': (request.user.get_full_name() if request.user.is_authenticated else ''),
+        'profile_city': (getattr(profile_user, 'city', '') if profile_user else ''),
     }
     return render(request, 'account/dashboard.html', context)
 
 def notifications_page(request):
-    return render(request, 'notifications.html')
+    items = []
+    if request.user.is_authenticated:
+        user_ids = _related_user_ids_for_user(request.user)
+        orders = Order.objects.filter(user_id__in=user_ids).order_by('-updated_at')[:20]
+        status_map = dict(Order.STATUS_CHOICES)
+        for o in orders:
+            items.append({
+                'title': f"طلب #{o.id}",
+                'body': f"حالة الطلب: {status_map.get(o.status, o.status)}",
+                'time': o.updated_at,
+            })
+    return render(request, 'notifications.html', {'notifications': items})
 
 
 def about_page(request):
