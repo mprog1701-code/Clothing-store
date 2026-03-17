@@ -3,12 +3,13 @@ import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nMa
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
-import { listAds, listBanners } from '../api';
+import { getCart, listAds, listBanners } from '../api';
 import ProductCard from '../components/ProductCard';
 import AdSlider from '../components/AdSlider';
 import PromoBannerGrid from '../components/PromoBannerGrid';
 import { useAuth } from '../auth/AuthContext';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 const CATEGORY_MAP = {
@@ -31,6 +32,7 @@ const HomeScreen = ({ navigation }) => {
 
   const [adItems, setAdItems] = useState([]);
   const [promotionItems, setPromotionItems] = useState([]);
+  const [cartCount, setCartCount] = useState(0);
   const [loginSheetVisible, setLoginSheetVisible] = useState(false);
   const [pendingNext, setPendingNext] = useState(null);
 
@@ -120,6 +122,27 @@ const HomeScreen = ({ navigation }) => {
     setLoginSheetVisible(true);
   };
 
+  const refreshCartCount = React.useCallback(async () => {
+    if (!accessToken) {
+      setCartCount(0);
+      return;
+    }
+    try {
+      const data = await getCart();
+      const arr = Array.isArray(data) ? data : (data.items || data.results || []);
+      const count = arr.reduce((sum, it) => sum + Number(it?.quantity || 0), 0);
+      setCartCount(count);
+    } catch {
+      setCartCount(0);
+    }
+  }, [accessToken]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshCartCount();
+    }, [refreshCartCount])
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -132,6 +155,11 @@ const HomeScreen = ({ navigation }) => {
       <Animated.View style={[styles.header, styles.fadeUp(headerAnim)]}>
         <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.iconButton}>
           <Ionicons name="cart-outline" size={20} color={theme.colors.textPrimary} />
+          {cartCount > 0 ? (
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartCount > 99 ? '99+' : String(cartCount)}</Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
         <Text style={styles.headerTitle}>دار DAAR</Text>
       </Animated.View>
@@ -169,14 +197,14 @@ const HomeScreen = ({ navigation }) => {
       <Animated.View style={styles.fadeUp(offersAnim)}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>وصل حديثاً</Text>
-          <TouchableOpacity onPress={() => openProductsList({ type: 'new_arrivals', listTitle: 'وصل حديثاً' })}>
+          <TouchableOpacity onPress={() => openProductsList({ type: 'new_arrivals', filterType: 'new_arrival', listTitle: 'وصل حديثاً' })}>
             <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.offerCard}>
           <Text style={styles.offerTitle}>اكتشف المنتجات الجديدة</Text>
         </View>
-        <TouchableOpacity onPress={() => openProductsList({ type: 'new_arrivals', listTitle: 'وصل حديثاً' })}>
+        <TouchableOpacity onPress={() => openProductsList({ type: 'new_arrivals', filterType: 'new_arrival', listTitle: 'وصل حديثاً' })}>
           <Text style={styles.offerLink}>عرض المنتجات</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -184,7 +212,7 @@ const HomeScreen = ({ navigation }) => {
       <Animated.View style={styles.fadeUp(categoriesAnim)}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>الأقسام</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Categories', { listTitle: 'كل الأقسام' })}>
+          <TouchableOpacity onPress={() => navigation.navigate('AllCategories', { listTitle: 'كل الأقسام' })}>
             <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
@@ -195,7 +223,7 @@ const HomeScreen = ({ navigation }) => {
               style={[styles.chip, label === 'عرض الكل' && styles.chipActive]}
               onPress={() => {
                 if (label === 'عرض الكل') {
-                  navigation.navigate('Categories', { listTitle: 'كل الأقسام' });
+                  navigation.navigate('AllCategories', { listTitle: 'كل الأقسام' });
                   return;
                 }
                 openProductsList({
@@ -217,13 +245,13 @@ const HomeScreen = ({ navigation }) => {
       <Animated.View style={styles.fadeUp(flashAnim)}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>عروض فلاش</Text>
-          <TouchableOpacity onPress={() => openProductsList({ type: 'flash_sales', listTitle: 'عروض فلاش' })}>
+          <TouchableOpacity onPress={() => openProductsList({ type: 'flash_sales', filterType: 'flash_sale', listTitle: 'عروض فلاش' })}>
             <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.flashCard}>
           <Text style={styles.flashTitle}>عرض فلاش</Text>
-          <TouchableOpacity onPress={() => openProductsList({ type: 'flash_sales', listTitle: 'عروض فلاش' })}>
+          <TouchableOpacity onPress={() => openProductsList({ type: 'flash_sales', filterType: 'flash_sale', listTitle: 'عروض فلاش' })}>
             <Text style={styles.flashLink}>عرض العروض</Text>
           </TouchableOpacity>
         </View>
@@ -319,6 +347,24 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: theme.colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartBadgeText: {
+    color: '#fff',
+    fontFamily: theme.typography.fontBold,
+    fontSize: 9,
   },
   searchBar: {
     flexDirection: 'row-reverse',

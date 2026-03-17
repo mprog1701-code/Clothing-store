@@ -1,26 +1,34 @@
 {
   "expo": {
-    "name": "DAAR-Mobile",
-    "slug": "DAAR-Mobile",
+    "name": "دار DAAR",
+    "slug": "daar",
     "version": "1.0.0",
     "orientation": "portrait",
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "enabled": false,
+      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "fallbackToCacheTimeout": 30000
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.daar.app"
     },
     "android": {
-      "adaptiveIcon": {}
+      "adaptiveIcon": {},
+      "package": "com.daar.app"
     },
     "web": {
       "bundler": "metro"
     },
     "extra": {
-      "apiBaseUrl": ""
+      "apiBaseUrl": "https://clothing-store-production-4387.up.railway.app",
+      "loginUrl": "https://clothing-store-production-4387.up.railway.app/login/",
+      "googleOauthStartUrl": "https://clothing-store-production-4387.up.railway.app/login/?provider=google",
+      "googleAndroidClientId": "",
+      "googleIosClientId": ""
     },
     "plugins": [
       "expo-secure-store",

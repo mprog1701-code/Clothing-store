@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { I18nManager } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import theme from '../theme';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
@@ -13,6 +13,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import StoresScreen from '../screens/StoresScreen';
 import { useAuth } from '../auth/AuthContext';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
+import { getCart } from '../api';
 
 const Tab = createBottomTabNavigator();
 
@@ -21,11 +22,37 @@ export default function RootTabs() {
   const { accessToken } = useAuth();
   const [sheetVisible, setSheetVisible] = React.useState(false);
   const [pendingNext, setPendingNext] = React.useState(null);
+  const [cartCount, setCartCount] = React.useState(0);
 
   const requestLogin = React.useCallback((next) => {
     setPendingNext(next);
     setSheetVisible(true);
   }, []);
+
+  const refreshCartBadge = React.useCallback(async () => {
+    if (!accessToken) {
+      setCartCount(0);
+      return;
+    }
+    try {
+      const data = await getCart();
+      const arr = Array.isArray(data) ? data : (data.items || data.results || []);
+      const nextCount = arr.reduce((sum, it) => sum + Number(it?.quantity || 0), 0);
+      setCartCount(nextCount);
+    } catch {
+      setCartCount(0);
+    }
+  }, [accessToken]);
+
+  React.useEffect(() => {
+    refreshCartBadge();
+  }, [refreshCartBadge]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshCartBadge();
+    }, [refreshCartBadge])
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -51,7 +78,20 @@ export default function RootTabs() {
       >
         <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'الرئيسية' }} />
         <Tab.Screen name="Stores" component={StoresScreen} options={{ title: 'المتاجر' }} />
-        <Tab.Screen name="Cart" component={CartScreen} options={{ title: 'السلة' }} />
+        <Tab.Screen
+          name="Cart"
+          component={CartScreen}
+          options={{
+            title: 'السلة',
+            tabBarBadge: cartCount > 0 ? cartCount : undefined,
+            tabBarBadgeStyle: { backgroundColor: theme.colors.danger, color: '#fff', fontFamily: theme.typography.fontBold },
+          }}
+          listeners={{
+            tabPress: () => {
+              refreshCartBadge();
+            },
+          }}
+        />
         <Tab.Screen
           name="Orders"
           component={OrdersScreen}

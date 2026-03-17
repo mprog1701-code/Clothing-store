@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import PromoBanner from './PromoBanner';
 import theme from '../theme';
 
@@ -14,11 +14,11 @@ export default function PromoBannerGrid({
     <View>
       <Text style={styles.title}>{title}</Text>
       {list.length ? (
-        <View style={styles.grid}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
           {list.map((item, index) => (
             <PromoBanner key={String(item?.id ?? index)} item={item} onPress={onPressItem} />
           ))}
-        </View>
+        </ScrollView>
       ) : (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyText}>{emptyTitle}</Text>
@@ -36,10 +36,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
     textAlign: 'right',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  row: {
+    paddingBottom: theme.spacing.sm,
   },
   emptyCard: {
     borderRadius: theme.radius.lg,

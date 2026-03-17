@@ -11,6 +11,7 @@ import LoginRequiredSheet from '../components/LoginRequiredSheet';
 export default function ProductsScreen({ navigation, route }) {
   const { accessToken } = useAuth();
   const params = route.params || {};
+  const filterType = params.filterType || '';
   const legacyMode = params.mode || 'all';
   const typeFromMode = {
     all: 'all_products',
@@ -21,7 +22,13 @@ export default function ProductsScreen({ navigation, route }) {
     categories: 'all_categories',
     search: 'search_results',
   };
-  const type = params.type || typeFromMode[legacyMode] || 'all_products';
+  const typeFromFilterType = {
+    flash_sale: 'flash_sales',
+    new_arrival: 'new_arrivals',
+    offer: 'offers',
+    promotion_banner: 'promotion_banners',
+  };
+  const type = params.type || typeFromFilterType[filterType] || typeFromMode[legacyMode] || 'all_products';
   const categoryId = params.categoryId ?? null;
   const categoryLabel = params.categoryLabel || '';
   const q = params.q || '';
@@ -75,7 +82,7 @@ export default function ProductsScreen({ navigation, route }) {
 
   useEffect(() => {
     load();
-  }, [type, categoryId, q, storeId]);
+  }, [type, categoryId, q, storeId, filterType]);
 
   const viewTitle = useMemo(() => {
     if (listTitle) return listTitle;
@@ -100,19 +107,19 @@ export default function ProductsScreen({ navigation, route }) {
     };
     if (type === 'offers') {
       const res = items.filter((p) => p?.oldPrice || p?.old_price || p?.discount_price || p?.offer_price || hasTag(p, 'offer'));
-      return res.length ? res : items;
+      return res;
     }
     if (type === 'flash_sales') {
       const res = items.filter((p) => p?.is_flash || hasTag(p, 'flash') || String(p?.badge || '').includes('فلاش'));
-      return res.length ? res : items;
+      return res;
     }
     if (type === 'new_arrivals') {
       const res = items.filter((p) => p?.is_new || hasTag(p, 'new') || hasTag(p, 'جديد'));
-      return res.length ? res : items;
+      return res;
     }
     if (type === 'promotion_banners') {
       const res = items.filter((p) => p?.is_featured || hasTag(p, 'banner') || hasTag(p, 'promo'));
-      return res.length ? res : items;
+      return res;
     }
     if (type === 'category' && !categoryId && categoryLabel) {
       const normalized = categoryLabel.trim();
@@ -165,6 +172,12 @@ export default function ProductsScreen({ navigation, route }) {
               </View>
             ) : null}
             {type === 'search_results' && q ? <Text style={styles.subtitle}>نتائج البحث عن "{q}"</Text> : null}
+            {refreshing ? (
+              <View style={styles.filteringState}>
+                <ActivityIndicator size="small" color={theme.colors.accent} />
+                <Text style={styles.filteringStateText}>جاري تحديث النتائج...</Text>
+              </View>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
@@ -226,6 +239,18 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     fontFamily: theme.typography.fontRegular,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  filteringState: {
+    marginTop: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-end',
+  },
+  filteringStateText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.sm,
   },
   chip: {
     alignSelf: 'flex-end',

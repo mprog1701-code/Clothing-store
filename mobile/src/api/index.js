@@ -1,12 +1,15 @@
 import client from './client';
 import { API_BASE_URL } from './config';
 import { saveTokens } from '../auth/tokenStorage';
+import { normalizeIraqiPhone } from '../utils/phone';
 
 export async function login(identifier, password) {
   const payload = { password };
   const id = (identifier || '').trim();
-  payload.username = id;
-  payload.phone = id;
+  const normalizedPhone = normalizeIraqiPhone(id);
+  const phoneLike = normalizedPhone && normalizedPhone.startsWith('07') && normalizedPhone.length === 11;
+  payload.username = phoneLike ? normalizedPhone : id;
+  payload.phone = phoneLike ? normalizedPhone : id;
   if (id.includes('@')) payload.email = id;
   let r;
   try {

@@ -1,10 +1,11 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, I18nManager, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { listCategories } from '../api';
 import theme from '../theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import EmptyState from '../components/EmptyState';
 
-export default function CategoriesScreen({ navigation, route }) {
+export default function AllCategoriesScreen({ navigation, route }) {
   const listTitle = route?.params?.listTitle || 'كل الأقسام';
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,19 +16,26 @@ export default function CategoriesScreen({ navigation, route }) {
     navigation.setOptions({ title: listTitle });
   }, [listTitle, navigation]);
 
+  const normalizeCategories = (raw) => {
+    const fromApi = Array.isArray(raw)
+      ? raw
+      : (raw?.categories || raw?.results || raw?.items || []);
+    return (fromApi || []).map((item, index) => ({
+      id: String(item?.id ?? item?.key ?? item?.value ?? index),
+      key: String(item?.key ?? item?.id ?? item?.value ?? ''),
+      name: String(item?.name ?? item?.label ?? item?.title ?? 'قسم'),
+    }));
+  };
+
   const load = async () => {
     setError('');
     try {
       const data = await listCategories();
-      const source = Array.isArray(data) ? data : (data.categories || data.results || data.items || []);
-      const arr = (source || []).map((item, index) => ({
-        id: String(item?.id ?? item?.key ?? index),
-        key: String(item?.key ?? item?.id ?? ''),
-        name: String(item?.name ?? item?.label ?? item?.title ?? 'قسم'),
-      }));
+      const arr = normalizeCategories(data);
       setItems(arr);
-    } catch (e) {
+    } catch {
       setError('تعذر تحميل الأقسام');
+      setItems([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -43,39 +51,44 @@ export default function CategoriesScreen({ navigation, route }) {
     load();
   };
 
+  const hasItems = useMemo(() => Array.isArray(items) && items.length > 0, [items]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.centered}>
-        <ActivityIndicator />
-      </SafeAreaView>
-    );
-  }
-  if (error) {
-    return (
-      <SafeAreaView style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
+        <ActivityIndicator color={theme.colors.accent} />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={items}
-        keyExtractor={(item) => String(item.id)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        numColumns={2}
-        contentContainerStyle={styles.list}
-        columnWrapperStyle={styles.row}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ProductsList', { type: 'category', categoryId: item.key, categoryLabel: item.name, listTitle: item.name })}
-            style={styles.card}
-          >
-            <Text style={styles.cardText}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
-      />
+      {!hasItems ? (
+        <EmptyState
+          icon="grid-outline"
+          title="لا توجد أقسام متاحة حالياً"
+          subtitle={error || 'تحقق من مصدر بيانات الأقسام ثم أعد المحاولة'}
+          ctaLabel="إعادة المحاولة"
+          onPress={load}
+        />
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          numColumns={2}
+          contentContainerStyle={styles.list}
+          columnWrapperStyle={styles.row}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('ProductsList', { type: 'category', categoryId: item.key, categoryLabel: item.name, listTitle: item.name })}
+              style={styles.card}
+            >
+              <Text style={styles.cardText}>{item.name}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -90,9 +103,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.background,
-  },
-  errorText: {
-    color: theme.colors.textSecondary,
   },
   list: {
     paddingHorizontal: 16,

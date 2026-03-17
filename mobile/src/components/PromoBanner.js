@@ -24,14 +24,15 @@ export default function PromoBanner({ item, onPress }) {
 
 const styles = StyleSheet.create({
   card: {
-    width: '48%',
-    aspectRatio: 1,
+    width: 170,
+    aspectRatio: 4 / 3,
     borderRadius: theme.radius.lg,
     borderWidth: 1,
     borderColor: theme.colors.cardBorder,
     overflow: 'hidden',
     backgroundColor: theme.colors.surface,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    marginEnd: theme.spacing.sm,
   },
   image: {
     width: '100%',

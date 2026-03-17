@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, I18nManager } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import theme from '../theme';
+import { API_BASE_URL } from '../api/config';
 
-const FALLBACK_IMAGE = 'https://placehold.co/600x600?text=Product';
+const LOGO_PLACEHOLDER = require('../../assets/daar-logo.png');
 
 function toIQD(value) {
   const number = Number(value || 0);
@@ -13,14 +14,45 @@ function toIQD(value) {
   return number.toLocaleString('en-US');
 }
 
+function toAbsoluteUri(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const base = String(API_BASE_URL || '').replace(/\/+$/g, '');
+  const path = raw.startsWith('/') ? raw : `/${raw}`;
+  return base ? `${base}${path}` : raw;
+}
+
+function pickImage(product) {
+  const candidates = [
+    product?.image,
+    product?.image_url,
+    product?.thumbnail,
+    product?.imageUrl,
+    product?.main_image?.image_url,
+    product?.main_image?.url,
+    product?.main_image_url,
+    Array.isArray(product?.images) ? product.images[0]?.image_url : '',
+    Array.isArray(product?.images) ? product.images[0]?.url : '',
+    Array.isArray(product?.images) ? product.images[0] : '',
+  ];
+  for (const candidate of candidates) {
+    const uri = toAbsoluteUri(candidate);
+    if (uri) return uri;
+  }
+  return '';
+}
+
 export default function ProductCard({ product, addToCart, style }) {
   const navigation = useNavigation();
+  const [imageFailed, setImageFailed] = useState(false);
   const productId = product?.id;
   const title = product?.name || product?.title || 'منتج';
   const price = product?.price ?? product?.base_price ?? product?.final_price ?? 0;
   const oldPrice = product?.oldPrice ?? product?.old_price ?? null;
   const rating = Number(product?.rating || 0);
-  const imageUri = product?.image || product?.image_url || product?.thumbnail || FALLBACK_IMAGE;
+  const imageUri = useMemo(() => pickImage(product), [product]);
+  const imageSource = imageFailed || !imageUri ? LOGO_PLACEHOLDER : { uri: imageUri };
 
   const openDetails = () => {
     if (!productId) return;
@@ -30,7 +62,14 @@ export default function ProductCard({ product, addToCart, style }) {
   return (
     <Pressable onPress={openDetails} style={[styles.card, style]}>
       <View style={styles.imageWrap}>
-        <Image source={{ uri: imageUri }} style={styles.image} contentFit="cover" transition={200} cachePolicy="memory-disk" />
+        <Image
+          source={imageSource}
+          style={styles.image}
+          contentFit="cover"
+          transition={200}
+          cachePolicy="memory-disk"
+          onError={() => setImageFailed(true)}
+        />
         {(product?.badge || product?.is_new) ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{product?.badge || 'جديد'}</Text>

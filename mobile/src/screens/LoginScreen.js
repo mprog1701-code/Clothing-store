@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, I18nManager, Animated, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, I18nManager, Animated, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking } from 'react-native';
 import { addToCart, addCartItemVariant } from '../api';
 import theme from '../theme';
 import { useAuth } from '../auth/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { normalizeIraqiPhone, isValidIraqiPhone } from '../utils/phone';
+import { GOOGLE_OAUTH_START_URL, LOGIN_URL, GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../api/config';
 
 export default function LoginScreen({ navigation, route }) {
   const [phone, setPhone] = useState('');
@@ -27,17 +29,10 @@ export default function LoginScreen({ navigation, route }) {
     ]).start();
   }, []);
 
-  const normalizePhone = (value) => {
-    const digits = String(value || '').replace(/\D/g, '');
-    if (digits.startsWith('964') && digits.length === 13) return `0${digits.slice(3)}`;
-    if (digits.startsWith('7') && digits.length === 10) return `0${digits}`;
-    return digits.slice(0, 11);
-  };
-
   const validatePhone = (value) => {
-    const normalized = normalizePhone(value);
+    const normalized = normalizeIraqiPhone(value);
     if (!normalized) return 'يرجى إدخال رقم الهاتف';
-    if (!/^07\d{9}$/.test(normalized)) return 'رقم الهاتف غير صحيح';
+    if (!isValidIraqiPhone(normalized)) return 'رقم الهاتف غير صحيح';
     return '';
   };
 
@@ -50,7 +45,7 @@ export default function LoginScreen({ navigation, route }) {
   const isDisabled = useMemo(() => loading || !phone || !password, [loading, phone, password]);
 
   const onSubmit = async () => {
-    const normalizedPhone = normalizePhone(phone);
+    const normalizedPhone = normalizeIraqiPhone(phone);
     const phoneErr = validatePhone(normalizedPhone);
     const pwdErr = validatePassword(password);
     setErrorPhone(phoneErr);
@@ -58,7 +53,7 @@ export default function LoginScreen({ navigation, route }) {
     if (phoneErr || pwdErr) return;
     setLoading(true);
     try {
-      await loginUser(normalizedPhone, password.trim());
+      await loginUser(normalizedPhone, password);
       const next = route?.params?.next;
       if (next?.action === 'add_to_cart') {
         try {
@@ -80,10 +75,23 @@ export default function LoginScreen({ navigation, route }) {
       }
       navigation.replace('Root');
     } catch (e) {
-      const msg = String(e?.message || 'بيانات الدخول غير صحيحة أو تعذر الاتصال');
-      setErrorPwd(msg);
+      setErrorPwd('خطأ في رقم الهاتف أو كلمة المرور');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onGoogleLogin = async () => {
+    const oauthConfigured = !!(GOOGLE_ANDROID_CLIENT_ID || GOOGLE_IOS_CLIENT_ID);
+    const target = GOOGLE_OAUTH_START_URL || LOGIN_URL;
+    if (!oauthConfigured && !target) {
+      Alert.alert('Google Login', 'Google OAuth غير مهيأ حالياً');
+      return;
+    }
+    try {
+      await Linking.openURL(target);
+    } catch {
+      Alert.alert('Google Login', 'تعذر فتح تسجيل الدخول بواسطة Google');
     }
   };
 
@@ -93,6 +101,16 @@ export default function LoginScreen({ navigation, route }) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <Animated.View style={[styles.container, { transform: [{ translateY: slide }], opacity: fade }]}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (navigation.canGoBack()) navigation.goBack();
+                  else navigation.navigate('Root');
+                }}
+                style={styles.backButton}
+              >
+                <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
+                <Text style={styles.backButtonText}>رجوع</Text>
+              </TouchableOpacity>
               <View style={styles.brandWrap}>
                 <View style={styles.logoCircle}>
                   <Text style={styles.logoText}>دار</Text>
@@ -109,7 +127,7 @@ export default function LoginScreen({ navigation, route }) {
                     placeholderTextColor="rgba(255,255,255,0.6)"
                     value={phone}
                     onChangeText={(value) => {
-                      const normalized = normalizePhone(value);
+                      const normalized = normalizeIraqiPhone(value);
                       setPhone(normalized);
                       if (errorPhone) setErrorPhone(validatePhone(normalized));
                     }}
@@ -152,7 +170,7 @@ export default function LoginScreen({ navigation, route }) {
                 {errorPwd ? <Text style={styles.errorText}>{errorPwd}</Text> : null}
               </View>
 
-              <TouchableOpacity disabled={isDisabled} onPress={onSubmit} style={[styles.loginButton, isDisabled && styles.loginButtonDisabled]}>
+              <TouchableOpacity disabled={isDisabled} onPress={onSubmit} style={[styles.actionButton, styles.loginButton, isDisabled && styles.loginButtonDisabled]}>
                 {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.loginButtonText}>تسجيل الدخول</Text>}
               </TouchableOpacity>
 
@@ -170,7 +188,7 @@ export default function LoginScreen({ navigation, route }) {
                 <Text style={styles.separatorText}>أو</Text>
                 <View style={styles.separatorLine} />
               </View>
-              <TouchableOpacity onPress={() => {}} style={styles.googleButton}>
+              <TouchableOpacity onPress={onGoogleLogin} style={[styles.actionButton, styles.googleButton]}>
                 <MaterialCommunityIcons name="google" size={20} color="#DB4437" />
                 <Text style={styles.googleText}>تسجيل بواسطة Google</Text>
               </TouchableOpacity>
@@ -200,6 +218,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.xl,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  backButtonText: {
+    color: '#fff',
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.sm,
   },
   logoCircle: {
     width: 72,
@@ -238,8 +273,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
     backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: 12,
     ...theme.shadows.card,
   },
   inputRowFocused: {
@@ -249,6 +284,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginStart: theme.spacing.md,
     color: '#fff',
+    paddingVertical: 4,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
     fontFamily: theme.typography.fontRegular,
   },
@@ -262,12 +298,16 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontRegular,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
+  actionButton: {
+    width: '100%',
+    minHeight: 52,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   loginButton: {
     marginTop: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
-    borderRadius: 18,
     backgroundColor: theme.colors.accent,
-    alignItems: 'center',
     ...theme.shadows.appBar,
   },
   loginButtonDisabled: {
@@ -309,10 +349,7 @@ const styles = StyleSheet.create({
   },
   googleButton: {
     marginTop: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: 14,
     backgroundColor: '#ffffff',
-    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
   },

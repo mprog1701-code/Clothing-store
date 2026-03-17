@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, I18nManager, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import theme from '../theme';
-import { isLoggedIn, clearTokens } from '../auth/tokenStorage';
+import { clearTokens } from '../auth/tokenStorage';
 import { useAuth } from '../auth/AuthContext';
 import { getCart, updateCartItem, removeCartItem } from '../api';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
@@ -13,7 +13,7 @@ export default function CartScreen({ navigation }) {
   const [error, setError] = useState('');
   const [requireLogin, setRequireLogin] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
-  const { isHydrating, accessToken } = useAuth();
+  const { isHydrating, accessToken, user, isAuthenticated } = useAuth();
   const load = async () => {
     setLoading(true);
     setError('');
@@ -51,8 +51,7 @@ export default function CartScreen({ navigation }) {
         setLoading(true);
         return;
       }
-      const ok = !!accessToken || await isLoggedIn();
-      if (!ok) {
+      if (!isAuthenticated && !(accessToken && user)) {
         setRequireLogin(true);
         setLoading(false);
         return;
@@ -62,7 +61,14 @@ export default function CartScreen({ navigation }) {
     };
     const unsubscribe = navigation.addListener('focus', onFocus);
     return unsubscribe;
-  }, [navigation, isHydrating, accessToken]);
+  }, [navigation, isHydrating, accessToken, user, isAuthenticated]);
+
+  useEffect(() => {
+    if (isHydrating) return;
+    if (isAuthenticated || (accessToken && user)) {
+      setRequireLogin(false);
+    }
+  }, [isHydrating, isAuthenticated, accessToken, user]);
   const subtotal = useMemo(() => items.reduce((sum, it) => sum + (it.product?.base_price || 0) * it.quantity, 0), [items]);
   const inc = useCallback(async (id) => {
     setItems(prev => prev.map(it => it.id === id ? { ...it, quantity: it.quantity + 1 } : it));

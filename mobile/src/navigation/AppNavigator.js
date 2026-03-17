@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ProductsScreen from '../screens/ProductsScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
+import AllCategoriesScreen from '../screens/AllCategoriesScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import theme from '../theme';
 import CartScreen from '../screens/CartScreen';
@@ -47,6 +48,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Products" component={ProductsScreen} options={{ title: 'المنتجات' }} />
         <Stack.Screen name="ProductsList" component={ProductsScreen} options={{ title: 'المنتجات' }} />
         <Stack.Screen name="Categories" component={CategoriesScreen} options={{ title: 'الأقسام' }} />
+        <Stack.Screen name="AllCategories" component={AllCategoriesScreen} options={{ title: 'كل الأقسام' }} />
         <Stack.Screen
           name="ProductDetail"
           component={ProductDetailScreen}

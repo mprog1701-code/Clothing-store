@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { normalizeIraqiPhone, isValidIraqiPhone } from '../utils/phone';
 
 const IRAQI_CITIES = [
   'بغداد',
@@ -30,13 +31,6 @@ export default function RegisterScreen({ navigation }) {
   const [cityModalOpen, setCityModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const normalizePhone = (value) => {
-    const digits = String(value || '').replace(/\D/g, '');
-    if (digits.startsWith('964') && digits.length === 13) return `0${digits.slice(3)}`;
-    if (digits.startsWith('7') && digits.length === 10) return `0${digits}`;
-    return digits.slice(0, 11);
-  };
-
   const validators = {
     fullName: (value) => {
       if (!value.trim()) return 'يرجى إدخال الاسم الكامل';
@@ -45,7 +39,7 @@ export default function RegisterScreen({ navigation }) {
     },
     phone: (value) => {
       if (!value) return 'يرجى إدخال رقم الهاتف';
-      if (!/^07\d{9}$/.test(value)) return 'رقم الهاتف غير صحيح';
+      if (!isValidIraqiPhone(value)) return 'رقم الهاتف غير صحيح';
       return '';
     },
     city: (value) => (!value ? 'يرجى اختيار المدينة' : ''),
@@ -84,11 +78,11 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     try {
       const payload = {
-        phone: normalizePhone(phone),
+        phone: normalizeIraqiPhone(phone),
         city,
         full_name: fullName.trim(),
-        password: password.trim(),
-        password_confirm: passwordConfirm.trim(),
+        password,
+        password_confirm: passwordConfirm,
       };
       await registerUser(payload);
       navigation.reset({
@@ -107,6 +101,16 @@ export default function RegisterScreen({ navigation }) {
       <SafeAreaView style={styles.safe}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            <TouchableOpacity
+              onPress={() => {
+                if (navigation.canGoBack()) navigation.goBack();
+                else navigation.navigate('Root');
+              }}
+              style={styles.backButton}
+            >
+              <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
+              <Text style={styles.backButtonText}>رجوع</Text>
+            </TouchableOpacity>
             <Text style={styles.title}>إنشاء حساب جديد</Text>
             <Text style={styles.subtitle}>سجل الآن باستخدام رقم الهاتف</Text>
 
@@ -135,7 +139,7 @@ export default function RegisterScreen({ navigation }) {
                 placeholderTextColor="rgba(255,255,255,0.6)"
                 value={phone}
                 onChangeText={(value) => {
-                  const normalized = normalizePhone(value);
+                  const normalized = normalizeIraqiPhone(value);
                   setPhone(normalized);
                   if (errors.phone) setErrors((prev) => ({ ...prev, phone: validateField('phone', normalized) }));
                 }}
@@ -245,9 +249,27 @@ const styles = StyleSheet.create({
   title: {
     color: theme.colors.textPrimary,
     fontFamily: theme.typography.fontBold,
-    fontSize: theme.typography.sizes.xl,
+    fontSize: theme.typography.sizes.h2,
     marginBottom: theme.spacing.xs,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    marginBottom: theme.spacing.md,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.sm,
   },
   subtitle: {
     color: theme.colors.textSecondary,
@@ -268,7 +290,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.cardBorder,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    padding: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 14,
     borderRadius: theme.radius.md,
     color: theme.colors.textPrimary,
     fontFamily: theme.typography.fontRegular,
@@ -278,7 +301,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.cardBorder,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    padding: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 14,
     borderRadius: theme.radius.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -296,10 +320,12 @@ const styles = StyleSheet.create({
   },
   registerBtn: {
     marginTop: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.radius.lg,
+    minHeight: 52,
+    borderRadius: 12,
     backgroundColor: theme.colors.accent,
+    width: '100%',
     alignItems: 'center',
+    justifyContent: 'center',
     ...theme.shadows.appBar,
   },
   registerBtnDisabled: {

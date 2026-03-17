@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, I18nManager, RefreshControl, Modal, Animated, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -26,6 +26,10 @@ export default function StoresScreen({ navigation }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isTopAdVisible, setIsTopAdVisible] = useState(true);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const handleTopAdDismiss = useCallback(() => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsTopAdVisible(false);
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -113,10 +117,8 @@ export default function StoresScreen({ navigation }) {
         {isTopAdVisible ? (
           <AdBannerDismissible
             position="stores-hero"
-            onDismiss={() => {
-              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-              setIsTopAdVisible(false);
-            }}
+            compact
+            onDismiss={handleTopAdDismiss}
           />
         ) : null}
         <View style={styles.featuredHeader}>
@@ -174,8 +176,8 @@ export default function StoresScreen({ navigation }) {
         onEndReachedThreshold={0.5}
         onEndReached={() => { if (hasMore && !loading) load({ page: page + 1 }); }}
         getItemLayout={(_, index) => ({ length: 240, offset: 240 * Math.ceil((index + 1) / 2), index })}
-        removeClippedSubviews
-        initialNumToRender={8}
+        removeClippedSubviews={true}
+        initialNumToRender={10}
         windowSize={7}
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}

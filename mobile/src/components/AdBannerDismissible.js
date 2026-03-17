@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Linking, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,9 +7,10 @@ import { listAds, listBanners } from '../api';
 
 const dismissedInSession = new Set();
 
-export default function AdBannerDismissible({ position = 'stores-hero', onDismiss }) {
+function AdBannerDismissible({ position = 'stores-hero', onDismiss, compact = false }) {
   const [ad, setAd] = useState(null);
   const [show, setShow] = useState(false);
+  const cardStyle = useMemo(() => [styles.card, compact && styles.cardCompact], [compact]);
 
   useEffect(() => {
     let active = true;
@@ -41,7 +42,7 @@ export default function AdBannerDismissible({ position = 'stores-hero', onDismis
     };
     run();
     return () => { active = false; };
-  }, [position, onDismiss]);
+  }, [position]);
 
   if (!show) return null;
 
@@ -62,7 +63,7 @@ export default function AdBannerDismissible({ position = 'stores-hero', onDismis
         }}
         style={styles.pressable}
       >
-        <View style={styles.card}>
+        <View style={cardStyle}>
           <TouchableOpacity onPress={dismiss} style={styles.closeButton} hitSlop={8}>
             <Ionicons name="close" size={16} color={theme.colors.textPrimary} />
           </TouchableOpacity>
@@ -79,6 +80,8 @@ export default function AdBannerDismissible({ position = 'stores-hero', onDismis
   );
 }
 
+export default React.memo(AdBannerDismissible);
+
 const styles = StyleSheet.create({
   wrap: {
     marginTop: theme.spacing.md,
@@ -94,6 +97,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     overflow: 'hidden',
     ...theme.shadows.card,
+  },
+  cardCompact: {
+    height: 120,
   },
   image: {
     width: '100%',

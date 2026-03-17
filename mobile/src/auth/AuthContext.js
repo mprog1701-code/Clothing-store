@@ -6,6 +6,7 @@ const AuthCtx = createContext({
   accessToken: '',
   refreshToken: '',
   user: null,
+  isAuthenticated: false,
   isHydrating: true,
   login: async () => {},
   register: async () => {},
@@ -19,25 +20,33 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isHydrating, setIsHydrating] = useState(true);
 
+  const syncAuthState = async (fallbackUser = null) => {
+    const access = await getAccessToken();
+    const refresh = await getRefreshToken();
+    setAccessToken(access || '');
+    setRefreshToken(refresh || '');
+    if (!access) {
+      setUser(null);
+      return null;
+    }
+    let resolvedUser = fallbackUser;
+    if (!resolvedUser) {
+      try {
+        resolvedUser = await me();
+      } catch {
+        resolvedUser = null;
+      }
+    }
+    setUser(resolvedUser || null);
+    return resolvedUser || null;
+  };
+
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const access = await getAccessToken();
-      const refresh = await getRefreshToken();
       if (!mounted) return;
-      setAccessToken(access || '');
-      setRefreshToken(refresh || '');
-      if (access) {
-        try {
-          const u = await me();
-          if (!mounted) return;
-          setUser(u || null);
-        } catch {
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
+      await syncAuthState();
+      if (!mounted) return;
       setIsHydrating(false);
     })();
     return () => { mounted = false; };
@@ -45,22 +54,12 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const u = await apiLogin(username, password);
-    const access = await getAccessToken();
-    const refresh = await getRefreshToken();
-    setAccessToken(access || '');
-    setRefreshToken(refresh || '');
-    setUser(u || null);
-    return u;
+    return syncAuthState(u || null);
   };
 
   const register = async (payload) => {
     const u = await apiRegister(payload);
-    const access = await getAccessToken();
-    const refresh = await getRefreshToken();
-    setAccessToken(access || '');
-    setRefreshToken(refresh || '');
-    setUser(u || null);
-    return u;
+    return syncAuthState(u || null);
   };
 
   const logout = async () => {
@@ -71,9 +70,10 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const isAuthenticated = !!accessToken && !!user;
   const value = useMemo(() => ({
-    accessToken, refreshToken, user, isHydrating, login, register, logout, setUser
-  }), [accessToken, refreshToken, user, isHydrating]);
+    accessToken, refreshToken, user, isAuthenticated, isHydrating, login, register, logout, setUser
+  }), [accessToken, refreshToken, user, isAuthenticated, isHydrating]);
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
