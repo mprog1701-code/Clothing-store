@@ -237,9 +237,20 @@ export async function listProducts(params = {}) {
   const p = { ...(params || {}) };
   if (p.limit && !p.page_size) p.page_size = p.limit;
   if (!p.limit && !p.page_size) p.page_size = 50;
-  const r = await client.get('/api/products/', { params: p });
-  console.log('[API] GET /api/products status=', r.status, 'params=', p, 'data.count=', Array.isArray(r.data) ? r.data.length : (r.data?.results?.length || 0));
-  return r.data;
+  try {
+    const r = await client.get('/api/products/', { params: p });
+    console.log('[API] GET /api/products status=', r.status, 'params=', p, 'data.count=', Array.isArray(r.data) ? r.data.length : (r.data?.results?.length || 0));
+    console.log('[API] GET /api/products response.data=', r.data);
+    return r.data;
+  } catch (e) {
+    console.error('[API] GET /api/products failed', {
+      message: e?.message,
+      status: e?.response?.status,
+      data: e?.response?.data,
+      params: p,
+    });
+    throw e;
+  }
 }
 
 export async function getProduct(id) {

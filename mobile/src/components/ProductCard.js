@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, I18nManager } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +53,9 @@ export default function ProductCard({ product, addToCart, style }) {
   const rating = Number(product?.rating || 0);
   const imageUri = useMemo(() => pickImage(product), [product]);
   const imageSource = imageFailed || !imageUri ? LOGO_PLACEHOLDER : { uri: imageUri };
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageUri, productId]);
 
   const openDetails = () => {
     if (!productId) return;

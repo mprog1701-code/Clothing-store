@@ -11,7 +11,7 @@ import LoginRequiredSheet from '../components/LoginRequiredSheet';
 export default function ProductsScreen({ navigation, route }) {
   const { accessToken } = useAuth();
   const params = route.params || {};
-  const filterType = params.filterType || '';
+  const filterType = params.filterType ?? null;
   const legacyMode = params.mode || 'all';
   const typeFromMode = {
     all: 'all_products',
@@ -28,7 +28,8 @@ export default function ProductsScreen({ navigation, route }) {
     offer: 'offers',
     promotion_banner: 'promotion_banners',
   };
-  const type = params.type || typeFromFilterType[filterType] || typeFromMode[legacyMode] || 'all_products';
+  const explicitType = params.type || null;
+  const type = typeFromFilterType[filterType] || explicitType || typeFromMode[legacyMode] || 'all_products';
   const categoryId = params.categoryId ?? null;
   const categoryLabel = params.categoryLabel || '';
   const q = params.q || '';
@@ -41,12 +42,47 @@ export default function ProductsScreen({ navigation, route }) {
   const [loginSheetVisible, setLoginSheetVisible] = useState(false);
   const [pendingNext, setPendingNext] = useState(null);
 
+  const extractProductsArray = (payload) => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.products)) return payload.products;
+    if (Array.isArray(payload?.results)) return payload.results;
+    if (Array.isArray(payload?.items)) return payload.items;
+    if (Array.isArray(payload?.data)) return payload.data;
+    return [];
+  };
+
+  const mapProduct = (item, index) => {
+    const id = item?.id ?? item?.product_id ?? item?.productId ?? `tmp-${index}`;
+    const mainImage = item?.main_image;
+    const resolvedImage =
+      item?.image ||
+      item?.image_url ||
+      item?.thumbnail ||
+      item?.imageUrl ||
+      mainImage?.image_url ||
+      mainImage?.url ||
+      item?.main_image_url ||
+      (Array.isArray(item?.images) ? (item.images[0]?.url || item.images[0]?.image_url || item.images[0]) : '');
+    return {
+      ...item,
+      id,
+      name: item?.name || item?.title || item?.product_name || 'منتج',
+      price: item?.price ?? item?.base_price ?? item?.final_price ?? 0,
+      image: resolvedImage || '',
+    };
+  };
+
   const load = async () => {
     setError('');
     setLoading(true);
     try {
       const params = {};
-      params.type = type;
+      if (filterType) {
+        params.filterType = filterType;
+      }
+      if (!filterType && explicitType) {
+        params.type = explicitType;
+      }
       if (type === 'category' && categoryId) {
         params.category = categoryId;
       } else if (type === 'search_results' && q) {
@@ -65,14 +101,23 @@ export default function ProductsScreen({ navigation, route }) {
         params.store = storeId;
       }
       const data = await listProducts(params);
-      const arr = Array.isArray(data) ? data : (data.results || []);
+      const arr = extractProductsArray(data);
+      const mapped = arr.map(mapProduct);
       if (__DEV__) {
         try {
-          console.log('[ProductsScreen] type=', type, 'params=', params, 'count=', arr.length);
+          console.log('[ProductsScreen] type=', type, 'filterType=', filterType, 'params=', params, 'count=', mapped.length);
+          console.log('[ProductsScreen] response.data=', data);
+          if (mapped[0]) console.log('[ProductsScreen] sample item=', mapped[0]);
         } catch {}
       }
-      setItems(arr || []);
+      setItems(mapped);
     } catch (e) {
+      console.error('[ProductsScreen] load failed', {
+        message: e?.message,
+        status: e?.response?.status,
+        data: e?.response?.data,
+        routeParams: params,
+      });
       setError('تعذر تحميل المنتجات. يرجى المحاولة لاحقاً.');
     } finally {
       setLoading(false);
@@ -82,7 +127,7 @@ export default function ProductsScreen({ navigation, route }) {
 
   useEffect(() => {
     load();
-  }, [type, categoryId, q, storeId, filterType]);
+  }, [type, categoryId, q, storeId, filterType, explicitType]);
 
   const viewTitle = useMemo(() => {
     if (listTitle) return listTitle;
