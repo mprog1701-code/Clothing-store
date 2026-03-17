@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.urls import reverse
 import logging
 import re
 import os
@@ -156,9 +157,11 @@ def hybrid_home(request):
         'cart_items_count': cart_items_count,
         'campaign': campaign,
         'campaigns': campaigns,
+        'promotion_banners': campaigns,
         'top_ads': top_ads,
         'middle_ads': middle_ads,
         'bottom_ads': bottom_ads,
+        'ad_slider_ads': list(top_ads) + list(middle_ads) + list(bottom_ads),
     }
     
     response = render(request, 'home.html', context)
@@ -184,6 +187,22 @@ def home(request):
     
     stores = Store.objects.filter(is_active=True)[:site_settings.featured_stores_count]
     products = _products_qs_safe().filter(is_active=True).select_related('store').prefetch_related('images')[:site_settings.featured_products_count]
+    latest_products = _products_qs_safe().filter(
+        is_active=True
+    ).select_related('store').prefetch_related('images', 'variants').order_by('-created_at')[:8]
+    featured_products = _products_qs_safe().filter(
+        is_active=True,
+        is_featured=True
+    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
+    if not featured_products:
+        featured_products = _products_qs_safe().filter(is_active=True).order_by('?')[:8]
+    special_offers = _products_qs_safe().filter(
+        Q(discount_price__isnull=False)
+        | Q(is_on_offer=True)
+        | Q(offer_price__isnull=False)
+        | Q(offer_badge_text__isnull=False),
+        is_active=True
+    ).select_related('store').prefetch_related('images').order_by('-created_at')[:8]
     campaign = None
     campaigns = []
     try:
@@ -214,12 +233,17 @@ def home(request):
     context = {
         'stores': stores,
         'products': products,
+        'best_selling_products': featured_products,
+        'new_arrivals': latest_products,
+        'special_offers': special_offers,
         'site_settings': site_settings,
         'campaign': campaign,
         'campaigns': campaigns,
+        'promotion_banners': campaigns,
         'top_ads': top_ads,
         'middle_ads': middle_ads,
         'bottom_ads': bottom_ads,
+        'ad_slider_ads': list(top_ads) + list(middle_ads) + list(bottom_ads),
     }
     response = render(request, 'home.html', context)
     try:
@@ -587,6 +611,7 @@ def catalog_product_list(request):
     q = (request.GET.get('q') or '').strip()
     category = (request.GET.get('category') or '').strip()
     ordering = (request.GET.get('ordering') or '').strip() or '-created_at'
+    offers_only = (request.GET.get('offers') or '').strip() in ['1', 'true', 'yes']
     min_price_raw = request.GET.get('min_price')
     max_price_raw = request.GET.get('max_price')
     products = Product.objects.filter(is_active=True, status='ACTIVE')\
@@ -596,6 +621,13 @@ def catalog_product_list(request):
         products = products.filter(Q(name__icontains=q) | Q(description__icontains=q))
     if category:
         products = products.filter(category=category)
+    if offers_only:
+        products = products.filter(
+            Q(discount_price__isnull=False)
+            | Q(is_on_offer=True)
+            | Q(offer_price__isnull=False)
+            | Q(offer_badge_text__isnull=False)
+        ).distinct()
     try:
         from decimal import Decimal
         if min_price_raw not in [None, '']:
@@ -613,6 +645,7 @@ def catalog_product_list(request):
         'products': products,
         'product_categories': product_categories,
         'selected_category': category,
+        'offers_only': offers_only,
     }
     return render(request, 'catalog/product_list.html', context)
 def register(request):
@@ -945,6 +978,129 @@ def cart_view(request):
         'items_count': items_count,
     }
     return render(request, 'cart/view.html', context)
+
+
+def _build_cart_drawer_payload(request):
+    from decimal import Decimal
+    cart = request.session.get('cart', [])
+    normalized_cart = []
+    items = []
+    total = Decimal('0')
+    for idx, item in enumerate(cart):
+        raw_product_id = item.get('product_id')
+        raw_variant_id = item.get('variant_id')
+        raw_quantity = item.get('quantity') or 1
+        try:
+            quantity = max(1, int(raw_quantity))
+        except Exception:
+            quantity = 1
+        try:
+            product = Product.objects.get(id=int(raw_product_id), is_active=True)
+        except Exception:
+            continue
+        variant = None
+        if raw_variant_id:
+            try:
+                variant = ProductVariant.objects.get(id=int(raw_variant_id), product_id=product.id)
+            except Exception:
+                variant = None
+        if variant and variant.stock_qty <= 0:
+            continue
+        if variant and quantity > variant.stock_qty:
+            quantity = int(variant.stock_qty)
+        if quantity < 1:
+            continue
+        unit_price = Decimal(str(variant.price if variant else product.base_price))
+        subtotal = unit_price * quantity
+        image_url = None
+        try:
+            if variant:
+                vimg = variant.images.first()
+                if vimg:
+                    image_url = vimg.get_image_url()
+            if not image_url:
+                mimg = getattr(product, 'main_image', None) or product.images.first()
+                if mimg:
+                    image_url = mimg.get_image_url()
+        except Exception:
+            image_url = None
+        title = product.name
+        if variant:
+            title = f"{product.name} - {variant.color} / {variant.size}"
+        items.append({
+            'index': idx,
+            'product_id': product.id,
+            'variant_id': variant.id if variant else None,
+            'title': title,
+            'quantity': quantity,
+            'unit_price': float(unit_price),
+            'subtotal': float(subtotal),
+            'image_url': image_url,
+            'product_url': reverse('product_detail', args=[product.id]),
+        })
+        normalized_cart.append({
+            'product_id': product.id,
+            'variant_id': variant.id if variant else None,
+            'quantity': quantity,
+        })
+        total += subtotal
+    request.session['cart'] = normalized_cart
+    try:
+        request.session.modified = True
+    except Exception:
+        pass
+    return {
+        'items': items,
+        'items_count': int(sum(int(i['quantity']) for i in items)),
+        'total': float(total),
+        'total_iqd': str(total),
+    }
+
+
+def cart_drawer_data(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'requires_auth': True,
+            'message': 'يرجى تسجيل الدخول لعرض السلة',
+            'login_url': reverse('login'),
+            'items': [],
+            'items_count': 0,
+            'total': 0,
+        }, status=401)
+    payload = _build_cart_drawer_payload(request)
+    payload['requires_auth'] = False
+    return JsonResponse(payload)
+
+
+def cart_update_item(request):
+    if request.method != 'POST':
+        return JsonResponse({'code': 'METHOD_NOT_ALLOWED', 'message': 'method not allowed'}, status=405)
+    if not request.user.is_authenticated:
+        return JsonResponse({'code': 'UNAUTHORIZED', 'message': 'authentication required'}, status=401)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except Exception:
+        payload = request.POST
+    try:
+        index = int(payload.get('index'))
+        quantity = int(payload.get('quantity'))
+    except Exception:
+        return JsonResponse({'code': 'INVALID_PAYLOAD', 'message': 'invalid index or quantity'}, status=400)
+    cart = request.session.get('cart', [])
+    if not (0 <= index < len(cart)):
+        return JsonResponse({'code': 'NOT_FOUND', 'message': 'item not found'}, status=404)
+    if quantity <= 0:
+        cart.pop(index)
+    else:
+        cart[index]['quantity'] = quantity
+    request.session['cart'] = cart
+    try:
+        request.session.modified = True
+    except Exception:
+        pass
+    payload = _build_cart_drawer_payload(request)
+    payload['ok'] = True
+    return JsonResponse(payload)
 
 
 def add_to_cart(request, product_id):

@@ -25,12 +25,13 @@
                     
                     <div class="mb-3">
                         <label for="phone" class="form-label">رقم الجوال</label>
-                        <div class="input-group">
-                            <span class="input-group-text">+964</span>
-                            <input type="tel" class="form-control" id="phone" name="phone" required 
-                                   placeholder="7xxxxxxxxx" pattern="07[0-9]{9}" title="أدخل رقم جوال صحيح يبدأ بـ 07">
-                        </div>
-                        <div class="form-text">سنستخدم هذا الرقم للتواصل معك</div>
+                        <input type="tel" class="form-control" id="phone" name="phone" required
+                               inputmode="numeric"
+                               maxlength="11"
+                               placeholder="07xxxxxxxxx"
+                               pattern="^07[0-9]{9}$"
+                               title="أدخل رقم جوال صحيح يبدأ بـ 07">
+                        <div class="form-text">الرقم يجب أن يبدأ بـ 07 ويتكون من 11 رقم</div>
                     </div>
                     
                     <div class="mb-3">

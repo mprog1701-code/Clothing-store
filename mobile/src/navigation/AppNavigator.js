@@ -45,6 +45,7 @@ export default function AppNavigator() {
           }}
         />
         <Stack.Screen name="Products" component={ProductsScreen} options={{ title: 'المنتجات' }} />
+        <Stack.Screen name="ProductsList" component={ProductsScreen} options={{ title: 'المنتجات' }} />
         <Stack.Screen name="Categories" component={CategoriesScreen} options={{ title: 'الأقسام' }} />
         <Stack.Screen
           name="ProductDetail"

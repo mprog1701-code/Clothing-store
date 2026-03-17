@@ -107,6 +107,72 @@
         body {
             padding-bottom: 0 !important;
         }
+
+        .guest-login-sticky {
+            position: sticky;
+            top: 56px;
+            z-index: 1020;
+            background: rgba(233, 69, 96, 0.12);
+            border-bottom: 1px solid rgba(233, 69, 96, 0.28);
+            backdrop-filter: blur(8px);
+            color: #f3f3f3;
+            font-size: 0.9rem;
+            padding: 8px 0;
+        }
+
+        .guest-login-link {
+            color: #fff;
+            font-weight: 700;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 4px 12px;
+            border-radius: 999px;
+        }
+
+        .cart-drawer {
+            width: min(420px, 92vw) !important;
+            background: #161821;
+            color: #fff;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .cart-drawer-item {
+            display: flex;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .cart-drawer-item img {
+            width: 62px;
+            height: 62px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .cart-qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #fff;
+            line-height: 1;
+        }
+
+        @media (hover: hover) {
+            .product-card,
+            .btn {
+                transition: transform .2s ease, box-shadow .2s ease;
+            }
+            .product-card:hover,
+            .btn:hover {
+                transform: scale(1.02);
+            }
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -162,12 +228,12 @@
                 <ul class="navbar-nav align-items-lg-center gap-3">
                     <!-- Cart -->
                     <li class="nav-item position-relative">
-                        <a class="nav-link" href="{% url 'cart_view' %}">
+                        <a class="nav-link" href="{% url 'cart_view' %}" id="cartDrawerToggle">
                             <i class="bi bi-cart3 fs-5"></i>
                             <span class="d-lg-none ms-2">السلة</span>
                             {% with count=request.session.cart|length %}
                             {% if count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.7rem; top: 5px !important;">
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger cart-badge" style="font-size: 0.7rem; top: 5px !important;">
                                 {{ count }}
                             </span>
                             {% endif %}
@@ -204,6 +270,14 @@
             </div>
         </div>
     </nav>
+    {% if not user.is_authenticated %}
+    <div class="guest-login-sticky">
+        <div class="container d-flex align-items-center justify-content-between gap-2">
+            <span>أهلاً بك! سجل دخولك لتجربة تسوق أفضل</span>
+            <a href="{% url 'login' %}" class="guest-login-link">Login</a>
+        </div>
+    </div>
+    {% endif %}
         <script>
             function openAnnouncements(){
                 window.location.assign('/announcements/');
@@ -242,6 +316,23 @@
                 {% block content %}{% endblock %}
             </div>
         </main>
+
+        <div class="offcanvas offcanvas-end cart-drawer" tabindex="-1" id="cartDrawer" aria-labelledby="cartDrawerLabel">
+            <div class="offcanvas-header border-bottom border-secondary-subtle">
+                <h5 class="offcanvas-title fw-bold" id="cartDrawerLabel">سلة التسوق</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body p-0 d-flex flex-column">
+                <div id="cartDrawerBody" class="flex-grow-1 overflow-auto p-3"></div>
+                <div class="cart-drawer-footer border-top border-secondary-subtle p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-muted">الإجمالي</span>
+                        <strong id="cartDrawerTotal">0 د.ع</strong>
+                    </div>
+                    <a href="{% url 'checkout' %}" class="btn btn-primary w-100 rounded-pill">إتمام الطلب</a>
+                </div>
+            </div>
+        </div>
 
         <nav class="global-bottom-nav">
             <div class="container">
@@ -421,6 +512,133 @@
                 forceHideLoader();
                 forceShowContent();
             }, 5000);
+        })();
+    </script>
+    <script>
+        (function () {
+            const toggle = document.getElementById('cartDrawerToggle');
+            const drawerElement = document.getElementById('cartDrawer');
+            if (!toggle || !drawerElement || !window.bootstrap) return;
+            const drawer = new bootstrap.Offcanvas(drawerElement);
+            const body = document.getElementById('cartDrawerBody');
+            const totalEl = document.getElementById('cartDrawerTotal');
+            const csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+            function formatIQD(value) {
+                try {
+                    return `${Math.round(Number(value || 0)).toLocaleString('en-US')} د.ع`;
+                } catch {
+                    return '0 د.ع';
+                }
+            }
+
+            function syncBadges(count) {
+                document.querySelectorAll('.cart-badge').forEach((badge) => {
+                    badge.textContent = String(count);
+                    if (count > 0) {
+                        badge.classList.remove('d-none');
+                    } else {
+                        badge.classList.add('d-none');
+                    }
+                });
+            }
+
+            function renderUnauthorized(message, loginUrl) {
+                body.innerHTML = `
+                    <div class="text-center py-5">
+                        <p class="text-white-50 mb-3">${message || 'يرجى تسجيل الدخول لعرض السلة'}</p>
+                        <a href="${loginUrl || '/login/'}" class="btn btn-primary rounded-pill">تسجيل الدخول</a>
+                    </div>
+                `;
+                totalEl.textContent = formatIQD(0);
+                syncBadges(0);
+            }
+
+            function rowHtml(item) {
+                return `
+                    <div class="cart-drawer-item" data-index="${item.index}">
+                        <img src="${item.image_url || 'https://placehold.co/120x120?text=No+Image'}" alt="">
+                        <div class="flex-grow-1">
+                            <a href="${item.product_url}" class="text-white text-decoration-none fw-bold d-block mb-1">${item.title}</a>
+                            <small class="text-white-50 d-block mb-2">${formatIQD(item.unit_price)}</small>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="cart-qty-btn" data-action="plus">+</button>
+                                    <span class="cart-qty-value">${item.quantity}</span>
+                                    <button type="button" class="cart-qty-btn" data-action="minus">−</button>
+                                </div>
+                                <strong>${formatIQD(item.subtotal)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderCart(payload) {
+                const items = payload.items || [];
+                if (!items.length) {
+                    body.innerHTML = `<div class="text-center py-5 text-white-50">السلة فارغة</div>`;
+                    totalEl.textContent = formatIQD(0);
+                    syncBadges(0);
+                    return;
+                }
+                body.innerHTML = items.map(rowHtml).join('');
+                totalEl.textContent = formatIQD(payload.total || 0);
+                syncBadges(payload.items_count || 0);
+            }
+
+            async function loadDrawer() {
+                body.innerHTML = `<div class="text-center py-5 text-white-50">جاري التحميل...</div>`;
+                try {
+                    const res = await fetch('/cart/drawer-data/', { credentials: 'same-origin' });
+                    const data = await res.json();
+                    if (res.status === 401 || data.requires_auth) {
+                        renderUnauthorized(data.message, data.login_url);
+                        return;
+                    }
+                    renderCart(data);
+                } catch {
+                    body.innerHTML = `<div class="text-center py-5 text-danger">تعذر تحميل السلة</div>`;
+                }
+            }
+
+            async function updateItem(index, quantity) {
+                try {
+                    const res = await fetch('/cart/update-item/', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken,
+                        },
+                        body: JSON.stringify({ index, quantity }),
+                    });
+                    const data = await res.json();
+                    if (res.status === 401 || data.code === 'UNAUTHORIZED') {
+                        renderUnauthorized('يرجى تسجيل الدخول أولاً', '/login/');
+                        return;
+                    }
+                    renderCart(data);
+                } catch {}
+            }
+
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                drawer.show();
+                loadDrawer();
+            });
+
+            drawerElement.addEventListener('click', function (event) {
+                const btn = event.target.closest('.cart-qty-btn');
+                if (!btn) return;
+                const item = btn.closest('.cart-drawer-item');
+                if (!item) return;
+                const index = Number(item.dataset.index);
+                const quantityEl = item.querySelector('.cart-qty-value');
+                const currentQty = Number((quantityEl && quantityEl.textContent) || '1');
+                const nextQty = btn.dataset.action === 'plus' ? currentQty + 1 : currentQty - 1;
+                updateItem(index, nextQty);
+            });
         })();
     </script>
     {% block extra_js %}{% endblock %}

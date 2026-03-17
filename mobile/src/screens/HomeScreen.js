@@ -1,12 +1,26 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager, Animated, Dimensions, Image } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager, Animated, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
-import { listAds } from '../api';
+import { listAds, listBanners } from '../api';
+import ProductCard from '../components/ProductCard';
+import AdSlider from '../components/AdSlider';
+import PromoBannerGrid from '../components/PromoBannerGrid';
+import { useAuth } from '../auth/AuthContext';
+import LoginRequiredSheet from '../components/LoginRequiredSheet';
 
 const { width } = Dimensions.get('window');
+const CATEGORY_MAP = {
+  رجالي: 'men',
+  نسائي: 'women',
+  أطفال: 'kids',
+  كوزمتك: 'cosmetics',
+  عطور: 'perfumes',
+};
 
 const HomeScreen = ({ navigation }) => {
+  const { accessToken } = useAuth();
   const [query, setQuery] = useState('');
   const headerAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
@@ -15,7 +29,10 @@ const HomeScreen = ({ navigation }) => {
   const categoriesAnim = useRef(new Animated.Value(0)).current;
   const flashAnim = useRef(new Animated.Value(0)).current;
 
-  const [ads, setAds] = useState([]);
+  const [adItems, setAdItems] = useState([]);
+  const [promotionItems, setPromotionItems] = useState([]);
+  const [loginSheetVisible, setLoginSheetVisible] = useState(false);
+  const [pendingNext, setPendingNext] = useState(null);
 
   const productCards = useMemo(
     () => [
@@ -42,33 +59,76 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     let mounted = true;
-    const loadAds = async () => {
+    const mediaUrl = (item) => item?.image_url || item?.image || item?.banner_image || '';
+    const getTag = (item) => String(item?.tag || item?.type || item?.kind || item?.category || '').toLowerCase();
+    const getPlacement = (item) => String(item?.placement || item?.position || item?.slot || '').toLowerCase();
+    const isAdTag = (tag) => tag.includes('ad') || tag.includes('sponsor');
+    const isPromotionTag = (tag) => tag.includes('promo') || tag.includes('banner') || tag.includes('offer');
+
+    const loadHomeMedia = async () => {
+      let adsRaw = [];
+      let bannersRaw = [];
       try {
-        const data = await listAds();
-        if (mounted) setAds(Array.isArray(data) ? data : []);
-      } catch (_error) {
-        if (mounted) setAds([]);
+        const [adsRes, bannersRes] = await Promise.all([listAds(), listBanners()]);
+        adsRaw = Array.isArray(adsRes) ? adsRes : [];
+        bannersRaw = Array.isArray(bannersRes) ? bannersRes : [];
+      } catch {
+        try {
+          adsRaw = await listAds();
+        } catch {
+          adsRaw = [];
+        }
       }
+      const merged = [
+        ...(Array.isArray(adsRaw) ? adsRaw : []).map((item) => ({ ...item, source: 'ads' })),
+        ...(Array.isArray(bannersRaw) ? bannersRaw : []).map((item) => ({ ...item, source: 'banners' })),
+      ].filter((item) => !!mediaUrl(item));
+      const normalized = merged.map((item) => {
+        const rawTag = getTag(item);
+        const inferredTag = item.source === 'ads' ? 'ad' : 'promotion';
+        return { ...item, __tag: rawTag || inferredTag, __placement: getPlacement(item) };
+      });
+      const adsOnly = normalized.filter((item) => isAdTag(item.__tag));
+      const promotionsOnly = normalized.filter((item) => isPromotionTag(item.__tag));
+      if (!mounted) return;
+      setAdItems(adsOnly);
+      setPromotionItems(promotionsOnly);
     };
-    loadAds();
+
+    loadHomeMedia();
     return () => {
       mounted = false;
     };
   }, []);
 
-  const topAds = ads.slice(0, 2);
-  const middleAd = ads[2];
-  const bottomAds = ads.slice(3, 5);
+  const heroAd = adItems.find((item) => {
+    const p = String(item?.__placement || '');
+    return p.includes('hero') || p.includes('top');
+  });
+  const midPageAd = adItems.find((item) => {
+    const p = String(item?.__placement || '');
+    return p.includes('middle') || p.includes('mid');
+  });
+  const heroSlotAds = heroAd ? [heroAd, ...adItems.filter((item) => item?.id !== heroAd?.id && String(item?.__placement || '').includes('hero'))] : [];
+  const midSlotAds = midPageAd ? [midPageAd, ...adItems.filter((item) => item?.id !== midPageAd?.id && String(item?.__placement || '').includes('mid'))] : [];
+  const promotions = promotionItems.slice(0, 10);
+  const openProductsList = ({ type, listTitle, extra = {} }) => {
+    navigation.navigate('ProductsList', { type, listTitle, ...extra });
+  };
+  const requestLogin = ({ next }) => {
+    setPendingNext(next || { name: 'Root', params: { screen: 'Home' } });
+    setLoginSheetVisible(true);
+  };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      alwaysBounceVertical
-      scrollEventThrottle={16}
-      keyboardShouldPersistTaps="handled"
-    >
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        alwaysBounceVertical
+        scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
+      >
       <Animated.View style={[styles.header, styles.fadeUp(headerAnim)]}>
         <TouchableOpacity onPress={() => navigation.navigate('Cart')} style={styles.iconButton}>
           <Ionicons name="cart-outline" size={20} color={theme.colors.textPrimary} />
@@ -87,31 +147,44 @@ const HomeScreen = ({ navigation }) => {
         <Ionicons name="search" size={18} color={theme.colors.textSecondary} />
       </Animated.View>
 
-      <Animated.View style={[styles.adSlot, styles.fadeUp(adAnim)]}>
-        {middleAd && (middleAd.image_url || middleAd.image) ? (
-          <Image source={{ uri: middleAd.image_url || middleAd.image }} style={styles.adImage} />
-        ) : (
-          <Text style={styles.adText}>مساحة إعلانية</Text>
-        )}
+      {!accessToken ? (
+        <View style={styles.guestBanner}>
+          <Text style={styles.guestBannerText}>أهلاً بك! سجل دخولك لتجربة تسوق أفضل</Text>
+          <TouchableOpacity onPress={() => requestLogin({ next: { name: 'Root', params: { screen: 'Home' } } })}>
+            <Text style={styles.guestBannerLink}>Login</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      <Animated.View style={styles.fadeUp(adAnim)}>
+        <AdSlider
+          ads={heroSlotAds}
+          badgeText="Sponsored"
+          intervalMs={5000}
+          placeholderTitle="Coming Soon"
+          placeholderSubtitle="عرض داخلي قريباً"
+        />
       </Animated.View>
 
       <Animated.View style={styles.fadeUp(offersAnim)}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>العروض (1)</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'offers', title: 'العروض' })}>
+          <Text style={styles.sectionTitle}>وصل حديثاً</Text>
+          <TouchableOpacity onPress={() => openProductsList({ type: 'new_arrivals', listTitle: 'وصل حديثاً' })}>
             <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.offerCard}>
-          <Text style={styles.offerTitle}>عرض العروض</Text>
+          <Text style={styles.offerTitle}>اكتشف المنتجات الجديدة</Text>
         </View>
-        <Text style={styles.offerLink}>عرض العروض</Text>
+        <TouchableOpacity onPress={() => openProductsList({ type: 'new_arrivals', listTitle: 'وصل حديثاً' })}>
+          <Text style={styles.offerLink}>عرض المنتجات</Text>
+        </TouchableOpacity>
       </Animated.View>
 
       <Animated.View style={styles.fadeUp(categoriesAnim)}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>الأقسام</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'categories', title: 'الأقسام' })}>
+          <TouchableOpacity onPress={() => navigation.navigate('Categories', { listTitle: 'كل الأقسام' })}>
             <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
@@ -120,13 +193,20 @@ const HomeScreen = ({ navigation }) => {
             <TouchableOpacity
               key={label}
               style={[styles.chip, label === 'عرض الكل' && styles.chipActive]}
-              onPress={() =>
-                navigation.navigate('Products', {
-                  mode: 'category',
-                  categoryLabel: label,
-                  title: label,
-                })
-              }
+              onPress={() => {
+                if (label === 'عرض الكل') {
+                  navigation.navigate('Categories', { listTitle: 'كل الأقسام' });
+                  return;
+                }
+                openProductsList({
+                  type: 'category',
+                  listTitle: label,
+                  extra: {
+                    categoryId: CATEGORY_MAP[label] || null,
+                    categoryLabel: label,
+                  },
+                });
+              }}
             >
               <Text style={[styles.chipText, label === 'عرض الكل' && styles.chipTextActive]}>{label}</Text>
             </TouchableOpacity>
@@ -137,96 +217,73 @@ const HomeScreen = ({ navigation }) => {
       <Animated.View style={styles.fadeUp(flashAnim)}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>عروض فلاش</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'flash', title: 'عروض فلاش' })}>
+          <TouchableOpacity onPress={() => openProductsList({ type: 'flash_sales', listTitle: 'عروض فلاش' })}>
             <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.flashCard}>
           <Text style={styles.flashTitle}>عرض فلاش</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'flash', title: 'عروض فلاش' })}>
+          <TouchableOpacity onPress={() => openProductsList({ type: 'flash_sales', listTitle: 'عروض فلاش' })}>
             <Text style={styles.flashLink}>عرض العروض</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
       <Animated.View style={styles.fadeUp(adAnim)}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>بنرات</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'banners', title: 'بنرات' })}>
-            <Text style={styles.sectionLink}>عرض الكل</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.bannerGrid}>
-          {(topAds.length ? topAds : [{ id: 't1' }, { id: 't2' }]).map((item) => (
-            <View key={item.id} style={styles.bannerCardSquare}>
-              {item.image_url || item.image ? (
-                <Image source={{ uri: item.image_url || item.image }} style={styles.bannerImage} />
-              ) : (
-                <Text style={styles.bannerText}>مساحة إعلانية</Text>
-              )}
-            </View>
-          ))}
-        </View>
+        <PromoBannerGrid
+          items={promotions}
+          title="بنرات ترويجية"
+          emptyTitle="عرض داخلي قريباً"
+          onPressItem={() => openProductsList({ type: 'promotion_banners', listTitle: 'بنرات ترويجية' })}
+        />
       </Animated.View>
 
-      <Animated.View style={[styles.adSlot, styles.fadeUp(searchAnim)]}>
-        {ads[5] && (ads[5].image_url || ads[5].image) ? (
-          <Image source={{ uri: ads[5].image_url || ads[5].image }} style={styles.adImage} />
-        ) : (
-          <Text style={styles.adText}>مساحة إعلانية</Text>
-        )}
-      </Animated.View>
-
-      <Animated.View style={styles.fadeUp(offersAnim)}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>بنرات</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'banners', title: 'بنرات' })}>
-            <Text style={styles.sectionLink}>عرض الكل</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.bannerGrid}>
-          {(bottomAds.length ? bottomAds : [{ id: 'b1' }, { id: 'b2' }]).map((item) => (
-            <View key={item.id} style={styles.bannerCardSquare}>
-              {item.image_url || item.image ? (
-                <Image source={{ uri: item.image_url || item.image }} style={styles.bannerImage} />
-              ) : (
-                <Text style={styles.bannerText}>مساحة إعلانية</Text>
-              )}
-            </View>
-          ))}
-        </View>
+      <Animated.View style={styles.fadeUp(searchAnim)}>
+        <AdSlider
+          ads={midSlotAds}
+          badgeText="Ad"
+          intervalMs={5000}
+          placeholderTitle="Coming Soon"
+          placeholderSubtitle="عروض جديدة قريباً"
+        />
       </Animated.View>
 
       <Animated.View style={styles.fadeUp(categoriesAnim)}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>المنتجات</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Products', { mode: 'all', title: 'المنتجات' })}>
+          <TouchableOpacity onPress={() => openProductsList({ type: 'all_products', listTitle: 'كل المنتجات' })}>
             <Text style={styles.sectionLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.productsGrid}>
           {productCards.map((item) => (
             <View key={item.id} style={styles.productCard}>
-              <View style={styles.productImage} />
-              <View style={styles.productInfo}>
-                <Text style={styles.productTitle}>{item.title}</Text>
-                <Text style={styles.productPrice}>{item.price}</Text>
-              </View>
-              <View style={styles.productActions}>
-                <TouchableOpacity style={styles.detailsBtn}>
-                  <Text style={styles.detailsText}>تفاصيل</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.addBtn}>
-                  <Text style={styles.addText}>أضف للسلة</Text>
-                </TouchableOpacity>
-              </View>
+              <ProductCard
+                product={{ id: item.id, name: item.title, price: Number(item.price), image: 'https://placehold.co/600x600?text=Product' }}
+                addToCart={() => {
+                  if (!accessToken) {
+                    requestLogin({ next: { name: 'ProductDetail', params: { productId: item.id } } });
+                    return;
+                  }
+                  navigation.navigate('Cart');
+                }}
+              />
             </View>
           ))}
         </View>
       </Animated.View>
 
       <View style={{ height: theme.spacing.xl }} />
-    </ScrollView>
+      </ScrollView>
+      <LoginRequiredSheet
+        visible={loginSheetVisible}
+        onClose={() => setLoginSheetVisible(false)}
+        onLogin={() => {
+          setLoginSheetVisible(false);
+          navigation.replace('Login', pendingNext ? { next: pendingNext } : undefined);
+        }}
+      />
+    </SafeAreaView>
   );
 };
 
@@ -236,7 +293,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   content: {
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: 16,
     paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.xl * 2,
   },
@@ -281,26 +338,27 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
-  adSlot: {
-    height: 140,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
+  guestBanner: {
+    marginBottom: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.colors.cardBorder,
+    backgroundColor: theme.colors.surface,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.lg,
-    overflow: 'hidden',
+    justifyContent: 'space-between',
   },
-  adImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  adText: {
+  guestBannerText: {
     color: theme.colors.textSecondary,
     fontFamily: theme.typography.fontRegular,
-    fontSize: theme.typography.sizes.md,
+    fontSize: theme.typography.sizes.sm,
+  },
+  guestBannerLink: {
+    color: theme.colors.accent,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.sm,
   },
   sectionHeader: {
     flexDirection: 'row-reverse',
@@ -388,31 +446,6 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontRegular,
     fontSize: theme.typography.sizes.sm,
   },
-  bannerGrid: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.lg,
-  },
-  bannerCardSquare: {
-    width: (width - theme.spacing.lg * 2 - theme.spacing.md) / 2,
-    height: 140,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  bannerImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  bannerText: {
-    color: theme.colors.textSecondary,
-    fontFamily: theme.typography.fontRegular,
-  },
   productsGrid: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
@@ -420,62 +453,8 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   productCard: {
-    width: (width - theme.spacing.lg * 2 - theme.spacing.md) / 2,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.radius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.cardBorder,
+    width: (width - 16 * 2 - theme.spacing.md) / 2,
     marginBottom: theme.spacing.md,
-    overflow: 'hidden',
-  },
-  productImage: {
-    height: 110,
-    backgroundColor: theme.colors.surfaceAlt,
-  },
-  productInfo: {
-    padding: theme.spacing.sm,
-  },
-  productTitle: {
-    color: theme.colors.textPrimary,
-    fontFamily: theme.typography.fontBold,
-    fontSize: theme.typography.sizes.sm,
-    textAlign: 'right',
-  },
-  productPrice: {
-    color: theme.colors.textSecondary,
-    fontFamily: theme.typography.fontRegular,
-    fontSize: theme.typography.sizes.sm,
-    marginTop: 4,
-    textAlign: 'right',
-  },
-  productActions: {
-    flexDirection: 'row-reverse',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.sm,
-  },
-  detailsBtn: {
-    flex: 1,
-    backgroundColor: theme.colors.accentAlt,
-    borderRadius: 10,
-    paddingVertical: 6,
-    alignItems: 'center',
-  },
-  detailsText: {
-    color: theme.colors.textPrimary,
-    fontFamily: theme.typography.fontRegular,
-    fontSize: theme.typography.sizes.xs,
-  },
-  addBtn: {
-    flex: 1,
-    backgroundColor: theme.colors.accent,
-    borderRadius: 10,
-    paddingVertical: 6,
-    alignItems: 'center',
-  },
-  addText: {
-    color: theme.colors.textPrimary,
-    fontFamily: theme.typography.fontRegular,
-    fontSize: theme.typography.sizes.xs,
   },
 });
 

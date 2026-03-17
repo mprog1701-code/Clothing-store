@@ -1,219 +1,152 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../constants/Colors';
+import { View, Text, Pressable, StyleSheet, I18nManager } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import theme from '../theme';
 
-const { width } = Dimensions.get('window');
+const FALLBACK_IMAGE = 'https://placehold.co/600x600?text=Product';
 
-const ProductCard = ({ product, addToCart }) => {
+function toIQD(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) return '0';
+  return number.toLocaleString('en-US');
+}
+
+export default function ProductCard({ product, addToCart, style }) {
   const navigation = useNavigation();
+  const productId = product?.id;
+  const title = product?.name || product?.title || 'منتج';
+  const price = product?.price ?? product?.base_price ?? product?.final_price ?? 0;
+  const oldPrice = product?.oldPrice ?? product?.old_price ?? null;
+  const rating = Number(product?.rating || 0);
+  const imageUri = product?.image || product?.image_url || product?.thumbnail || FALLBACK_IMAGE;
+
+  const openDetails = () => {
+    if (!productId) return;
+    navigation.navigate('ProductDetail', { productId });
+  };
 
   return (
-    <View style={styles.productCard}>
-      {/* Badge */}
-      {(product.badge || product.is_new) && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{product.badge || 'جديد'}</Text>
-        </View>
-      )}
-      
-      {/* Image */}
-      <TouchableOpacity 
-        activeOpacity={0.9}
-        onPress={() => navigation.navigate('ProductDetail', { productId: product.id })}
-      >
-        <Image 
-          source={{ uri: product.image || 'https://placehold.co/400x400?text=Product' }} 
-          style={styles.productImage} 
-        />
-      </TouchableOpacity>
-      
-      {/* Wishlist */}
-      <TouchableOpacity style={styles.wishlist}>
-        <Ionicons name="heart-outline" size={20} color={COLORS.primary} />
-      </TouchableOpacity>
-      
-      {/* Info */}
-      <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-        
-        {/* Rating & Stock */}
-        <View style={styles.metaRow}>
-          <View style={styles.rating}>
-            <Ionicons name="star" size={14} color={COLORS.gold} />
-            <Text style={styles.ratingText}>{product.rating || '5.0'}</Text>
+    <Pressable onPress={openDetails} style={[styles.card, style]}>
+      <View style={styles.imageWrap}>
+        <Image source={{ uri: imageUri }} style={styles.image} contentFit="cover" transition={200} cachePolicy="memory-disk" />
+        {(product?.badge || product?.is_new) ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{product?.badge || 'جديد'}</Text>
           </View>
-          
-          {product.inStock !== undefined && (
-            <View style={styles.stockInfo}>
-              <Ionicons 
-                name={product.inStock ? "checkmark-circle" : "close-circle"} 
-                size={14} 
-                color={product.inStock ? COLORS.success : COLORS.error} 
-              />
-              <Text style={[styles.stockText, { color: product.inStock ? COLORS.success : COLORS.error }]}>
-                {product.inStock ? "متوفر" : "غير متوفر"}
-              </Text>
-            </View>
-          )}
-        </View>
-        
-        {/* Price */}
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>{product.price?.toLocaleString()} د.ع</Text>
-          {product.oldPrice && (
-            <Text style={styles.oldPrice}>{product.oldPrice?.toLocaleString()}</Text>
-          )}
-        </View>
-        
-        {/* Buttons */}
-        <View style={styles.cardActions}>
-          <TouchableOpacity 
-            style={styles.detailsBtn}
-            onPress={() => navigation.navigate('ProductDetail', { productId: product.id })}
-          >
-            <Text style={styles.detailsBtnText}>تفاصيل</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            activeOpacity={0.8}
-            onPress={() => addToCart && addToCart(product)}
-          >
-            <LinearGradient
-              colors={[COLORS.gradientStart, COLORS.gradientEnd]}
-              style={styles.addBtn}
-            >
-              <Ionicons name="cart" size={20} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+        ) : null}
+        <Pressable
+          onPress={(event) => {
+            event.stopPropagation();
+            if (addToCart) addToCart(product);
+          }}
+          hitSlop={8}
+          style={styles.cartIconBtn}
+        >
+          <Ionicons name="cart-outline" size={18} color={theme.colors.textPrimary} />
+        </Pressable>
       </View>
-    </View>
+
+      <View style={styles.info}>
+        <Text style={styles.title} numberOfLines={2}>{title}</Text>
+        <View style={styles.metaRow}>
+          <Text style={styles.price}>{toIQD(price)} د.ع</Text>
+          <View style={styles.ratingWrap}>
+            <Ionicons name="star" size={13} color="#FFD700" />
+            <Text style={styles.ratingText}>{rating > 0 ? rating.toFixed(1) : '—'}</Text>
+          </View>
+        </View>
+        {oldPrice ? <Text style={styles.oldPrice}>{toIQD(oldPrice)} د.ع</Text> : null}
+      </View>
+    </Pressable>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  productCard: {
-    width: (width - 45) / 2,
-    backgroundColor: COLORS.card,
-    borderRadius: 15,
-    marginBottom: 15,
+  card: {
+    width: '100%',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    ...theme.shadows.card,
+  },
+  imageWrap: {
+    position: 'relative',
+    height: 170,
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   badge: {
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: COLORS.primary,
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    zIndex: 1,
+    paddingVertical: 4,
+    borderRadius: 100,
   },
   badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.xs,
   },
-  wishlist: {
+  cartIconBtn: {
     position: 'absolute',
-    top: 10,
+    bottom: 10,
     left: 10,
-    backgroundColor: '#fff',
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
-    justifyContent: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(15,15,35,0.85)',
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
     alignItems: 'center',
-    zIndex: 1,
+    justifyContent: 'center',
   },
-  productImage: {
-    width: '100%',
-    height: 180,
-    resizeMode: 'cover',
+  info: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
   },
-  productInfo: {
-    padding: 12,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 5,
-    textAlign: 'right',
+  title: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.md,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    minHeight: 42,
   },
   metaRow: {
-    flexDirection: 'row-reverse',
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
   },
-  rating: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 5,
+  price: {
+    color: theme.colors.accent,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.md,
   },
-  ratingText: {
-    color: COLORS.text,
-    fontSize: 12,
+  oldPrice: {
+    marginTop: 3,
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.xs,
+    textDecorationLine: 'line-through',
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
   },
-  stockInfo: {
-    flexDirection: 'row-reverse',
+  ratingWrap: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  stockText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  priceRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  oldPrice: {
-    fontSize: 12,
-    color: COLORS.textMuted,
-    textDecorationLine: 'line-through',
-  },
-  cardActions: {
-    flexDirection: 'row-reverse',
-    gap: 8,
-    alignItems: 'center',
-  },
-  detailsBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: COLORS.primary,
-    alignItems: 'center',
-  },
-  detailsBtnText: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  ratingText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.xs,
   },
 });
-
-export default ProductCard;

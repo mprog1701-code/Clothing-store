@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, I18nManager, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import theme from '../theme';
 import { me, listOrders, getCart, logout } from '../api';
 import { clearTokens } from '../auth/tokenStorage';
 import { useAuth } from '../auth/AuthContext';
+import EmptyState from '../components/EmptyState';
 
 // ملاحظة: صفحة حسابي تستخدم FlatList كجذر لمنع تحذير Nested VirtualizedLists
 export default function ProfileScreen({ navigation }) {
@@ -69,7 +71,7 @@ export default function ProfileScreen({ navigation }) {
   }, [navigation, user, accessToken, doLogout]);
 
   const Header = (
-    <Animated.View style={{ opacity: fade, paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.md, backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderColor: theme.colors.border }}>
+    <Animated.View style={{ opacity: fade, paddingHorizontal: 16, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.md, backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderColor: theme.colors.border }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginLeft: I18nManager.isRTL ? theme.spacing.md : 0, marginRight: I18nManager.isRTL ? 0 : theme.spacing.md }}>
@@ -100,14 +102,20 @@ export default function ProfileScreen({ navigation }) {
       </View>
       {error ? (
         <View style={{ marginTop: theme.spacing.sm }}>
-          <Text style={{ color: theme.colors.danger, fontFamily: theme.typography.fontBold, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{error}</Text>
+          <EmptyState
+            icon="account-alert-outline"
+            title="مشكلة في تحميل الحساب"
+            subtitle={error}
+            ctaLabel={accessToken ? 'إعادة المحاولة' : 'تسجيل الدخول'}
+            onPress={accessToken ? load : () => navigation.navigate('Login')}
+          />
         </View>
       ) : null}
     </Animated.View>
   );
 
   const Row = ({ item }) => (
-    <View style={{ paddingHorizontal: theme.spacing.lg, backgroundColor: theme.colors.background }}>
+    <View style={{ paddingHorizontal: 16, backgroundColor: theme.colors.background }}>
       <TouchableOpacity
         onPress={item.onPress}
         style={{ marginTop: theme.spacing.md, padding: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: item.danger ? theme.colors.danger : theme.colors.cardBorder, flexDirection: 'row', alignItems: 'center' }}
@@ -120,15 +128,15 @@ export default function ProfileScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center' }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator />
         <Text style={{ marginTop: 8, color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>جاري تحميل حسابك...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <FlatList
         data={options}
         keyExtractor={(it) => it.key}
@@ -139,12 +147,16 @@ export default function ProfileScreen({ navigation }) {
         initialNumToRender={8}
         windowSize={7}
         ListEmptyComponent={
-          <View style={{ padding: theme.spacing.lg, alignItems: 'center' }}>
-            <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>لا خيارات متاحة.</Text>
-          </View>
+          <EmptyState
+            icon="playlist-remove"
+            title="لا خيارات متاحة"
+            subtitle="جرّب تحديث الصفحة"
+            ctaLabel="تحديث"
+            onPress={refresh}
+          />
         }
         contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
       />
-    </View>
+    </SafeAreaView>
   );
 }

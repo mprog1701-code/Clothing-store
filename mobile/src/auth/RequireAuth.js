@@ -11,7 +11,7 @@ export function withAuthGate(Component) {
     const route = useRoute();
     useEffect(() => {
       if (!isHydrating && !accessToken) {
-        navigation.navigate('Login', { next: { name: route.name, params: props.route?.params || {} } });
+        navigation.replace('Login', { next: { name: route.name, params: props.route?.params || {} } });
       }
     }, [isHydrating, accessToken]);
     if (!accessToken) {

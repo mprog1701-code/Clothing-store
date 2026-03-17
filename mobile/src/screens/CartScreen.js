@@ -4,6 +4,7 @@ import theme from '../theme';
 import { isLoggedIn, clearTokens } from '../auth/tokenStorage';
 import { useAuth } from '../auth/AuthContext';
 import { getCart, updateCartItem, removeCartItem } from '../api';
+import LoginRequiredSheet from '../components/LoginRequiredSheet';
 
 export default function CartScreen({ navigation }) {
   const [items, setItems] = useState([]);
@@ -11,6 +12,7 @@ export default function CartScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [requireLogin, setRequireLogin] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
   const { isHydrating, accessToken } = useAuth();
   const load = async () => {
     setLoading(true);
@@ -132,22 +134,11 @@ export default function CartScreen({ navigation }) {
       </View>
     </View>
   );
-  const Footer = (
-    <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, borderTopWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>الإجمالي</Text>
-        <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{subtotal}</Text>
-      </View>
-      <TouchableOpacity onPress={() => navigation.navigate('Checkout')} style={{ marginTop: theme.spacing.md, paddingVertical: theme.spacing.md, borderRadius: theme.radius.lg, backgroundColor: theme.colors.accent, alignItems: 'center' }}>
-        <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>إتمام الشراء</Text>
-      </TouchableOpacity>
-    </View>
-  );
   if (requireLogin) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg }}>
         <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, textAlign: 'center' }}>سجّل دخول حتى نعرض سلتك</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: theme.spacing.md, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent }}>
+        <TouchableOpacity onPress={() => navigation.replace('Login', { next: { name: 'Root', params: { screen: 'Cart' } } })} style={{ marginTop: theme.spacing.md, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent }}>
           <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>تسجيل الدخول</Text>
         </TouchableOpacity>
       </View>
@@ -189,8 +180,33 @@ export default function CartScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: 140 }}
       />
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0 }}>
-        {Footer}
+        <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, borderTopWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>الإجمالي</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{subtotal}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              if (!accessToken) {
+                setSheetVisible(true);
+                return;
+              }
+              navigation.navigate('Checkout');
+            }}
+            style={{ marginTop: theme.spacing.md, paddingVertical: theme.spacing.md, borderRadius: theme.radius.lg, backgroundColor: theme.colors.accent, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>إتمام الشراء</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+      <LoginRequiredSheet
+        visible={sheetVisible}
+        onClose={() => setSheetVisible(false)}
+        onLogin={() => {
+          setSheetVisible(false);
+          navigation.replace('Login', { next: { name: 'Checkout' } });
+        }}
+      />
     </View>
   );
 }

@@ -25,6 +25,9 @@
                     </div>
 
                     <form action="." method="get" id="filterForm">
+                        {% if offers_only %}
+                        <input type="hidden" name="offers" value="1">
+                        {% endif %}
                         <!-- Search -->
                         <div class="mb-4">
                             <label class="form-label fw-bold small text-muted">بحث</label>
@@ -86,6 +89,16 @@
                         <option value="-base_price" {% if request.GET.ordering == '-base_price' %}selected{% endif %}>السعر: من الأعلى للأقل</option>
                     </select>
                 </div>
+            </div>
+            <div class="mb-4">
+                <ul class="nav nav-pills gap-2">
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill px-4 {% if not offers_only %}active{% endif %}" href="{% url 'catalog_product_list' %}">كل المنتجات</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link rounded-pill px-4 {% if offers_only %}active{% endif %}" href="{% url 'catalog_product_list' %}?offers=1">العروض</a>
+                    </li>
+                </ul>
             </div>
 
             {% if products %}

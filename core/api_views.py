@@ -92,9 +92,22 @@ class AuthViewSet(viewsets.ViewSet):
             return False
         if over(f"rl:login:ip:{ip}") or over(f"rl:login:id:{ident}"):
             return Response({'error': 'rate_limited'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
-        username = request.data.get('username')
-        password = request.data.get('password')
-        
+        username = (request.data.get('username') or request.data.get('phone') or '').strip()
+        password = (request.data.get('password') or '').strip()
+        if username and username.startswith('+964') and len(username) == 14:
+            username = '0' + username[4:]
+        elif username and username.startswith('964') and len(username) == 13:
+            username = '0' + username[3:]
+        elif username and username.startswith('7') and len(username) == 10:
+            username = '0' + username
+        phone_candidate = username if username.startswith('07') and len(username) == 11 else ''
+        if phone_candidate:
+            try:
+                u = User.objects.filter(phone=phone_candidate).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+                if u:
+                    username = u.username
+            except Exception:
+                pass
         user = authenticate(username=username, password=password)
         if user:
             refresh = RefreshToken.for_user(user)

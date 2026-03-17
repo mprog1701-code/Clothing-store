@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, Text, TouchableOpacity, Linking } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, Text, TouchableOpacity, Linking, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
 import { listAds, listBanners } from '../api';
 
-export default function AdBannerDismissible({ position = 'stores-hero' }) {
+const dismissedInSession = new Set();
+
+export default function AdBannerDismissible({ position = 'stores-hero', onDismiss }) {
   const [ad, setAd] = useState(null);
   const [show, setShow] = useState(false);
+
   useEffect(() => {
     let active = true;
     const run = async () => {
       try {
-        const key = `ad_dismissed_until_${position}`;
-        const untilStr = await AsyncStorage.getItem(key);
-        const until = untilStr ? parseInt(untilStr, 10) : 0;
-        const now = Date.now();
-        if (until && now < until) {
+        if (dismissedInSession.has(position)) {
           setShow(false);
           return;
         }
@@ -41,26 +41,18 @@ export default function AdBannerDismissible({ position = 'stores-hero' }) {
     };
     run();
     return () => { active = false; };
-  }, [position]);
+  }, [position, onDismiss]);
 
   if (!show) return null;
+
+  const dismiss = () => {
+    dismissedInSession.add(position);
+    setShow(false);
+    if (onDismiss) onDismiss();
+  };
+
   return (
-    <View style={{ marginTop: theme.spacing.md }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-        <TouchableOpacity
-          onPress={async () => {
-            try {
-              const key = `ad_dismissed_until_${position}`;
-              const until = Date.now() + 24 * 60 * 60 * 1000;
-              await AsyncStorage.setItem(key, String(until));
-            } catch {}
-            setShow(false);
-          }}
-          style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.cardBorder }}
-        >
-          <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>إغلاق ✕</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.wrap}>
       <TouchableOpacity
         onPress={() => {
           const value = ad?.link || ad?.linkValue || ad?.value || ad?.url;
@@ -68,14 +60,17 @@ export default function AdBannerDismissible({ position = 'stores-hero' }) {
             Linking.openURL(value);
           }
         }}
-        style={{ marginTop: theme.spacing.xs }}
+        style={styles.pressable}
       >
-        <View style={{ height: 180, borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, backgroundColor: theme.colors.surface, ...theme.shadows.card, overflow: 'hidden' }}>
+        <View style={styles.card}>
+          <TouchableOpacity onPress={dismiss} style={styles.closeButton} hitSlop={8}>
+            <Ionicons name="close" size={16} color={theme.colors.textPrimary} />
+          </TouchableOpacity>
           {ad?.image_url || ad?.image ? (
-            <Image source={{ uri: ad?.image_url || ad?.image }} style={{ width: '100%', height: '100%' }} />
+            <Image source={{ uri: ad?.image_url || ad?.image }} style={styles.image} contentFit="cover" transition={150} cachePolicy="memory-disk" />
           ) : (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{ad?.title || 'إعلان'}</Text>
+            <View style={styles.placeholder}>
+              <Text style={styles.placeholderText}>{ad?.title || 'إعلان'}</Text>
             </View>
           )}
         </View>
@@ -83,3 +78,48 @@ export default function AdBannerDismissible({ position = 'stores-hero' }) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: {
+    marginTop: theme.spacing.md,
+  },
+  pressable: {
+    marginTop: theme.spacing.xs,
+  },
+  card: {
+    height: 180,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    backgroundColor: theme.colors.surface,
+    overflow: 'hidden',
+    ...theme.shadows.card,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(15,15,35,0.82)',
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

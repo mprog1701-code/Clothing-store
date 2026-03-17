@@ -305,7 +305,15 @@ export default function ProductDetailScreen({ route, navigation }) {
           const variantId = selectedVariant?.id;
           const qtyNum = qty || 1;
           const sizeVal = size || (selectedVariant?.sizes || [])[0]?.value || null;
-          navigation.navigate('Login', { next: { action: 'add_to_cart', variant_id: variantId, quantity: qtyNum, size: sizeVal } });
+          navigation.replace('Login', {
+            next: {
+              action: 'add_to_cart',
+              variant_id: variantId,
+              quantity: qtyNum,
+              size: sizeVal,
+              returnTo: { name: 'ProductDetail', params: { productId } },
+            },
+          });
         }}
         onClose={() => setSheetVisible(false)}
       />

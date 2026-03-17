@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, I18nManager } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, I18nManager } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import theme from '../theme';
 import { getStore, listStoreProducts } from '../api';
+import EmptyState from '../components/EmptyState';
 
 const tabs = ['Products', 'Offers', 'Info', 'Reviews'];
 
@@ -28,8 +31,8 @@ export default function StoreDetailScreen({ route }) {
   }, [id]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <View style={{ padding: theme.spacing.lg, borderBottomWidth: 1, borderColor: theme.colors.border }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <View style={{ paddingHorizontal: 16, paddingVertical: theme.spacing.lg, borderBottomWidth: 1, borderColor: theme.colors.border }}>
         <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.lg, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>
           {store?.name || 'المتجر'}
         </Text>
@@ -38,7 +41,7 @@ export default function StoreDetailScreen({ route }) {
         </Text>
       </View>
 
-      <View style={{ flexDirection: 'row', padding: theme.spacing.lg }}>
+      <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: theme.spacing.lg }}>
         {tabs.map(t => (
           <TouchableOpacity
             key={t}
@@ -67,18 +70,17 @@ export default function StoreDetailScreen({ route }) {
           columnWrapperStyle={{ justifyContent: 'space-between' }}
           renderItem={({ item }) => (
             <View style={{ width: '48%', marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, ...theme.shadows.card }}>
-              {item.main_image?.image_url ? <Image source={{ uri: item.main_image.image_url }} style={{ width: '100%', height: 120, borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg }} /> : null}
+              {item.main_image?.image_url ? <Image source={{ uri: item.main_image.image_url }} style={{ width: '100%', height: 120, borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg }} contentFit="cover" transition={150} cachePolicy="memory-disk" /> : null}
               <View style={{ padding: theme.spacing.md }}>
                 <Text numberOfLines={2} style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{item.name}</Text>
                 <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, marginTop: theme.spacing.xs, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{item.base_price}</Text>
               </View>
             </View>
           )}
-          ListEmptyComponent={
-            <View style={{ padding: theme.spacing.lg, alignItems: 'center' }}>
-              <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>لا توجد منتجات.</Text>
-            </View>
-          }
+          removeClippedSubviews
+          initialNumToRender={8}
+          windowSize={7}
+          ListEmptyComponent={<EmptyState icon="package-variant-closed" title="لا توجد منتجات" subtitle="لم يتم إضافة منتجات لهذا المتجر بعد" />}
         />
       )}
 
@@ -97,6 +99,6 @@ export default function StoreDetailScreen({ route }) {
           <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>المراجعات ستظهر هنا.</Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

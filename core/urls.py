@@ -37,6 +37,8 @@ urlpatterns = [
     path('cart/remove/<int:index>/', views.remove_from_cart, name='remove_from_cart'),
     path('cart/clear/', views.clear_cart, name='clear_cart'),
     path('cart/items', views.cart_items_json, name='cart_items_json'),
+    path('cart/drawer-data/', views.cart_drawer_data, name='cart_drawer_data'),
+    path('cart/update-item/', views.cart_update_item, name='cart_update_item'),
     
     path('checkout/', views.checkout, name='checkout'),
     path('checkout/apply-coupon/', views.apply_coupon_json, name='apply_coupon_json'),

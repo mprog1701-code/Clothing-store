@@ -1,21 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, I18nManager, ActivityIndicator, RefreshControl, Modal } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, I18nManager, RefreshControl, Modal, Animated, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import theme from '../theme';
-import { listStores, listTopStores, listAds } from '../api';
+import { listStores, listTopStores } from '../api';
 import SearchBar from '../components/SearchBar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import AdBannerDismissible from '../components/AdBannerDismissible';
+import EmptyState from '../components/EmptyState';
 
 const filters = [
+  { key: 'all', label: 'الكل' },
   { key: 'top', label: 'الأعلى تقييماً' },
   { key: 'near', label: 'الأقرب' },
-  { key: 'fast', label: 'التوصيل الأسرع' },
-  { key: 'open', label: 'مفتوح الآن' },
 ];
 
 export default function StoresScreen({ navigation }) {
   const [q, setQ] = useState('');
-  const [active, setActive] = useState('rating');
+  const [active, setActive] = useState('all');
   const [stores, setStores] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,13 +24,38 @@ export default function StoresScreen({ navigation }) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [isTopAdVisible, setIsTopAdVisible] = useState(true);
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  const COLLAPSE_RANGE = 220;
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, COLLAPSE_RANGE],
+    outputRange: [220, 0],
+    extrapolate: 'clamp',
+  });
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, COLLAPSE_RANGE * 0.7, COLLAPSE_RANGE],
+    outputRange: [1, 0.35, 0],
+    extrapolate: 'clamp',
+  });
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, COLLAPSE_RANGE],
+    outputRange: [0, -24],
+    extrapolate: 'clamp',
+  });
 
   const load = async (opts = {}) => {
     const nextPage = opts.page ?? page;
     const isRefresh = !!opts.refresh;
     if (!isRefresh) setLoading(true);
     try {
-      const params = { search: q || undefined, page: nextPage || undefined, sort: active || undefined };
+      const params = { search: q || undefined, page: nextPage || undefined, sort: active !== 'all' ? active : undefined };
       const data = await listStores(params);
       const arr = Array.isArray(data) ? data : (data.results || []);
       if (isRefresh || nextPage === 1) {
@@ -66,44 +92,37 @@ export default function StoresScreen({ navigation }) {
   const filtered = stores;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <View style={{ padding: theme.spacing.lg, borderBottomWidth: 1, borderColor: theme.colors.border }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.lg, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>المتاجر</Text>
-          <TouchableOpacity onPress={() => setSheetOpen(true)} style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.cardBorder, backgroundColor: theme.colors.surface }}>
-            <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>فلتر ⚙️</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ marginTop: theme.spacing.md }}>
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.staticHeader}>
+        <Text style={styles.title}>المتاجر</Text>
+        <TouchableOpacity onPress={() => setSheetOpen(true)} style={styles.filterButton}>
+          <Text style={styles.filterButtonText}>فلتر ⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
+      <Animated.View
+        pointerEvents="box-none"
+        style={[
+          styles.collapsibleWrap,
+          { height: headerHeight, opacity: headerOpacity, transform: [{ translateY: headerTranslateY }] },
+        ]}
+      >
+        <View style={styles.searchWrap}>
           <SearchBar initial={q} onChange={setQ} placeholder="ابحث عن متجر..." />
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: theme.spacing.md }}>
-          {filters.map(f => (
-            <TouchableOpacity
-              key={f.key}
-              onPress={() => setActive(f.key)}
-              style={{
-                paddingHorizontal: theme.spacing.md,
-                paddingVertical: theme.spacing.xs,
-                borderRadius: theme.radius.md,
-                borderWidth: 1,
-                borderColor: active === f.key ? theme.colors.accent : theme.colors.cardBorder,
-                backgroundColor: theme.colors.surface,
-                marginRight: theme.spacing.sm,
-                marginBottom: theme.spacing.sm,
-              }}
-            >
-              <Text style={{ color: active === f.key ? theme.colors.accent : theme.colors.textPrimary, fontFamily: theme.typography.fontRegular }}>{f.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <AdBannerDismissible position="stores-hero" />
-
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: theme.spacing.lg }}>
-          <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.lg, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>أفضل المتاجر</Text>
+        {isTopAdVisible ? (
+          <AdBannerDismissible
+            position="stores-hero"
+            onDismiss={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setIsTopAdVisible(false);
+            }}
+          />
+        ) : null}
+        <View style={styles.featuredHeader}>
+          <Text style={styles.featuredTitle}>أفضل المتاجر</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Stores')}>
-            <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>عرض الكل</Text>
+            <Text style={styles.featuredLink}>عرض الكل</Text>
           </TouchableOpacity>
         </View>
         <FlatList
@@ -111,37 +130,46 @@ export default function StoresScreen({ navigation }) {
           data={featured}
           keyExtractor={(it) => String(it.id)}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingVertical: theme.spacing.md }}
+          contentContainerStyle={styles.featuredListContent}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('StoreDetail', { id: item.id })}
-              style={{ width: 220, marginRight: theme.spacing.md }}
-            >
-              <View style={{ height: 110, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.cardBorder, alignItems: 'center', justifyContent: 'center', ...theme.shadows.card }}>
-                {item.logo ? <Image source={{ uri: item.logo }} style={{ width: 220, height: 110, borderRadius: theme.radius.lg }} /> : <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{item.name}</Text>}
+            <TouchableOpacity onPress={() => navigation.navigate('StoreDetail', { id: item.id })} style={styles.featuredCardWrap}>
+              <View style={styles.featuredMediaWrap}>
+                {item.logo ? (
+                  <Image source={{ uri: item.logo }} style={styles.featuredMedia} contentFit="cover" transition={150} cachePolicy="memory-disk" />
+                ) : (
+                  <Text style={styles.featuredNameFallback}>{item.name}</Text>
+                )}
               </View>
-              <Text style={{ fontFamily: theme.typography.fontBold, marginTop: theme.spacing.sm, color: theme.colors.textPrimary, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{item.name}</Text>
-              <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>تقييم: {item.store_rating ?? 0}</Text>
             </TouchableOpacity>
           )}
-          ListEmptyComponent={
-            loading ? (
-              <View style={{ flexDirection: 'row', paddingVertical: theme.spacing.md }}>
-                {[...Array(4)].map((_, idx) => (
-                  <View key={idx} style={{ width: 220, height: 110, marginRight: theme.spacing.md, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surfaceAlt, borderWidth: 1, borderColor: theme.colors.cardBorder }} />
-                ))}
-              </View>
-            ) : null
-          }
+        />
+      </Animated.View>
+
+      <View style={styles.stickyFilters}>
+        <FlatList
+          horizontal
+          data={filters}
+          keyExtractor={(f) => f.key}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersRow}
+          renderItem={({ item: f }) => (
+            <TouchableOpacity
+              onPress={() => setActive(f.key)}
+              style={[styles.filterChip, active === f.key && styles.filterChipActive]}
+            >
+              <Text style={[styles.filterChipText, active === f.key && styles.filterChipTextActive]}>{f.label}</Text>
+            </TouchableOpacity>
+          )}
         />
       </View>
 
-      <FlatList
+      <Animated.FlatList
         data={filtered}
         keyExtractor={(it) => String(it.id)}
         numColumns={2}
-        contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 100 }}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={styles.listColumn}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); setPage(1); setHasMore(true); load({ page: 1, refresh: true }); }} />}
         onEndReachedThreshold={0.5}
         onEndReached={() => { if (hasMore && !loading) load({ page: page + 1 }); }}
@@ -149,35 +177,37 @@ export default function StoresScreen({ navigation }) {
         removeClippedSubviews
         initialNumToRender={8}
         windowSize={7}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={{ width: '48%', marginBottom: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, ...theme.shadows.card }}
+            style={styles.storeCard}
             onPress={() => navigation.navigate('StoreDetail', { id: item.id })}
           >
             {item.logo ? (
-              <Image source={{ uri: item.logo }} style={{ width: '100%', height: 100, borderTopLeftRadius: theme.radius.lg, borderTopRightRadius: theme.radius.lg }} />
+              <Image source={{ uri: item.logo }} style={styles.storeCardMedia} contentFit="cover" transition={150} cachePolicy="memory-disk" />
             ) : null}
-            <View style={{ padding: theme.spacing.md }}>
-              <Text numberOfLines={1} style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{item.name}</Text>
-              <View style={{ flexDirection: 'row', marginTop: theme.spacing.xs }}>
-                <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>تقييم: </Text>
-                <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>
+            <View style={styles.storeCardBody}>
+              <Text numberOfLines={1} style={styles.storeCardTitle}>{item.name}</Text>
+              <View style={styles.ratingRow}>
+                <Text style={styles.ratingLabel}>تقييم: </Text>
+                <Text style={styles.ratingStars}>
                   {Array.from({ length: 5 }).map((_, i) => ((item.store_rating || 0) >= i + 1 ? '★' : '☆')).join('')}
                 </Text>
               </View>
-              <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, marginTop: theme.spacing.xs, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>
+              <Text style={styles.metaText}>
                 منتجات: {item.products_count ?? 0} • {item.is_open ? 'مفتوح' : 'مغلق'}
               </Text>
-              <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, marginTop: theme.spacing.xs, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>
+              <Text style={styles.metaText}>
                 توصيل: {item.delivery_time_text || 'غير محدد'}
               </Text>
               {item.fast_delivery ? (
-                <View style={{ marginTop: theme.spacing.xs, alignSelf: I18nManager.isRTL ? 'flex-start' : 'flex-end', paddingHorizontal: theme.spacing.sm, paddingVertical: 2, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent }}>
-                  <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>توصيل سريع</Text>
+                <View style={styles.fastBadge}>
+                  <Text style={styles.fastBadgeText}>توصيل سريع</Text>
                 </View>
               ) : null}
-              <TouchableOpacity onPress={() => navigation.navigate('StoreDetail', { id: item.id })} style={{ marginTop: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent, alignItems: 'center' }}>
-                <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>زيارة المتجر</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('StoreDetail', { id: item.id })} style={styles.visitButton}>
+                <Text style={styles.visitButtonText}>زيارة المتجر</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -190,12 +220,13 @@ export default function StoresScreen({ navigation }) {
               ))}
             </View>
           ) : (
-            <View style={{ padding: theme.spacing.lg, alignItems: 'center' }}>
-              <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>لا توجد متاجر متاحة حالياً.</Text>
-              <TouchableOpacity onPress={() => load({ page: 1 })} style={{ marginTop: theme.spacing.md, paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent }}>
-                <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>إعادة المحاولة</Text>
-              </TouchableOpacity>
-            </View>
+            <EmptyState
+              icon="store-search-outline"
+              title="لا توجد متاجر متاحة حالياً"
+              subtitle="جرّب تعديل البحث أو الفلاتر"
+              ctaLabel="إعادة المحاولة"
+              onPress={() => load({ page: 1 })}
+            />
           )
         }
       />
@@ -212,16 +243,212 @@ export default function StoresScreen({ navigation }) {
               ))}
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: theme.spacing.lg }}>
-              <TouchableOpacity onPress={() => { setActive('rating'); setSheetOpen(false); load({ page: 1 }); }} style={{ paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent }}>
+              <TouchableOpacity onPress={() => { setSheetOpen(false); load({ page: 1 }); }} style={{ paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, backgroundColor: theme.colors.accent }}>
                 <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>تطبيق</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setActive('rating'); setSheetOpen(false); }} style={{ paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.cardBorder }}>
+              <TouchableOpacity onPress={() => { setActive('all'); setSheetOpen(false); }} style={{ paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.cardBorder }}>
                 <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>مسح</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  staticHeader: {
+    zIndex: 30,
+    elevation: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  title: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.lg,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  filterButton: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    backgroundColor: theme.colors.surface,
+  },
+  filterButtonText: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+  },
+  collapsibleWrap: {
+    zIndex: 20,
+    elevation: 8,
+    overflow: 'hidden',
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: 16,
+  },
+  searchWrap: {
+    marginTop: theme.spacing.sm,
+  },
+  featuredHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+  },
+  featuredTitle: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    fontSize: theme.typography.sizes.md,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  featuredLink: {
+    color: theme.colors.accent,
+    fontFamily: theme.typography.fontBold,
+  },
+  featuredListContent: {
+    paddingVertical: theme.spacing.sm,
+  },
+  featuredCardWrap: {
+    width: 170,
+    marginRight: theme.spacing.md,
+  },
+  featuredMediaWrap: {
+    height: 88,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.shadows.card,
+  },
+  featuredMedia: {
+    width: 170,
+    height: 88,
+    borderRadius: theme.radius.lg,
+  },
+  featuredNameFallback: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+  },
+  stickyFilters: {
+    zIndex: 25,
+    elevation: 10,
+    backgroundColor: theme.colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingHorizontal: 16,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.xs,
+  },
+  filtersRow: {
+    paddingBottom: theme.spacing.xs,
+  },
+  filterChip: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    backgroundColor: theme.colors.surface,
+    marginRight: theme.spacing.sm,
+  },
+  filterChipActive: {
+    borderColor: theme.colors.accent,
+  },
+  filterChipText: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontRegular,
+  },
+  filterChipTextActive: {
+    color: theme.colors.accent,
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingVertical: theme.spacing.lg,
+    paddingBottom: 100,
+  },
+  listColumn: {
+    justifyContent: 'space-between',
+  },
+  storeCard: {
+    width: '48%',
+    marginBottom: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    borderRadius: theme.radius.lg,
+    backgroundColor: theme.colors.surface,
+    ...theme.shadows.card,
+  },
+  storeCardMedia: {
+    width: '100%',
+    height: 100,
+    borderTopLeftRadius: theme.radius.lg,
+    borderTopRightRadius: theme.radius.lg,
+  },
+  storeCardBody: {
+    padding: theme.spacing.md,
+  },
+  storeCardTitle: {
+    color: theme.colors.textPrimary,
+    fontFamily: theme.typography.fontBold,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    marginTop: theme.spacing.xs,
+  },
+  ratingLabel: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+  },
+  ratingStars: {
+    color: theme.colors.accent,
+    fontFamily: theme.typography.fontBold,
+  },
+  metaText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+    marginTop: theme.spacing.xs,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  fastBadge: {
+    marginTop: theme.spacing.xs,
+    alignSelf: I18nManager.isRTL ? 'flex-start' : 'flex-end',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.accent,
+  },
+  fastBadgeText: {
+    color: '#000',
+    fontFamily: theme.typography.fontBold,
+  },
+  visitButton: {
+    marginTop: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.accent,
+    alignItems: 'center',
+  },
+  visitButtonText: {
+    color: '#000',
+    fontFamily: theme.typography.fontBold,
+  },
+});

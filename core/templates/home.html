@@ -35,53 +35,46 @@
     </div>
 </section>
 
-{% if top_ads %}
+{% if ad_slider_ads %}
 <div class="ads-section ads-top py-4 bg-light">
     <div class="container">
-        {% for ad in top_ads %}
-        <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
-            <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
-                <img src="{{ ad.get_image_url }}" alt="{{ ad.title }}" class="w-100">
-            </a>
+        <div id="homeAdsSlider" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+            <div class="carousel-indicators">
+                {% for ad in ad_slider_ads %}
+                <button type="button" data-bs-target="#homeAdsSlider" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" aria-label="Slide {{ forloop.counter }}"></button>
+                {% endfor %}
+            </div>
+            <div class="carousel-inner rounded-4 overflow-hidden shadow-sm">
+                {% for ad in ad_slider_ads %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                    <div class="ad-banner" data-ad-id="{{ ad.id }}">
+                        <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
+                            <img src="{{ ad.get_image_url }}" alt="{{ ad.title }}" class="w-100" style="height: 290px; object-fit: cover;">
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#homeAdsSlider" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#homeAdsSlider" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
         </div>
-        {% endfor %}
     </div>
 </div>
 {% endif %}
 
-{% if middle_ads %}
-<div class="ads-section ads-middle py-4 bg-light">
-    <div class="container">
-        {% for ad in middle_ads %}
-        <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
-            <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
-                <img src="{{ ad.get_image_url }}" alt="{{ ad.title }}" class="w-100">
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-{% if bottom_ads %}
-<div class="ads-section ads-bottom py-4 bg-light">
-    <div class="container">
-        {% for ad in bottom_ads %}
-        <div class="ad-banner mb-3" data-ad-id="{{ ad.id }}">
-            <a href="{{ ad.link }}" target="_blank" onclick="trackAdClick({{ ad.id }})">
-                <img src="{{ ad.get_image_url }}" alt="{{ ad.title }}" class="w-100">
-            </a>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-{% if campaigns %}
+{% if promotion_banners %}
 <section class="py-4 bg-light">
     <div class="container">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="fw-bold mb-0">Promotion Banners</h5>
+            <span class="text-muted small">عروض مميزة</span>
+        </div>
         <div class="row g-4">
-            {% for c in campaigns %}
+            {% for c in promotion_banners %}
             <div class="col-md-6" data-aos="fade-up">
                 <a href="{{ c.action_url|default:'#' }}" class="text-decoration-none">
                     <div class="card border-0 shadow-sm overflow-hidden">

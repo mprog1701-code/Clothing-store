@@ -6,6 +6,7 @@ export async function login(identifier, password) {
   const payload = { password };
   const id = (identifier || '').trim();
   payload.username = id;
+  payload.phone = id;
   if (id.includes('@')) payload.email = id;
   let r;
   try {
