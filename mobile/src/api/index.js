@@ -225,9 +225,10 @@ export async function removeCartItem(id) {
   return r.data;
 }
 
-export async function addCartItemVariant({ variant_id, qty = 1, size }) {
+export async function addCartItemVariant({ variant_id, qty = 1, size, user_id }) {
   const payload = { variant_id, qty };
   if (size) payload.size = size;
+  if (user_id) payload.user_id = user_id;
   const r = await client.post('/api/cart/items', payload);
   console.log('[CART] add', payload, 'status=', r.status);
   return r.data;

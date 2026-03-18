@@ -52,7 +52,7 @@ export default function ColorSelector({ variants, selectedId, onSelect }) {
     return Array.from(byKey.values());
   }, [variants]);
   return (
-    <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md }}>
+    <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xs }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {colors.map((v) => {
           const key = (v.color_key || normalize(v.color_name) || normalize(v.color) || '__unknown__').trim();

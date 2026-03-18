@@ -3,12 +3,14 @@ import { View, Text, TextInput, Button, ActivityIndicator, I18nManager, Touchabl
 import { getProduct, addCartItemVariant } from '../api';
 import theme from '../theme';
 import { useAuth } from '../auth/AuthContext';
+import { useCart } from '../cart/CartContext';
 import ImageCarousel from '../components/ImageCarousel';
 import ColorSelector from '../components/ColorSelector';
 import SizeSelector from '../components/SizeSelector';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { productId = null } = route.params || {};
@@ -21,9 +23,12 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [qty, setQty] = useState(1);
   const [sheetVisible, setSheetVisible] = useState(false);
   const carouselRef = useRef(null);
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
+  const { addToCartCount, refreshCartCount } = useCart();
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
 
   const load = async () => {
     setError('');
@@ -113,31 +118,74 @@ export default function ProductDetailScreen({ route, navigation }) {
   }, [product, selectedVariant, size]);
 
   const getVariantImages = useCallback((v, p) => {
+    const normalizeToken = (val) =>
+      String(val || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ى/g, 'ي')
+        .replace(/ة/g, 'ه');
+    const asNum = (val) => {
+      const n = Number(val);
+      return Number.isFinite(n) ? n : null;
+    };
+    const sameId = (a, b) => {
+      const na = asNum(a);
+      const nb = asNum(b);
+      return na !== null && nb !== null && na === nb;
+    };
     const vi = v?.images || [];
     if (Array.isArray(vi) && vi.length) return vi.map((x) => (typeof x === 'string' ? { url: x } : x));
     const pi = p?.images || [];
     const ck = String(v?.color_key || '').trim();
-    const cn = String(v?.color_name || '').trim().toLowerCase();
+    const cn = normalizeToken(v?.color_name || v?.color);
     const co = v?.color_obj_id || null;
     const ca = v?.color_attr_id || null;
+    const cv = v?.id || null;
     const filtered = Array.isArray(pi)
       ? pi.filter((im) => {
           const imKey = String(im?.color_key || '').trim();
-          const imName = String(im?.color_name || '').trim().toLowerCase();
+          const imName = normalizeToken(im?.color_name);
           const imCo = im?.color_obj_id || null;
           const imCa = im?.color_attr_id || null;
+          const imColorId = im?.color_id || null;
+          const imVariantId = im?.variant_id || null;
           if (ck && imKey && ck === imKey) return true;
           if (cn && imName && cn === imName) return true;
-          if (co && imCo && co === imCo) return true;
-          if (ca && imCa && ca === imCa) return true;
+          if (co && (sameId(co, imCo) || sameId(co, imColorId))) return true;
+          if (ca && (sameId(ca, imCa) || sameId(ca, imColorId))) return true;
+          if (cv && sameId(cv, imVariantId)) return true;
           return false;
         })
       : [];
-    let src = filtered.length ? filtered : pi;
+    const hasTaggedPool = Array.isArray(pi)
+      ? pi.some((im) => {
+          const key = String(im?.color_key || '').trim();
+          const name = normalizeToken(im?.color_name);
+          const cid = im?.color_id ?? im?.color_attr_id ?? im?.color_obj_id;
+          return !!key || !!name || cid !== null && cid !== undefined;
+        })
+      : false;
+    let src = filtered;
     const mi = p?.main_image || null;
     const hasMain = mi && (mi.url || mi.image_url);
-    if (hasMain) {
-      src = [mi, ...src];
+    if (!src.length && !hasTaggedPool && Array.isArray(pi) && pi.length) {
+      src = pi;
+    }
+    if (!src.length && hasMain && !hasTaggedPool) {
+      src = [mi];
+    }
+    if (__DEV__) {
+      try {
+        console.log('[PDP] image match', {
+          variantId: v?.id || null,
+          colorKey: ck || '',
+          colorName: cn || '',
+          taggedPool: hasTaggedPool,
+          filteredCount: filtered.length,
+          finalCount: src.length,
+        });
+      } catch {}
     }
     const mapped = Array.isArray(src) ? src.map((x) => (typeof x === 'string' ? { url: x } : x)) : [];
     const seen = new Set();
@@ -165,7 +213,10 @@ export default function ProductDetailScreen({ route, navigation }) {
     return true;
   }, []);
 
-  const imagesForSelected = useMemo(() => getVariantImages(selectedVariant, product), [getVariantImages, selectedVariant, product]);
+  const imagesForSelected = useMemo(
+    () => getVariantImages(selectedVariantForSize || selectedVariant, product),
+    [getVariantImages, selectedVariantForSize, selectedVariant, product]
+  );
   const priceDisplay = useMemo(() => getVariantPrice(selectedVariantForSize || selectedVariant, product), [getVariantPrice, selectedVariantForSize, selectedVariant, product]);
   const canAdd = useMemo(() => {
     if (!selectedVariantForSize) return false;
@@ -209,23 +260,47 @@ export default function ProductDetailScreen({ route, navigation }) {
       return;
     }
     try {
-      const data = await addCartItemVariant({ variant_id: variantId, qty: qtyNum, size: sizeVal });
-      navigation.navigate('Cart');
+      await addCartItemVariant({ variant_id: variantId, qty: qtyNum, size: sizeVal, user_id: user?.id });
+      addToCartCount(qtyNum);
+      refreshCartCount();
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 1800);
     } catch {}
   };
 
   const content = (
     <View>
       <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.md, color: theme.colors.textPrimary, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{product?.name}</Text>
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity style={{ marginHorizontal: theme.spacing.xs }}>
-            <Text style={{ color: theme.colors.textSecondary }}>♡</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 6 }}>
+          <Ionicons name="arrow-back" size={20} color={theme.colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={{ fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.md, color: theme.colors.textPrimary, textAlign: I18nManager.isRTL ? 'right' : 'left', flex: 1, marginHorizontal: 8 }}>{product?.name}</Text>
+      </View>
+      <View style={{ paddingHorizontal: theme.spacing.lg, marginTop: 2, marginBottom: 4 }}>
+        <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>⭐ {Number(product?.rating || 4.5).toFixed(1)}</Text>
       </View>
       {imagesForSelected.length > 0 ? (
-        <ImageCarousel key={`carousel-${selectedVariantId}-${imagesForSelected.length}`} images={imagesForSelected} onIndexChange={setCarouselIndex} flatListRef={carouselRef} />
+        <View style={{ position: 'relative' }}>
+          <ImageCarousel key={`carousel-${selectedVariantId}-${imagesForSelected.length}`} images={imagesForSelected} onIndexChange={setCarouselIndex} flatListRef={carouselRef} />
+          <TouchableOpacity
+            onPress={() => setLiked((v) => !v)}
+            style={{
+              position: 'absolute',
+              top: 14,
+              right: 16,
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: 'rgba(15,15,35,0.7)',
+              borderWidth: 1,
+              borderColor: theme.colors.cardBorder,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={20} color={liked ? '#FF4D6D' : '#fff'} />
+          </TouchableOpacity>
+        </View>
       ) : (
         <View style={{ height: 200, alignItems: 'center', justifyContent: 'center', marginHorizontal: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface }}>
           <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>لا توجد صور لهذا اللون</Text>
@@ -247,14 +322,14 @@ export default function ProductDetailScreen({ route, navigation }) {
           ))}
         </View>
       </View>
-      <ColorSelector variants={product?.variants || []} selectedId={selectedVariantId} onSelect={onSelectVariant} />
-      <SizeSelector sizes={selectedVariant?.sizes || []} selectedSize={size} onSelect={setSize} />
       <View style={{ paddingHorizontal: theme.spacing.lg }}>
-        <Text numberOfLines={descExpanded ? undefined : 3} style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{product?.description}</Text>
-        <Pressable onPress={() => setDescExpanded((v) => !v)} style={{ marginTop: theme.spacing.xs }}>
+        <Text numberOfLines={descExpanded ? undefined : 3} style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left', marginTop: 4 }}>{product?.description}</Text>
+        <Pressable onPress={() => setDescExpanded((v) => !v)} style={{ marginTop: 4 }}>
           <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>{descExpanded ? 'إخفاء' : 'عرض المزيد'}</Text>
         </Pressable>
       </View>
+      <ColorSelector variants={product?.variants || []} selectedId={selectedVariantId} onSelect={onSelectVariant} />
+      <SizeSelector sizes={selectedVariant?.sizes || []} selectedSize={size} onSelect={setSize} />
     </View>
   );
 
@@ -275,27 +350,35 @@ export default function ProductDetailScreen({ route, navigation }) {
           <FlatList data={[{ key: 'content' }]} keyExtractor={(it) => it.key} renderItem={() => content} contentContainerStyle={{ paddingBottom: 96 }} />
           <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: theme.spacing.lg, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderColor: theme.colors.cardBorder }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary }}>{priceDisplay}</Text>
+              <Text style={{ fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary, fontSize: theme.typography.sizes.lg }}>{priceDisplay}</Text>
               <TouchableOpacity
                 onPress={() => {
+                  if (!selectedVariant) {
+                    Alert.alert('تنبيه', 'اختر اللون أولاً');
+                    return;
+                  }
                   if (!canAdd) {
-                    Alert.alert('تنبيه', 'اختر اللون/المقاس');
+                    Alert.alert('تنبيه', 'المقاس/اللون غير متوفر حالياً');
                     return;
                   }
                   onAddToCart();
                 }}
-                disabled={!canAdd}
                 style={{
                   paddingVertical: theme.spacing.md,
                   paddingHorizontal: theme.spacing.lg,
                   borderRadius: theme.radius.lg,
-                  backgroundColor: !canAdd ? theme.colors.surfaceAlt : theme.colors.accent,
+                  backgroundColor: canAdd ? theme.colors.accent : theme.colors.surfaceAlt,
                 }}
               >
-                <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>{isVariantInStock(selectedVariant) ? 'أضف للسلة' : 'غير متوفر'}</Text>
+                <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>{isVariantInStock(selectedVariantForSize || selectedVariant) ? 'أضف للسلة' : 'غير متوفر'}</Text>
               </TouchableOpacity>
             </View>
           </View>
+          {toastVisible ? (
+            <View style={{ position: 'absolute', bottom: 90, alignSelf: 'center', backgroundColor: 'rgba(25,25,35,0.95)', borderRadius: 14, paddingVertical: 10, paddingHorizontal: 14, borderWidth: 1, borderColor: theme.colors.cardBorder }}>
+              <Text style={{ color: '#fff', fontFamily: theme.typography.fontBold }}>تمت إضافة المنتج إلى السلة بنجاح</Text>
+            </View>
+          ) : null}
         </>
       )}
       <LoginRequiredSheet

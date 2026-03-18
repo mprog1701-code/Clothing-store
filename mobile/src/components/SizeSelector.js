@@ -4,7 +4,7 @@ import theme from '../theme';
 
 export default function SizeSelector({ sizes, selectedSize, onSelect }) {
   return (
-    <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md, flexDirection: 'row', flexWrap: 'wrap' }}>
+    <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xs, flexDirection: 'row', flexWrap: 'wrap' }}>
       {sizes.map((s) => {
         const active = s.value === selectedSize;
         const disabled = s.in_stock === false;

@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, I18nManager, ActivityInd
 import theme from '../theme';
 import { clearTokens } from '../auth/tokenStorage';
 import { useAuth } from '../auth/AuthContext';
+import { useCart } from '../cart/CartContext';
 import { getCart, updateCartItem, removeCartItem } from '../api';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
 
@@ -14,6 +15,7 @@ export default function CartScreen({ navigation }) {
   const [requireLogin, setRequireLogin] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const { isHydrating, accessToken, user, isAuthenticated } = useAuth();
+  const { setCartCount, refreshCartCount } = useCart();
   const load = async () => {
     setLoading(true);
     setError('');
@@ -21,6 +23,7 @@ export default function CartScreen({ navigation }) {
       const data = await getCart();
       const arr = Array.isArray(data) ? data : (data.items || data.results || []);
       setItems(arr || []);
+      setCartCount((arr || []).reduce((sum, it) => sum + Number(it?.quantity || 0), 0));
     } catch (e) {
       const status = e?.response?.status;
       if (status === 401) {
@@ -40,6 +43,7 @@ export default function CartScreen({ navigation }) {
       const data = await getCart();
       const arr = Array.isArray(data) ? data : (data.items || data.results || []);
       setItems(arr || []);
+      setCartCount((arr || []).reduce((sum, it) => sum + Number(it?.quantity || 0), 0));
     } catch {
     } finally {
       setRefreshing(false);
@@ -75,31 +79,34 @@ export default function CartScreen({ navigation }) {
     try {
       const it = items.find(x => x.id === id);
       await updateCartItem(id, (it?.quantity || 0) + 1);
+      refreshCartCount();
     } catch {
       Alert.alert('خطأ', 'فشل تحديث الكمية'); load();
     }
-  }, [items]);
+  }, [items, refreshCartCount]);
   const dec = useCallback(async (id) => {
     const current = items.find(x => x.id === id);
     const nextQty = Math.max(1, (current?.quantity || 1) - 1);
     setItems(prev => prev.map(it => it.id === id ? { ...it, quantity: nextQty } : it));
     try {
       await updateCartItem(id, nextQty);
+      refreshCartCount();
     } catch {
       Alert.alert('خطأ', 'فشل تحديث الكمية'); load();
     }
-  }, [items]);
+  }, [items, refreshCartCount]);
   const del = useCallback(async (id) => {
     const old = items;
     setItems(prev => prev.filter(it => it.id !== id));
     try {
       await removeCartItem(id);
+      refreshCartCount();
       Alert.alert('تم', 'تم حذف المنتج من السلة');
     } catch {
       setItems(old);
       Alert.alert('خطأ', 'تعذر حذف المنتج، حاول مرة أخرى');
     }
-  }, [items]);
+  }, [items, refreshCartCount]);
   const Header = (
     <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.md, borderBottomWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

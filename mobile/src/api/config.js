@@ -1,11 +1,15 @@
 import Constants from 'expo-constants';
 
 function sanitizeUrl(value) {
-  const raw = String(value || '')
+  let raw = String(value || '')
     .trim()
-    .replace(/^[`'"]|[`'"]$/g, '')
+    .replace(/\s+/g, '')
+    .replace(/^['"`\s]+|['"`\s]+$/g, '')
     .replace(/[)]+$/g, '')
-    .replace(/\s+/g, '');
+    .replace(/,+$/g, '');
+  while (raw.length > 1 && /^[`'"]/.test(raw) && /[`'"]$/.test(raw)) {
+    raw = raw.slice(1, -1).trim();
+  }
   if (!raw) return '';
   if (/your-railway-domain|example\.com|localhost:8000/i.test(raw)) return '';
   return raw.replace(/\/+$/g, '');

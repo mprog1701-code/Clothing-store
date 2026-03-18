@@ -12,46 +12,31 @@ import OrdersScreen from '../screens/OrdersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import StoresScreen from '../screens/StoresScreen';
 import { useAuth } from '../auth/AuthContext';
+import { useCart } from '../cart/CartContext';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
-import { getCart } from '../api';
 
 const Tab = createBottomTabNavigator();
 
 export default function RootTabs() {
   const navigation = useNavigation();
   const { accessToken } = useAuth();
+  const { cartCount, refreshCartCount } = useCart();
   const [sheetVisible, setSheetVisible] = React.useState(false);
   const [pendingNext, setPendingNext] = React.useState(null);
-  const [cartCount, setCartCount] = React.useState(0);
 
   const requestLogin = React.useCallback((next) => {
     setPendingNext(next);
     setSheetVisible(true);
   }, []);
 
-  const refreshCartBadge = React.useCallback(async () => {
-    if (!accessToken) {
-      setCartCount(0);
-      return;
-    }
-    try {
-      const data = await getCart();
-      const arr = Array.isArray(data) ? data : (data.items || data.results || []);
-      const nextCount = arr.reduce((sum, it) => sum + Number(it?.quantity || 0), 0);
-      setCartCount(nextCount);
-    } catch {
-      setCartCount(0);
-    }
-  }, [accessToken]);
-
   React.useEffect(() => {
-    refreshCartBadge();
-  }, [refreshCartBadge]);
+    refreshCartCount();
+  }, [refreshCartCount, accessToken]);
 
   useFocusEffect(
     React.useCallback(() => {
-      refreshCartBadge();
-    }, [refreshCartBadge])
+      refreshCartCount();
+    }, [refreshCartCount])
   );
 
   return (
@@ -88,7 +73,7 @@ export default function RootTabs() {
           }}
           listeners={{
             tabPress: () => {
-              refreshCartBadge();
+              refreshCartCount();
             },
           }}
         />

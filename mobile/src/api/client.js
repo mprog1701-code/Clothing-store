@@ -3,19 +3,23 @@ import NetInfo from '@react-native-community/netinfo';
 import { API_BASE_URL } from './config';
 import { getAccessToken, getRefreshToken, saveTokens, clearTokens } from '../auth/tokenStorage';
 
+const NORMALIZED_BASE_URL = String(API_BASE_URL || '')
+  .replace(/[`'"\s]/g, '')
+  .replace(/\/+$/g, '');
+
 const client = axios.create({
-  baseURL: API_BASE_URL.replace(/\/+$/, ''),
+  baseURL: NORMALIZED_BASE_URL,
   timeout: 15000
 });
 
-console.log('[client] BASE_URL =', API_BASE_URL || '(empty)', 'envDev=', !!__DEV__);
+console.log('[client] BASE_URL =', NORMALIZED_BASE_URL || '(empty)', 'envDev=', !!__DEV__);
 
 client.interceptors.request.use(async (config) => {
   const state = await NetInfo.fetch();
   if (!state.isConnected) {
     return Promise.reject({ isOffline: true });
   }
-  const base = API_BASE_URL && API_BASE_URL.replace(/\/+$/, '');
+  const base = NORMALIZED_BASE_URL;
   const isProd = !__DEV__;
   const invalidHost = !base || (isProd && /localhost|127\.0\.0\.1|192\.168\.|10\.0\.2\.2/i.test(base));
   if (invalidHost) {
@@ -53,7 +57,7 @@ client.interceptors.response.use(
         isAxiosError: !!error.isAxiosError,
         code: error.code || '',
         method: (cfg?.method || '').toUpperCase(),
-        base: API_BASE_URL || '',
+        base: NORMALIZED_BASE_URL || '',
         hasResponse: !!error.response,
         hasRequest: !!error.request
       };
@@ -79,7 +83,7 @@ client.interceptors.response.use(
             throw error;
           }
           try {
-            const r = await axios.post(`${API_BASE_URL}/api/token/refresh/`, { refresh });
+            const r = await axios.post(`${NORMALIZED_BASE_URL}/api/token/refresh/`, { refresh });
             const access = r.data && r.data.access;
             if (access) {
               await saveTokens({ access, refresh });

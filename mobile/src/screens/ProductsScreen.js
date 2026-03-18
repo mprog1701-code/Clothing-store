@@ -152,19 +152,22 @@ export default function ProductsScreen({ navigation, route }) {
     };
     if (type === 'offers') {
       const res = items.filter((p) => p?.oldPrice || p?.old_price || p?.discount_price || p?.offer_price || hasTag(p, 'offer'));
-      return res;
+      return res.length ? res : items;
     }
     if (type === 'flash_sales') {
-      const res = items.filter((p) => p?.is_flash || hasTag(p, 'flash') || String(p?.badge || '').includes('فلاش'));
-      return res;
+      const res = items.filter((p) => p?.is_flash || p?.discount_price || p?.offer_price || hasTag(p, 'flash') || String(p?.badge || '').includes('فلاش'));
+      if (res.length) return res;
+      const sorted = [...items].sort((a, b) => new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime());
+      return sorted.slice(0, 12);
     }
     if (type === 'new_arrivals') {
       const res = items.filter((p) => p?.is_new || hasTag(p, 'new') || hasTag(p, 'جديد'));
-      return res;
+      if (res.length) return res;
+      return [...items].sort((a, b) => new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime());
     }
     if (type === 'promotion_banners') {
       const res = items.filter((p) => p?.is_featured || hasTag(p, 'banner') || hasTag(p, 'promo'));
-      return res;
+      return res.length ? res : items;
     }
     if (type === 'category' && !categoryId && categoryLabel) {
       const normalized = categoryLabel.trim();

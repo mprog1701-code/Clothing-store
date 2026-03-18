@@ -52,27 +52,45 @@ export default function ProductCard({ product, addToCart, style }) {
   const oldPrice = product?.oldPrice ?? product?.old_price ?? null;
   const rating = Number(product?.rating || 0);
   const imageUri = useMemo(() => pickImage(product), [product]);
-  const imageSource = imageFailed || !imageUri ? LOGO_PLACEHOLDER : { uri: imageUri };
+  const showPlaceholder = imageFailed || !imageUri;
   useEffect(() => {
     setImageFailed(false);
   }, [imageUri, productId]);
 
   const openDetails = () => {
-    if (!productId) return;
-    navigation.navigate('ProductDetail', { productId });
+    const normalizedId = Number(productId);
+    if (!Number.isFinite(normalizedId) || normalizedId <= 0) {
+      if (__DEV__) {
+        console.warn('[ProductCard] invalid product id, skip navigation', { productId, title });
+      }
+      return;
+    }
+    navigation.navigate('ProductDetail', { productId: normalizedId });
   };
 
   return (
     <Pressable onPress={openDetails} style={[styles.card, style]}>
       <View style={styles.imageWrap}>
-        <Image
-          source={imageSource}
-          style={styles.image}
-          contentFit="cover"
-          transition={200}
-          cachePolicy="memory-disk"
-          onError={() => setImageFailed(true)}
-        />
+        {showPlaceholder ? (
+          <View style={styles.placeholderWrap}>
+            <Image
+              source={LOGO_PLACEHOLDER}
+              style={styles.placeholderImage}
+              contentFit="contain"
+              transition={0}
+              cachePolicy="none"
+            />
+          </View>
+        ) : (
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+            onError={() => setImageFailed(true)}
+          />
+        )}
         {(product?.badge || product?.is_new) ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{product?.badge || 'جديد'}</Text>
@@ -123,6 +141,18 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  placeholderWrap: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surfaceAlt,
+  },
+  placeholderImage: {
+    width: '62%',
+    height: '62%',
+    opacity: 0.95,
   },
   badge: {
     position: 'absolute',

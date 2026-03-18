@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ActivityIndicator, I18nManager, Text, TextInput } from 'react-native';
 import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider } from './auth/AuthContext';
+import { CartProvider } from './cart/CartContext';
 import { useFonts, Cairo_400Regular, Cairo_700Bold } from '@expo-google-fonts/cairo';
 import theme from './theme';
 
@@ -25,7 +26,9 @@ export default function App() {
   }
   return (
     <AuthProvider>
-      <AppNavigator />
+      <CartProvider>
+        <AppNavigator />
+      </CartProvider>
     </AuthProvider>
   );
 }

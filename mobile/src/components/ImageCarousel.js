@@ -6,6 +6,7 @@ import { API_BASE_URL } from '../config';
 
 export default function ImageCarousel({ images, onIndexChange, flatListRef }) {
   const width = Dimensions.get('window').width;
+  const height = Math.round(width * 1.25);
   const ref = flatListRef || useRef(null);
   const resolveUri = (u) => {
     const s = String(u || '').trim();
@@ -17,7 +18,7 @@ export default function ImageCarousel({ images, onIndexChange, flatListRef }) {
     return `${base}/${s}`;
   };
   return (
-    <View style={{ width, height: 320, backgroundColor: theme.colors.background }}>
+    <View style={{ width, height, backgroundColor: theme.colors.background }}>
       <FlatList
         ref={ref}
         horizontal
@@ -26,10 +27,10 @@ export default function ImageCarousel({ images, onIndexChange, flatListRef }) {
         data={images}
         keyExtractor={(it) => String(resolveUri(it.url || it.image_url || it))}
         renderItem={({ item }) => (
-          <View style={{ width, height: 320, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
             <Image
               source={{ uri: resolveUri(item.url || item.image_url || item) }}
-              style={{ width: width, height: 320 }}
+              style={{ width: width, height }}
               contentFit="cover"
               transition={200}
             />

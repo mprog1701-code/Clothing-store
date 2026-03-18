@@ -3,11 +3,12 @@ import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nMa
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
-import { getCart, listAds, listBanners } from '../api';
+import { listAds, listBanners, listProducts } from '../api';
 import ProductCard from '../components/ProductCard';
 import AdSlider from '../components/AdSlider';
 import PromoBannerGrid from '../components/PromoBannerGrid';
 import { useAuth } from '../auth/AuthContext';
+import { useCart } from '../cart/CartContext';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -22,6 +23,7 @@ const CATEGORY_MAP = {
 
 const HomeScreen = ({ navigation }) => {
   const { accessToken } = useAuth();
+  const { cartCount, refreshCartCount } = useCart();
   const [query, setQuery] = useState('');
   const headerAnim = useRef(new Animated.Value(0)).current;
   const searchAnim = useRef(new Animated.Value(0)).current;
@@ -32,21 +34,10 @@ const HomeScreen = ({ navigation }) => {
 
   const [adItems, setAdItems] = useState([]);
   const [promotionItems, setPromotionItems] = useState([]);
-  const [cartCount, setCartCount] = useState(0);
   const [loginSheetVisible, setLoginSheetVisible] = useState(false);
   const [pendingNext, setPendingNext] = useState(null);
 
-  const productCards = useMemo(
-    () => [
-      { id: 'p1', title: 'قميص نسائي 13', price: '30000.00' },
-      { id: 'p2', title: 'قميص نسائي 14', price: '60000.00' },
-      { id: 'p3', title: 'قميص نسائي 15', price: '50000.00' },
-      { id: 'p4', title: 'قميص نسائي 16', price: '40000.00' },
-      { id: 'p5', title: 'قميص نسائي 17', price: '50000.00' },
-      { id: 'p6', title: 'قميص نسائي 18', price: '50000.00' },
-    ],
-    []
-  );
+  const [homeProducts, setHomeProducts] = useState([]);
 
   useEffect(() => {
     Animated.stagger(120, [
@@ -103,6 +94,38 @@ const HomeScreen = ({ navigation }) => {
     };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    const loadHomeProducts = async () => {
+      try {
+        const data = await listProducts({ ordering: '-created_at', page_size: 8 });
+        const source = Array.isArray(data) ? data : (data?.results || data?.products || data?.items || []);
+        const normalized = (source || []).map((item, index) => ({
+          ...item,
+          id: item?.id ?? item?.product_id ?? item?.productId ?? `h-${index}`,
+          name: item?.name || item?.title || item?.product_name || 'منتج',
+          price: item?.price ?? item?.base_price ?? item?.final_price ?? 0,
+        }));
+        if (!mounted) return;
+        setHomeProducts(normalized);
+      } catch (e) {
+        if (__DEV__) {
+          console.error('[HomeScreen] products fetch failed', {
+            message: e?.message,
+            status: e?.response?.status,
+            data: e?.response?.data,
+          });
+        }
+        if (!mounted) return;
+        setHomeProducts([]);
+      }
+    };
+    loadHomeProducts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const heroAd = adItems.find((item) => {
     const p = String(item?.__placement || '');
     return p.includes('hero') || p.includes('top');
@@ -114,28 +137,13 @@ const HomeScreen = ({ navigation }) => {
   const heroSlotAds = heroAd ? [heroAd, ...adItems.filter((item) => item?.id !== heroAd?.id && String(item?.__placement || '').includes('hero'))] : [];
   const midSlotAds = midPageAd ? [midPageAd, ...adItems.filter((item) => item?.id !== midPageAd?.id && String(item?.__placement || '').includes('mid'))] : [];
   const promotions = promotionItems.slice(0, 10);
-  const openProductsList = ({ type, listTitle, extra = {} }) => {
-    navigation.navigate('ProductsList', { type, listTitle, ...extra });
+  const openProductsList = ({ type, listTitle, extra = {}, ...rest }) => {
+    navigation.navigate('ProductsList', { type, listTitle, ...extra, ...rest });
   };
   const requestLogin = ({ next }) => {
     setPendingNext(next || { name: 'Root', params: { screen: 'Home' } });
     setLoginSheetVisible(true);
   };
-
-  const refreshCartCount = React.useCallback(async () => {
-    if (!accessToken) {
-      setCartCount(0);
-      return;
-    }
-    try {
-      const data = await getCart();
-      const arr = Array.isArray(data) ? data : (data.items || data.results || []);
-      const count = arr.reduce((sum, it) => sum + Number(it?.quantity || 0), 0);
-      setCartCount(count);
-    } catch {
-      setCartCount(0);
-    }
-  }, [accessToken]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -284,10 +292,10 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
         <View style={styles.productsGrid}>
-          {productCards.map((item) => (
+          {homeProducts.map((item) => (
             <View key={item.id} style={styles.productCard}>
               <ProductCard
-                product={{ id: item.id, name: item.title, price: Number(item.price), image: 'https://placehold.co/600x600?text=Product' }}
+                product={item}
                 addToCart={() => {
                   if (!accessToken) {
                     requestLogin({ next: { name: 'ProductDetail', params: { productId: item.id } } });
