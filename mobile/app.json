@@ -2,23 +2,29 @@
   "expo": {
     "name": "دار DAAR",
     "slug": "daar",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "updates": {
       "enabled": false,
-      "checkAutomatically": "ON_ERROR_RECOVERY",
-      "fallbackToCacheTimeout": 30000
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0,
+      "useEmbeddedUpdate": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.daar.app"
+      "bundleIdentifier": "com.daar.app",
+      "buildNumber": "2"
     },
     "android": {
       "adaptiveIcon": {},
-      "package": "com.daar.app"
+      "package": "com.daar.app",
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro"
