@@ -3,6 +3,7 @@ import { View, ActivityIndicator, I18nManager, Text, TextInput } from 'react-nat
 import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider } from './auth/AuthContext';
 import { CartProvider } from './cart/CartContext';
+import { CheckoutProvider } from './checkout/CheckoutContext';
 import { useFonts, Cairo_400Regular, Cairo_700Bold } from '@expo-google-fonts/cairo';
 import theme from './theme';
 
@@ -27,7 +28,9 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <AppNavigator />
+        <CheckoutProvider>
+          <AppNavigator />
+        </CheckoutProvider>
       </CartProvider>
     </AuthProvider>
   );

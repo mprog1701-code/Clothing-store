@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, Button, ActivityIndicator, I18nManager, TouchableOpacity, StatusBar, FlatList, Pressable, Alert } from 'react-native';
+import { View, Text, Button, ActivityIndicator, I18nManager, TouchableOpacity, StatusBar, FlatList, Pressable, Alert, Dimensions } from 'react-native';
 import { getProduct, addCartItemVariant } from '../api';
 import theme from '../theme';
 import { useAuth } from '../auth/AuthContext';
@@ -29,6 +29,10 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [liked, setLiked] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const screenHeight = Dimensions.get('window').height;
+  const screenWidth = Dimensions.get('window').width;
+  const carouselHeight = Math.min(Math.round(screenWidth * 1.25), Math.round(screenHeight * 0.4));
 
   const load = async () => {
     setError('');
@@ -254,34 +258,72 @@ export default function ProductDetailScreen({ route, navigation }) {
     const variantId = (selectedVariantForSize || selectedVariant)?.id;
     const qtyNum = qty || 1;
     const sizeVal = size || (selectedVariant?.sizes || [])[0]?.value || null;
-    if (!variantId) return;
+    const numericProductId = Number(productId);
+    if (!variantId || addingToCart) return;
+    if (!Number.isFinite(numericProductId) || numericProductId <= 0) {
+      Alert.alert('خطأ', 'معرّف المنتج غير صالح');
+      return;
+    }
     if (!accessToken) {
       setSheetVisible(true);
       return;
     }
+    setAddingToCart(true);
     try {
-      await addCartItemVariant({ variant_id: variantId, qty: qtyNum, size: sizeVal, user_id: user?.id });
+      await addCartItemVariant({
+        product_id: numericProductId,
+        variant_id: variantId,
+        quantity: qtyNum,
+        size: sizeVal,
+        product_snapshot: {
+          name: product?.name || 'منتج',
+          base_price: priceDisplay,
+          main_image: product?.main_image || (imagesForSelected[0] ? { image_url: imagesForSelected[0]?.url || imagesForSelected[0]?.image_url || '' } : null),
+        },
+      });
       addToCartCount(qtyNum);
       refreshCartCount();
       setToastVisible(true);
       setTimeout(() => setToastVisible(false), 1800);
-    } catch {}
+    } catch (e) {
+      Alert.alert('خطأ', 'تعذر إضافة المنتج إلى السلة');
+      if (__DEV__) {
+        try {
+          console.error('[PDP] add to cart failed', {
+            message: e?.message,
+            status: e?.response?.status,
+            data: e?.response?.data,
+            productId: numericProductId,
+            variantId,
+            qtyNum,
+          });
+        } catch {}
+      }
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   const content = (
-    <View>
-      <View style={{ paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+    <View style={{ paddingBottom: theme.spacing.md }}>
+      <View style={{ paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.xs, flexDirection: 'row', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 6 }}>
           <Ionicons name="arrow-back" size={20} color={theme.colors.textPrimary} />
         </TouchableOpacity>
         <Text style={{ fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.md, color: theme.colors.textPrimary, textAlign: I18nManager.isRTL ? 'right' : 'left', flex: 1, marginHorizontal: 8 }}>{product?.name}</Text>
       </View>
-      <View style={{ paddingHorizontal: theme.spacing.lg, marginTop: 2, marginBottom: 4 }}>
+      <View style={{ paddingHorizontal: theme.spacing.lg, marginTop: 0, marginBottom: 2 }}>
         <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>⭐ {Number(product?.rating || 4.5).toFixed(1)}</Text>
       </View>
       {imagesForSelected.length > 0 ? (
         <View style={{ position: 'relative' }}>
-          <ImageCarousel key={`carousel-${selectedVariantId}-${imagesForSelected.length}`} images={imagesForSelected} onIndexChange={setCarouselIndex} flatListRef={carouselRef} />
+          <ImageCarousel
+            key={`carousel-${selectedVariantId}-${imagesForSelected.length}`}
+            images={imagesForSelected}
+            onIndexChange={setCarouselIndex}
+            flatListRef={carouselRef}
+            height={carouselHeight}
+          />
           <TouchableOpacity
             onPress={() => setLiked((v) => !v)}
             style={{
@@ -302,11 +344,11 @@ export default function ProductDetailScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={{ height: 200, alignItems: 'center', justifyContent: 'center', marginHorizontal: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface }}>
+        <View style={{ height: carouselHeight, alignItems: 'center', justifyContent: 'center', marginHorizontal: theme.spacing.lg, borderWidth: 1, borderColor: theme.colors.cardBorder, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface }}>
           <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>لا توجد صور لهذا اللون</Text>
         </View>
       )}
-      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.sm }}>
+      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 6 }}>
         <View style={{ flexDirection: 'row' }}>
           {imagesForSelected.map((_, idx) => (
             <View
@@ -322,14 +364,14 @@ export default function ProductDetailScreen({ route, navigation }) {
           ))}
         </View>
       </View>
-      <View style={{ paddingHorizontal: theme.spacing.lg }}>
-        <Text numberOfLines={descExpanded ? undefined : 3} style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left', marginTop: 4 }}>{product?.description}</Text>
-        <Pressable onPress={() => setDescExpanded((v) => !v)} style={{ marginTop: 4 }}>
+      <ColorSelector variants={product?.variants || []} selectedId={selectedVariantId} onSelect={onSelectVariant} />
+      <SizeSelector sizes={selectedVariant?.sizes || []} selectedSize={size} onSelect={setSize} />
+      <View style={{ paddingHorizontal: theme.spacing.lg, marginTop: 2 }}>
+        <Text numberOfLines={descExpanded ? undefined : 2} style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{product?.description}</Text>
+        <Pressable onPress={() => setDescExpanded((v) => !v)} style={{ marginTop: 2 }}>
           <Text style={{ color: theme.colors.accent, fontFamily: theme.typography.fontBold }}>{descExpanded ? 'إخفاء' : 'عرض المزيد'}</Text>
         </Pressable>
       </View>
-      <ColorSelector variants={product?.variants || []} selectedId={selectedVariantId} onSelect={onSelectVariant} />
-      <SizeSelector sizes={selectedVariant?.sizes || []} selectedSize={size} onSelect={setSize} />
     </View>
   );
 
@@ -347,10 +389,10 @@ export default function ProductDetailScreen({ route, navigation }) {
         </View>
       ) : (
         <>
-          <FlatList data={[{ key: 'content' }]} keyExtractor={(it) => it.key} renderItem={() => content} contentContainerStyle={{ paddingBottom: 96 }} />
-          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: theme.spacing.lg, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderColor: theme.colors.cardBorder }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary, fontSize: theme.typography.sizes.lg }}>{priceDisplay}</Text>
+          <FlatList data={[{ key: 'content' }]} keyExtractor={(it) => it.key} renderItem={() => content} contentContainerStyle={{ paddingBottom: 136 }} />
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.lg, backgroundColor: theme.colors.surface, borderTopWidth: 1, borderColor: theme.colors.cardBorder }}>
+            <View>
+              <Text style={{ fontFamily: theme.typography.fontBold, color: theme.colors.textPrimary, fontSize: theme.typography.sizes.xl, marginBottom: theme.spacing.sm }}>{priceDisplay}</Text>
               <TouchableOpacity
                 onPress={() => {
                   if (!selectedVariant) {
@@ -364,13 +406,22 @@ export default function ProductDetailScreen({ route, navigation }) {
                   onAddToCart();
                 }}
                 style={{
-                  paddingVertical: theme.spacing.md,
+                  width: '100%',
+                  paddingVertical: theme.spacing.lg,
                   paddingHorizontal: theme.spacing.lg,
                   borderRadius: theme.radius.lg,
                   backgroundColor: canAdd ? theme.colors.accent : theme.colors.surfaceAlt,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: '#000', fontFamily: theme.typography.fontBold }}>{isVariantInStock(selectedVariantForSize || selectedVariant) ? 'أضف للسلة' : 'غير متوفر'}</Text>
+                {addingToCart ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <Text style={{ color: '#000', fontFamily: theme.typography.fontBold, fontSize: theme.typography.sizes.md }}>
+                    {isVariantInStock(selectedVariantForSize || selectedVariant) ? 'أضف للسلة' : 'غير متوفر'}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -393,6 +444,7 @@ export default function ProductDetailScreen({ route, navigation }) {
               action: 'add_to_cart',
               variant_id: variantId,
               quantity: qtyNum,
+              product_id: Number(productId),
               size: sizeVal,
               returnTo: { name: 'ProductDetail', params: { productId } },
             },

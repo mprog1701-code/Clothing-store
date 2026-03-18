@@ -4,9 +4,9 @@ import { Image } from 'expo-image';
 import theme from '../theme';
 import { API_BASE_URL } from '../config';
 
-export default function ImageCarousel({ images, onIndexChange, flatListRef }) {
+export default function ImageCarousel({ images, onIndexChange, flatListRef, height }) {
   const width = Dimensions.get('window').width;
-  const height = Math.round(width * 1.25);
+  const resolvedHeight = Number(height) > 0 ? Number(height) : Math.round(width * 1.25);
   const ref = flatListRef || useRef(null);
   const resolveUri = (u) => {
     const s = String(u || '').trim();
@@ -18,7 +18,7 @@ export default function ImageCarousel({ images, onIndexChange, flatListRef }) {
     return `${base}/${s}`;
   };
   return (
-    <View style={{ width, height, backgroundColor: theme.colors.background }}>
+    <View style={{ width, height: resolvedHeight, backgroundColor: theme.colors.background }}>
       <FlatList
         ref={ref}
         horizontal
@@ -27,10 +27,10 @@ export default function ImageCarousel({ images, onIndexChange, flatListRef }) {
         data={images}
         keyExtractor={(it) => String(resolveUri(it.url || it.image_url || it))}
         renderItem={({ item }) => (
-          <View style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width, height: resolvedHeight, alignItems: 'center', justifyContent: 'center' }}>
             <Image
               source={{ uri: resolveUri(item.url || item.image_url || item) }}
-              style={{ width: width, height }}
+              style={{ width: width, height: resolvedHeight }}
               contentFit="cover"
               transition={200}
             />

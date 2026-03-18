@@ -51,21 +51,24 @@ client.interceptors.response.use(
   async (error) => {
     const cfg = error.config || {};
     const status = error.response && error.response.status;
+    const isCart500 = status === 500 && String(cfg?.url || '').includes('/api/cart/');
     try {
-      console.log('[client] ERROR status=', status, 'url=', cfg?.url, 'message=', error?.message);
-      const details = {
-        isAxiosError: !!error.isAxiosError,
-        code: error.code || '',
-        method: (cfg?.method || '').toUpperCase(),
-        base: NORMALIZED_BASE_URL || '',
-        hasResponse: !!error.response,
-        hasRequest: !!error.request
-      };
-      console.log('[client] ERROR details', details);
-      try {
-        const j = typeof error.toJSON === 'function' ? error.toJSON() : null;
-        if (j) console.log('[client] ERROR toJSON', j);
-      } catch {}
+      if (!isCart500) {
+        console.log('[client] ERROR status=', status, 'url=', cfg?.url, 'message=', error?.message);
+        const details = {
+          isAxiosError: !!error.isAxiosError,
+          code: error.code || '',
+          method: (cfg?.method || '').toUpperCase(),
+          base: NORMALIZED_BASE_URL || '',
+          hasResponse: !!error.response,
+          hasRequest: !!error.request
+        };
+        console.log('[client] ERROR details', details);
+        try {
+          const j = typeof error.toJSON === 'function' ? error.toJSON() : null;
+          if (j) console.log('[client] ERROR toJSON', j);
+        } catch {}
+      }
     } catch {}
     if (error.isOffline) {
       return Promise.reject(error);

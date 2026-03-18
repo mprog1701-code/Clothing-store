@@ -2,6 +2,92 @@ import client from './client';
 import { API_BASE_URL } from './config';
 import { saveTokens } from '../auth/tokenStorage';
 import { normalizeIraqiPhone } from '../utils/phone';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const CART_CACHE_KEY = 'daar_cart_cache_v1';
+
+function asCartArray(data) {
+  return Array.isArray(data) ? data : (data?.items || data?.results || []);
+}
+
+function asAddressArray(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.addresses)) return data.addresses;
+  return [];
+}
+
+async function readLocalCart() {
+  try {
+    const raw = await AsyncStorage.getItem(CART_CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeLocalCart(items) {
+  try {
+    await AsyncStorage.setItem(CART_CACHE_KEY, JSON.stringify(Array.isArray(items) ? items : []));
+  } catch {}
+}
+
+async function cacheFromServerData(data) {
+  const arr = asCartArray(data);
+  if (arr.length) {
+    await writeLocalCart(arr);
+  }
+}
+
+async function upsertLocalCartItem({ product_id, variant_id = null, quantity = 1, size, product_snapshot }) {
+  const q = Number(quantity);
+  const qty = Number.isFinite(q) && q > 0 ? q : 1;
+  const pid = Number(product_id);
+  if (!Number.isFinite(pid) || pid <= 0) return readLocalCart();
+  const current = await readLocalCart();
+  const idx = current.findIndex(
+    (it) => Number(it?.product?.id) === pid && Number(it?.variant?.id || it?.variant_id || 0) === Number(variant_id || 0)
+  );
+  if (idx >= 0) {
+    const old = current[idx];
+    current[idx] = { ...old, quantity: Number(old?.quantity || 0) + qty };
+  } else {
+    current.unshift({
+      id: `local-${pid}-${variant_id || 'none'}`,
+      quantity: qty,
+      variant_id: variant_id || null,
+      variant_text: size ? `المقاس: ${size}` : '',
+      product: {
+        id: pid,
+        name: product_snapshot?.name || 'منتج',
+        base_price: Number(product_snapshot?.base_price ?? product_snapshot?.price ?? 0),
+        main_image: product_snapshot?.main_image || null,
+      },
+      variant: variant_id ? { id: variant_id } : null,
+    });
+  }
+  await writeLocalCart(current);
+  return current;
+}
+
+async function updateLocalCartItem(id, quantity) {
+  const q = Number(quantity);
+  const qty = Number.isFinite(q) && q > 0 ? q : 1;
+  const current = await readLocalCart();
+  const next = current.map((it) => (String(it?.id) === String(id) ? { ...it, quantity: qty } : it));
+  await writeLocalCart(next);
+  return next;
+}
+
+async function removeLocalCartItem(id) {
+  const current = await readLocalCart();
+  const next = current.filter((it) => String(it?.id) !== String(id));
+  await writeLocalCart(next);
+  return next;
+}
 
 export async function login(identifier, password) {
   const payload = { password };
@@ -204,34 +290,117 @@ export async function listAds(params = {}) {
 }
 
 export async function getCart() {
-  const r = await client.get('/api/cart/');
-  return r.data;
+  try {
+    const r = await client.get('/api/cart/');
+    await cacheFromServerData(r.data);
+    return r.data;
+  } catch (e) {
+    if (__DEV__) {
+      const st = e?.response?.status;
+      if (st !== 500) {
+        console.log('[API] GET /api/cart/ failed', {
+          message: e?.message,
+          status: st,
+          data: e?.response?.data,
+        });
+      }
+    }
+    const status = e?.response?.status;
+    if (status === 401 || status === 403) throw e;
+    if (status !== 404) {
+      const local = await readLocalCart();
+      return local;
+    }
+    try {
+      const fallback = await client.get('/api/cart');
+      await cacheFromServerData(fallback.data);
+      return fallback.data;
+    } catch {
+      const local = await readLocalCart();
+      return local;
+    }
+  }
 }
 
 export async function addToCart(product_id, variant_id, quantity = 1) {
   const payload = { product_id, quantity };
   if (variant_id) payload.variant_id = variant_id;
-  const r = await client.post('/api/cart/', payload);
-  return r.data;
+  try {
+    const r = await client.post('/api/cart/', payload);
+    await upsertLocalCartItem({ product_id, variant_id, quantity });
+    return r.data;
+  } catch (e) {
+    const status = e?.response?.status;
+    if (status === 401 || status === 403 || status === 409 || status === 400) throw e;
+    const local = await upsertLocalCartItem({ product_id, variant_id, quantity });
+    return local;
+  }
 }
 
 export async function updateCartItem(id, quantity) {
-  const r = await client.patch(`/api/cart/${id}/`, { quantity });
-  return r.data;
+  try {
+    const r = await client.patch(`/api/cart/${id}/`, { quantity });
+    await updateLocalCartItem(id, quantity);
+    return r.data;
+  } catch (e) {
+    const status = e?.response?.status;
+    if (status === 401 || status === 403 || status === 404) throw e;
+    const local = await updateLocalCartItem(id, quantity);
+    return local;
+  }
 }
 
 export async function removeCartItem(id) {
-  const r = await client.delete(`/api/cart/${id}/`);
-  return r.data;
+  try {
+    const r = await client.delete(`/api/cart/${id}/`);
+    await removeLocalCartItem(id);
+    return r.data;
+  } catch (e) {
+    const status = e?.response?.status;
+    if (status === 401 || status === 403 || status === 404) throw e;
+    const local = await removeLocalCartItem(id);
+    return local;
+  }
 }
 
-export async function addCartItemVariant({ variant_id, qty = 1, size, user_id }) {
-  const payload = { variant_id, qty };
+export async function addCartItemVariant({ product_id, variant_id, qty = 1, quantity, size, product_snapshot }) {
+  const normalizedQty = Number(quantity ?? qty ?? 1);
+  const payload = {
+    product_id,
+    quantity: Number.isFinite(normalizedQty) && normalizedQty > 0 ? normalizedQty : 1,
+  };
+  if (variant_id) payload.variant_id = variant_id;
   if (size) payload.size = size;
-  if (user_id) payload.user_id = user_id;
-  const r = await client.post('/api/cart/items', payload);
-  console.log('[CART] add', payload, 'status=', r.status);
-  return r.data;
+  try {
+    const r = await client.post('/api/cart/', payload);
+    await upsertLocalCartItem({
+      product_id,
+      variant_id,
+      quantity: payload.quantity,
+      size,
+      product_snapshot,
+    });
+    console.log('[CART] add', payload, 'status=', r.status);
+    return r.data;
+  } catch (e) {
+    const status = e?.response?.status;
+    if (status === 401 || status === 403 || status === 409 || status === 400) throw e;
+    const local = await upsertLocalCartItem({
+      product_id,
+      variant_id,
+      quantity: payload.quantity,
+      size,
+      product_snapshot,
+    });
+    if (__DEV__) {
+      console.log('[CART] add fallback local', {
+        status,
+        message: e?.message,
+        payload,
+      });
+    }
+    return local;
+  }
 }
 
 export async function listProducts(params = {}) {
@@ -272,5 +441,35 @@ export async function listOrders(params = {}) {
 
 export async function getOrder(id) {
   const r = await client.get(`/api/orders/${id}/`);
+  return r.data;
+}
+
+export async function listAddresses() {
+  const r = await client.get('/api/addresses/');
+  return asAddressArray(r.data);
+}
+
+export async function createAddress(payload) {
+  const r = await client.post('/api/addresses/', payload);
+  return r.data;
+}
+
+export async function updateAddress(id, payload) {
+  const r = await client.patch(`/api/addresses/${id}/`, payload);
+  return r.data;
+}
+
+export async function deleteAddress(id) {
+  const r = await client.delete(`/api/addresses/${id}/`);
+  return r.data;
+}
+
+export async function reverseGeocodeAddress({ lat, lng }) {
+  const r = await client.get('/api/addresses/reverse-geocode/', { params: { lat, lng } });
+  return r.data;
+}
+
+export async function createOrder(payload) {
+  const r = await client.post('/api/orders/', payload);
   return r.data;
 }

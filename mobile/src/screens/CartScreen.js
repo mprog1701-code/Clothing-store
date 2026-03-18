@@ -24,13 +24,22 @@ export default function CartScreen({ navigation }) {
       const arr = Array.isArray(data) ? data : (data.items || data.results || []);
       setItems(arr || []);
       setCartCount((arr || []).reduce((sum, it) => sum + Number(it?.quantity || 0), 0));
+      setRequireLogin(false);
     } catch (e) {
       const status = e?.response?.status;
-      if (status === 401) {
+      if (status === 401 || status === 403) {
         await clearTokens();
         setRequireLogin(true);
+        setError('');
         setItems([]);
       } else {
+        if (__DEV__) {
+          console.error('[CartScreen] load failed', {
+            message: e?.message,
+            status,
+            data: e?.response?.data,
+          });
+        }
         setError('تعذر تحميل السلة. يرجى تسجيل الدخول أو المحاولة لاحقاً.');
       }
     } finally {
@@ -44,7 +53,22 @@ export default function CartScreen({ navigation }) {
       const arr = Array.isArray(data) ? data : (data.items || data.results || []);
       setItems(arr || []);
       setCartCount((arr || []).reduce((sum, it) => sum + Number(it?.quantity || 0), 0));
-    } catch {
+      setRequireLogin(false);
+      setError('');
+    } catch (e) {
+      const status = e?.response?.status;
+      if (status === 401 || status === 403) {
+        await clearTokens();
+        setRequireLogin(true);
+        setItems([]);
+        setError('');
+      } else if (__DEV__) {
+        console.error('[CartScreen] refresh failed', {
+          message: e?.message,
+          status,
+          data: e?.response?.data,
+        });
+      }
     } finally {
       setRefreshing(false);
     }

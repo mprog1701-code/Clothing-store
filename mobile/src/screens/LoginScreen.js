@@ -58,7 +58,7 @@ export default function LoginScreen({ navigation, route }) {
       if (next?.action === 'add_to_cart') {
         try {
           if (next?.variant_id) {
-            await addCartItemVariant({ variant_id: next.variant_id, qty: next.quantity || 1, size: next.size });
+            await addCartItemVariant({ product_id: next.product_id, variant_id: next.variant_id, quantity: next.quantity || 1, size: next.size });
           } else {
             await addToCart(next.product_id, next.variant_id, next.quantity || 1);
           }
@@ -68,7 +68,16 @@ export default function LoginScreen({ navigation, route }) {
           }
           navigation.replace('Root');
           return;
-        } catch {}
+        } catch (e) {
+          if (__DEV__) {
+            console.error('[Login] deferred add_to_cart failed', {
+              message: e?.message,
+              status: e?.response?.status,
+              data: e?.response?.data,
+              next,
+            });
+          }
+        }
       } else if (next?.name) {
         navigation.replace(next.name, next.params || {});
         return;
