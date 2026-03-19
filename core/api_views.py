@@ -27,6 +27,19 @@ from .permissions import (
 )
 
 
+def _related_user_ids_for_user(user):
+    if not user or not getattr(user, 'is_authenticated', False):
+        return []
+    try:
+        phone = (getattr(user, 'phone', '') or '').strip()
+        if not phone:
+            return [user.id]
+        ids = list(User.objects.filter(phone=phone).values_list('id', flat=True))
+        return ids or [user.id]
+    except Exception:
+        return [user.id]
+
+
 class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[])
     def register(self, request):
@@ -604,7 +617,8 @@ class AddressViewSet(viewsets.ModelViewSet):
     serializer_class = AddressSerializer
     
     def get_queryset(self):
-        return Address.objects.filter(user=self.request.user)
+        related_ids = _related_user_ids_for_user(self.request.user)
+        return Address.objects.filter(user_id__in=related_ids).order_by('-id')
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
