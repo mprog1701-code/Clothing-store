@@ -1,15 +1,17 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, I18nManager, StyleSheet } from 'react-native';
-import { listProducts } from '../api';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, I18nManager, StyleSheet, Alert } from 'react-native';
+import { addCartItemVariant, listProducts } from '../api';
 import theme from '../theme';
 import ProductCard from '../components/ProductCard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../auth/AuthContext';
 import LoginRequiredSheet from '../components/LoginRequiredSheet';
+import { useCart } from '../cart/CartContext';
 
 export default function ProductsScreen({ navigation, route }) {
   const { accessToken } = useAuth();
+  const { refreshCartCount } = useCart();
   const params = route.params || {};
   const filterType = params.filterType ?? null;
   const legacyMode = params.mode || 'all';
@@ -186,6 +188,43 @@ export default function ProductsScreen({ navigation, route }) {
     setLoginSheetVisible(true);
   };
 
+  const resolveDefaultVariantId = (product) => {
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+    const available = variants.find((v) => Number(v?.stock_qty ?? 1) > 0 && Number(v?.id) > 0);
+    const fallback = variants.find((v) => Number(v?.id) > 0);
+    return available?.id || fallback?.id || null;
+  };
+
+  const handleQuickAddToCart = async (item) => {
+    if (!accessToken) {
+      requestLogin({
+        action: 'add_to_cart',
+        product_id: item?.id,
+        variant_id: resolveDefaultVariantId(item),
+        quantity: 1,
+        returnTo: { name: route.name, params: route.params || {} },
+      });
+      return;
+    }
+    try {
+      await addCartItemVariant({
+        product_id: item?.id,
+        variant_id: resolveDefaultVariantId(item),
+        quantity: 1,
+        product_snapshot: item,
+      });
+      await refreshCartCount();
+      Alert.alert('تم', 'تمت إضافة المنتج إلى السلة');
+    } catch (e) {
+      const code = String(e?.response?.data?.code || '').toUpperCase();
+      if (code === 'VARIANT_REQUIRED') {
+        navigation.navigate('ProductDetail', { productId: item?.id });
+        return;
+      }
+      Alert.alert('تنبيه', 'تعذر إضافة المنتج حالياً');
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.background }}>
@@ -241,13 +280,7 @@ export default function ProductsScreen({ navigation, route }) {
           <View style={styles.cardWrap}>
             <ProductCard
               product={item}
-              addToCart={() => {
-                if (!accessToken) {
-                  requestLogin({ name: 'ProductDetail', params: { productId: item.id } });
-                  return;
-                }
-                navigation.navigate('Cart');
-              }}
+              addToCart={() => handleQuickAddToCart(item)}
             />
           </View>
         )}

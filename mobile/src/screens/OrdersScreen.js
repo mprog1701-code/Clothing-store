@@ -6,26 +6,59 @@ import { listOrders } from '../api';
 const tabs = [
   { key: 'all', label: 'الكل' },
   { key: 'pending', label: 'قيد المعالجة' },
-  { key: 'processing', label: 'جاري التجهيز' },
-  { key: 'shipped', label: 'قيد التوصيل' },
+  { key: 'accepted', label: 'تم القبول' },
+  { key: 'preparing', label: 'جاري التجهيز' },
+  { key: 'on_the_way', label: 'قيد التوصيل' },
   { key: 'delivered', label: 'مكتمل' },
-  { key: 'cancelled', label: 'ملغي' },
+  { key: 'canceled', label: 'ملغي' },
 ];
+
+function normalizeStatus(rawStatus) {
+  const s = String(rawStatus || '').toLowerCase();
+  if (s === 'processing') return 'preparing';
+  if (s === 'shipped') return 'on_the_way';
+  if (s === 'cancelled') return 'canceled';
+  return s;
+}
+
+function formatDateLabel(value) {
+  const d = value ? new Date(value) : null;
+  if (!d || Number.isNaN(d.getTime())) return '';
+  try {
+    return new Intl.DateTimeFormat('ar-IQ', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(d);
+  } catch {
+    return String(value || '');
+  }
+}
+
+function toIQD(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return '0';
+  return n.toLocaleString('en-US');
+}
 
 function StatusBadge({ status }) {
   const map = {
     pending: theme.colors.accent,
-    processing: theme.colors.accentAlt,
-    shipped: '#3B82F6',
+    accepted: theme.colors.accentAlt,
+    preparing: theme.colors.accentAlt,
+    on_the_way: '#3B82F6',
     delivered: theme.colors.success,
-    cancelled: theme.colors.danger,
+    canceled: theme.colors.danger,
   };
   const text = {
     pending: 'قيد المعالجة',
-    processing: 'جاري التجهيز',
-    shipped: 'قيد التوصيل',
+    accepted: 'تم القبول',
+    preparing: 'جاري التجهيز',
+    on_the_way: 'قيد التوصيل',
     delivered: 'مكتمل',
-    cancelled: 'ملغي',
+    canceled: 'ملغي',
   }[status] || 'غير معروف';
   const bg = map[status] || theme.colors.surfaceAlt;
   return (
@@ -73,7 +106,7 @@ export default function OrdersScreen({ navigation }) {
 
   const filtered = useMemo(() => {
     if (active === 'all') return orders;
-    return orders.filter(o => (o.status || '').toLowerCase() === active);
+    return orders.filter(o => normalizeStatus(o.status) === active);
   }, [orders, active]);
 
   const Header = (
@@ -109,18 +142,19 @@ export default function OrdersScreen({ navigation }) {
 
   const Row = ({ item }) => {
     const storeName = item.store?.name || '';
-    const created = item.created_at || item.created || '';
-    const total = item.total_price ?? item.total ?? 0;
-    const count = item.items_count ?? (Array.isArray(item.items) ? item.items.length : 0);
+    const created = formatDateLabel(item.created_at || item.created || '');
+    const total = item.total_amount ?? item.total_price ?? item.total ?? 0;
+    const count = item.items_count ?? (Array.isArray(item.items) ? item.items.reduce((sum, it) => sum + Number(it?.quantity || 0), 0) : 0);
+    const status = normalizeStatus(item.status);
     return (
       <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderColor: theme.colors.cardBorder, backgroundColor: theme.colors.surface }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>#{item.id}</Text>
-          <StatusBadge status={(item.status || '').toLowerCase()} />
+          <StatusBadge status={status} />
         </View>
-        <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{created}</Text>
+        <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular, marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>{created || '-'}</Text>
         <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold, marginTop: 4, textAlign: I18nManager.isRTL ? 'right' : 'left' }}>
-          الإجمالي: {total} • عناصر: {count} {storeName ? `• متجر: ${storeName}` : ''}
+          الإجمالي: {toIQD(total)} د.ع • الكمية: {count} {storeName ? `• متجر: ${storeName}` : ''}
         </Text>
         <View style={{ flexDirection: 'row', marginTop: theme.spacing.sm }}>
           <TouchableOpacity onPress={() => navigation.navigate('OrderDetail', { id: item.id })} style={{ paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.cardBorder }}>

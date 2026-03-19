@@ -3,6 +3,26 @@ import { View, Text, FlatList, ActivityIndicator, I18nManager } from 'react-nati
 import theme from '../theme';
 import { getOrder } from '../api';
 
+function formatAddressValue(value) {
+  if (!value) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'object') {
+    const formatted = String(value.formatted_address || '').trim();
+    if (formatted) return formatted;
+    const line = [value.city, value.area, value.street, value.details]
+      .map((x) => String(x || '').trim())
+      .filter(Boolean)
+      .join(' - ');
+    if (line) return line;
+    const lat = Number(value.latitude);
+    const lng = Number(value.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+  }
+  return '';
+}
+
 function StatusBadge({ status }) {
   const map = {
     pending: theme.colors.accent,
@@ -52,7 +72,7 @@ export default function OrderDetailScreen({ route }) {
 
   const items = Array.isArray(order.items) ? order.items : [];
   const status = (order.status || '').toLowerCase();
-  const address = order.shipping_address || order.address || null;
+  const address = formatAddressValue(order.shipping_address || order.address || null);
 
   const Header = (
     <View style={{ padding: theme.spacing.lg, borderBottomWidth: 1, borderColor: theme.colors.cardBorder, backgroundColor: theme.colors.surface }}>

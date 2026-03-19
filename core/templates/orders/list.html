@@ -36,6 +36,7 @@
                                     <span class="badge 
                                         {% if order.status == 'pending' %}bg-warning
                                         {% elif order.status == 'accepted' %}bg-info
+                                        {% elif order.status == 'packed' %}bg-primary
                                         {% elif order.status == 'preparing' %}bg-primary
                                         {% elif order.status == 'on_the_way' %}bg-secondary
                                         {% elif order.status == 'delivered' %}bg-success
@@ -52,78 +53,79 @@
                                     </button>
                                 </td>
                             </tr>
-                            
-                            <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1">
-                                <div class="modal-dialog modal-lg">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">تفاصيل الطلب #{{ order.id }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
-                                                    <strong>المتجر:</strong> {{ order.store.name }}<br>
-                                                    <strong>الحالة:</strong> {{ order.get_status_display }}<br>
-                                                    <strong>طريقة الدفع:</strong> {{ order.get_payment_method_display }}
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <strong>عنوان التوصيل:</strong><br>
-                                                    {{ order.address.city }} - {{ order.address.area }}<br>
-                                                    {{ order.address.street }}<br>
-                                                    {% if order.address.details %}
-                                                    {{ order.address.details }}
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                            
-                                            <h6>منتجات الطلب:</h6>
-                                            <div class="table-responsive">
-                                                <table class="table table-sm">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>المنتج</th>
-                                                            <th>المتغير</th>
-                                                            <th>الكمية</th>
-                                                            <th>السعر</th>
-                                                            <th>الإجمالي</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for item in order.items.all %}
-                                                        <tr>
-                                                            <td>{{ item.product.name }}</td>
-                                                            <td>
-                                                                {% if item.variant %}
-                                                                    {{ item.variant.size }} - {{ item.variant.color }}
-                                                                {% else %}
-                                                                    -
-                                                                {% endif %}
-                                                            </td>
-                                                            <td>{{ item.quantity }}</td>
-                                                            <td>{{ item.price|iqd }}</td>
-                                                            <td>{{ item.quantity|multiply:item.price|iqd }}</td>
-                                                        </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            
-                                            <div class="text-end">
-                                                <strong>المجموع:</strong> {{ order.total_amount|subtract:order.delivery_fee|iqd }}<br>
-                                                <strong>رسوم التوصيل:</strong> {{ order.delivery_fee|iqd }}<br>
-                                                <strong>الإجمالي:</strong> {{ order.total_amount|iqd }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
+        {% for order in orders %}
+        <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">تفاصيل الطلب #{{ order.id }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>المتجر:</strong> {{ order.store.name }}<br>
+                                <strong>الحالة:</strong> {{ order.get_status_display }}<br>
+                                <strong>طريقة الدفع:</strong> {{ order.get_payment_method_display }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>عنوان التوصيل:</strong><br>
+                                {{ order.address.city }} - {{ order.address.area }}<br>
+                                {{ order.address.street }}<br>
+                                {% if order.address.details %}
+                                {{ order.address.details }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <h6>منتجات الطلب:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>المنتج</th>
+                                        <th>المتغير</th>
+                                        <th>الكمية</th>
+                                        <th>السعر</th>
+                                        <th>الإجمالي</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order.items.all %}
+                                    <tr>
+                                        <td>{{ item.product.name }}</td>
+                                        <td>
+                                            {% if item.variant %}
+                                                {{ item.variant.size_display }} - {{ item.variant.color }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>{{ item.price|iqd }}</td>
+                                        <td>{{ item.quantity|multiply:item.price|iqd }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="text-end">
+                            <strong>المجموع:</strong> {{ order.total_amount|subtract:order.delivery_fee|iqd }}<br>
+                            <strong>رسوم التوصيل:</strong> {{ order.delivery_fee|iqd }}<br>
+                            <strong>الإجمالي:</strong> {{ order.total_amount|iqd }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
         {% else %}
         <div class="row">
             <div class="col-12 text-center">

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, I18nManager, Animated } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, I18nManager, Animated, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import theme from '../theme';
@@ -53,10 +53,10 @@ export default function ProfileScreen({ navigation }) {
     const base = [
     { key: 'profile', label: 'ملفي الشخصي', icon: 'account-circle-outline', onPress: () => navigation.navigate('ProfileDetails') },
     { key: 'addresses', label: 'العناوين', icon: 'map-marker', onPress: () => navigation.navigate('Addresses') },
-    { key: 'payments', label: 'طرق الدفع', icon: 'credit-card-outline', onPress: () => {} },
-    { key: 'favorites', label: 'المفضلة', icon: 'heart-outline', onPress: () => {} },
-    { key: 'notifications', label: 'الإشعارات', icon: 'bell-outline', onPress: () => {} },
-    { key: 'support', label: 'الدعم والمساعدة', icon: 'lifebuoy', onPress: () => {} },
+    { key: 'payments', label: 'طرق الدفع', icon: 'credit-card-outline', onPress: () => Alert.alert('طرق الدفع', 'طريقة الدفع من التطبيق غير متاحة حالياً، يتم إتمام الطلب حالياً بالدفع عند الاستلام.') },
+    { key: 'favorites', label: 'المفضلة', icon: 'heart-outline', onPress: () => navigation.navigate('Favorites') },
+    { key: 'notifications', label: 'الإشعارات', icon: 'bell-outline', onPress: () => navigation.navigate('Notifications') },
+    { key: 'support', label: 'الدعم والمساعدة', icon: 'lifebuoy', onPress: () => navigation.navigate('Support') },
     { key: 'settings', label: 'الإعدادات', icon: 'cog-outline', onPress: () => navigation.navigate('Settings') },
     ];
     if (user && accessToken) {
@@ -69,6 +69,17 @@ export default function ProfileScreen({ navigation }) {
     }
     return [...base, { key: 'login', label: 'تسجيل الدخول', icon: 'login', onPress: () => navigation.navigate('Login') }];
   }, [navigation, user, accessToken, doLogout]);
+
+  const HeaderStatCard = ({ label, value, onPress }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={{ paddingVertical: theme.spacing.md, flex: 1, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', marginHorizontal: theme.spacing.xs }}
+    >
+      <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>{label}</Text>
+      <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{value}</Text>
+    </TouchableOpacity>
+  );
 
   const Header = (
     <Animated.View style={{ opacity: fade, paddingHorizontal: 16, paddingTop: theme.spacing.lg, paddingBottom: theme.spacing.md, backgroundColor: theme.colors.surface, borderBottomWidth: 1, borderColor: theme.colors.border }}>
@@ -87,18 +98,9 @@ export default function ProfileScreen({ navigation }) {
         </TouchableOpacity>
       </View>
       <View style={{ marginTop: theme.spacing.md, flexDirection: 'row' }}>
-        <View style={{ paddingVertical: theme.spacing.md, flex: 1, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', marginRight: I18nManager.isRTL ? 0 : theme.spacing.sm, marginLeft: I18nManager.isRTL ? theme.spacing.sm : 0 }}>
-          <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>طلباتي</Text>
-          <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{stats.orders}</Text>
-        </View>
-        <View style={{ paddingVertical: theme.spacing.md, flex: 1, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', marginHorizontal: theme.spacing.sm }}>
-          <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>السلة</Text>
-          <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{stats.cart}</Text>
-        </View>
-        <View style={{ paddingVertical: theme.spacing.md, flex: 1, borderRadius: theme.radius.md, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', marginLeft: I18nManager.isRTL ? theme.spacing.sm : 0, marginRight: I18nManager.isRTL ? 0 : theme.spacing.sm }}>
-          <Text style={{ color: theme.colors.textSecondary, fontFamily: theme.typography.fontRegular }}>العناوين</Text>
-          <Text style={{ color: theme.colors.textPrimary, fontFamily: theme.typography.fontBold }}>{stats.addresses}</Text>
-        </View>
+        <HeaderStatCard label="طلباتي" value={stats.orders} onPress={() => navigation.navigate('Orders')} />
+        <HeaderStatCard label="السلة" value={stats.cart} onPress={() => navigation.navigate('Cart')} />
+        <HeaderStatCard label="العناوين" value={stats.addresses} onPress={() => navigation.navigate('Addresses')} />
       </View>
       {error ? (
         <View style={{ marginTop: theme.spacing.sm }}>

@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, I18nManager, Alert, FlatList } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import theme from '../theme';
-import { createOrder, getCart, getProduct, listAddresses, removeCartItem } from '../api';
+import { clearCartAfterCheckout, createOrder, getCart, getProduct, listAddresses } from '../api';
 import { useCart } from '../cart/CartContext';
 import { useCheckout } from '../checkout/CheckoutContext';
 
@@ -166,13 +166,8 @@ export default function CheckoutScreen({ navigation }) {
         };
         await createOrder(payload);
       }
-      for (const it of activeItems) {
-        if (typeof it?.id === 'number') {
-          try {
-            await removeCartItem(it.id);
-          } catch {}
-        }
-      }
+      await clearCartAfterCheckout(activeItems);
+      setItems([]);
       await refreshCartCount();
       Alert.alert('تم', 'تم إنشاء الطلب بنجاح');
       navigation.replace('Orders');

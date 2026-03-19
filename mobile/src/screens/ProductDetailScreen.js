@@ -11,6 +11,7 @@ import LoginRequiredSheet from '../components/LoginRequiredSheet';
 import { Image as ExpoImage } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { isFavoriteProduct, toggleFavoriteProduct } from '../favorites/storage';
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { productId = null } = route.params || {};
@@ -85,6 +86,14 @@ export default function ProductDetailScreen({ route, navigation }) {
   useEffect(() => {
     load();
   }, []);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const likedNow = await isFavoriteProduct(productId);
+      if (mounted) setLiked(likedNow);
+    })();
+    return () => { mounted = false; };
+  }, [productId]);
   useEffect(() => {
     if (product) {
       try {
@@ -278,7 +287,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         product_snapshot: {
           name: product?.name || 'منتج',
           base_price: priceDisplay,
-          main_image: product?.main_image || (imagesForSelected[0] ? { image_url: imagesForSelected[0]?.url || imagesForSelected[0]?.image_url || '' } : null),
+          main_image: imagesForSelected[0] ? { image_url: imagesForSelected[0]?.url || imagesForSelected[0]?.image_url || '' } : (product?.main_image || null),
         },
       });
       addToCartCount(qtyNum);
@@ -304,6 +313,18 @@ export default function ProductDetailScreen({ route, navigation }) {
     }
   };
 
+  const onToggleFavorite = async () => {
+    if (!product?.id) return;
+    const image = imagesForSelected[0];
+    const result = await toggleFavoriteProduct({
+      id: product.id,
+      name: product?.name,
+      price: priceDisplay,
+      image_url: image?.url || image?.image_url || product?.main_image?.image_url || product?.main_image?.url || '',
+    });
+    setLiked(!!result?.liked);
+  };
+
   const content = (
     <View style={{ paddingBottom: theme.spacing.md }}>
       <View style={{ paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.xs, flexDirection: 'row', alignItems: 'center' }}>
@@ -325,7 +346,7 @@ export default function ProductDetailScreen({ route, navigation }) {
             height={carouselHeight}
           />
           <TouchableOpacity
-            onPress={() => setLiked((v) => !v)}
+            onPress={onToggleFavorite}
             style={{
               position: 'absolute',
               top: 14,

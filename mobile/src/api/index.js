@@ -351,16 +351,45 @@ export async function updateCartItem(id, quantity) {
 }
 
 export async function removeCartItem(id) {
+  const idStr = String(id || '');
+  if (!idStr) return [];
+  if (idStr.startsWith('local-')) {
+    return await removeLocalCartItem(idStr);
+  }
   try {
-    const r = await client.delete(`/api/cart/${id}/`);
-    await removeLocalCartItem(id);
+    const r = await client.delete(`/api/cart/${idStr}/`);
+    await removeLocalCartItem(idStr);
     return r.data;
   } catch (e) {
     const status = e?.response?.status;
-    if (status === 401 || status === 403 || status === 404) throw e;
-    const local = await removeLocalCartItem(id);
+    if (status === 401 || status === 403) throw e;
+    if (status === 404) {
+      return await removeLocalCartItem(idStr);
+    }
+    const local = await removeLocalCartItem(idStr);
     return local;
   }
+}
+
+export async function clearCartAfterCheckout(items = []) {
+  const ids = new Set();
+  for (const it of (Array.isArray(items) ? items : [])) {
+    if (it?.id !== undefined && it?.id !== null) ids.add(String(it.id));
+  }
+  try {
+    const latest = await getCart();
+    const latestArr = Array.isArray(latest) ? latest : (latest?.items || latest?.results || []);
+    for (const it of latestArr) {
+      if (it?.id !== undefined && it?.id !== null) ids.add(String(it.id));
+    }
+  } catch {}
+  for (const id of ids) {
+    try {
+      await removeCartItem(id);
+    } catch {}
+  }
+  await writeLocalCart([]);
+  return [];
 }
 
 export async function addCartItemVariant({ product_id, variant_id, qty = 1, quantity, size, product_snapshot }) {

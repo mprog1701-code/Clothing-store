@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager, Animated, Dimensions } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager, Animated, Dimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
-import { listAds, listBanners, listProducts } from '../api';
+import { addCartItemVariant, listAds, listBanners, listProducts } from '../api';
 import ProductCard from '../components/ProductCard';
 import AdSlider from '../components/AdSlider';
 import PromoBannerGrid from '../components/PromoBannerGrid';
@@ -143,6 +143,45 @@ const HomeScreen = ({ navigation }) => {
   const requestLogin = ({ next }) => {
     setPendingNext(next || { name: 'Root', params: { screen: 'Home' } });
     setLoginSheetVisible(true);
+  };
+
+  const resolveDefaultVariantId = (product) => {
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+    const available = variants.find((v) => Number(v?.stock_qty ?? 1) > 0 && Number(v?.id) > 0);
+    const fallback = variants.find((v) => Number(v?.id) > 0);
+    return available?.id || fallback?.id || null;
+  };
+
+  const handleQuickAddToCart = async (item) => {
+    if (!accessToken) {
+      requestLogin({
+        next: {
+          action: 'add_to_cart',
+          product_id: item?.id,
+          variant_id: resolveDefaultVariantId(item),
+          quantity: 1,
+          returnTo: { name: 'Root', params: { screen: 'Home' } },
+        },
+      });
+      return;
+    }
+    try {
+      await addCartItemVariant({
+        product_id: item?.id,
+        variant_id: resolveDefaultVariantId(item),
+        quantity: 1,
+        product_snapshot: item,
+      });
+      await refreshCartCount();
+      Alert.alert('تم', 'تمت إضافة المنتج إلى السلة');
+    } catch (e) {
+      const code = String(e?.response?.data?.code || '').toUpperCase();
+      if (code === 'VARIANT_REQUIRED') {
+        navigation.navigate('ProductDetail', { productId: item?.id });
+        return;
+      }
+      Alert.alert('تنبيه', 'تعذر إضافة المنتج حالياً');
+    }
   };
 
   useFocusEffect(
@@ -296,13 +335,7 @@ const HomeScreen = ({ navigation }) => {
             <View key={item.id} style={styles.productCard}>
               <ProductCard
                 product={item}
-                addToCart={() => {
-                  if (!accessToken) {
-                    requestLogin({ next: { name: 'ProductDetail', params: { productId: item.id } } });
-                    return;
-                  }
-                  navigation.navigate('Cart');
-                }}
+                addToCart={() => handleQuickAddToCart(item)}
               />
             </View>
           ))}

@@ -21,6 +21,9 @@ import SettingsScreen from '../screens/SettingsScreen';
 import OrdersScreen from '../screens/OrdersScreen';
 import OrderDetailScreen from '../screens/OrderDetailScreen';
 import StoreDetailScreen from '../screens/StoreDetailScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
+import SupportScreen from '../screens/SupportScreen';
 import { withAuthGate } from '../auth/RequireAuth';
 
 const Stack = createNativeStackNavigator();
@@ -66,6 +69,9 @@ export default function AppNavigator() {
         <Stack.Screen name="ProfileDetails" component={ProfileDetailsScreen} options={{ title: 'تفاصيل الحساب' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'تعديل الملف' }} />
         <Stack.Screen name="Addresses" component={AddressesScreen} options={{ title: 'العناوين' }} />
+        <Stack.Screen name="Favorites" component={withAuthGate(FavoritesScreen)} options={{ title: 'المفضلة' }} />
+        <Stack.Screen name="Notifications" component={withAuthGate(NotificationsScreen)} options={{ title: 'الإشعارات' }} />
+        <Stack.Screen name="Support" component={SupportScreen} options={{ title: 'الدعم والمساعدة' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'الإعدادات' }} />
         <Stack.Screen name="Orders" component={withAuthGate(OrdersScreen)} options={{ title: 'طلباتي' }} />
         <Stack.Screen name="OrderDetail" component={OrderDetailScreen} options={{ title: 'تفاصيل الطلب' }} />
