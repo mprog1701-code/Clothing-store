@@ -183,6 +183,28 @@ class CartAndCheckoutTests(TestCase):
         self.assertEqual(int(o1.total_amount), int(10000 + int(settings.DELIVERY_FEE) - 1000))
         self.assertEqual(int(o2.total_amount), int(7000 - 1000))
 
+    def test_api_create_order_sets_total_amount(self):
+        from rest_framework.test import APIRequestFactory
+        from core.serializers import OrderCreateSerializer
+        addr = Address.objects.create(user=self.customer, city="Baghdad", area="Karrada", street="API Street")
+        payload = {
+            "store": self.store_a.id,
+            "address": addr.id,
+            "items": [
+                {
+                    "product_id": self.product_a.id,
+                    "quantity": 1
+                }
+            ]
+        }
+        req = APIRequestFactory().post("/api/orders/", payload, format="json")
+        req.user = self.customer
+        serializer = OrderCreateSerializer(data=payload, context={"request": req})
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        order = serializer.save()
+        self.assertIsNotNone(order.id)
+        self.assertGreater(float(order.total_amount), 0.0)
+
     def test_idor_prevention_order_detail(self):
         User = get_user_model()
         self.client.login(username="cust2", password="pass1234")
@@ -316,16 +338,16 @@ class TestReverseGeocode(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_mapbox_401_fallback(self):
-        os.environ['MAPBOX_ACCESS_TOKEN'] = 'bad'
+    def test_provider_failure_returns_non_empty_fallback(self):
+        os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
+        os.environ.pop('MAPS_API_KEY', None)
         def _raise(req, timeout=8):
             raise HTTPError(req.full_url, 401, 'Unauthorized', hdrs={}, fp=None)
         with patch('core.api_views.urlopen', side_effect=_raise):
-            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'})
+            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'}, follow=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()['provider'], 'mapbox')
-        self.assertEqual(r.json()['formatted'], '')
-        os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
+        self.assertEqual(r.json()['provider'], 'fallback')
+        self.assertNotEqual(r.json()['formatted'], '')
 
     def test_nominatim_success(self):
         os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
@@ -346,7 +368,7 @@ class TestReverseGeocode(TestCase):
             def __init__(self, b): self._b=b
             def read(self): return self._b.read()
         with patch('core.api_views.urlopen', return_value=_Resp(body)):
-            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'})
+            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'}, follow=True)
         self.assertEqual(r.status_code, 200)
         data = r.json()
         self.assertEqual(data['provider'], 'nominatim')

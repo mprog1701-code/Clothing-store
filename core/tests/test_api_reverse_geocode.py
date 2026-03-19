@@ -9,16 +9,16 @@ class TestReverseGeocode(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def test_mapbox_401_fallback(self):
-        os.environ['MAPBOX_ACCESS_TOKEN'] = 'bad'
+    def test_provider_failure_returns_non_empty_fallback(self):
+        os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
+        os.environ.pop('MAPS_API_KEY', None)
         def _raise(req, timeout=8):
             raise HTTPError(req.full_url, 401, 'Unauthorized', hdrs={}, fp=None)
         with patch('core.api_views.urlopen', side_effect=_raise):
-            r = self.client.get('/api/addresses/reverse-geocode', {'lat': '33.3', 'lng': '44.4'})
+            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'}, follow=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()['provider'], 'mapbox')
-        self.assertEqual(r.json()['formatted'], '')
-        os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
+        self.assertEqual(r.json()['provider'], 'fallback')
+        self.assertNotEqual(r.json()['formatted'], '')
 
     def test_nominatim_success(self):
         os.environ.pop('MAPBOX_ACCESS_TOKEN', None)
@@ -39,7 +39,7 @@ class TestReverseGeocode(TestCase):
             def __init__(self, b): self._b=b
             def read(self): return self._b.read()
         with patch('core.api_views.urlopen', return_value=_Resp(body)):
-            r = self.client.get('/api/addresses/reverse-geocode', {'lat': '33.3', 'lng': '44.4'})
+            r = self.client.get('/api/addresses/reverse-geocode/', {'lat': '33.3', 'lng': '44.4'}, follow=True)
         self.assertEqual(r.status_code, 200)
         data = r.json()
         self.assertEqual(data['provider'], 'nominatim')

@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, I18nManager, Alert, FlatList } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import theme from '../theme';
-import { createOrder, getCart, listAddresses, removeCartItem } from '../api';
+import { createOrder, getCart, getProduct, listAddresses, removeCartItem } from '../api';
 import { useCart } from '../cart/CartContext';
 import { useCheckout } from '../checkout/CheckoutContext';
 
@@ -14,18 +14,86 @@ export default function CheckoutScreen({ navigation }) {
   const [error, setError] = useState('');
   const { refreshCartCount } = useCart();
   const { selectedAddressId, selectedAddress, setSelectedAddress, clearSelectedAddress } = useCheckout();
+  const loadingRef = useRef(false);
+  const lastLoadAtRef = useRef(0);
+  const selectedAddressIdRef = useRef(selectedAddressId);
+  selectedAddressIdRef.current = selectedAddressId;
+
+  const groupItemsByStore = useCallback((rawItems) => {
+    const map = new Map();
+    for (const it of (rawItems || [])) {
+      const sid = it?.product?.store?.id || it?.store?.id || it?.store_id || null;
+      if (!sid) continue;
+      if (!map.has(sid)) {
+        map.set(sid, {
+          storeId: sid,
+          storeName: it?.product?.store?.name || it?.store?.name || 'متجر',
+          items: [],
+        });
+      }
+      map.get(sid).items.push(it);
+    }
+    return Array.from(map.values());
+  }, []);
+
+  const hydrateCartItemsStore = useCallback(async (rawItems) => {
+    const arr = Array.isArray(rawItems) ? rawItems : [];
+    const missingIds = Array.from(
+      new Set(
+        arr
+          .filter((it) => {
+            const sid = it?.product?.store?.id || it?.store?.id || it?.store_id || null;
+            return !sid && it?.product?.id;
+          })
+          .map((it) => Number(it?.product?.id))
+          .filter((id) => Number.isFinite(id) && id > 0)
+      )
+    );
+    if (!missingIds.length) return arr;
+    const productMap = new Map();
+    await Promise.all(
+      missingIds.map(async (pid) => {
+        try {
+          const p = await getProduct(pid);
+          if (p?.id) productMap.set(Number(p.id), p);
+        } catch {}
+      })
+    );
+    return arr.map((it) => {
+      const sid = it?.product?.store?.id || it?.store?.id || it?.store_id || null;
+      if (sid) return it;
+      const pid = Number(it?.product?.id);
+      const p = productMap.get(pid);
+      if (!p) return it;
+      return {
+        ...it,
+        product: {
+          ...(it?.product || {}),
+          store: p?.store || it?.product?.store || null,
+        },
+        store: p?.store || it?.store || null,
+        store_id: p?.store?.id || it?.store_id || null,
+      };
+    });
+  }, []);
 
   const load = useCallback(async () => {
+    if (loadingRef.current) return;
+    const now = Date.now();
+    if (now - lastLoadAtRef.current < 1200) return;
+    loadingRef.current = true;
+    lastLoadAtRef.current = now;
     setLoading(true);
     setError('');
     try {
       const [cartData, addrData] = await Promise.all([getCart(), listAddresses()]);
-      const cartArr = Array.isArray(cartData) ? cartData : (cartData?.items || cartData?.results || []);
+      const cartArrRaw = Array.isArray(cartData) ? cartData : (cartData?.items || cartData?.results || []);
+      const cartArr = await hydrateCartItemsStore(cartArrRaw);
       const addrArr = Array.isArray(addrData) ? addrData : (addrData?.results || addrData?.items || addrData?.addresses || []);
       setItems(cartArr || []);
       setAddresses(addrArr || []);
       if (addrArr?.length) {
-        const active = addrArr.find((a) => a.id === selectedAddressId) || addrArr[0];
+        const active = addrArr.find((a) => a.id === selectedAddressIdRef.current) || addrArr[0];
         if (active) setSelectedAddress(active);
       } else {
         clearSelectedAddress();
@@ -41,8 +109,9 @@ export default function CheckoutScreen({ navigation }) {
       }
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  }, [clearSelectedAddress, selectedAddressId, setSelectedAddress]);
+  }, [clearSelectedAddress, hydrateCartItemsStore, setSelectedAddress]);
 
   useFocusEffect(
     useCallback(() => {
@@ -55,18 +124,7 @@ export default function CheckoutScreen({ navigation }) {
     [items]
   );
 
-  const groups = useMemo(() => {
-    const map = new Map();
-    for (const it of items) {
-      const sid = it?.product?.store?.id;
-      if (!sid) continue;
-      if (!map.has(sid)) {
-        map.set(sid, { storeId: sid, storeName: it?.product?.store?.name || 'متجر', items: [] });
-      }
-      map.get(sid).items.push(it);
-    }
-    return Array.from(map.values());
-  }, [items]);
+  const groups = useMemo(() => groupItemsByStore(items), [groupItemsByStore, items]);
 
   const onPlaceOrder = async () => {
     if (placing) return;
@@ -78,13 +136,25 @@ export default function CheckoutScreen({ navigation }) {
       Alert.alert('تنبيه', 'اختر عنواناً أولاً');
       return;
     }
-    if (!groups.length) {
-      Alert.alert('تنبيه', 'تعذر تحديد المتجر للعناصر');
-      return;
-    }
     setPlacing(true);
     try {
-      for (const g of groups) {
+      let activeGroups = groups;
+      let activeItems = items;
+      if (!activeGroups.length) {
+        const reloaded = await getCart();
+        const reloadedRaw = Array.isArray(reloaded) ? reloaded : (reloaded?.items || reloaded?.results || []);
+        const reloadedArr = await hydrateCartItemsStore(reloadedRaw);
+        if (Array.isArray(reloadedArr) && reloadedArr.length) {
+          setItems(reloadedArr);
+        }
+        activeItems = reloadedArr;
+        activeGroups = groupItemsByStore(reloadedArr);
+      }
+      if (!activeGroups.length) {
+        Alert.alert('تنبيه', 'تعذر تحديد المتجر لعناصر الطلب');
+        return;
+      }
+      for (const g of activeGroups) {
         const payload = {
           store: g.storeId,
           address: selectedAddressId,
@@ -96,7 +166,7 @@ export default function CheckoutScreen({ navigation }) {
         };
         await createOrder(payload);
       }
-      for (const it of items) {
+      for (const it of activeItems) {
         if (typeof it?.id === 'number') {
           try {
             await removeCartItem(it.id);
@@ -107,7 +177,13 @@ export default function CheckoutScreen({ navigation }) {
       Alert.alert('تم', 'تم إنشاء الطلب بنجاح');
       navigation.replace('Orders');
     } catch (e) {
-      Alert.alert('خطأ', 'تعذر إكمال الطلب حالياً');
+      const data = e?.response?.data;
+      const detail =
+        data?.error ||
+        data?.detail ||
+        (Array.isArray(data?.non_field_errors) && data.non_field_errors[0]) ||
+        (typeof data === 'string' ? data : '');
+      Alert.alert('خطأ', detail || 'تعذر إكمال الطلب حالياً');
       if (__DEV__) {
         console.log('[Checkout] place order failed', {
           message: e?.message,

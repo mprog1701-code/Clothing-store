@@ -19,12 +19,20 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.daar.app",
-      "buildNumber": "2"
+      "buildNumber": "2",
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+      }
     },
     "android": {
       "adaptiveIcon": {},
       "package": "com.daar.app",
-      "versionCode": 2
+      "versionCode": 2,
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "bundler": "metro"
@@ -43,6 +51,12 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow DAAR to access your location for address detection."
+        }
+      ],
+      [
+        "react-native-maps",
+        {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
         }
       ]
     ]

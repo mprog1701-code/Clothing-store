@@ -540,7 +540,7 @@ class CartViewSet(viewsets.ModelViewSet):
     from rest_framework.permissions import IsAuthenticated
     permission_classes = [IsAuthenticated]
     def get_queryset(self):
-        return __import__('core.models', fromlist=['CartItem']).models.CartItem.objects.filter(user=self.request.user).order_by('-updated_at')
+        return CartItem.objects.filter(user=self.request.user).select_related('product', 'variant', 'product__store').order_by('-updated_at')
     def initial(self, request, *args, **kwargs):
         try:
             auth_hdr = request.META.get('HTTP_AUTHORIZATION', '')
@@ -553,6 +553,27 @@ class CartViewSet(viewsets.ModelViewSet):
         except Exception:
             pass
         return super().initial(request, *args, **kwargs)
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        logger = logging.getLogger('cart')
+        try:
+            data = self.get_serializer(qs, many=True).data
+            return Response(data)
+        except Exception as e:
+            try:
+                logger.exception(f"[cart] list serialize failed user={getattr(request.user, 'id', None)} err={e}")
+            except Exception:
+                pass
+            safe = []
+            for it in qs:
+                try:
+                    safe.append(self.get_serializer(it).data)
+                except Exception as item_err:
+                    try:
+                        logger.exception(f"[cart] item serialize failed id={getattr(it, 'id', None)} user={getattr(request.user, 'id', None)} err={item_err}")
+                    except Exception:
+                        pass
+            return Response(safe)
 
 class DevSeed(APIView):
     permission_classes = []
@@ -590,161 +611,211 @@ class AddressViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get','post'], url_path='reverse-geocode', permission_classes=[AllowAny], authentication_classes=[])
     def reverse_geocode(self, request):
-        """
-        Accepts lat,lng and returns parsed address using OpenStreetMap Nominatim.
-        Restricted to Iraq and Arabic language.
-        """
         logger = logging.getLogger('geo')
+
         def _f(v):
             s = str(v).strip()
             s = s.replace('،', ',')
             if ('.' not in s) and (s.count(',') == 1):
                 s = s.replace(',', '.')
             return float(s)
+
+        def _format_fallback_text(city, area, street, lat_v, lon_v):
+            parts = [p for p in [street, area, city] if p]
+            if parts:
+                return ', '.join(parts)
+            return f"{lat_v:.6f}, {lon_v:.6f}"
+
+        def _safe_log_raw(provider, payload):
+            try:
+                raw = json.dumps(payload, ensure_ascii=False)
+            except Exception:
+                raw = str(payload)
+            logger.info("reverse_geocode provider=%s raw=%s", provider, raw[:2000])
+
+        def _build_response(city, area, street, formatted, provider, place_id, lat_v, lon_v):
+            city = (city or '').strip()
+            area = (area or '').strip()
+            street = (street or '').strip()
+            formatted = (formatted or '').strip() or _format_fallback_text(city, area, street, lat_v, lon_v)
+            return Response({
+                'city': city,
+                'area': area,
+                'street': street,
+                'formatted': formatted,
+                'provider': provider,
+                'provider_place_id': str(place_id or ''),
+                'lat': lat_v,
+                'lng': lon_v,
+            })
+
+        def _parse_google_result(result):
+            components = result.get('address_components') or []
+            city = ''
+            area = ''
+            street_name = ''
+            street_number = ''
+            for comp in components:
+                types = set(comp.get('types') or [])
+                value = (comp.get('long_name') or '').strip()
+                if not value:
+                    continue
+                if not city and ('locality' in types or 'administrative_area_level_2' in types or 'administrative_area_level_1' in types):
+                    city = value
+                if not area and ('sublocality' in types or 'sublocality_level_1' in types or 'neighborhood' in types):
+                    area = value
+                if not street_name and 'route' in types:
+                    street_name = value
+                if not street_number and 'street_number' in types:
+                    street_number = value
+            street = (f"{street_name} {street_number}".strip() if street_name else '')
+            formatted = (result.get('formatted_address') or '').strip()
+            return city, area, street, formatted
+
+        def _parse_osm_payload(data_json):
+            address = (data_json or {}).get('address') or {}
+            city = (
+                address.get('city')
+                or address.get('town')
+                or address.get('village')
+                or address.get('municipality')
+                or address.get('state_district')
+                or address.get('state')
+                or ''
+            )
+            area = (
+                address.get('suburb')
+                or address.get('neighbourhood')
+                or address.get('quarter')
+                or address.get('city_district')
+                or address.get('district')
+                or address.get('county')
+                or ''
+            )
+            road = (
+                address.get('road')
+                or address.get('pedestrian')
+                or address.get('residential')
+                or address.get('footway')
+                or ''
+            )
+            house_number = address.get('house_number') or ''
+            street = (f"{road} {house_number}".strip() if road else '')
+            formatted = (data_json.get('display_name') or data_json.get('formatted') or '').strip()
+            return city, area, street, formatted
+
+        def _offline_city_from_coords(lat_v, lon_v):
+            points = [
+                ('Baghdad', 33.3152, 44.3661),
+                ('Basra', 30.5085, 47.7804),
+                ('Mosul', 36.3456, 43.1575),
+                ('Erbil', 36.1911, 44.0092),
+                ('Najaf', 31.9896, 44.3148),
+                ('Karbala', 32.6160, 44.0249),
+            ]
+            best_name = ''
+            best_dist = None
+            for name, c_lat, c_lon in points:
+                d = ((lat_v - c_lat) ** 2 + (lon_v - c_lon) ** 2) ** 0.5
+                if best_dist is None or d < best_dist:
+                    best_dist = d
+                    best_name = name
+            if best_dist is not None and best_dist <= 1.0:
+                return best_name
+            if 28.0 <= lat_v <= 38.5 and 38.0 <= lon_v <= 49.5:
+                return 'Iraq'
+            return ''
+
         try:
             lat = _f((request.data.get('lat') or request.query_params.get('lat') or request.data.get('latitude') or request.query_params.get('latitude')))
             lon = _f((request.data.get('lng') or request.query_params.get('lng') or request.data.get('longitude') or request.query_params.get('longitude')))
         except Exception:
             return Response({'error': 'إحداثيات غير صالحة'}, status=status.HTTP_400_BAD_REQUEST)
 
-        mb_token = (os.environ.get('MAPBOX_ACCESS_TOKEN') or '').strip()
-        g_key = (os.environ.get('MAPS_API_KEY') or '').strip()
-        did_log = False
-        if mb_token:
-            try:
-                mb_url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/{},{}.json?'.format(lon, lat) + urlencode({'access_token': mb_token, 'language': 'ar', 'limit': 1})
-                mb_req = Request(mb_url, headers={'User-Agent': 'clothing-store/1.0'})
-                mb_resp = urlopen(mb_req, timeout=8)
-                mb_data = json.loads(mb_resp.read().decode('utf-8'))
-                feats = (mb_data.get('features') or [])
-                if feats:
-                    it = feats[0]
-                    label = it.get('place_name') or ''
-                    ctx = it.get('context') or []
-                    city = ''
-                    area = ''
-                    street = ''
-                    for c in ctx:
-                        tid = c.get('id') or ''
-                        if tid.startswith('place') and not city:
-                            city = c.get('text') or ''
-                        elif tid.startswith('locality') and not area:
-                            area = c.get('text') or ''
-                        elif tid.startswith('neighborhood') and not area:
-                            area = c.get('text') or ''
-                    if not did_log:
-                        try:
-                            logger.info(f"reverse_geocode provider=mapbox status=200")
-                            did_log = True
-                        except Exception:
-                            pass
-                    return Response({'city': city, 'area': area, 'street': street, 'formatted': label, 'provider': 'mapbox', 'provider_place_id': str(it.get('id') or ''), 'lat': lat, 'lng': lon})
-                if not did_log:
-                    try:
-                        logger.info(f"reverse_geocode provider=mapbox status=200")
-                        did_log = True
-                    except Exception:
-                        pass
-                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'mapbox', 'provider_place_id': '', 'lat': lat, 'lng': lon})
-            except HTTPError as e:
-                if not did_log:
-                    try:
-                        logger.info(f"reverse_geocode provider=mapbox status={getattr(e, 'code', 0)}")
-                        did_log = True
-                    except Exception:
-                        pass
-                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'mapbox', 'provider_place_id': '', 'lat': lat, 'lng': lon})
-            except Exception as e:
-                if not did_log:
-                    try:
-                        logger.info(f"reverse_geocode provider=mapbox status=0")
-                        did_log = True
-                    except Exception:
-                        pass
-                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'mapbox', 'provider_place_id': '', 'lat': lat, 'lng': lon})
+        g_key = (os.environ.get('MAPS_API_KEY') or os.environ.get('GOOGLE_MAPS_API_KEY') or '').strip()
         if g_key:
             try:
-                g_url = 'https://maps.googleapis.com/maps/api/geocode/json?' + urlencode({'latlng': f'{lat},{lon}', 'key': g_key, 'language': 'ar'})
+                g_url = 'https://maps.googleapis.com/maps/api/geocode/json?' + urlencode({'latlng': f'{lat},{lon}', 'key': g_key, 'language': 'ar', 'region': 'iq'})
                 g_req = Request(g_url, headers={'User-Agent': 'clothing-store/1.0'})
                 g_resp = urlopen(g_req, timeout=8)
                 g_data = json.loads(g_resp.read().decode('utf-8'))
-                status_code = g_data.get('status')
-                if status_code == 'OK' and g_data.get('results'):
-                    res = g_data['results'][0]
-                    comps = res.get('address_components') or []
-                    city = ''
-                    area = ''
-                    street = ''
-                    for c in comps:
-                        ts = c.get('types') or []
-                        if 'locality' in ts and not city:
-                            city = c.get('long_name') or ''
-                        elif 'administrative_area_level_1' in ts and not city:
-                            city = c.get('long_name') or ''
-                        elif ('sublocality' in ts or 'neighborhood' in ts) and not area:
-                            area = c.get('long_name') or ''
-                        elif 'route' in ts:
-                            street = c.get('long_name') or street
-                        elif 'street_number' in ts and street:
-                            street = (street + ' ' + c.get('long_name'))
-                    if not did_log:
-                        try:
-                            logger.info(f"reverse_geocode provider=google status=OK")
-                            did_log = True
-                        except Exception:
-                            pass
-                    return Response({'city': city, 'area': area, 'street': (street or '').strip(), 'formatted': (res.get('formatted_address') or ''), 'provider': 'google', 'provider_place_id': str(res.get('place_id') or ''), 'lat': lat, 'lng': lon})
-                if not did_log:
-                    try:
-                        logger.info(f"reverse_geocode provider=google status={status_code}")
-                        did_log = True
-                    except Exception:
-                        pass
-                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'google', 'provider_place_id': '', 'lat': lat, 'lng': lon})
+                _safe_log_raw('google', g_data)
+                if g_data.get('status') == 'OK' and (g_data.get('results') or []):
+                    first = g_data['results'][0]
+                    city, area, street, formatted = _parse_google_result(first)
+                    return _build_response(city, area, street, formatted, 'google', first.get('place_id'), lat, lon)
+                logger.info("reverse_geocode provider=google status=%s", g_data.get('status'))
+            except HTTPError as e:
+                logger.info("reverse_geocode provider=google status=%s", getattr(e, 'code', 0))
+            except URLError as e:
+                logger.info("reverse_geocode provider=google status=0 err=%s", str(e))
             except Exception as e:
-                if not did_log:
-                    try:
-                        logger.info(f"reverse_geocode provider=google status=0")
-                        did_log = True
-                    except Exception:
-                        pass
-                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'google', 'provider_place_id': '', 'lat': lat, 'lng': lon})
-        params = {'format': 'jsonv2', 'lat': lat, 'lon': lon, 'accept-language': 'ar'}
-        url = 'https://nominatim.openstreetmap.org/reverse?' + urlencode(params)
-        def _parse(data_json):
-            a = (data_json or {}).get('address') or {}
-            _city = a.get('city') or a.get('town') or a.get('village') or a.get('state') or ''
-            _area = a.get('suburb') or a.get('neighbourhood') or a.get('quarter') or a.get('district') or a.get('county') or ''
-            _street = (a.get('road') or '') + (' ' + a.get('house_number') if a.get('house_number') else '')
-            return _city, _area, _street
+                logger.info("reverse_geocode provider=google status=0 err=%s", str(e))
+
         try:
-            req = Request(url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
-            resp = urlopen(req, timeout=8)
-            data = json.loads(resp.read().decode('utf-8'))
-            c,a,s = _parse(data)
-            if not did_log:
-                try:
-                    logger.info(f"reverse_geocode provider=nominatim status=200")
-                    did_log = True
-                except Exception:
-                    pass
-            return Response({'city': c, 'area': a, 'street': s.strip(), 'formatted': (data.get('display_name') or ''), 'provider': 'nominatim', 'provider_place_id': str(data.get('place_id') or ''), 'lat': lat, 'lng': lon})
-        except Exception:
-            try:
-                fb_url = 'https://geocode.maps.co/reverse?' + urlencode({'lat': lat, 'lon': lon})
-                fb_req = Request(fb_url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'} )
-                fb_resp = urlopen(fb_req, timeout=8)
-                fb_data = json.loads(fb_resp.read().decode('utf-8'))
-                c,a,s = _parse(fb_data)
-                return Response({'city': c, 'area': a, 'street': s.strip(), 'formatted': (fb_data.get('display_name') or fb_data.get('formatted') or ''), 'provider': 'maps.co', 'provider_place_id': str(fb_data.get('place_id') or ''), 'lat': lat, 'lng': lon})
-            except Exception as e:
-                if not did_log:
-                    try:
-                        logger.info(f"reverse_geocode provider=fallback status=0")
-                        did_log = True
-                    except Exception:
-                        pass
-                return Response({'city': '', 'area': '', 'street': '', 'formatted': '', 'provider': 'fallback', 'provider_place_id': '', 'lat': lat, 'lng': lon})
+            n_url = 'https://nominatim.openstreetmap.org/reverse?' + urlencode({'format': 'jsonv2', 'lat': lat, 'lon': lon, 'accept-language': 'ar', 'countrycodes': 'iq', 'addressdetails': 1})
+            n_req = Request(n_url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'})
+            n_resp = urlopen(n_req, timeout=8)
+            n_data = json.loads(n_resp.read().decode('utf-8'))
+            _safe_log_raw('nominatim', n_data)
+            city, area, street, formatted = _parse_osm_payload(n_data)
+            return _build_response(city, area, street, formatted, 'nominatim', n_data.get('place_id'), lat, lon)
+        except HTTPError as e:
+            logger.info("reverse_geocode provider=nominatim status=%s", getattr(e, 'code', 0))
+        except URLError as e:
+            logger.info("reverse_geocode provider=nominatim status=0 err=%s", str(e))
+        except Exception as e:
+            logger.info("reverse_geocode provider=nominatim status=0 err=%s", str(e))
+
+        try:
+            bdc_url = 'https://api.bigdatacloud.net/data/reverse-geocode-client?' + urlencode({'latitude': lat, 'longitude': lon, 'localityLanguage': 'ar'})
+            bdc_req = Request(bdc_url, headers={'User-Agent': 'clothing-store/1.0'})
+            bdc_resp = urlopen(bdc_req, timeout=8)
+            bdc_data = json.loads(bdc_resp.read().decode('utf-8'))
+            _safe_log_raw('bigdatacloud', bdc_data)
+            city = (
+                bdc_data.get('city')
+                or bdc_data.get('locality')
+                or bdc_data.get('principalSubdivision')
+                or bdc_data.get('localityInfo', {}).get('administrative', [{}])[-1].get('name')
+                or ''
+            )
+            area = (
+                bdc_data.get('locality')
+                or bdc_data.get('principalSubdivision')
+                or ''
+            )
+            street = ''
+            for item in (bdc_data.get('localityInfo', {}).get('informative') or []):
+                candidate = (item.get('name') or '').strip()
+                c_low = candidate.lower()
+                if ('شارع' in candidate) or ('street' in c_low) or ('st.' in c_low):
+                    street = candidate
+                    break
+            formatted_parts = [
+                bdc_data.get('locality') or '',
+                bdc_data.get('city') or '',
+                bdc_data.get('principalSubdivision') or '',
+                bdc_data.get('countryName') or '',
+            ]
+            formatted = ', '.join([p.strip() for p in formatted_parts if str(p or '').strip()])
+            return _build_response(city, area, street, formatted, 'bigdatacloud', bdc_data.get('localityInfo', {}).get('isoName'), lat, lon)
+        except Exception as e:
+            logger.info("reverse_geocode provider=bigdatacloud status=0 err=%s", str(e))
+
+        try:
+            fb_url = 'https://geocode.maps.co/reverse?' + urlencode({'lat': lat, 'lon': lon})
+            fb_req = Request(fb_url, headers={'User-Agent': 'clothing-store/1.0 (contact: admin@example.com)'})
+            fb_resp = urlopen(fb_req, timeout=8)
+            fb_data = json.loads(fb_resp.read().decode('utf-8'))
+            _safe_log_raw('maps.co', fb_data)
+            city, area, street, formatted = _parse_osm_payload(fb_data)
+            return _build_response(city, area, street, formatted, 'maps.co', fb_data.get('place_id'), lat, lon)
+        except Exception as e:
+            logger.info("reverse_geocode provider=fallback status=0 err=%s", str(e))
+
+        city_guess = _offline_city_from_coords(lat, lon)
+        return _build_response(city_guess, '', '', '', 'fallback', '', lat, lon)
 
     @action(detail=False, methods=['get'], url_path='autocomplete', permission_classes=[AllowAny], authentication_classes=[])
     def autocomplete(self, request):

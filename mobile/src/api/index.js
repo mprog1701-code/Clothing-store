@@ -410,7 +410,10 @@ export async function listProducts(params = {}) {
   try {
     const r = await client.get('/api/products/', { params: p });
     console.log('[API] GET /api/products status=', r.status, 'params=', p, 'data.count=', Array.isArray(r.data) ? r.data.length : (r.data?.results?.length || 0));
-    console.log('[API] GET /api/products response.data=', r.data);
+    if (__DEV__) {
+      const sample = Array.isArray(r.data) ? r.data.slice(0, 2) : (r.data?.results || []).slice(0, 2);
+      console.log('[API] GET /api/products sample=', sample);
+    }
     return r.data;
   } catch (e) {
     console.error('[API] GET /api/products failed', {
@@ -450,8 +453,40 @@ export async function listAddresses() {
 }
 
 export async function createAddress(payload) {
-  const r = await client.post('/api/addresses/', payload);
-  return r.data;
+  const endpoints = ['/api/addresses/', '/api/addresses'];
+  let lastError = null;
+  for (let i = 0; i < 3; i += 1) {
+    for (const endpoint of endpoints) {
+      try {
+        const r = await client.post(endpoint, payload);
+        return r.data;
+      } catch (e) {
+        lastError = e;
+        const status = e?.response?.status;
+        const code = e?.code;
+        const retryable =
+          status === 502 ||
+          status === 503 ||
+          status === 504 ||
+          code === 'ECONNABORTED' ||
+          code === 'ERR_NETWORK';
+        if (!retryable) {
+          throw e;
+        }
+        if (__DEV__) {
+          console.log('[API] createAddress retryable failure', {
+            endpoint,
+            attempt: i + 1,
+            status,
+            code,
+            message: e?.message,
+          });
+        }
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 600 * (i + 1)));
+  }
+  throw lastError;
 }
 
 export async function updateAddress(id, payload) {
@@ -466,6 +501,10 @@ export async function deleteAddress(id) {
 
 export async function reverseGeocodeAddress({ lat, lng }) {
   const r = await client.get('/api/addresses/reverse-geocode/', { params: { lat, lng } });
+  if (__DEV__) {
+    console.log('[API] GET /api/addresses/reverse-geocode/ params=', { lat, lng });
+    console.log('[API] GET /api/addresses/reverse-geocode/ response=', r.data);
+  }
   return r.data;
 }
 

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.conf import settings
+from django.db import transaction
 from .models import User, Store, Product, ProductImage, ProductVariant, Address, Order, OrderItem, CartItem
 
 
@@ -346,52 +347,52 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         store = validated_data['store']
         address = validated_data['address']
-        
-        # Create order
-        order = Order.objects.create(
-            user=user,
-            store=store,
-            address=address,
-            delivery_fee=settings.DELIVERY_FEE,
-            payment_method='cod',
-            status='pending'
-        )
-        
-        # Create order items
-        total_amount = 0
-        for item_data in items_data:
-            product = Product.objects.get(id=item_data['product_id'])
-            variant_id = item_data.get('variant_id')
-            variant = None
-            
-            if variant_id:
-                variant = ProductVariant.objects.get(id=variant_id, product=product)
-                if variant.stock_qty < item_data['quantity']:
-                    raise serializers.ValidationError(f"الكمية غير متوفرة للمتغير {variant}")
-            
-            price = variant.price if variant else product.base_price
-            quantity = item_data['quantity']
-            
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                variant=variant,
-                quantity=quantity,
-                price=price
+
+        with transaction.atomic():
+            order = Order.objects.create(
+                user=user,
+                store=store,
+                address=address,
+                total_amount=0,
+                delivery_fee=settings.DELIVERY_FEE,
+                payment_method='cod',
+                status='pending'
             )
-            
-            total_amount += price * quantity
-            
-            # Update stock
-            if variant:
-                variant.stock_qty -= quantity
-                variant.save()
-        
-        # Update order total
-        order.total_amount = total_amount + order.delivery_fee
-        order.save()
-        
-        return order
+
+            total_amount = 0
+            for item_data in items_data:
+                product = Product.objects.get(id=item_data['product_id'])
+                if product.store_id != store.id:
+                    raise serializers.ValidationError("بعض العناصر لا تنتمي إلى المتجر المحدد")
+
+                variant_id = item_data.get('variant_id')
+                variant = None
+
+                if variant_id:
+                    variant = ProductVariant.objects.get(id=variant_id, product=product)
+                    if variant.stock_qty < item_data['quantity']:
+                        raise serializers.ValidationError(f"الكمية غير متوفرة للمتغير {variant}")
+
+                price = variant.price if variant else product.base_price
+                quantity = item_data['quantity']
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    variant=variant,
+                    quantity=quantity,
+                    price=price
+                )
+
+                total_amount += price * quantity
+
+                if variant:
+                    variant.stock_qty -= quantity
+                    variant.save(update_fields=['stock_qty'])
+
+            order.total_amount = total_amount + order.delivery_fee
+            order.save(update_fields=['total_amount'])
+            return order
 
 
 class CartItemSerializer(serializers.ModelSerializer):
