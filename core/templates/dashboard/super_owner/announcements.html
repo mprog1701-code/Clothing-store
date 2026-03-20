@@ -126,6 +126,191 @@
       </div>
     {% endfor %}
   </div>
+
+  <hr class="my-4">
+  <h2 class="h4 mb-3" style="color: var(--gold);">إدارة البنرات</h2>
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_banner">
+        <div class="col-md-4">
+          <label class="form-label">العنوان</label>
+          <input type="text" name="title" class="form-control" required>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">الموضع</label>
+          <select name="placement" class="form-select">
+            {% for value,label in banner_placements %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">الأولوية</label>
+          <input type="number" name="priority" class="form-control" value="0">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">نوع الرابط</label>
+          <select name="link_type" class="form-select">
+            {% for value,label in banner_link_types %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">نشط</label>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" name="is_active" checked>
+            <label class="form-check-label">تفعيل</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">هدف الرابط</label>
+          <input type="text" name="link_target" class="form-control" placeholder="/products/12">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">الصورة</label>
+          <input type="file" name="image" class="form-control" accept="image/*" required>
+        </div>
+        <div class="col-12 text-end">
+          <button type="submit" class="btn btn-primary">إضافة بانر</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="table-responsive mb-4">
+    <table class="table table-sm table-hover">
+      <thead>
+        <tr>
+          <th>العنوان</th>
+          <th>الموضع</th>
+          <th>الأولوية</th>
+          <th>الحالة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in banners %}
+          <tr>
+            <td>{{ b.title }}</td>
+            <td>{{ b.get_placement_display }}</td>
+            <td>{{ b.priority }}</td>
+            <td>{% if b.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">متوقف</span>{% endif %}</td>
+            <td class="d-flex gap-1">
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_banner">
+                <input type="hidden" name="banner_id" value="{{ b.id }}">
+                <button class="btn btn-outline-warning btn-sm">{% if b.is_active %}تعطيل{% else %}تفعيل{% endif %}</button>
+              </form>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_banner">
+                <input type="hidden" name="banner_id" value="{{ b.id }}">
+                <button class="btn btn-outline-danger btn-sm">حذف</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted">لا توجد بنرات</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="h4 mb-3" style="color: var(--gold);">إدارة إعلانات التطبيق</h2>
+  <div class="card mb-3">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_ad">
+        <div class="col-md-4">
+          <label class="form-label">العنوان</label>
+          <input type="text" name="title" class="form-control" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">الموضع</label>
+          <select name="position" class="form-select">
+            {% for value,label in ad_positions %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">النوع</label>
+          <select name="ad_type" class="form-select">
+            {% for value,label in ad_types %}
+              <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <label class="form-label">ترتيب</label>
+          <input type="number" name="order" class="form-control" value="0">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">نشط</label>
+          <div class="form-check mt-2">
+            <input class="form-check-input" type="checkbox" name="is_active" checked>
+            <label class="form-check-label">تفعيل</label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">الرابط</label>
+          <input type="url" name="link" class="form-control" placeholder="https://example.com">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">الصورة</label>
+          <input type="file" name="image" class="form-control" accept="image/*" required>
+        </div>
+        <div class="col-12 text-end">
+          <button type="submit" class="btn btn-primary">إضافة إعلان</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead>
+        <tr>
+          <th>العنوان</th>
+          <th>الموضع</th>
+          <th>النوع</th>
+          <th>الترتيب</th>
+          <th>الحالة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in ads %}
+          <tr>
+            <td>{{ a.title }}</td>
+            <td>{{ a.get_position_display }}</td>
+            <td>{{ a.get_ad_type_display }}</td>
+            <td>{{ a.order }}</td>
+            <td>{% if a.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-secondary">متوقف</span>{% endif %}</td>
+            <td class="d-flex gap-1">
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_ad">
+                <input type="hidden" name="ad_id" value="{{ a.id }}">
+                <button class="btn btn-outline-warning btn-sm">{% if a.is_active %}تعطيل{% else %}تفعيل{% endif %}</button>
+              </form>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_ad">
+                <input type="hidden" name="ad_id" value="{{ a.id }}">
+                <button class="btn btn-outline-danger btn-sm">حذف</button>
+              </form>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted">لا توجد إعلانات تطبيق</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
 

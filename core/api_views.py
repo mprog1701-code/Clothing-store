@@ -131,10 +131,19 @@ class AuthViewSet(viewsets.ViewSet):
             })
         return Response({'error': 'بيانات الدخول غير صحيحة'}, status=status.HTTP_401_UNAUTHORIZED)
     
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get', 'patch', 'put'])
     def me(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
+        if request.method == 'GET':
+            serializer = UserSerializer(request.user)
+            return Response(serializer.data)
+        allowed_fields = {'username', 'email', 'city', 'first_name', 'last_name'}
+        incoming = request.data or {}
+        payload = {k: incoming.get(k) for k in allowed_fields if k in incoming}
+        serializer = UserSerializer(request.user, data=payload, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['post'], permission_classes=[])
     def logout(self, request):

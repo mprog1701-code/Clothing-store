@@ -20,6 +20,7 @@ import json
 import uuid
 import urllib.parse
 from .models import User, Store, Product, ProductVariant, ProductImage, Address, Order, SiteSettings, Campaign, CartItem
+from ads.models import Banner, Advertisement
 try:
     from catalog.models import Category
 except ImportError:
@@ -2820,6 +2821,73 @@ def super_owner_announcements(request):
                 else:
                     messages.error(request, 'يرجى اختيار إعلانات للحذف')
                 return redirect('super_owner_announcements')
+            if action == 'create_banner':
+                title = (request.POST.get('title') or '').strip()
+                placement = (request.POST.get('placement') or 'home_top').strip()
+                priority = int(request.POST.get('priority') or 0)
+                link_type = (request.POST.get('link_type') or 'none').strip()
+                link_target = (request.POST.get('link_target') or '').strip()
+                is_active = request.POST.get('is_active') == 'on'
+                image = request.FILES.get('image')
+                if not title or not image:
+                    messages.error(request, 'العنوان والصورة مطلوبان للبنر')
+                    return redirect('super_owner_announcements')
+                Banner.objects.create(
+                    title=title,
+                    image=image,
+                    placement=placement,
+                    priority=priority,
+                    link_type=link_type,
+                    link_target=link_target,
+                    is_active=is_active,
+                )
+                messages.success(request, 'تم إنشاء البنر بنجاح')
+                return redirect('super_owner_announcements')
+            if action in ['toggle_banner', 'delete_banner']:
+                bid = request.POST.get('banner_id')
+                banner = get_object_or_404(Banner, id=bid)
+                if action == 'toggle_banner':
+                    banner.is_active = not banner.is_active
+                    banner.save(update_fields=['is_active', 'updated_at'])
+                    messages.success(request, 'تم تحديث حالة البنر')
+                else:
+                    banner.delete()
+                    messages.success(request, 'تم حذف البنر')
+                return redirect('super_owner_announcements')
+            if action == 'create_ad':
+                title = (request.POST.get('title') or '').strip()
+                position = (request.POST.get('position') or 'mobile_banner').strip()
+                ad_type = (request.POST.get('ad_type') or 'banner').strip()
+                order = int(request.POST.get('order') or 0)
+                link = (request.POST.get('link') or '').strip()
+                is_active = request.POST.get('is_active') == 'on'
+                image = request.FILES.get('image')
+                if not title or not image:
+                    messages.error(request, 'العنوان والصورة مطلوبان للإعلان')
+                    return redirect('super_owner_announcements')
+                Advertisement.objects.create(
+                    title=title,
+                    position=position,
+                    ad_type=ad_type,
+                    order=order,
+                    link=link,
+                    image=image,
+                    is_active=is_active,
+                    start_date=timezone.now(),
+                )
+                messages.success(request, 'تم إنشاء الإعلان بنجاح')
+                return redirect('super_owner_announcements')
+            if action in ['toggle_ad', 'delete_ad']:
+                aid = request.POST.get('ad_id')
+                ad = get_object_or_404(Advertisement, id=aid)
+                if action == 'toggle_ad':
+                    ad.is_active = not ad.is_active
+                    ad.save(update_fields=['is_active', 'updated_at'])
+                    messages.success(request, 'تم تحديث حالة الإعلان')
+                else:
+                    ad.delete()
+                    messages.success(request, 'تم حذف الإعلان')
+                return redirect('super_owner_announcements')
             if action == 'create':
                 title = request.POST.get('title') or ''
                 description = request.POST.get('description') or ''
@@ -2878,8 +2946,16 @@ def super_owner_announcements(request):
             return redirect('super_owner_announcements')
 
     campaigns = Campaign.objects.all().order_by('-start_date')
+    banners = Banner.objects.all().order_by('-updated_at')
+    ads = Advertisement.objects.all().order_by('order', '-created_at')
     context = {
         'campaigns': campaigns,
+        'banners': banners,
+        'ads': ads,
+        'banner_placements': Banner.PLACEMENTS,
+        'banner_link_types': Banner.LINK_TYPES,
+        'ad_positions': Advertisement.POSITION_CHOICES,
+        'ad_types': Advertisement.TYPE_CHOICES,
     }
     return render(request, 'dashboard/super_owner/announcements.html', context)
 
@@ -3632,11 +3708,19 @@ def super_owner_products(request):
     from django.db.models import Count, Sum
     q = (request.GET.get('q') or '').strip()
     sort = (request.GET.get('sort') or 'new').strip()
+    category_filter = (request.GET.get('category') or '').strip()
+    offers_filter = (request.GET.get('offers') or '').strip()
     page = int((request.GET.get('page') or '1') or 1)
     base_qs = Product.objects.select_related('store').prefetch_related('images')
     if q:
         from django.db.models import Q
         base_qs = base_qs.filter(Q(name__icontains=q) | Q(store__name__icontains=q))
+    if category_filter:
+        base_qs = base_qs.filter(category=category_filter)
+    if offers_filter == 'on':
+        base_qs = base_qs.filter(is_on_offer=True)
+    elif offers_filter == 'off':
+        base_qs = base_qs.filter(is_on_offer=False)
     base_qs = base_qs.annotate(variants_count=Count('variants'), total_stock=Sum('variants__stock_qty'))
     if sort == 'price_asc':
         base_qs = base_qs.order_by('base_price')
@@ -3731,8 +3815,49 @@ def super_owner_products(request):
                         messages.error(request, 'تعذر حذف المنتج')
                 except Exception:
                     messages.error(request, 'تعذر حذف المنتج')
+        elif action == 'set_offer':
+            discount_raw = (request.POST.get('offer_discount_percent') or '10').strip()
+            try:
+                discount_val = max(1, min(90, int(discount_raw)))
+            except Exception:
+                discount_val = 10
+            from decimal import Decimal
+            try:
+                base_price = Decimal(product.base_price or 0)
+            except Exception:
+                base_price = Decimal(0)
+            offer_price = base_price
+            if base_price > 0:
+                offer_price = (base_price * Decimal(100 - discount_val) / Decimal(100)).quantize(Decimal('0.01'))
+            product.is_on_offer = True
+            product.offer_discount_percent = discount_val
+            product.offer_price = offer_price
+            product.offer_start = timezone.now()
+            product.offer_end = None
+            product.offer_badge_text = f'خصم {discount_val}%'
+            product.save()
+            messages.success(request, f'تم تفعيل العرض للمنتج {product.name}')
+        elif action == 'unset_offer':
+            product.is_on_offer = False
+            product.offer_discount_percent = 0
+            product.offer_price = None
+            product.offer_start = None
+            product.offer_end = None
+            product.offer_badge_text = ''
+            product.save()
+            messages.success(request, f'تم إلغاء العرض للمنتج {product.name}')
+        elif action == 'set_category':
+            new_category = (request.POST.get('category') or '').strip()
+            valid_categories = {x[0] for x in Product.CATEGORY_CHOICES}
+            if new_category not in valid_categories:
+                messages.error(request, 'القسم المحدد غير صالح')
+            else:
+                product.category = new_category
+                product.save(update_fields=['category'])
+                messages.success(request, f'تم تحديث قسم المنتج {product.name}')
         
-        return redirect('super_owner_products')
+        qd = request.GET.copy()
+        return redirect(f"{reverse('super_owner_products')}?{qd.urlencode()}" if qd else 'super_owner_products')
     
     context = {
         'products': products_page,
@@ -3740,6 +3865,9 @@ def super_owner_products(request):
         'paginator': paginator,
         'q': q,
         'sort': sort,
+        'category_filter': category_filter,
+        'offers_filter': offers_filter,
+        'category_choices': Product.CATEGORY_CHOICES,
     }
     return render(request, 'dashboard/super_owner/products.html', context)
 

@@ -138,8 +138,8 @@
           <i class="fas fa-bullhorn"></i>
         </div>
         <div class="card-content">
-          <h4>إدارة الإعلانات</h4>
-          <p>إنشاء وتعديل الإعلانات</p>
+          <h4>إدارة الإعلانات والبنرات</h4>
+          <p>إنشاء وتعديل الحملات والبنرات</p>
           <div class="card-badge">
             <span class="badge bg-info">3 نشط</span>
           </div>
@@ -234,7 +234,7 @@
         </div>
       </a>
 
-      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-offers">
+      <a href="{% url 'super_owner_products' %}?offers=on" class="management-card card-offers">
         <div class="card-icon-wrapper">
           <div class="card-icon-bg"></div>
           <i class="fas fa-tags"></i>
@@ -251,7 +251,7 @@
         </div>
       </a>
 
-      <a href="#" onclick="alert('قيد التطوير'); return false;" class="management-card card-categories">
+      <a href="{% url 'super_owner_products' %}" class="management-card card-categories">
         <div class="card-icon-wrapper">
           <div class="card-icon-bg"></div>
           <i class="fas fa-list"></i>
