@@ -28,8 +28,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if not value.startswith('07') or len(value) != 11:
             raise serializers.ValidationError("رقم الجوال يجب أن يبدأ بـ 07 ويكون 11 رقماً")
         
-        # Check if phone already exists
-        if User.objects.filter(phone=value).exists():
+        existing_user = self.context.get('existing_user') if hasattr(self, 'context') else None
+        conflict = User.objects.filter(phone=value)
+        if existing_user is not None:
+            conflict = conflict.exclude(id=existing_user.id)
+        if conflict.exists():
             raise serializers.ValidationError("رقم الجوال مسجل بالفعل")
         
         return value
@@ -43,29 +46,41 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         v = (value or '').strip().lower()
         if not v:
             raise serializers.ValidationError("يرجى إدخال البريد الإلكتروني")
-        if User.objects.filter(email__iexact=v).exists():
+        existing_user = self.context.get('existing_user') if hasattr(self, 'context') else None
+        conflict = User.objects.filter(email__iexact=v)
+        if existing_user is not None:
+            conflict = conflict.exclude(id=existing_user.id)
+        if conflict.exists():
             raise serializers.ValidationError("البريد الإلكتروني مسجل بالفعل")
         return v
     
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         full_name = validated_data.pop('full_name')
+        existing_user = self.context.get('existing_user') if hasattr(self, 'context') else None
         
         # Split full name into first and last name
         name_parts = full_name.strip().split(' ', 1)
         first_name = name_parts[0]
         last_name = name_parts[1] if len(name_parts) > 1 else ''
         
-        # Generate username from phone number
+        if existing_user is not None:
+            existing_user.email = validated_data['email']
+            existing_user.phone = validated_data['phone']
+            existing_user.city = validated_data['city']
+            existing_user.first_name = first_name
+            existing_user.last_name = last_name
+            existing_user.set_password(validated_data['password'])
+            existing_user.save()
+            return existing_user
+
         username = f"user_{validated_data['phone'][-6:]}"
-        
-        # Ensure unique username
         counter = 1
         original_username = username
         while User.objects.filter(username=username).exists():
             username = f"{original_username}_{counter}"
             counter += 1
-        
+
         user = User.objects.create_user(
             username=username,
             email=validated_data['email'],

@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.db import connection
 from django.utils import timezone
 from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize, FeatureFlag
@@ -57,14 +58,69 @@ class AuthViewSet(viewsets.ViewSet):
         except Exception:
             return False
 
+    def _make_reset_ticket(self, user_id, code):
+        signer = TimestampSigner(salt='password-reset')
+        return signer.sign(f"{int(user_id)}:{str(code)}")
+
+    def _read_reset_ticket(self, ticket, max_age=10 * 60):
+        signer = TimestampSigner(salt='password-reset')
+        raw = signer.unsign(ticket, max_age=max_age)
+        uid, code = str(raw).split(':', 1)
+        return int(uid), str(code)
+
+    def _make_signup_ticket(self, phone, code):
+        signer = TimestampSigner(salt='signup-otp')
+        return signer.sign(f"{str(phone)}:{str(code)}")
+
+    def _read_signup_ticket(self, ticket, max_age=10 * 60):
+        signer = TimestampSigner(salt='signup-otp')
+        raw = signer.unsign(ticket, max_age=max_age)
+        phone, code = str(raw).split(':', 1)
+        return str(phone), str(code)
+
     @action(detail=False, methods=['post'], permission_classes=[])
     def register(self, request):
         phone = (request.data.get('phone') or '').strip()
-        if phone and User.objects.filter(phone=phone).exists():
-            return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
-        serializer = UserRegistrationSerializer(data=request.data)
+        otp_code = (request.data.get('otp_code') or '').strip()
+        otp_ticket = (request.data.get('otp_ticket') or '').strip()
+        existing_user = None
+        if phone:
+            existing_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+            if existing_user and existing_user.role != 'store_admin':
+                return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
+        if not otp_code:
+            if not phone:
+                return Response({'error': 'PHONE_REQUIRED'}, status=status.HTTP_400_BAD_REQUEST)
+            code = self._create_code()
+            cache.set(f"verify:signup:{phone}", code, timeout=10 * 60)
+            payload = {
+                'ok': True,
+                'requires_otp': True,
+                'phone': phone,
+                'otp_ticket': self._make_signup_ticket(phone, code),
+                'message': 'تم إرسال رمز التحقق إلى رقم الهاتف',
+            }
+            if settings.DEBUG:
+                payload['debug_otp'] = code
+            return Response(payload)
+        otp_valid = False
+        expected = cache.get(f"verify:signup:{phone}")
+        if expected and str(expected) == str(otp_code):
+            otp_valid = True
+        if otp_ticket:
+            try:
+                t_phone, t_code = self._read_signup_ticket(otp_ticket, max_age=10 * 60)
+                if str(t_phone) == str(phone) and str(t_code) == str(otp_code):
+                    otp_valid = True
+            except (BadSignature, SignatureExpired, ValueError):
+                pass
+        if not otp_valid:
+            return Response({'error': 'OTP_INVALID_OR_EXPIRED', 'message': 'رمز التحقق غير صحيح أو منتهي'}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = UserRegistrationSerializer(data=request.data, context={'existing_user': existing_user} if existing_user else {})
         if serializer.is_valid():
             user = serializer.save()
+            user.is_active = True
+            user.save(update_fields=['is_active'])
             try:
                 from django.utils import timezone
                 from .models import StoreOwnerInvite, Store
@@ -91,24 +147,13 @@ class AuthViewSet(viewsets.ViewSet):
                     inv.save()
             except Exception:
                 pass
-            code = self._create_code()
-            cache.set(f"verify:register:{user.phone}", code, timeout=10 * 60)
-            email_sent = self._send_email_code(
-                user.email,
-                'رمز تفعيل الحساب',
-                f'رمز تفعيل حسابك هو: {code}\nصالح لمدة 10 دقائق.',
-            )
-            payload = {
-                'ok': True,
-                'requires_verification': True,
-                'phone': user.phone,
-                'email': user.email,
-                'email_sent': bool(email_sent),
-                'message': 'تم إنشاء الحساب. أدخل رمز التفعيل المرسل إلى بريدك الإلكتروني.',
-            }
-            if settings.DEBUG:
-                payload['debug_code'] = code
-            return Response(payload, status=status.HTTP_201_CREATED)
+            cache.delete(f"verify:signup:{phone}")
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'user': UserSerializer(user).data,
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['post'], permission_classes=[])
@@ -239,6 +284,7 @@ class AuthViewSet(viewsets.ViewSet):
                 f'رمز استعادة كلمة المرور هو: {code}\nصالح لمدة 10 دقائق.',
             )
         payload = {'ok': True, 'email_sent': bool(email_sent), 'phone': user.phone}
+        payload['reset_ticket'] = self._make_reset_ticket(user.id, code)
         if email_sent:
             payload['message'] = 'تم إرسال رمز الاسترجاع إلى البريد الإلكتروني'
         else:
@@ -258,8 +304,17 @@ class AuthViewSet(viewsets.ViewSet):
         user = User.objects.filter(Q(phone=identifier) | Q(email__iexact=identifier)).first()
         if not user:
             return Response({'error': 'المستخدم غير موجود'}, status=status.HTTP_404_NOT_FOUND)
+        ticket = (request.data.get('reset_ticket') or '').strip()
+        ticket_valid = False
+        if ticket:
+            try:
+                uid, tcode = self._read_reset_ticket(ticket, max_age=10 * 60)
+                ticket_valid = (uid == int(user.id) and str(tcode) == str(code))
+            except (BadSignature, SignatureExpired, ValueError):
+                ticket_valid = False
         expected = cache.get(f"verify:reset:{user.phone}")
-        if not expected or str(expected) != str(code):
+        cache_valid = bool(expected) and str(expected) == str(code)
+        if not ticket_valid and not cache_valid:
             return Response({'error': 'رمز الاسترجاع غير صحيح أو منتهي'}, status=status.HTTP_400_BAD_REQUEST)
         if len(new_password) < 6:
             return Response({'error': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'}, status=status.HTTP_400_BAD_REQUEST)

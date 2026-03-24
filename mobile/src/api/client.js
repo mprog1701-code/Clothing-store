@@ -31,6 +31,7 @@ client.interceptors.request.use(async (config) => {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.baseURL = base;
   try {
     const hasApiSuffix = /\/api$/i.test(base);
     const currentUrl = String(config.url || '');
@@ -71,6 +72,11 @@ client.interceptors.response.use(
           hasRequest: !!error.request
         };
         console.log('[client] ERROR details', details);
+        try {
+          if (error?.response?.data) {
+            console.log('[client] ERROR response.data', error.response.data);
+          }
+        } catch {}
         try {
           const j = typeof error.toJSON === 'function' ? error.toJSON() : null;
           if (j) console.log('[client] ERROR toJSON', j);

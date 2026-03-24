@@ -6,7 +6,7 @@ from django.http import HttpResponseForbidden
 
 class IsCustomer(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role == 'customer'
+        return request.user and request.user.is_authenticated and request.user.role in ('customer', 'store_admin')
 
 
 class IsStoreOwner(permissions.BasePermission):

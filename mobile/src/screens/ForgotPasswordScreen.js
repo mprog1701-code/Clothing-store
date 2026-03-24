@@ -5,24 +5,35 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { requestPasswordReset, confirmPasswordReset } from '../api';
 import theme from '../theme';
+import { normalizeIraqiPhone } from '../utils/phone';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [identifier, setIdentifier] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [resetTicket, setResetTicket] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requested, setRequested] = useState(false);
+  const normalizeIdentifier = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    const normalizedPhone = normalizeIraqiPhone(raw);
+    if (normalizedPhone) return normalizedPhone;
+    return raw.toLowerCase();
+  };
 
   const onRequest = async () => {
-    if (!identifier.trim()) {
+    const normalizedIdentifier = normalizeIdentifier(identifier);
+    if (!normalizedIdentifier) {
       Alert.alert('تنبيه', 'يرجى إدخال رقم الهاتف أو البريد الإلكتروني');
       return;
     }
     setLoading(true);
     try {
-      const res = await requestPasswordReset({ identifier: identifier.trim() });
+      const res = await requestPasswordReset({ identifier: normalizedIdentifier });
       setRequested(true);
+      setResetTicket(String(res?.reset_ticket || ''));
       const deliveredCode = String(res?.debug_code || res?.reset_code || '').trim();
       if (deliveredCode) {
         setCode(deliveredCode);
@@ -38,17 +49,34 @@ export default function ForgotPasswordScreen({ navigation }) {
   };
 
   const onConfirm = async () => {
-    if (!identifier.trim() || !code.trim() || !newPassword.trim()) {
+    const normalizedIdentifier = normalizeIdentifier(identifier);
+    if (!normalizedIdentifier || !code.trim() || !newPassword.trim()) {
       Alert.alert('تنبيه', 'يرجى تعبئة جميع الحقول');
+      return;
+    }
+    if (newPassword.trim().length < 6) {
+      Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
       return;
     }
     setLoading(true);
     try {
-      await confirmPasswordReset({ identifier: identifier.trim(), code: code.trim(), new_password: newPassword.trim() });
+      let activeTicket = String(resetTicket || '').trim();
+      let activeCode = code.trim();
+      if (!activeTicket) {
+        const bootstrap = await requestPasswordReset({ identifier: normalizedIdentifier });
+        activeTicket = String(bootstrap?.reset_ticket || '').trim();
+        const deliveredCode = String(bootstrap?.debug_code || bootstrap?.reset_code || '').trim();
+        if (deliveredCode) {
+          activeCode = deliveredCode;
+          setCode(deliveredCode);
+        }
+        setResetTicket(activeTicket);
+      }
+      await confirmPasswordReset({ identifier: normalizedIdentifier, code: activeCode, new_password: newPassword.trim(), reset_ticket: activeTicket || undefined });
       Alert.alert('تم', 'تم تغيير كلمة المرور بنجاح');
       navigation.goBack();
     } catch (e) {
-      Alert.alert('خطأ', String(e?.response?.data?.error || 'تعذر تغيير كلمة المرور'));
+      Alert.alert('خطأ', String(e?.response?.data?.error || e?.response?.data?.message || 'تعذر تغيير كلمة المرور'));
     } finally {
       setLoading(false);
     }

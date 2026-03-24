@@ -33,6 +33,9 @@ export default function RegisterScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [cityModalOpen, setCityModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpTicket, setOtpTicket] = useState('');
 
   const validators = {
     fullName: (value) => {
@@ -62,6 +65,11 @@ export default function RegisterScreen({ navigation }) {
       if (value !== password) return 'كلمتا المرور غير متطابقتين';
       return '';
     },
+    otpCode: (value) => {
+      if (!otpStep) return '';
+      if (!/^\d{6}$/.test(String(value || ''))) return 'رمز التحقق يجب أن يكون 6 أرقام';
+      return '';
+    },
   };
 
   const validateField = (name, value) => validators[name]?.(value) || '';
@@ -74,14 +82,23 @@ export default function RegisterScreen({ navigation }) {
       city: validateField('city', city),
       password: validateField('password', password),
       passwordConfirm: validateField('passwordConfirm', passwordConfirm),
+      otpCode: validateField('otpCode', otpCode),
     };
     setErrors(next);
     return !Object.values(next).some(Boolean);
   };
 
   const disabled = useMemo(() => {
-    return loading || !fullName || !phone || !email || !city || !password || !passwordConfirm;
-  }, [city, email, fullName, loading, password, passwordConfirm, phone]);
+    const baseValid = !validateField('fullName', fullName) &&
+      !validateField('phone', phone) &&
+      !validateField('email', email) &&
+      !validateField('city', city) &&
+      !validateField('password', password) &&
+      !validateField('passwordConfirm', passwordConfirm);
+    if (!baseValid) return true;
+    if (otpStep && !!validateField('otpCode', otpCode)) return true;
+    return loading;
+  }, [city, email, fullName, loading, otpCode, otpStep, password, passwordConfirm, phone]);
 
   const onSubmit = async () => {
     if (!validateAll()) return;
@@ -94,9 +111,21 @@ export default function RegisterScreen({ navigation }) {
         full_name: fullName.trim(),
         password,
         password_confirm: passwordConfirm,
+        otp_code: otpStep ? otpCode.trim() : undefined,
+        otp_ticket: otpStep ? otpTicket : undefined,
       };
       const result = await registerUser(payload);
-      if (result?.requires_verification) {
+      if (result?.requires_otp) {
+        setOtpStep(true);
+        setOtpTicket(String(result?.otp_ticket || ''));
+        const debugOtp = String(result?.debug_otp || '').trim();
+        if (debugOtp) {
+          setOtpCode(debugOtp);
+          setErrors((prev) => ({ ...prev, form: `رمز التحقق: ${debugOtp}` }));
+        } else {
+          setErrors((prev) => ({ ...prev, form: 'تم إرسال رمز التحقق. أدخله لإكمال التسجيل.' }));
+        }
+      } else if (result?.requires_verification) {
         navigation.replace('VerifyAccount', {
           phone: result?.phone || normalizeIraqiPhone(phone),
           email: result?.email || email.trim().toLowerCase(),
@@ -109,7 +138,9 @@ export default function RegisterScreen({ navigation }) {
         });
       }
     } catch (e) {
-      const msg = String(e?.message || 'فشل التسجيل');
+      const code = String(e?.code || e?.payload?.code || e?.response?.data?.code || '');
+      const rawError = e?.payload?.message || e?.payload?.error || e?.response?.data?.error || e?.response?.data?.detail || e?.message || 'فشل التسجيل';
+      const msg = code === 'PHONE_ALREADY_HAS_ACCOUNT' ? 'رقم الهاتف مرتبط بحساب عميل بالفعل، استخدم تسجيل الدخول' : String(rawError);
       setErrors((prev) => ({ ...prev, form: msg }));
     } finally {
       setLoading(false);
@@ -242,8 +273,29 @@ export default function RegisterScreen({ navigation }) {
               {errors.passwordConfirm ? <Text style={styles.errorText}>{errors.passwordConfirm}</Text> : null}
             </View>
 
+            {otpStep ? (
+              <View style={styles.fieldWrap}>
+                <Text style={styles.label}>رمز التحقق (OTP)</Text>
+                <TextInput
+                  placeholder="ادخل 6 أرقام"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  value={otpCode}
+                  onChangeText={(value) => {
+                    const digits = String(value || '').replace(/\D/g, '').slice(0, 6);
+                    setOtpCode(digits);
+                    if (errors.otpCode) setErrors((prev) => ({ ...prev, otpCode: validateField('otpCode', digits) }));
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  style={styles.input}
+                  onBlur={() => setErrors((prev) => ({ ...prev, otpCode: validateField('otpCode', otpCode) }))}
+                />
+                {errors.otpCode ? <Text style={styles.errorText}>{errors.otpCode}</Text> : null}
+              </View>
+            ) : null}
+
             <TouchableOpacity disabled={disabled} onPress={onSubmit} style={[styles.registerBtn, disabled && styles.registerBtnDisabled]}>
-              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.registerBtnText}>تسجيل</Text>}
+              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.registerBtnText}>{otpStep ? 'تأكيد الرمز وإكمال التسجيل' : 'إرسال رمز التحقق'}</Text>}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.loginLinkWrap}>

@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
 
   const register = async (payload) => {
     const result = await apiRegister(payload);
-    if (result?.requires_verification) {
+    if (result?.requires_verification || result?.requires_otp) {
       await syncAuthState(null);
       return result;
     }

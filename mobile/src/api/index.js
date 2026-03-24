@@ -161,16 +161,25 @@ export async function register(payload) {
             r = await client.post('/api/users/', body);
           } catch (e3) {
             const msg = extractMsg(e3?.response?.data, e3?.response?.status) || 'فشل التسجيل. الرجاء التحقق من الحقول.';
-            throw new Error(String(msg));
+            const err = new Error(String(msg));
+            err.code = String(e3?.response?.data?.code || e3?.response?.data?.error || '');
+            err.payload = e3?.response?.data || {};
+            throw err;
           }
         } else {
           const msg = extractMsg(e2?.response?.data, s2) || 'فشل التسجيل. الرجاء التحقق من الحقول.';
-          throw new Error(String(msg));
+          const err = new Error(String(msg));
+          err.code = String(e2?.response?.data?.code || e2?.response?.data?.error || '');
+          err.payload = e2?.response?.data || {};
+          throw err;
         }
       }
     } else {
       const msg = extractMsg(d1, s1) || (s1 === 409 ? 'اسم المستخدم أو البريد مستخدم مسبقًا' : 'فشل التسجيل. الرجاء التحقق من الحقول.');
-      throw new Error(String(msg));
+      const err = new Error(String(msg));
+      err.code = String(d1?.code || d1?.error || '');
+      err.payload = d1 || {};
+      throw err;
     }
   }
   const data = r.data || {};
@@ -178,7 +187,8 @@ export async function register(payload) {
   if (access && refresh) {
     await saveTokens({ access, refresh });
   }
-  return data?.requires_verification ? data : user;
+  if (data?.requires_verification || data?.requires_otp) return data;
+  return user;
 }
 
 export async function verifyRegistration(payload = {}) {
