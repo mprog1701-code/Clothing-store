@@ -32,6 +32,13 @@ client.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   try {
+    const hasApiSuffix = /\/api$/i.test(base);
+    const currentUrl = String(config.url || '');
+    if (hasApiSuffix && /^\/api\//i.test(currentUrl)) {
+      config.url = currentUrl.replace(/^\/api/i, '');
+    }
+  } catch {}
+  try {
     const m = (config.method || 'get').toUpperCase();
     const full = `${base}${config.url || ''}`;
     console.log('[client] REQUEST', m, full);

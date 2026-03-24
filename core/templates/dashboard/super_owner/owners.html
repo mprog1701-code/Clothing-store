@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}إدارة ملاك المتاجر{% endblock %}
+{% block title %}إدارة المستخدمين{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
   <div class="card border-0 shadow-sm mb-3">
     <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-      <h4 class="mb-0"><i class="fas fa-user-shield me-2"></i>إدارة ملاك المتاجر</h4>
+      <h4 class="mb-0"><i class="fas fa-users-cog me-2"></i>إدارة جميع المستخدمين</h4>
       <div>
         <a href="{% url 'super_owner_dashboard' %}" class="btn btn-light btn-sm"><i class="fas fa-arrow-left me-1"></i>العودة</a>
       </div>
@@ -23,9 +23,18 @@
       {% endif %}
 
       <form method="get" class="row g-3 mb-3">
-        <div class="col-md-6">
+        <div class="col-md-5">
           <label for="owners_search" class="form-label">بحث: الاسم، اسم المستخدم، رقم الهاتف</label>
           <input id="owners_search" type="text" name="q" value="{{ q|default:'' }}" class="form-control" placeholder="مثال: اسم أو رقم" autocomplete="off">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">الدور</label>
+          <select name="role" class="form-select">
+            <option value="">كل الأدوار</option>
+            {% for rv, rl in role_choices %}
+              <option value="{{ rv }}" {% if role_filter == rv %}selected{% endif %}>{{ rl }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div class="col-md-3">
           <button class="btn btn-primary">بحث</button>
@@ -35,8 +44,8 @@
 
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div class="d-flex align-items-center gap-2">
-          <button type="button" class="btn btn-outline-danger btn-sm" id="bulk_delete_selected_owners">حذف المحدد</button>
-          <button type="button" class="btn btn-danger btn-sm" id="bulk_delete_all_owners">حذف الكل</button>
+          <button type="button" class="btn btn-outline-warning btn-sm" id="bulk_delete_selected_owners">تعطيل المحدد</button>
+          <button type="button" class="btn btn-warning btn-sm" id="bulk_delete_all_owners">تعطيل الكل</button>
         </div>
         <div>
           <button type="button" class="btn btn-success btn-sm" id="open_create_owner_modal">إضافة مالك جديد</button>
@@ -52,6 +61,8 @@
               <th>اسم المستخدم</th>
               <th>رقم الهاتف</th>
               <th>المدينة</th>
+              <th>الدور</th>
+              <th>الحالة</th>
               <th>عدد المتاجر</th>
               <th>إجراءات</th>
             </tr>
@@ -59,7 +70,6 @@
           <tbody>
             {% for oi in owners_info %}
             {% with o=oi.owner %}
-            {% if o.username != 'super_owner' %}
             <tr>
               <td data-label="تحديد"><input type="checkbox" class="owner-select" value="{{ o.id }}"></td>
               <td data-label="#">{{ forloop.counter }}</td>
@@ -75,18 +85,39 @@
                 </form>
               </td>
               <td data-label="المدينة">{{ o.city|default:'—' }}</td>
+              <td data-label="الدور"><span class="badge bg-secondary">{{ o.get_role_display|default:o.role }}</span></td>
+              <td data-label="الحالة">{% if o.is_active %}<span class="badge bg-success">نشط</span>{% else %}<span class="badge bg-danger">معطل</span>{% endif %}</td>
               <td data-label="عدد المتاجر">{{ oi.store_count }}</td>
               <td data-label="إجراءات">
                 <div class="btn-group btn-group-sm" role="group">
-                  <a href="{% url 'super_owner_stores' %}?owner={{ o.id }}" class="btn btn-outline-primary" title="متاجر هذا المالك"><i class="fas fa-store"></i></a>
-                  <button type="button" class="btn btn-outline-danger" data-owner-id="{{ o.id }}" title="تعطيل" onclick="disableOwner(this)"><i class="fas fa-user-slash"></i></button>
+                  <a href="{% url 'super_owner_stores' %}?owner={{ o.id }}" class="btn btn-outline-primary" title="متاجر هذا المستخدم"><i class="fas fa-store"></i></a>
+                  <form method="post" onsubmit="return confirm('تأكيد تغيير حالة هذا المستخدم؟');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active">
+                    <input type="hidden" name="user_id" value="{{ o.id }}">
+                    <button type="submit" class="btn btn-outline-warning" title="تفعيل/تعطيل"><i class="fas fa-power-off"></i></button>
+                  </form>
+                  {% if o.is_active %}
+                    <form method="post" onsubmit="return confirm('تأكيد تعطيل المستخدم؟');">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_user">
+                      <input type="hidden" name="user_id" value="{{ o.id }}">
+                      <button type="submit" class="btn btn-outline-danger" title="تعطيل"><i class="fas fa-user-slash"></i></button>
+                    </form>
+                  {% else %}
+                    <form method="post" onsubmit="return confirm('تأكيد إعادة تفعيل المستخدم؟');">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="restore_user">
+                      <input type="hidden" name="user_id" value="{{ o.id }}">
+                      <button type="submit" class="btn btn-outline-success" title="إعادة تفعيل"><i class="fas fa-user-check"></i></button>
+                    </form>
+                  {% endif %}
                 </div>
               </td>
             </tr>
-            {% endif %}
             {% endwith %}
             {% empty %}
-            <tr><td colspan="7" class="text-center py-4">لا يوجد ملاك مطابقين</td></tr>
+            <tr><td colspan="10" class="text-center py-4">لا يوجد مستخدمون مطابقون</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -143,15 +174,13 @@ document.addEventListener('DOMContentLoaded', function(){
   function collectVisibleOwnerIds(){ var ids=[]; document.querySelectorAll('.owner-select').forEach(function(cb){ ids.push(cb.value); }); return ids; }
   var btnSel=document.getElementById('bulk_delete_selected_owners');
   var btnAll=document.getElementById('bulk_delete_all_owners');
-  function submit(ids){ if(!ids.length){ var a=document.createElement('div'); a.className='alert alert-warning'; a.textContent='يرجى اختيار ملاك'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); return; } var fd=new FormData(); fd.append('action','bulk_delete_selected'); ids.forEach(function(id){ fd.append('selected_ids', id); }); fetch(window.location.href,{ method:'POST', body:fd, credentials:'same-origin', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': csrftoken } }).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(){ var a=document.createElement('div'); a.className='alert alert-danger'; a.textContent='فشل الحذف'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); }); }); }
+  function submit(ids){ if(!ids.length){ var a=document.createElement('div'); a.className='alert alert-warning'; a.textContent='يرجى اختيار مستخدمين'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); return; } var fd=new FormData(); fd.append('action','bulk_delete_selected'); ids.forEach(function(id){ fd.append('selected_ids', id); }); fetch(window.location.href,{ method:'POST', body:fd, credentials:'same-origin', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': csrftoken } }).then(function(r){ if(r.ok){ location.reload(); return; } return r.text().then(function(){ var a=document.createElement('div'); a.className='alert alert-danger'; a.textContent='فشل التعطيل'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); }); }); }
   if(btnSel){ btnSel.addEventListener('click', function(){ var ids=[]; document.querySelectorAll('.owner-select:checked').forEach(function(cb){ ids.push(cb.value); }); submit(ids); }); }
-  if(btnAll){ btnAll.addEventListener('click', function(){ if(!confirm('تأكيد حذف كل العناصر المعروضة؟')) return; submit(collectVisibleOwnerIds()); }); }
+  if(btnAll){ btnAll.addEventListener('click', function(){ if(!confirm('تأكيد تعطيل كل العناصر المعروضة؟')) return; submit(collectVisibleOwnerIds()); }); }
   var openBtn=document.getElementById('open_create_owner_modal');
   if(openBtn){ openBtn.addEventListener('click', function(){ var mEl=document.getElementById('createOwnerModal'); var m=new bootstrap.Modal(mEl); m.show(); }); }
   var submitCreate=document.getElementById('submitCreateOwner');
   if(submitCreate){ submitCreate.addEventListener('click', function(){ var full=document.getElementById('new_owner_full_name').value.trim(); var phone=document.getElementById('new_owner_phone').value.trim(); var email=document.getElementById('new_owner_email').value.trim(); var err=document.getElementById('new_owner_error'); err.textContent=''; if(!full || !phone){ err.textContent='الاسم الكامل ورقم الهاتف مطلوبان'; return; } submitCreate.disabled=true; submitCreate.textContent='جارٍ الإنشاء...'; var fd=new FormData(); fd.append('full_name', full); fd.append('phone', phone); if(email) fd.append('email', email); var headers = csrftoken ? { 'X-CSRFToken': csrftoken } : {}; fetch('{% url "super_owner_create_owner_json" %}',{ method:'POST', body:fd, headers: headers }).then(function(r){ return r.json().then(function(j){ return { ok:r.ok, status:r.status, data:j }; }); }).then(function(res){ submitCreate.disabled=false; submitCreate.textContent='إنشاء'; if(!res.ok){ var msg='فشل إنشاء المالك'; if(res.status===403){ msg='ليس لديك صلاحية الوصول'; } else if(res.status===405){ msg='طريقة غير مدعومة'; } else if(res.status===409 && res.data && res.data.error==='duplicate_phone'){ msg='رقم الهاتف مستخدم مسبقاً'; } else if(res.status===400){ if(res.data && res.data.error==='missing_required'){ msg='الاسم الكامل ورقم الهاتف مطلوبان'; } else if(res.data && res.data.error==='invalid_phone'){ msg='رقم هاتف غير صالح. الصيغة: 07xxxxxxxxx'; } } else if(res.status>=500){ msg='خطأ في الخادم أثناء إنشاء المالك'; } err.textContent=msg; return; } var modalEl=document.getElementById('createOwnerModal'); var modal=bootstrap.Modal.getInstance(modalEl); if(modal) modal.hide(); location.reload(); }); }); }
-
-  window.disableOwner = function(btn){ var id = btn.getAttribute('data-owner-id'); if(!id) return; if(!confirm('تأكيد تعطيل هذا المالك وفصل متاجره؟')) return; var headers = csrftoken ? { 'X-CSRFToken': csrftoken } : {}; fetch('/dashboard/super-owner/owners/disable/'+id+'/', { method:'POST', headers:headers }).then(function(r){ if(r.ok){ var tr = btn.closest('tr'); if(tr){ tr.remove(); } return; } var a=document.createElement('div'); a.className='alert alert-danger'; a.textContent='فشل التعطيل'; document.body.appendChild(a); setTimeout(function(){ a.remove(); },6000); }); };
 });
 </script>
 {% endblock %}

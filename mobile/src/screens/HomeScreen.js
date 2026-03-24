@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager, Animated, Dimensions, Alert } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, TextInput, I18nManager, Animated, Dimensions, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
@@ -126,19 +126,113 @@ const HomeScreen = ({ navigation }) => {
     };
   }, []);
 
-  const heroAd = adItems.find((item) => {
-    const p = String(item?.__placement || '');
-    return p.includes('hero') || p.includes('top');
-  });
-  const midPageAd = adItems.find((item) => {
-    const p = String(item?.__placement || '');
-    return p.includes('middle') || p.includes('mid');
-  });
-  const heroSlotAds = heroAd ? [heroAd, ...adItems.filter((item) => item?.id !== heroAd?.id && String(item?.__placement || '').includes('hero'))] : [];
-  const midSlotAds = midPageAd ? [midPageAd, ...adItems.filter((item) => item?.id !== midPageAd?.id && String(item?.__placement || '').includes('mid'))] : [];
+  const isTopPlacement = (item) => {
+    const p = String(item?.__placement || '').toLowerCase();
+    const t = String(item?.ad_type || '').toLowerCase();
+    return p.includes('hero') || p.includes('top') || p.includes('mobile_banner') || t === 'slider' || t === 'banner';
+  };
+  const isMiddlePlacement = (item) => {
+    const p = String(item?.__placement || '').toLowerCase();
+    const t = String(item?.ad_type || '').toLowerCase();
+    return p.includes('middle') || p.includes('mid') || p.includes('mobile_card') || t === 'card';
+  };
+  const isBottomPlacement = (item) => {
+    const p = String(item?.__placement || '').toLowerCase();
+    const t = String(item?.ad_type || '').toLowerCase();
+    return p.includes('bottom') || p.includes('mobile_popup') || t === 'popup';
+  };
+  const sortByPriority = (a, b) => {
+    const pa = Number(a?.priority ?? a?.order ?? 0);
+    const pb = Number(b?.priority ?? b?.order ?? 0);
+    if (pa !== pb) return pa - pb;
+    return Number(a?.id ?? 0) - Number(b?.id ?? 0);
+  };
+  const heroCandidates = adItems.filter(isTopPlacement).sort(sortByPriority);
+  const middleCandidates = adItems.filter(isMiddlePlacement).sort(sortByPriority);
+  const bottomCandidates = adItems.filter(isBottomPlacement).sort(sortByPriority);
+  const heroSlotAds = heroCandidates.length ? heroCandidates : adItems.filter((item) => String(item?.ad_type || '').toLowerCase() !== 'card').sort(sortByPriority);
+  const midSlotAds = middleCandidates.length ? middleCandidates : adItems.filter((item) => String(item?.ad_type || '').toLowerCase() === 'card').sort(sortByPriority);
+  const bottomSlotAds = bottomCandidates.length ? bottomCandidates : adItems.filter((item) => String(item?.ad_type || '').toLowerCase() === 'popup').sort(sortByPriority);
   const promotions = promotionItems.slice(0, 10);
   const openProductsList = ({ type, listTitle, extra = {}, ...rest }) => {
     navigation.navigate('ProductsList', { type, listTitle, ...extra, ...rest });
+  };
+  const openMediaTarget = async (item, fallback) => {
+    const rawTarget =
+      String(item?.action_url || item?.link || item?.link_target || item?.url || '').trim();
+    const linkType = String(item?.link_type || '').toLowerCase();
+    if (!rawTarget && !linkType) {
+      if (typeof fallback === 'function') fallback();
+      return;
+    }
+    if (linkType === 'product' && rawTarget) {
+      const pid = Number(rawTarget);
+      if (Number.isFinite(pid) && pid > 0) {
+        navigation.navigate('ProductDetail', { productId: pid });
+        return;
+      }
+    }
+    if (linkType === 'store' && rawTarget) {
+      const sid = Number(rawTarget);
+      if (Number.isFinite(sid) && sid > 0) {
+        navigation.navigate('StoreDetail', { id: sid });
+        return;
+      }
+    }
+    if (linkType === 'category' && rawTarget) {
+      openProductsList({ type: 'category', listTitle: 'القسم', extra: { categoryId: rawTarget } });
+      return;
+    }
+    if (linkType === 'url' && rawTarget) {
+      try {
+        await Linking.openURL(rawTarget);
+      } catch {
+        Alert.alert('تنبيه', 'تعذر فتح الرابط');
+      }
+      return;
+    }
+    const target = rawTarget;
+    if (!target) {
+      if (typeof fallback === 'function') fallback();
+      return;
+    }
+    if (/^https?:\/\//i.test(target)) {
+      try {
+        await Linking.openURL(target);
+      } catch {
+        Alert.alert('تنبيه', 'تعذر فتح الرابط');
+      }
+      return;
+    }
+    const normalized = target.startsWith('/') ? target : `/${target}`;
+    const productMatch = normalized.match(/^\/products\/(\d+)\/?$/i);
+    if (productMatch) {
+      navigation.navigate('ProductDetail', { productId: Number(productMatch[1]) });
+      return;
+    }
+    if (/^\/products\/?$/i.test(normalized)) {
+      openProductsList({ type: 'all_products', listTitle: 'كل المنتجات' });
+      return;
+    }
+    const storeMatch = normalized.match(/^\/stores\/(\d+)\/?$/i);
+    if (storeMatch) {
+      navigation.navigate('StoreDetail', { id: Number(storeMatch[1]) });
+      return;
+    }
+    if (/^\/stores\/?$/i.test(normalized)) {
+      navigation.navigate('Root', { screen: 'Stores' });
+      return;
+    }
+    if (/^\/categories\/?$/i.test(normalized)) {
+      navigation.navigate('AllCategories', { listTitle: 'كل الأقسام' });
+      return;
+    }
+    try {
+      const absolute = `https://clothing-store-production-4387.up.railway.app${normalized}`;
+      await Linking.openURL(absolute);
+    } catch {
+      if (typeof fallback === 'function') fallback();
+    }
   };
   const requestLogin = ({ next }) => {
     setPendingNext(next || { name: 'Root', params: { screen: 'Home' } });
@@ -238,6 +332,7 @@ const HomeScreen = ({ navigation }) => {
           intervalMs={5000}
           placeholderTitle="Coming Soon"
           placeholderSubtitle="عرض داخلي قريباً"
+          onPressItem={(item) => openMediaTarget(item)}
         />
       </Animated.View>
 
@@ -309,7 +404,7 @@ const HomeScreen = ({ navigation }) => {
           items={promotions}
           title="بنرات ترويجية"
           emptyTitle="عرض داخلي قريباً"
-          onPressItem={() => openProductsList({ type: 'promotion_banners', listTitle: 'بنرات ترويجية' })}
+          onPressItem={(item) => openMediaTarget(item, () => openProductsList({ type: 'promotion_banners', listTitle: 'بنرات ترويجية' }))}
         />
       </Animated.View>
 
@@ -320,8 +415,22 @@ const HomeScreen = ({ navigation }) => {
           intervalMs={5000}
           placeholderTitle="Coming Soon"
           placeholderSubtitle="عروض جديدة قريباً"
+          onPressItem={(item) => openMediaTarget(item)}
         />
       </Animated.View>
+
+      {bottomSlotAds.length ? (
+        <Animated.View style={styles.fadeUp(searchAnim)}>
+          <AdSlider
+            ads={bottomSlotAds}
+            badgeText="Ad"
+            intervalMs={5000}
+            placeholderTitle="Coming Soon"
+            placeholderSubtitle="عروض جديدة قريباً"
+            onPressItem={(item) => openMediaTarget(item)}
+          />
+        </Animated.View>
+      ) : null}
 
       <Animated.View style={styles.fadeUp(categoriesAnim)}>
         <View style={styles.sectionHeader}>

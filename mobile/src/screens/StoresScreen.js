@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, I18nManager, RefreshControl, Modal, Animated, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, I18nManager, RefreshControl, Modal, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import theme from '../theme';
@@ -14,6 +14,48 @@ const filters = [
   { key: 'near', label: 'الأقرب' },
 ];
 
+const FeaturedStoreItem = React.memo(function FeaturedStoreItem({ item, onPress }) {
+  return (
+    <TouchableOpacity onPress={() => onPress(item?.id)} style={styles.featuredCardWrap}>
+      <View style={styles.featuredMediaWrap}>
+        {item?.logo ? (
+          <Image source={{ uri: item.logo }} style={styles.featuredMedia} contentFit="cover" transition={0} cachePolicy="memory-disk" />
+        ) : (
+          <Text style={styles.featuredNameFallback}>{item?.name}</Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+const StoreGridItem = React.memo(function StoreGridItem({ item, onPress }) {
+  const stars = `${((item?.store_rating || 0) >= 1 ? '★' : '☆')}${((item?.store_rating || 0) >= 2 ? '★' : '☆')}${((item?.store_rating || 0) >= 3 ? '★' : '☆')}${((item?.store_rating || 0) >= 4 ? '★' : '☆')}${((item?.store_rating || 0) >= 5 ? '★' : '☆')}`;
+  return (
+    <TouchableOpacity style={styles.storeCard} onPress={() => onPress(item?.id)}>
+      {item?.logo ? (
+        <Image source={{ uri: item.logo }} style={styles.storeCardMedia} contentFit="cover" transition={0} cachePolicy="memory-disk" />
+      ) : null}
+      <View style={styles.storeCardBody}>
+        <Text numberOfLines={1} style={styles.storeCardTitle}>{item?.name}</Text>
+        <View style={styles.ratingRow}>
+          <Text style={styles.ratingLabel}>تقييم: </Text>
+          <Text style={styles.ratingStars}>{stars}</Text>
+        </View>
+        <Text style={styles.metaText}>منتجات: {item?.products_count ?? 0} • {item?.is_open ? 'مفتوح' : 'مغلق'}</Text>
+        <Text style={styles.metaText}>توصيل: {item?.delivery_time_text || 'غير محدد'}</Text>
+        {item?.fast_delivery ? (
+          <View style={styles.fastBadge}>
+            <Text style={styles.fastBadgeText}>توصيل سريع</Text>
+          </View>
+        ) : null}
+        <TouchableOpacity onPress={() => onPress(item?.id)} style={styles.visitButton}>
+          <Text style={styles.visitButtonText}>زيارة المتجر</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export default function StoresScreen({ navigation }) {
   const [q, setQ] = useState('');
   const [active, setActive] = useState('all');
@@ -25,7 +67,6 @@ export default function StoresScreen({ navigation }) {
   const [hasMore, setHasMore] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [isTopAdVisible, setIsTopAdVisible] = useState(true);
-  const scrollY = useRef(new Animated.Value(0)).current;
   const handleTopAdDismiss = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsTopAdVisible(false);
@@ -36,23 +77,6 @@ export default function StoresScreen({ navigation }) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
   }, []);
-
-  const COLLAPSE_RANGE = 220;
-  const headerHeight = scrollY.interpolate({
-    inputRange: [0, COLLAPSE_RANGE],
-    outputRange: [220, 0],
-    extrapolate: 'clamp',
-  });
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, COLLAPSE_RANGE * 0.7, COLLAPSE_RANGE],
-    outputRange: [1, 0.35, 0],
-    extrapolate: 'clamp',
-  });
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, COLLAPSE_RANGE],
-    outputRange: [0, -24],
-    extrapolate: 'clamp',
-  });
 
   const load = async (opts = {}) => {
     const nextPage = opts.page ?? page;
@@ -94,6 +118,47 @@ export default function StoresScreen({ navigation }) {
   useEffect(() => { const t = setTimeout(() => load({ page: 1 }), 300); return () => clearTimeout(t); }, [q, active]);
 
   const filtered = stores;
+  const goToStore = useCallback((id) => {
+    if (!id) return;
+    navigation.navigate('StoreDetail', { id });
+  }, [navigation]);
+  const renderFeatured = useCallback(({ item }) => (
+    <FeaturedStoreItem item={item} onPress={goToStore} />
+  ), [goToStore]);
+  const renderStore = useCallback(({ item }) => (
+    <StoreGridItem item={item} onPress={goToStore} />
+  ), [goToStore]);
+  const listHeader = (
+    <View style={styles.collapsibleWrap}>
+      <View style={styles.searchWrap}>
+        <SearchBar initial={q} onChange={setQ} placeholder="ابحث عن متجر..." />
+      </View>
+      {isTopAdVisible ? (
+        <AdBannerDismissible
+          position="home_top"
+          compact
+          onDismiss={handleTopAdDismiss}
+        />
+      ) : null}
+      <View style={styles.featuredHeader}>
+        <Text style={styles.featuredTitle}>أفضل المتاجر</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Stores')}>
+          <Text style={styles.featuredLink}>عرض الكل</Text>
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        horizontal
+        data={featured}
+        keyExtractor={(it) => String(it.id)}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.featuredListContent}
+        initialNumToRender={4}
+        maxToRenderPerBatch={4}
+        windowSize={3}
+        renderItem={renderFeatured}
+      />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -103,49 +168,6 @@ export default function StoresScreen({ navigation }) {
           <Text style={styles.filterButtonText}>فلتر ⚙️</Text>
         </TouchableOpacity>
       </View>
-
-      <Animated.View
-        pointerEvents="box-none"
-        style={[
-          styles.collapsibleWrap,
-          { height: headerHeight, opacity: headerOpacity, transform: [{ translateY: headerTranslateY }] },
-        ]}
-      >
-        <View style={styles.searchWrap}>
-          <SearchBar initial={q} onChange={setQ} placeholder="ابحث عن متجر..." />
-        </View>
-        {isTopAdVisible ? (
-          <AdBannerDismissible
-            position="stores-hero"
-            compact
-            onDismiss={handleTopAdDismiss}
-          />
-        ) : null}
-        <View style={styles.featuredHeader}>
-          <Text style={styles.featuredTitle}>أفضل المتاجر</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Stores')}>
-            <Text style={styles.featuredLink}>عرض الكل</Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          horizontal
-          data={featured}
-          keyExtractor={(it) => String(it.id)}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.featuredListContent}
-          renderItem={({ item }) => (
-            <TouchableOpacity onPress={() => navigation.navigate('StoreDetail', { id: item.id })} style={styles.featuredCardWrap}>
-              <View style={styles.featuredMediaWrap}>
-                {item.logo ? (
-                  <Image source={{ uri: item.logo }} style={styles.featuredMedia} contentFit="cover" transition={150} cachePolicy="memory-disk" />
-                ) : (
-                  <Text style={styles.featuredNameFallback}>{item.name}</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          )}
-        />
-      </Animated.View>
 
       <View style={styles.stickyFilters}>
         <FlatList
@@ -165,55 +187,23 @@ export default function StoresScreen({ navigation }) {
         />
       </View>
 
-      <Animated.FlatList
+      <FlatList
         data={filtered}
         keyExtractor={(it) => String(it.id)}
         numColumns={2}
         style={styles.list}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={listHeader}
         columnWrapperStyle={styles.listColumn}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); setPage(1); setHasMore(true); load({ page: 1, refresh: true }); }} />}
         onEndReachedThreshold={0.5}
         onEndReached={() => { if (hasMore && !loading) load({ page: page + 1 }); }}
-        getItemLayout={(_, index) => ({ length: 240, offset: 240 * Math.ceil((index + 1) / 2), index })}
         removeClippedSubviews={true}
-        initialNumToRender={10}
-        windowSize={7}
-        scrollEventThrottle={16}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.storeCard}
-            onPress={() => navigation.navigate('StoreDetail', { id: item.id })}
-          >
-            {item.logo ? (
-              <Image source={{ uri: item.logo }} style={styles.storeCardMedia} contentFit="cover" transition={150} cachePolicy="memory-disk" />
-            ) : null}
-            <View style={styles.storeCardBody}>
-              <Text numberOfLines={1} style={styles.storeCardTitle}>{item.name}</Text>
-              <View style={styles.ratingRow}>
-                <Text style={styles.ratingLabel}>تقييم: </Text>
-                <Text style={styles.ratingStars}>
-                  {Array.from({ length: 5 }).map((_, i) => ((item.store_rating || 0) >= i + 1 ? '★' : '☆')).join('')}
-                </Text>
-              </View>
-              <Text style={styles.metaText}>
-                منتجات: {item.products_count ?? 0} • {item.is_open ? 'مفتوح' : 'مغلق'}
-              </Text>
-              <Text style={styles.metaText}>
-                توصيل: {item.delivery_time_text || 'غير محدد'}
-              </Text>
-              {item.fast_delivery ? (
-                <View style={styles.fastBadge}>
-                  <Text style={styles.fastBadgeText}>توصيل سريع</Text>
-                </View>
-              ) : null}
-              <TouchableOpacity onPress={() => navigation.navigate('StoreDetail', { id: item.id })} style={styles.visitButton}>
-                <Text style={styles.visitButtonText}>زيارة المتجر</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        )}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        updateCellsBatchingPeriod={60}
+        windowSize={5}
+        renderItem={renderStore}
         ListEmptyComponent={
           loading ? (
             <View style={{ padding: theme.spacing.lg, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
@@ -297,9 +287,10 @@ const styles = StyleSheet.create({
   collapsibleWrap: {
     zIndex: 20,
     elevation: 8,
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: theme.colors.background,
     paddingHorizontal: 16,
+    paddingBottom: theme.spacing.sm,
   },
   searchWrap: {
     marginTop: theme.spacing.sm,
@@ -345,6 +336,22 @@ const styles = StyleSheet.create({
   featuredNameFallback: {
     color: theme.colors.textPrimary,
     fontFamily: theme.typography.fontBold,
+  },
+  collapsedHint: {
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    backgroundColor: theme.colors.surface,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    alignItems: 'center',
+  },
+  collapsedHintText: {
+    color: theme.colors.textSecondary,
+    fontFamily: theme.typography.fontRegular,
+    fontSize: theme.typography.sizes.xs,
   },
   stickyFilters: {
     zIndex: 25,

@@ -6354,10 +6354,13 @@ def super_owner_owners(request):
                 u.save()
     except Exception:
         pass
-    owners = User.objects.filter(role='store_admin').exclude(username='super_owner').order_by('-id')
+    role_filter = (request.GET.get('role') or '').strip()
+    owners = User.objects.exclude(username='super_owner').order_by('-id')
     if q:
         from django.db.models import Q
-        owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q))
+        owners = owners.filter(Q(username__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(phone__icontains=q) | Q(email__icontains=q))
+    if role_filter:
+        owners = owners.filter(role=role_filter)
 
     if request.method == 'POST':
         action = (request.POST.get('action') or '').strip()
@@ -6365,12 +6368,12 @@ def super_owner_owners(request):
             if action.startswith('bulk_delete'):
                 ids = [int(x) for x in request.POST.getlist('selected_ids') if str(x).isdigit()]
                 if not ids:
-                    messages.error(request, 'يرجى اختيار ملاك للحذف')
+                    messages.error(request, 'يرجى اختيار مستخدمين')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({'ok': False, 'error': 'no_selection'}, status=400)
                     return redirect('super_owner_owners')
-                target_ids = [i for i in ids if User.objects.filter(id=i, role='store_admin').exists()]
-                target_ids = [i for i in target_ids if User.objects.filter(id=i).exclude(username='super_owner').exists()]
+                target_ids = [i for i in ids if User.objects.filter(id=i).exclude(username='super_owner').exists()]
+                target_ids = [i for i in target_ids if i != request.user.id]
                 if not target_ids:
                     messages.error(request, 'لم يتم العثور على عناصر صالحة للحذف')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -6381,17 +6384,100 @@ def super_owner_owners(request):
                 with transaction.atomic():
                     for oid in target_ids:
                         o = User.objects.select_for_update().get(id=oid)
-                        Store.objects.filter(owner=o).update(owner=None)
-                        o.role = 'customer'
-                        o.admin_role = ''
-                        o.save()
+                        before = bool(o.is_active)
+                        o.is_active = False
+                        o.save(update_fields=['is_active'])
+                        try:
+                            from .models import AdminAuditLog
+                            import json
+                            AdminAuditLog.objects.create(
+                                admin_user=request.user,
+                                action='bulk_disable_user',
+                                model='User',
+                                object_id=str(o.id),
+                                before=json.dumps({'is_active': before}, ensure_ascii=False),
+                                after=json.dumps({'is_active': False}, ensure_ascii=False),
+                            )
+                        except Exception:
+                            pass
                         affected += 1
-                messages.success(request, f'تم تعطيل {affected} مالكاً وفصل المتاجر المرتبطة')
+                messages.success(request, f'تم تعطيل {affected} مستخدم')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'ok': True, 'affected': affected})
                 return redirect('super_owner_owners')
+            if action == 'toggle_active':
+                user_id = int(request.POST.get('user_id'))
+                target = get_object_or_404(User, id=user_id)
+                if target.username == 'super_owner' or target.id == request.user.id:
+                    messages.error(request, 'لا يمكن تعديل هذا الحساب')
+                    return redirect('super_owner_owners')
+                before = bool(target.is_active)
+                target.is_active = not before
+                target.save(update_fields=['is_active'])
+                try:
+                    from .models import AdminAuditLog
+                    import json
+                    AdminAuditLog.objects.create(
+                        admin_user=request.user,
+                        action='toggle_user_active',
+                        model='User',
+                        object_id=str(target.id),
+                        before=json.dumps({'is_active': before}, ensure_ascii=False),
+                        after=json.dumps({'is_active': bool(target.is_active)}, ensure_ascii=False),
+                    )
+                except Exception:
+                    pass
+                messages.success(request, f'تم تحديث حالة المستخدم {target.username}')
+                return redirect('super_owner_owners')
+            if action == 'delete_user':
+                user_id = int(request.POST.get('user_id'))
+                target = get_object_or_404(User, id=user_id)
+                if target.username == 'super_owner' or target.id == request.user.id:
+                    messages.error(request, 'لا يمكن حذف هذا الحساب')
+                    return redirect('super_owner_owners')
+                from .models import Store
+                with transaction.atomic():
+                    before = bool(target.is_active)
+                    target.is_active = False
+                    target.save(update_fields=['is_active'])
+                    try:
+                        from .models import AdminAuditLog
+                        import json
+                        AdminAuditLog.objects.create(
+                            admin_user=request.user,
+                            action='disable_user',
+                            model='User',
+                            object_id=str(target.id),
+                            before=json.dumps({'is_active': before}, ensure_ascii=False),
+                            after=json.dumps({'is_active': False}, ensure_ascii=False),
+                        )
+                    except Exception:
+                        pass
+                messages.success(request, f'تم تعطيل المستخدم {target.username}')
+                return redirect('super_owner_owners')
+            if action == 'restore_user':
+                user_id = int(request.POST.get('user_id'))
+                target = get_object_or_404(User, id=user_id)
+                before = bool(target.is_active)
+                target.is_active = True
+                target.save(update_fields=['is_active'])
+                try:
+                    from .models import AdminAuditLog
+                    import json
+                    AdminAuditLog.objects.create(
+                        admin_user=request.user,
+                        action='restore_user',
+                        model='User',
+                        object_id=str(target.id),
+                        before=json.dumps({'is_active': before}, ensure_ascii=False),
+                        after=json.dumps({'is_active': True}, ensure_ascii=False),
+                    )
+                except Exception:
+                    pass
+                messages.success(request, f'تمت إعادة تفعيل المستخدم {target.username}')
+                return redirect('super_owner_owners')
             if action == 'update_phone':
-                owner_id = int(request.POST.get('owner_id'))
+                owner_id = int(request.POST.get('owner_id') or request.POST.get('user_id'))
                 phone_raw = (request.POST.get('phone') or '').strip()
                 import re
                 p = phone_raw.replace(' ', '')
@@ -6426,7 +6512,7 @@ def super_owner_owners(request):
                     )
                 except Exception:
                     pass
-                messages.success(request, f'تم تحديث رقم هاتف المالك {owner.username}!')
+                messages.success(request, f'تم تحديث رقم هاتف المستخدم {owner.username}!')
                 return redirect('super_owner_owners')
         except Exception:
             messages.error(request, 'حدث خطأ أثناء التحديث')
@@ -6442,11 +6528,14 @@ def super_owner_owners(request):
     store_map = {row['owner_id']: row['c'] for row in store_counts}
     owners_info = [{'owner': o, 'store_count': store_map.get(o.id, 0)} for o in owners_page]
 
+    role_choices = User.ROLE_CHOICES if hasattr(User, 'ROLE_CHOICES') else []
     context = {
         'owners_info': owners_info,
         'page_obj': owners_page,
         'paginator': paginator,
         'q': q,
+        'role_filter': role_filter,
+        'role_choices': role_choices,
     }
     return render(request, 'dashboard/super_owner/owners.html', context)
 

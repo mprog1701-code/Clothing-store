@@ -7,11 +7,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.core.cache import cache
+from django.core.mail import send_mail
+from django.conf import settings
 from django.db import connection
+from django.utils import timezone
 from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize, FeatureFlag
 import logging
 import json
 import os
+import random
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 from urllib.error import URLError, HTTPError
@@ -41,6 +45,18 @@ def _related_user_ids_for_user(user):
 
 
 class AuthViewSet(viewsets.ViewSet):
+    def _create_code(self):
+        return ''.join(str(random.randint(0, 9)) for _ in range(6))
+
+    def _send_email_code(self, email, subject, message):
+        if not email:
+            return False
+        try:
+            send_mail(subject, message, getattr(settings, 'DEFAULT_FROM_EMAIL', None), [email], fail_silently=False)
+            return True
+        except Exception:
+            return False
+
     @action(detail=False, methods=['post'], permission_classes=[])
     def register(self, request):
         phone = (request.data.get('phone') or '').strip()
@@ -75,12 +91,24 @@ class AuthViewSet(viewsets.ViewSet):
                     inv.save()
             except Exception:
                 pass
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'user': UserSerializer(user).data,
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-            }, status=status.HTTP_201_CREATED)
+            code = self._create_code()
+            cache.set(f"verify:register:{user.phone}", code, timeout=10 * 60)
+            email_sent = self._send_email_code(
+                user.email,
+                'رمز تفعيل الحساب',
+                f'رمز تفعيل حسابك هو: {code}\nصالح لمدة 10 دقائق.',
+            )
+            payload = {
+                'ok': True,
+                'requires_verification': True,
+                'phone': user.phone,
+                'email': user.email,
+                'email_sent': bool(email_sent),
+                'message': 'تم إنشاء الحساب. أدخل رمز التفعيل المرسل إلى بريدك الإلكتروني.',
+            }
+            if settings.DEBUG:
+                payload['debug_code'] = code
+            return Response(payload, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=False, methods=['post'], permission_classes=[])
@@ -121,6 +149,28 @@ class AuthViewSet(viewsets.ViewSet):
                     username = u.username
             except Exception:
                 pass
+        try:
+            pending_user = User.objects.filter(username=username).first()
+            if pending_user and (not pending_user.is_active) and pending_user.check_password(password):
+                code = self._create_code()
+                cache.set(f"verify:register:{pending_user.phone}", code, timeout=10 * 60)
+                email_sent = self._send_email_code(
+                    pending_user.email,
+                    'رمز تفعيل الحساب',
+                    f'رمز تفعيل حسابك هو: {code}\nصالح لمدة 10 دقائق.',
+                )
+                payload = {
+                    'error': 'ACCOUNT_NOT_VERIFIED',
+                    'requires_verification': True,
+                    'phone': pending_user.phone,
+                    'email': pending_user.email,
+                    'email_sent': bool(email_sent),
+                }
+                if settings.DEBUG:
+                    payload['debug_code'] = code
+                return Response(payload, status=status.HTTP_403_FORBIDDEN)
+        except Exception:
+            pass
         user = authenticate(username=username, password=password)
         if user:
             refresh = RefreshToken.for_user(user)
@@ -130,6 +180,93 @@ class AuthViewSet(viewsets.ViewSet):
                 'refresh': str(refresh)
             })
         return Response({'error': 'بيانات الدخول غير صحيحة'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def verify_registration(self, request):
+        phone = (request.data.get('phone') or '').strip()
+        code = (request.data.get('code') or '').strip()
+        if not phone or not code:
+            return Response({'error': 'يرجى إدخال رقم الهاتف والرمز'}, status=status.HTTP_400_BAD_REQUEST)
+        expected = cache.get(f"verify:register:{phone}")
+        if not expected or str(expected) != str(code):
+            return Response({'error': 'رمز التفعيل غير صحيح أو منتهي'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(phone=phone).first()
+        if not user:
+            return Response({'error': 'المستخدم غير موجود'}, status=status.HTTP_404_NOT_FOUND)
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        cache.delete(f"verify:register:{phone}")
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'user': UserSerializer(user).data,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        })
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def resend_verification(self, request):
+        phone = (request.data.get('phone') or '').strip()
+        user = User.objects.filter(phone=phone).first()
+        if not user or user.is_active:
+            return Response({'error': 'الحساب غير قابل لإعادة الإرسال'}, status=status.HTTP_400_BAD_REQUEST)
+        code = self._create_code()
+        cache.set(f"verify:register:{user.phone}", code, timeout=10 * 60)
+        email_sent = self._send_email_code(
+            user.email,
+            'إعادة إرسال رمز التفعيل',
+            f'رمز تفعيل حسابك هو: {code}\nصالح لمدة 10 دقائق.',
+        )
+        payload = {'ok': True, 'email_sent': bool(email_sent)}
+        if settings.DEBUG:
+            payload['debug_code'] = code
+        return Response(payload)
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def forgot_password_request(self, request):
+        identifier = (request.data.get('identifier') or request.data.get('phone') or request.data.get('email') or '').strip()
+        if not identifier:
+            return Response({'error': 'يرجى إدخال رقم الهاتف أو البريد الإلكتروني'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(Q(phone=identifier) | Q(email__iexact=identifier)).first()
+        if not user:
+            return Response({'ok': True, 'message': 'إذا كانت البيانات صحيحة سيتم إرسال رمز الاسترجاع'})
+        code = self._create_code()
+        cache.set(f"verify:reset:{user.phone}", code, timeout=10 * 60)
+        email_sent = False
+        if user.email:
+            email_sent = self._send_email_code(
+                user.email,
+                'رمز استعادة كلمة المرور',
+                f'رمز استعادة كلمة المرور هو: {code}\nصالح لمدة 10 دقائق.',
+            )
+        payload = {'ok': True, 'email_sent': bool(email_sent), 'phone': user.phone}
+        if email_sent:
+            payload['message'] = 'تم إرسال رمز الاسترجاع إلى البريد الإلكتروني'
+        else:
+            payload['message'] = 'تعذر إرسال البريد، تم توفير رمز الاسترجاع مباشرة'
+            payload['reset_code'] = code
+        if settings.DEBUG:
+            payload['debug_code'] = code
+        return Response(payload)
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def forgot_password_confirm(self, request):
+        identifier = (request.data.get('identifier') or request.data.get('phone') or request.data.get('email') or '').strip()
+        code = (request.data.get('code') or '').strip()
+        new_password = (request.data.get('new_password') or '').strip()
+        if not identifier or not code or not new_password:
+            return Response({'error': 'البيانات المطلوبة غير مكتملة'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(Q(phone=identifier) | Q(email__iexact=identifier)).first()
+        if not user:
+            return Response({'error': 'المستخدم غير موجود'}, status=status.HTTP_404_NOT_FOUND)
+        expected = cache.get(f"verify:reset:{user.phone}")
+        if not expected or str(expected) != str(code):
+            return Response({'error': 'رمز الاسترجاع غير صحيح أو منتهي'}, status=status.HTTP_400_BAD_REQUEST)
+        if len(new_password) < 6:
+            return Response({'error': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'}, status=status.HTTP_400_BAD_REQUEST)
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+        cache.delete(f"verify:reset:{user.phone}")
+        return Response({'ok': True})
     
     @action(detail=False, methods=['get', 'patch', 'put'])
     def me(self, request):
@@ -420,6 +557,10 @@ class BannerList(APIView):
                 'title': b.title,
                 'image': img,
                 'image_url': img,
+                'action_url': b.link_target or '',
+                'link': b.link_target or '',
+                'link_type': b.link_type,
+                'link_target': b.link_target or '',
                 'placement': b.placement,
                 'priority': int(b.priority or 0),
                 'starts_at': (b.starts_at.isoformat() if b.starts_at else None),
@@ -469,6 +610,10 @@ class AdsList(APIView):
                     'title': b.title,
                     'image': img,
                     'image_url': img,
+                    'action_url': b.link_target or '',
+                    'link': b.link_target or '',
+                    'link_type': b.link_type,
+                    'link_target': b.link_target or '',
                     'placement': b.placement,
                     'priority': int(b.priority or 0),
                     'starts_at': (b.starts_at.isoformat() if b.starts_at else None),
@@ -540,6 +685,11 @@ class BannerHomeTop(APIView):
                 'id': b.id,
                 'title': b.title,
                 'image': img,
+                'image_url': img,
+                'action_url': b.link_target or '',
+                'link': b.link_target or '',
+                'link_type': b.link_type,
+                'link_target': b.link_target or '',
                 'placement': b.placement,
                 'priority': int(b.priority or 0),
                 'starts_at': (b.starts_at.isoformat() if b.starts_at else None),

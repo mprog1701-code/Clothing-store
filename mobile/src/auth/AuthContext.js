@@ -58,8 +58,12 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (payload) => {
-    const u = await apiRegister(payload);
-    return syncAuthState(u || null);
+    const result = await apiRegister(payload);
+    if (result?.requires_verification) {
+      await syncAuthState(null);
+      return result;
+    }
+    return syncAuthState(result || null);
   };
 
   const logout = async () => {

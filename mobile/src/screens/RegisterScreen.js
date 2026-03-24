@@ -24,9 +24,12 @@ export default function RegisterScreen({ navigation }) {
   const { register: registerUser } = useAuth();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [city, setCity] = useState(IRAQI_CITIES[0]);
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [cityModalOpen, setCityModalOpen] = useState(false);
   const [errors, setErrors] = useState({});
@@ -40,6 +43,12 @@ export default function RegisterScreen({ navigation }) {
     phone: (value) => {
       if (!value) return 'يرجى إدخال رقم الهاتف';
       if (!isValidIraqiPhone(value)) return 'رقم الهاتف غير صحيح';
+      return '';
+    },
+    email: (value) => {
+      const v = String(value || '').trim();
+      if (!v) return 'يرجى إدخال البريد الإلكتروني';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'صيغة البريد الإلكتروني غير صحيحة';
       return '';
     },
     city: (value) => (!value ? 'يرجى اختيار المدينة' : ''),
@@ -61,6 +70,7 @@ export default function RegisterScreen({ navigation }) {
     const next = {
       fullName: validateField('fullName', fullName),
       phone: validateField('phone', phone),
+      email: validateField('email', email),
       city: validateField('city', city),
       password: validateField('password', password),
       passwordConfirm: validateField('passwordConfirm', passwordConfirm),
@@ -70,8 +80,8 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const disabled = useMemo(() => {
-    return loading || !fullName || !phone || !city || !password || !passwordConfirm;
-  }, [city, fullName, loading, password, passwordConfirm, phone]);
+    return loading || !fullName || !phone || !email || !city || !password || !passwordConfirm;
+  }, [city, email, fullName, loading, password, passwordConfirm, phone]);
 
   const onSubmit = async () => {
     if (!validateAll()) return;
@@ -79,16 +89,25 @@ export default function RegisterScreen({ navigation }) {
     try {
       const payload = {
         phone: normalizeIraqiPhone(phone),
+        email: email.trim().toLowerCase(),
         city,
         full_name: fullName.trim(),
         password,
         password_confirm: passwordConfirm,
       };
-      await registerUser(payload);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Root' }],
-      });
+      const result = await registerUser(payload);
+      if (result?.requires_verification) {
+        navigation.replace('VerifyAccount', {
+          phone: result?.phone || normalizeIraqiPhone(phone),
+          email: result?.email || email.trim().toLowerCase(),
+          debugCode: result?.debug_code || '',
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Root' }],
+        });
+      }
     } catch (e) {
       const msg = String(e?.message || 'فشل التسجيل');
       setErrors((prev) => ({ ...prev, form: msg }));
@@ -99,8 +118,8 @@ export default function RegisterScreen({ navigation }) {
   return (
     <LinearGradient colors={['#0c1b33', '#081226']} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24} style={styles.safe}>
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             <TouchableOpacity
               onPress={() => {
                 if (navigation.canGoBack()) navigation.goBack();
@@ -152,6 +171,24 @@ export default function RegisterScreen({ navigation }) {
             </View>
 
             <View style={styles.fieldWrap}>
+              <Text style={styles.label}>البريد الإلكتروني</Text>
+              <TextInput
+                placeholder="name@example.com"
+                placeholderTextColor="rgba(255,255,255,0.6)"
+                value={email}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  if (errors.email) setErrors((prev) => ({ ...prev, email: validateField('email', value) }));
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+                onBlur={() => setErrors((prev) => ({ ...prev, email: validateField('email', email) }))}
+              />
+              {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+            </View>
+
+            <View style={styles.fieldWrap}>
               <Text style={styles.label}>المدينة</Text>
               <TouchableOpacity onPress={() => setCityModalOpen(true)} style={styles.selectInput}>
                 <Text style={styles.selectText}>{city || 'اختر المدينة'}</Text>
@@ -162,36 +199,46 @@ export default function RegisterScreen({ navigation }) {
 
             <View style={styles.fieldWrap}>
               <Text style={styles.label}>كلمة المرور</Text>
-              <TextInput
-                placeholder="••••••"
-                placeholderTextColor="rgba(255,255,255,0.6)"
-                value={password}
-                onChangeText={(value) => {
-                  setPassword(value);
-                  if (errors.password) setErrors((prev) => ({ ...prev, password: validateField('password', value) }));
-                  if (errors.passwordConfirm) setErrors((prev) => ({ ...prev, passwordConfirm: validateField('passwordConfirm', passwordConfirm) }));
-                }}
-                secureTextEntry
-                style={styles.input}
-                onBlur={() => setErrors((prev) => ({ ...prev, password: validateField('password', password) }))}
-              />
+              <View style={styles.passwordRow}>
+                <TextInput
+                  placeholder="••••••"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  value={password}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    if (errors.password) setErrors((prev) => ({ ...prev, password: validateField('password', value) }));
+                    if (errors.passwordConfirm) setErrors((prev) => ({ ...prev, passwordConfirm: validateField('passwordConfirm', passwordConfirm) }));
+                  }}
+                  secureTextEntry={!showPassword}
+                  style={styles.passwordInput}
+                  onBlur={() => setErrors((prev) => ({ ...prev, password: validateField('password', password) }))}
+                />
+                <TouchableOpacity onPress={() => setShowPassword((v) => !v)} style={styles.eyeBtn}>
+                  <MaterialCommunityIcons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.85)" />
+                </TouchableOpacity>
+              </View>
               {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
             </View>
 
             <View style={styles.fieldWrap}>
               <Text style={styles.label}>تأكيد كلمة المرور</Text>
-              <TextInput
-                placeholder="••••••"
-                placeholderTextColor="rgba(255,255,255,0.6)"
-                value={passwordConfirm}
-                onChangeText={(value) => {
-                  setPasswordConfirm(value);
-                  if (errors.passwordConfirm) setErrors((prev) => ({ ...prev, passwordConfirm: validateField('passwordConfirm', value) }));
-                }}
-                secureTextEntry
-                style={styles.input}
-                onBlur={() => setErrors((prev) => ({ ...prev, passwordConfirm: validateField('passwordConfirm', passwordConfirm) }))}
-              />
+              <View style={styles.passwordRow}>
+                <TextInput
+                  placeholder="••••••"
+                  placeholderTextColor="rgba(255,255,255,0.6)"
+                  value={passwordConfirm}
+                  onChangeText={(value) => {
+                    setPasswordConfirm(value);
+                    if (errors.passwordConfirm) setErrors((prev) => ({ ...prev, passwordConfirm: validateField('passwordConfirm', value) }));
+                  }}
+                  secureTextEntry={!showPasswordConfirm}
+                  style={styles.passwordInput}
+                  onBlur={() => setErrors((prev) => ({ ...prev, passwordConfirm: validateField('passwordConfirm', passwordConfirm) }))}
+                />
+                <TouchableOpacity onPress={() => setShowPasswordConfirm((v) => !v)} style={styles.eyeBtn}>
+                  <MaterialCommunityIcons name={showPasswordConfirm ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.85)" />
+                </TouchableOpacity>
+              </View>
               {errors.passwordConfirm ? <Text style={styles.errorText}>{errors.passwordConfirm}</Text> : null}
             </View>
 
@@ -244,7 +291,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl * 2,
+    paddingBottom: theme.spacing.xl * 4,
   },
   title: {
     color: theme.colors.textPrimary,
@@ -296,6 +343,26 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     fontFamily: theme.typography.fontRegular,
     textAlign: I18nManager.isRTL ? 'right' : 'left',
+  },
+  passwordRow: {
+    borderWidth: 1,
+    borderColor: theme.colors.cardBorder,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: theme.radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingStart: theme.spacing.md,
+  },
+  passwordInput: {
+    flex: 1,
+    color: theme.colors.textPrimary,
+    paddingVertical: 14,
+    textAlign: I18nManager.isRTL ? 'right' : 'left',
+    fontFamily: theme.typography.fontRegular,
+  },
+  eyeBtn: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
   },
   selectInput: {
     borderWidth: 1,

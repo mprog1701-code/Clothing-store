@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, I18nManager, Animated, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, I18nManager, Animated, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { addToCart, addCartItemVariant } from '../api';
 import theme from '../theme';
 import { useAuth } from '../auth/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image as ExpoImage } from 'expo-image';
 import { normalizeIraqiPhone, isValidIraqiPhone } from '../utils/phone';
-import { GOOGLE_OAUTH_START_URL, LOGIN_URL, GOOGLE_ANDROID_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '../api/config';
 
 export default function LoginScreen({ navigation, route }) {
   const [phone, setPhone] = useState('');
@@ -84,31 +84,27 @@ export default function LoginScreen({ navigation, route }) {
       }
       navigation.replace('Root');
     } catch (e) {
-      setErrorPwd('خطأ في رقم الهاتف أو كلمة المرور');
+      const code = String(e?.code || e?.payload?.error || '');
+      if (code === 'ACCOUNT_NOT_VERIFIED') {
+        const payload = e?.payload || {};
+        navigation.navigate('VerifyAccount', {
+          phone: payload?.phone || normalizedPhone,
+          email: payload?.email || '',
+          debugCode: payload?.debug_code || '',
+        });
+      } else {
+        setErrorPwd('خطأ في رقم الهاتف أو كلمة المرور');
+      }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const onGoogleLogin = async () => {
-    const oauthConfigured = !!(GOOGLE_ANDROID_CLIENT_ID || GOOGLE_IOS_CLIENT_ID);
-    const target = GOOGLE_OAUTH_START_URL || LOGIN_URL;
-    if (!oauthConfigured && !target) {
-      Alert.alert('Google Login', 'Google OAuth غير مهيأ حالياً');
-      return;
-    }
-    try {
-      await Linking.openURL(target);
-    } catch {
-      Alert.alert('Google Login', 'تعذر فتح تسجيل الدخول بواسطة Google');
     }
   };
 
   return (
     <LinearGradient colors={['#0c1b33', '#081226']} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.safe}>
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24} style={styles.safe}>
+          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             <Animated.View style={[styles.container, { transform: [{ translateY: slide }], opacity: fade }]}>
               <TouchableOpacity
                 onPress={() => {
@@ -121,9 +117,7 @@ export default function LoginScreen({ navigation, route }) {
                 <Text style={styles.backButtonText}>رجوع</Text>
               </TouchableOpacity>
               <View style={styles.brandWrap}>
-                <View style={styles.logoCircle}>
-                  <Text style={styles.logoText}>دار</Text>
-                </View>
+                <ExpoImage source={require('../../assets/daar-logo.png')} style={styles.logoImage} contentFit="contain" transition={0} />
                 <Text style={styles.welcome}>أهلاً بعودتك</Text>
                 <Text style={styles.subtitle}>سجّل دخولك برقم الهاتف للمتابعة</Text>
               </View>
@@ -187,20 +181,10 @@ export default function LoginScreen({ navigation, route }) {
                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
                   <Text style={styles.linkPrimary}>إنشاء حساب جديد</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => {}}>
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
                   <Text style={styles.linkMuted}>نسيت كلمة المرور؟</Text>
                 </TouchableOpacity>
               </View>
-
-              <View style={styles.separatorRow}>
-                <View style={styles.separatorLine} />
-                <Text style={styles.separatorText}>أو</Text>
-                <View style={styles.separatorLine} />
-              </View>
-              <TouchableOpacity onPress={onGoogleLogin} style={[styles.actionButton, styles.googleButton]}>
-                <MaterialCommunityIcons name="google" size={20} color="#DB4437" />
-                <Text style={styles.googleText}>تسجيل بواسطة Google</Text>
-              </TouchableOpacity>
             </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -218,6 +202,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: theme.spacing.xl * 3,
   },
   container: {
     flex: 1,
@@ -245,20 +230,10 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fontBold,
     fontSize: theme.typography.sizes.sm,
   },
-  logoCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  logoText: {
-    color: '#fff',
-    fontSize: theme.typography.sizes.xl,
-    fontFamily: theme.typography.fontBold,
+  logoImage: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
   },
   welcome: {
     marginTop: theme.spacing.md,
@@ -339,32 +314,5 @@ const styles = StyleSheet.create({
   linkMuted: {
     color: 'rgba(255,255,255,0.72)',
     fontFamily: theme.typography.fontRegular,
-  },
-  separatorRow: {
-    marginTop: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  separatorLine: {
-    height: 1,
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  separatorText: {
-    marginHorizontal: theme.spacing.sm,
-    color: 'rgba(255,255,255,0.72)',
-    fontFamily: theme.typography.fontRegular,
-  },
-  googleButton: {
-    marginTop: theme.spacing.md,
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  googleText: {
-    marginStart: theme.spacing.sm,
-    color: '#000',
-    fontFamily: theme.typography.fontBold,
   },
 });

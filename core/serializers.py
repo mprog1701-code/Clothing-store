@@ -17,10 +17,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
     full_name = serializers.CharField(write_only=True)
+    email = serializers.EmailField(required=True)
     
     class Meta:
         model = User
-        fields = ['phone', 'password', 'password_confirm', 'city', 'full_name']
+        fields = ['phone', 'email', 'password', 'password_confirm', 'city', 'full_name']
     
     def validate_phone(self, value):
         # Validate Iraqi mobile number format (starts with 07 and 11 digits)
@@ -37,6 +38,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("كلمات المرور غير متطابقة")
         return attrs
+
+    def validate_email(self, value):
+        v = (value or '').strip().lower()
+        if not v:
+            raise serializers.ValidationError("يرجى إدخال البريد الإلكتروني")
+        if User.objects.filter(email__iexact=v).exists():
+            raise serializers.ValidationError("البريد الإلكتروني مسجل بالفعل")
+        return v
     
     def create(self, validated_data):
         validated_data.pop('password_confirm')
@@ -59,13 +68,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         
         user = User.objects.create_user(
             username=username,
-            email='',  # Email is optional now
+            email=validated_data['email'],
             password=validated_data['password'],
             phone=validated_data['phone'],
             city=validated_data['city'],
             first_name=first_name,
             last_name=last_name,
-            role='customer'
+            role='customer',
+            is_active=False,
         )
         return user
 

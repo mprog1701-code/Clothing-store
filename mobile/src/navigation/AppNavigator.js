@@ -6,6 +6,8 @@ import SplashScreen from '../screens/SplashScreen';
 import HomeScreen from '../screens/HomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import VerifyAccountScreen from '../screens/VerifyAccountScreen';
 import ProductsScreen from '../screens/ProductsScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import AllCategoriesScreen from '../screens/AllCategoriesScreen';
@@ -48,6 +50,8 @@ export default function AppNavigator() {
             headerTitleStyle: { color: '#fff' },
           }}
         />
+        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'استعادة كلمة المرور' }} />
+        <Stack.Screen name="VerifyAccount" component={VerifyAccountScreen} options={{ title: 'تفعيل الحساب' }} />
         <Stack.Screen name="Products" component={ProductsScreen} options={{ title: 'المنتجات' }} />
         <Stack.Screen name="ProductsList" component={ProductsScreen} options={{ title: 'المنتجات' }} />
         <Stack.Screen name="Categories" component={CategoriesScreen} options={{ title: 'الأقسام' }} />

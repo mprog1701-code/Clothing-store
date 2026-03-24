@@ -101,12 +101,19 @@ export async function login(identifier, password) {
   try {
     r = await client.post('/api/auth/login/', payload);
   } catch (e) {
+    const data = e?.response?.data || {};
     const msg =
+      data?.message ||
+      data?.detail ||
+      data?.error ||
       e?.response?.data?.detail ||
       e?.response?.data?.error ||
       e?.response?.data?.message ||
       'بيانات الدخول غير صحيحة أو تعذر الاتصال';
-    throw new Error(String(msg));
+    const err = new Error(String(msg));
+    err.code = String(data?.error || data?.code || '');
+    err.payload = data;
+    throw err;
   }
   const { access, refresh, user } = r.data || {};
   if (access && refresh) {
@@ -166,15 +173,45 @@ export async function register(payload) {
       throw new Error(String(msg));
     }
   }
+  const data = r.data || {};
+  const { access, refresh, user } = data;
+  if (access && refresh) {
+    await saveTokens({ access, refresh });
+  }
+  return data?.requires_verification ? data : user;
+}
+
+export async function verifyRegistration(payload = {}) {
+  const r = await client.post('/api/auth/verify_registration/', payload);
   const { access, refresh, user } = r.data || {};
   if (access && refresh) {
     await saveTokens({ access, refresh });
   }
-  return user;
+  return user || null;
+}
+
+export async function resendVerification(payload = {}) {
+  const r = await client.post('/api/auth/resend_verification/', payload);
+  return r.data;
+}
+
+export async function requestPasswordReset(payload = {}) {
+  const r = await client.post('/api/auth/forgot_password_request/', payload);
+  return r.data;
+}
+
+export async function confirmPasswordReset(payload = {}) {
+  const r = await client.post('/api/auth/forgot_password_confirm/', payload);
+  return r.data;
 }
 
 export async function me() {
   const r = await client.get('/api/auth/me/');
+  return r.data;
+}
+
+export async function updateMe(payload = {}) {
+  const r = await client.patch('/api/auth/me/', payload);
   return r.data;
 }
 

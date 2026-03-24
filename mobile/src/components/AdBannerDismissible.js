@@ -21,16 +21,27 @@ function AdBannerDismissible({ position = 'stores-hero', onDismiss, compact = fa
           return;
         }
         try {
-          const r = await listAds({ position });
+          const r = await listAds(position ? { position } : {});
           const arr = Array.isArray(r) ? r : (r.results || r.ads || []);
-          const first = arr && arr[0];
+          let first = arr && arr[0];
+          if (!first) {
+            const genericAds = await listAds();
+            const genericArr = Array.isArray(genericAds) ? genericAds : (genericAds?.results || genericAds?.ads || []);
+            first = genericArr && genericArr[0];
+          }
+          if (!first) {
+            const bn = await listBanners();
+            const bannersArr = Array.isArray(bn) ? bn : (bn?.results || bn?.banners || []);
+            first = bannersArr && bannersArr[0];
+          }
           if (active) {
             setAd(first || null);
             setShow(!!first);
           }
         } catch {
           const bn = await listBanners();
-          const first = (bn.banners || [])[0] || null;
+          const bannersArr = Array.isArray(bn) ? bn : (bn?.results || bn?.banners || []);
+          const first = (bannersArr || [])[0] || null;
           if (active) {
             setAd(first);
             setShow(!!first);
@@ -56,7 +67,7 @@ function AdBannerDismissible({ position = 'stores-hero', onDismiss, compact = fa
     <View style={styles.wrap}>
       <TouchableOpacity
         onPress={() => {
-          const value = ad?.link || ad?.linkValue || ad?.value || ad?.url;
+          const value = ad?.action_url || ad?.link || ad?.link_target || ad?.linkValue || ad?.value || ad?.url;
           if (value) {
             Linking.openURL(value);
           }
