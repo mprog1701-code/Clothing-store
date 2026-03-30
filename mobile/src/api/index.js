@@ -89,6 +89,57 @@ async function removeLocalCartItem(id) {
   return next;
 }
 
+function normalizeBaseForFetch(value) {
+  const stripped = String(value || '')
+    .replace(/\u200E|\u200F|\u202A|\u202B|\u202C|\u202D|\u202E/g, '')
+    .replace(/\s+/g, '')
+    .replace(/^['"`\s]+|['"`\s]+$/g, '');
+  const match = stripped.match(/https?:\/\/[^\s'"`]+/i);
+  const candidate = match ? match[0] : stripped;
+  if (!candidate) return '';
+  try {
+    const parsed = new URL(candidate);
+    const protocol = String(parsed.protocol || '').toLowerCase();
+    if (protocol !== 'http:' && protocol !== 'https:') return '';
+    return `${protocol}//${parsed.host}${parsed.pathname}`.replace(/\/+$/g, '');
+  } catch {
+    return '';
+  }
+}
+
+function shouldUseFetchFallback(error) {
+  if (!error) return false;
+  if (error?.response) return false;
+  const code = String(error?.code || '').toUpperCase();
+  if (code === 'ERR_NETWORK' || code === 'ECONNABORTED') return true;
+  const msg = String(error?.message || '').toLowerCase();
+  return msg.includes('network error') || msg.includes('network request failed');
+}
+
+async function fetchJsonFallback(path, params = {}) {
+  const base = normalizeBaseForFetch(API_BASE_URL) || 'https://clothing-store-production-4387.up.railway.app';
+  const qs = new URLSearchParams();
+  Object.entries(params || {}).forEach(([k, v]) => {
+    if (v === undefined || v === null || v === '') return;
+    qs.append(k, String(v));
+  });
+  const full = `${base}${path}${qs.toString() ? `?${qs.toString()}` : ''}`;
+  const resp = await fetch(full, { method: 'GET' });
+  const ct = String(resp.headers?.get?.('content-type') || '');
+  if (!resp.ok) {
+    throw new Error(`HTTP_${resp.status}`);
+  }
+  if (ct.includes('application/json')) {
+    return await resp.json();
+  }
+  const txt = await resp.text();
+  try {
+    return JSON.parse(txt);
+  } catch {
+    return [];
+  }
+}
+
 export async function login(identifier, password) {
   const payload = { password };
   const id = (identifier || '').trim();
@@ -128,6 +179,15 @@ export async function logout() {
 
 export async function register(payload) {
   const body = { ...payload };
+  if (body.id_token || body.firebase_id_token) {
+    const r = await client.post('/api/auth/firebase_login/', body);
+    const data = r.data || {};
+    const { access, refresh, user } = data;
+    if (access && refresh) {
+      await saveTokens({ access, refresh });
+    }
+    return user || data;
+  }
   let r;
   const extractMsg = (data, status) => {
     if (!data) return '';
@@ -191,6 +251,16 @@ export async function register(payload) {
   return user;
 }
 
+export async function firebaseLogin(payload = {}) {
+  const r = await client.post('/api/auth/firebase_login/', payload);
+  const data = r.data || {};
+  const { access, refresh, user } = data;
+  if (access && refresh) {
+    await saveTokens({ access, refresh });
+  }
+  return user || data;
+}
+
 export async function verifyRegistration(payload = {}) {
   const r = await client.post('/api/auth/verify_registration/', payload);
   const { access, refresh, user } = r.data || {};
@@ -212,6 +282,11 @@ export async function requestPasswordReset(payload = {}) {
 
 export async function confirmPasswordReset(payload = {}) {
   const r = await client.post('/api/auth/forgot_password_confirm/', payload);
+  return r.data;
+}
+
+export async function firebaseResetPassword(payload = {}) {
+  const r = await client.post('/api/auth/firebase_reset_password/', payload);
   return r.data;
 }
 
@@ -281,11 +356,22 @@ export async function listCategories() {
 }
 
 export async function listBanners() {
-  const r = await client.get('/api/banners');
-  const data = r.data;
-  const arr = Array.isArray(data) ? data : (data.results || data.banners || []);
-  console.log('[API] GET /api/banners status=', r.status, 'len=', arr.length);
-  return arr;
+  try {
+    const data = await fetchJsonFallback('/api/banners');
+    const arr = Array.isArray(data) ? data : (data.results || data.banners || []);
+    console.log('[API] FETCH /api/banners status=200 len=', arr.length);
+    return arr;
+  } catch (e) {
+    try {
+      const r = await client.get('/api/banners');
+      const data = r.data;
+      const arr = Array.isArray(data) ? data : (data.results || data.banners || []);
+      console.log('[API] GET /api/banners status=', r.status, 'len=', arr.length);
+      return arr;
+    } catch {
+      return [];
+    }
+  }
 }
 
 export async function listBannersByPlacement(placement) {
@@ -316,22 +402,32 @@ export async function listHomeTopBanners() {
 
 export async function listAds(params = {}) {
   try {
-    const r = await client.get('/api/advertisements/', { params });
-    const data = r.data;
+    const data = await fetchJsonFallback('/api/advertisements/', params);
     const arr = Array.isArray(data) ? data : (data.results || data.ads || []);
-    console.log('[API] GET /api/advertisements status=', r.status, 'len=', arr.length, 'params=', params);
+    console.log('[API] FETCH /api/advertisements status=200 len=', arr.length, 'params=', params);
     if (arr.length) return arr;
   } catch (e) {
-    console.log('[API] GET /api/advertisements fail', e?.message || e);
+    console.log('[API] FETCH /api/advertisements fail', e?.message || e);
   }
   try {
-    const r = await client.get('/api/ads/', { params });
-    const data = r.data;
+    const data = await fetchJsonFallback('/api/ads/', params);
     const arr = Array.isArray(data) ? data : (data.results || data.ads || []);
-    console.log('[API] GET /api/ads status=', r.status, 'len=', arr.length, 'params=', params);
+    console.log('[API] FETCH /api/ads status=200 len=', arr.length, 'params=', params);
     return arr;
   } catch (e) {
-    console.log('[API] GET /api/ads fail', e?.message || e);
+    try {
+      const r = await client.get('/api/advertisements/', { params });
+      const data = r.data;
+      const arr = Array.isArray(data) ? data : (data.results || data.ads || []);
+      if (arr.length) return arr;
+    } catch {}
+    try {
+      const r = await client.get('/api/ads/', { params });
+      const data = r.data;
+      const arr = Array.isArray(data) ? data : (data.results || data.ads || []);
+      return arr;
+    } catch {}
+    console.log('[API] listAds failed', e?.message || e);
     return [];
   }
 }
@@ -483,23 +579,31 @@ export async function listProducts(params = {}) {
   const p = { ...(params || {}) };
   if (p.limit && !p.page_size) p.page_size = p.limit;
   if (!p.limit && !p.page_size) p.page_size = 50;
-  try {
-    const r = await client.get('/api/products/', { params: p });
-    console.log('[API] GET /api/products status=', r.status, 'params=', p, 'data.count=', Array.isArray(r.data) ? r.data.length : (r.data?.results?.length || 0));
-    if (__DEV__) {
-      const sample = Array.isArray(r.data) ? r.data.slice(0, 2) : (r.data?.results || []).slice(0, 2);
-      console.log('[API] GET /api/products sample=', sample);
-    }
-    return r.data;
-  } catch (e) {
-    console.error('[API] GET /api/products failed', {
-      message: e?.message,
-      status: e?.response?.status,
-      data: e?.response?.data,
-      params: p,
-    });
-    throw e;
+  const retryParams = [];
+  const pNoType = { ...p };
+  delete pNoType.type;
+  delete pNoType.filterType;
+  retryParams.push(pNoType);
+  const pNoSort = { ...pNoType };
+  delete pNoSort.ordering;
+  retryParams.push(pNoSort);
+  retryParams.push({});
+  for (const candidate of [p, ...retryParams]) {
+    try {
+      const data = await fetchJsonFallback('/api/products/', candidate);
+      console.log('[API] FETCH /api/products ok params=', candidate);
+      return data;
+    } catch {}
   }
+  for (const candidate of [p, ...retryParams]) {
+    try {
+      const r = await client.get('/api/products/', { params: candidate });
+      console.log('[API] GET /api/products ok status=', r.status, 'params=', candidate);
+      return r.data;
+    } catch {}
+  }
+  console.log('[API] listProducts failed params=', p);
+  return [];
 }
 
 export async function getProduct(id) {

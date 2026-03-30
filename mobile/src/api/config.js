@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 function sanitizeUrl(value) {
   let raw = String(value || '')
     .trim()
+    .replace(/\u200E|\u200F|\u202A|\u202B|\u202C|\u202D|\u202E/g, '')
     .replace(/\s+/g, '')
     .replace(/^['"`\s]+|['"`\s]+$/g, '')
     .replace(/[)]+$/g, '')
@@ -11,6 +12,19 @@ function sanitizeUrl(value) {
     raw = raw.slice(1, -1).trim();
   }
   if (!raw) return '';
+  if (!/^https?:\/\//i.test(raw)) {
+    const match = raw.match(/https?:\/\/[^\s'"`]+/i);
+    raw = match ? match[0] : '';
+  }
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    const protocol = String(parsed.protocol || '').toLowerCase();
+    if (protocol !== 'http:' && protocol !== 'https:') return '';
+    raw = `${protocol}//${parsed.host}${parsed.pathname}`.replace(/\/+$/g, '');
+  } catch {
+    return '';
+  }
   if (/your-railway-domain|example\.com|localhost:8000/i.test(raw)) return '';
   return raw.replace(/\/+$/g, '');
 }

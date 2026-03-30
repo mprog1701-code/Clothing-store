@@ -136,6 +136,8 @@ class User(AbstractUser):
     ]
     
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='customer')
+    is_customer = models.BooleanField(default=True)
+    is_store_admin = models.BooleanField(default=False)
     phone = models.CharField(max_length=20, unique=True)
     city = models.CharField(max_length=100)
     owner_key = models.CharField(max_length=50, blank=True, help_text='مفتاح خاص للمالك فقط')
@@ -147,6 +149,21 @@ class User(AbstractUser):
     ]
     admin_role = models.CharField(max_length=20, choices=ADMIN_ROLE_CHOICES, blank=True, default='')
     
+    def save(self, *args, **kwargs):
+        role_value = str(getattr(self, 'role', '') or '').strip()
+        if role_value == 'store_admin':
+            self.is_store_admin = True
+        if role_value == 'customer':
+            self.is_customer = True
+        if self.is_store_admin:
+            self.role = 'store_admin'
+        elif self.is_customer:
+            self.role = 'customer'
+        else:
+            self.is_customer = True
+            self.role = 'customer'
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 

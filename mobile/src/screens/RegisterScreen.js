@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, I18nManager, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
 import theme from '../theme';
 import { useAuth } from '../auth/AuthContext';
@@ -6,6 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { normalizeIraqiPhone, isValidIraqiPhone } from '../utils/phone';
+import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
+import { signInWithPhoneNumber } from 'firebase/auth';
+import { firebaseAuth, firebaseConfig, ensureFirebasePhoneAuthReady } from '../firebase';
 
 const IRAQI_CITIES = [
   'بغداد',
@@ -35,7 +38,8 @@ export default function RegisterScreen({ navigation }) {
   const [errors, setErrors] = useState({});
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [otpTicket, setOtpTicket] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const recaptchaVerifier = useRef(null);
 
   const validators = {
     fullName: (value) => {
@@ -104,34 +108,29 @@ export default function RegisterScreen({ navigation }) {
     if (!validateAll()) return;
     setLoading(true);
     try {
-      const payload = {
-        phone: normalizeIraqiPhone(phone),
-        email: email.trim().toLowerCase(),
-        city,
-        full_name: fullName.trim(),
-        password,
-        password_confirm: passwordConfirm,
-        otp_code: otpStep ? otpCode.trim() : undefined,
-        otp_ticket: otpStep ? otpTicket : undefined,
-      };
-      const result = await registerUser(payload);
-      if (result?.requires_otp) {
+      await ensureFirebasePhoneAuthReady();
+      const normalizedPhone = normalizeIraqiPhone(phone);
+      const e164 = `+964${String(normalizedPhone || '').replace(/^0/, '')}`;
+      if (!otpStep) {
+        const confirmation = await signInWithPhoneNumber(firebaseAuth(), e164, recaptchaVerifier.current);
+        setConfirmationResult(confirmation);
         setOtpStep(true);
-        setOtpTicket(String(result?.otp_ticket || ''));
-        const debugOtp = String(result?.debug_otp || '').trim();
-        if (debugOtp) {
-          setOtpCode(debugOtp);
-          setErrors((prev) => ({ ...prev, form: `رمز التحقق: ${debugOtp}` }));
-        } else {
-          setErrors((prev) => ({ ...prev, form: 'تم إرسال رمز التحقق. أدخله لإكمال التسجيل.' }));
-        }
-      } else if (result?.requires_verification) {
-        navigation.replace('VerifyAccount', {
-          phone: result?.phone || normalizeIraqiPhone(phone),
-          email: result?.email || email.trim().toLowerCase(),
-          debugCode: result?.debug_code || '',
-        });
+        setErrors((prev) => ({ ...prev, form: 'تم إرسال رمز التحقق من Firebase إلى رقم الهاتف' }));
       } else {
+        if (!confirmationResult) {
+          throw new Error('OTP_SESSION_MISSING');
+        }
+        const cred = await confirmationResult.confirm(otpCode.trim());
+        const idToken = await cred.user.getIdToken(true);
+        await registerUser({
+          id_token: idToken,
+          phone: normalizedPhone,
+          email: email.trim().toLowerCase(),
+          city,
+          full_name: fullName.trim(),
+          password,
+          password_confirm: passwordConfirm,
+        });
         navigation.reset({
           index: 0,
           routes: [{ name: 'Root' }],
@@ -139,8 +138,25 @@ export default function RegisterScreen({ navigation }) {
       }
     } catch (e) {
       const code = String(e?.code || e?.payload?.code || e?.response?.data?.code || '');
-      const rawError = e?.payload?.message || e?.payload?.error || e?.response?.data?.error || e?.response?.data?.detail || e?.message || 'فشل التسجيل';
-      const msg = code === 'PHONE_ALREADY_HAS_ACCOUNT' ? 'رقم الهاتف مرتبط بحساب عميل بالفعل، استخدم تسجيل الدخول' : String(rawError);
+      const rawError = e?.payload?.message || e?.payload?.error || e?.response?.data?.error || e?.response?.data?.detail || e?.message || 'فشل التحقق عبر Firebase';
+      const normalizedRawError = String(rawError || '');
+      const msg = code === 'PHONE_ALREADY_HAS_ACCOUNT'
+        ? 'رقم الهاتف مرتبط بحساب عميل بالفعل، استخدم تسجيل الدخول'
+        : code === 'auth/invalid-app-credential'
+          ? 'فشل تهيئة Firebase Phone Auth. تأكد من إضافة SHA-1 وSHA-256 لتطبيق Android في Firebase.'
+          : code === 'auth/captcha-check-failed'
+            ? 'فشل تحقق reCAPTCHA. أعد المحاولة وتأكد من اتصال الإنترنت.'
+            : code === 'auth/web-storage-unsupported'
+              ? 'بيئة التطبيق لا تدعم متطلبات Firebase web storage. استخدم نسخة Dev Client محدثة.'
+        : normalizedRawError === 'FIREBASE_CONFIG_INVALID'
+          ? 'إعدادات Firebase غير مكتملة على التطبيق'
+          : normalizedRawError === 'FIREBASE_WEB_APP_ID_MISSING'
+            ? 'Firebase Web App ID مفقود. أضف EXPO_PUBLIC_FIREBASE_WEB_APP_ID من إعدادات Web App في Firebase.'
+            : normalizedRawError === 'FIREBASE_WEB_APP_NOT_CONFIGURED'
+              ? 'مشروع Firebase لا يحتوي Web App فعّال على authDomain الحالي. أنشئ Web App واستخدم إعداداته.'
+              : normalizedRawError === 'FIREBASE_AUTH_DOMAIN_UNREACHABLE'
+                ? 'تعذر الوصول إلى Firebase authDomain. تحقق من الإنترنت وقيمة authDomain.'
+                : normalizedRawError;
       setErrors((prev) => ({ ...prev, form: msg }));
     } finally {
       setLoading(false);
@@ -149,6 +165,7 @@ export default function RegisterScreen({ navigation }) {
   return (
     <LinearGradient colors={['#0c1b33', '#081226']} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
+        <FirebaseRecaptchaVerifierModal ref={recaptchaVerifier} firebaseConfig={firebaseConfig} attemptInvisibleVerification={Platform.OS !== 'ios'} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24} style={styles.safe}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             <TouchableOpacity
@@ -295,7 +312,7 @@ export default function RegisterScreen({ navigation }) {
             ) : null}
 
             <TouchableOpacity disabled={disabled} onPress={onSubmit} style={[styles.registerBtn, disabled && styles.registerBtnDisabled]}>
-              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.registerBtnText}>{otpStep ? 'تأكيد الرمز وإكمال التسجيل' : 'إرسال رمز التحقق'}</Text>}
+              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.registerBtnText}>{otpStep ? 'تأكيد Firebase وإكمال التسجيل' : 'إرسال رمز Firebase'}</Text>}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.loginLinkWrap}>

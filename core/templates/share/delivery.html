@@ -11,7 +11,7 @@
         <div class="card-header bg-light">العميل</div>
         <div class="card-body">
           <p class="mb-2"><strong>الاسم:</strong> {{ order.user.get_full_name|default:order.user.username }}</p>
-          <p class="mb-2"><strong>الهاتف:</strong> <a href="tel:{{ order.user.phone }}">{{ order.user.phone }}</a></p>
+          <p class="mb-2"><strong>الهاتف:</strong> {% if customer_phone_display %}<a href="tel:{{ customer_phone_display }}">{{ customer_phone_display }}</a>{% else %}—{% endif %}</p>
           <div class="d-flex flex-wrap gap-2">
             {% if cust_wa_url %}<a class="btn btn-success btn-sm" target="_blank" href="{{ cust_wa_url }}">واتساب</a>{% endif %}
             {% if maps_cust %}<a class="btn btn-outline-success btn-sm" target="_blank" href="{{ maps_cust }}">خرائط</a>{% endif %}
@@ -25,7 +25,7 @@
         <div class="card-header bg-light">المتجر</div>
         <div class="card-body">
           <p class="mb-2"><strong>الاسم:</strong> {{ order.store.name }}</p>
-          <p class="mb-2"><strong>الهاتف:</strong> {% if order.store.owner_phone %}<a href="tel:{{ order.store.owner_phone }}">{{ order.store.owner_phone }}</a>{% elif order.store_phone %}<a href="tel:{{ order.store_phone }}">{{ order.store_phone }}</a>{% else %}—{% endif %}</p>
+          <p class="mb-2"><strong>الهاتف:</strong> {% if store_phone_display %}<a href="tel:{{ store_phone_display }}">{{ store_phone_display }}</a>{% else %}—{% endif %}</p>
           <div class="d-flex flex-wrap gap-2">
             {% if store_wa_url %}<a class="btn btn-success btn-sm" target="_blank" href="{{ store_wa_url }}">واتساب</a>{% endif %}
             {% if maps_store %}<a class="btn btn-outline-success btn-sm" target="_blank" href="{{ maps_store }}">خرائط</a>{% endif %}

@@ -6,17 +6,17 @@ from django.http import HttpResponseForbidden
 
 class IsCustomer(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role in ('customer', 'store_admin')
+        return request.user and request.user.is_authenticated and bool(getattr(request.user, 'is_customer', False))
 
 
 class IsStoreOwner(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role == 'store_admin'
+        return request.user and request.user.is_authenticated and bool(getattr(request.user, 'is_store_admin', False))
 
 
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and (request.user.is_staff or request.user.role == 'store_admin')
+        return request.user and request.user.is_authenticated and (request.user.is_staff or bool(getattr(request.user, 'is_store_admin', False)))
 
 
 class IsStoreOwnerOfStore(permissions.BasePermission):
@@ -47,7 +47,7 @@ def role_required(allowed_roles):
             if not user or not user.is_authenticated:
                 return redirect('/admin-portal/login/')
             ar = (user.admin_role or '').upper()
-            has_owner_role = ('OWNER' in allowed_roles) and (user.role == 'store_admin')
+            has_owner_role = ('OWNER' in allowed_roles) and bool(getattr(user, 'is_store_admin', False))
             if ar in {r.upper() for r in allowed_roles} or has_owner_role:
                 return view_func(request, *args, **kwargs)
             return HttpResponseForbidden('Forbidden')

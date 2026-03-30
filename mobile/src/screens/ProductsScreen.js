@@ -82,9 +82,6 @@ export default function ProductsScreen({ navigation, route }) {
       if (filterType) {
         params.filterType = filterType;
       }
-      if (!filterType && explicitType) {
-        params.type = explicitType;
-      }
       if (type === 'category' && categoryId) {
         params.category = categoryId;
       } else if (type === 'search_results' && q) {
@@ -114,7 +111,7 @@ export default function ProductsScreen({ navigation, route }) {
       }
       setItems(mapped);
     } catch (e) {
-      console.error('[ProductsScreen] load failed', {
+      console.log('[ProductsScreen] load failed', {
         message: e?.message,
         status: e?.response?.status,
         data: e?.response?.data,

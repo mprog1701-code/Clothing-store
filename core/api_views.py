@@ -20,6 +20,14 @@ import random
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 from urllib.error import URLError, HTTPError
+try:
+    import firebase_admin
+    from firebase_admin import auth as firebase_auth
+    from firebase_admin import credentials as firebase_credentials
+except Exception:
+    firebase_admin = None
+    firebase_auth = None
+    firebase_credentials = None
 from .serializers import (
     UserSerializer, UserRegistrationSerializer, StoreSerializer, 
     ProductSerializer, AddressSerializer, OrderSerializer, OrderCreateSerializer,
@@ -78,6 +86,114 @@ class AuthViewSet(viewsets.ViewSet):
         phone, code = str(raw).split(':', 1)
         return str(phone), str(code)
 
+    def _to_e164_iq(self, phone):
+        p = str(phone or '').strip().replace(' ', '')
+        digits = ''.join(ch for ch in p if ch.isdigit())
+        if digits.startswith('00964'):
+            return f"+{digits[2:]}"
+        if digits.startswith('964'):
+            return f"+{digits}"
+        if digits.startswith('07') and len(digits) == 11:
+            return f"+964{digits[1:]}"
+        if digits.startswith('7') and len(digits) == 10:
+            return f"+964{digits}"
+        if p.startswith('+') and digits:
+            return f"+{digits}"
+        return p
+
+    def _from_e164_iq(self, phone):
+        p = str(phone or '').strip().replace(' ', '')
+        digits = ''.join(ch for ch in p if ch.isdigit())
+        if digits.startswith('00964'):
+            digits = digits[2:]
+        if digits.startswith('964') and len(digits) == 13:
+            return f"0{digits[3:]}"
+        if digits.startswith('7') and len(digits) == 10:
+            return f"0{digits}"
+        if digits.startswith('07') and len(digits) == 11:
+            return digits
+        return p
+
+    def _init_firebase(self):
+        if not firebase_admin or not firebase_auth or not firebase_credentials:
+            return False, 'FIREBASE_SDK_NOT_INSTALLED'
+        try:
+            if firebase_admin._apps:
+                return True, ''
+            cred_path = (os.environ.get('FIREBASE_SERVICE_ACCOUNT_PATH') or '').strip()
+            cred_json = (os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON') or '').strip()
+            project_id = (os.environ.get('FIREBASE_PROJECT_ID') or '').strip()
+            cred_obj = None
+            if cred_json:
+                cred_obj = firebase_credentials.Certificate(json.loads(cred_json))
+            elif cred_path:
+                cred_obj = firebase_credentials.Certificate(cred_path)
+            if cred_obj is not None:
+                opts = {'projectId': project_id} if project_id else None
+                if opts:
+                    firebase_admin.initialize_app(cred_obj, opts)
+                else:
+                    firebase_admin.initialize_app(cred_obj)
+                return True, ''
+            if project_id:
+                firebase_admin.initialize_app(options={'projectId': project_id})
+                return True, ''
+            return False, 'FIREBASE_CONFIG_MISSING'
+        except Exception:
+            return False, 'FIREBASE_INIT_FAILED'
+
+    def _verify_firebase_phone(self, id_token):
+        ok, err = self._init_firebase()
+        if not ok:
+            return None, err
+        try:
+            decoded = firebase_auth.verify_id_token(str(id_token), check_revoked=False)
+            phone = str(decoded.get('phone_number') or '').strip()
+            if not phone:
+                identities = (((decoded.get('firebase') or {}).get('identities') or {}).get('phone') or [])
+                if identities:
+                    phone = str(identities[0] or '').strip()
+            if not phone:
+                return None, 'FIREBASE_PHONE_MISSING'
+            return self._from_e164_iq(phone), ''
+        except Exception:
+            return None, 'FIREBASE_TOKEN_INVALID'
+
+    def _send_sms_code(self, phone, code, purpose='signup'):
+        url = (os.environ.get('SMS_OTP_PROVIDER_URL') or '').strip()
+        if not url:
+            return False
+        method = (os.environ.get('SMS_OTP_PROVIDER_METHOD') or 'POST').strip().upper()
+        api_key = (os.environ.get('SMS_OTP_API_KEY') or '').strip()
+        sender = (os.environ.get('SMS_OTP_SENDER') or '').strip()
+        to = self._to_e164_iq(phone)
+        message = f"Your verification code is: {code}" if purpose == 'signup' else f"Your password reset code is: {code}"
+        payload = {
+            'to': to,
+            'phone': to,
+            'recipient': to,
+            'message': message,
+            'text': message,
+            'code': str(code),
+        }
+        if sender:
+            payload['sender'] = sender
+            payload['from'] = sender
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        if api_key:
+            headers['Authorization'] = f"Bearer {api_key}"
+            headers['X-API-Key'] = api_key
+        data = urlencode(payload).encode('utf-8')
+        try:
+            req = Request(url, data=data if method != 'GET' else None, headers=headers, method=method)
+            if method == 'GET':
+                req = Request(f"{url}?{urlencode(payload)}", headers=headers, method='GET')
+            with urlopen(req, timeout=12) as resp:
+                status_code = int(getattr(resp, 'status', 200) or 200)
+                return 200 <= status_code < 300
+        except (HTTPError, URLError, Exception):
+            return False
+
     @action(detail=False, methods=['post'], permission_classes=[])
     def register(self, request):
         phone = (request.data.get('phone') or '').strip()
@@ -86,19 +202,21 @@ class AuthViewSet(viewsets.ViewSet):
         existing_user = None
         if phone:
             existing_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
-            if existing_user and existing_user.role != 'store_admin':
+            if existing_user and bool(getattr(existing_user, 'is_customer', False)):
                 return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
         if not otp_code:
             if not phone:
                 return Response({'error': 'PHONE_REQUIRED'}, status=status.HTTP_400_BAD_REQUEST)
             code = self._create_code()
             cache.set(f"verify:signup:{phone}", code, timeout=10 * 60)
+            sms_sent = self._send_sms_code(phone, code, purpose='signup')
             payload = {
                 'ok': True,
                 'requires_otp': True,
                 'phone': phone,
                 'otp_ticket': self._make_signup_ticket(phone, code),
-                'message': 'تم إرسال رمز التحقق إلى رقم الهاتف',
+                'sms_sent': bool(sms_sent),
+                'message': 'تم إرسال رمز التحقق إلى رقم الهاتف' if sms_sent else 'تعذر إرسال SMS حالياً، استخدم الرمز المؤقت',
             }
             if settings.DEBUG:
                 payload['debug_otp'] = code
@@ -129,9 +247,9 @@ class AuthViewSet(viewsets.ViewSet):
                 qs = qs.filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
                 inv = qs.first()
                 if inv:
-                    user.role = 'store_admin'
+                    user.is_store_admin = True
                     user.is_staff = True
-                    user.save()
+                    user.save(update_fields=['is_store_admin', 'is_staff', 'role'])
                     try:
                         st = Store.objects.get(id=inv.store_id)
                         st.owner_user = user
@@ -155,6 +273,103 @@ class AuthViewSet(viewsets.ViewSet):
                 'refresh': str(refresh),
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def firebase_login(self, request):
+        id_token = (request.data.get('id_token') or request.data.get('firebase_id_token') or '').strip()
+        if not id_token:
+            return Response({'error': 'ID_TOKEN_REQUIRED'}, status=status.HTTP_400_BAD_REQUEST)
+        phone, err = self._verify_firebase_phone(id_token)
+        if not phone:
+            return Response({'error': err or 'FIREBASE_VERIFICATION_FAILED'}, status=status.HTTP_400_BAD_REQUEST)
+        email = (request.data.get('email') or '').strip().lower()
+        full_name = (request.data.get('full_name') or '').strip()
+        city = (request.data.get('city') or '').strip() or 'Baghdad'
+        password = (request.data.get('password') or '').strip()
+        user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+        created = False
+        if not user:
+            username = f"user_{phone[-6:]}" if len(phone) >= 6 else f"user_{self._create_code()}"
+            counter = 1
+            base = username
+            while User.objects.filter(username=username).exists():
+                username = f"{base}_{counter}"
+                counter += 1
+            first_name = ''
+            last_name = ''
+            if full_name:
+                parts = full_name.split(' ', 1)
+                first_name = parts[0]
+                last_name = parts[1] if len(parts) > 1 else ''
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                phone=phone,
+                city=city,
+                first_name=first_name,
+                last_name=last_name,
+                is_customer=True,
+                is_active=True,
+            )
+            if password:
+                user.set_password(password)
+                user.save(update_fields=['password', 'role'])
+            created = True
+        else:
+            updates = []
+            if not getattr(user, 'is_customer', False):
+                user.is_customer = True
+                updates.append('is_customer')
+            if email and not user.email:
+                user.email = email
+                updates.append('email')
+            if city and not user.city:
+                user.city = city
+                updates.append('city')
+            if full_name and not (user.first_name or user.last_name):
+                parts = full_name.split(' ', 1)
+                user.first_name = parts[0]
+                user.last_name = parts[1] if len(parts) > 1 else ''
+                updates.extend(['first_name', 'last_name'])
+            if not user.is_active:
+                user.is_active = True
+                updates.append('is_active')
+            if password:
+                user.set_password(password)
+                updates.append('password')
+            if updates:
+                updates.append('role')
+                user.save(update_fields=list(dict.fromkeys(updates)))
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'ok': True,
+            'created': created,
+            'user': UserSerializer(user).data,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def firebase_reset_password(self, request):
+        id_token = (request.data.get('id_token') or request.data.get('firebase_id_token') or '').strip()
+        new_password = (request.data.get('new_password') or '').strip()
+        if not id_token or not new_password:
+            return Response({'error': 'MISSING_REQUIRED_FIELDS'}, status=status.HTTP_400_BAD_REQUEST)
+        if len(new_password) < 6:
+            return Response({'error': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'}, status=status.HTTP_400_BAD_REQUEST)
+        phone, err = self._verify_firebase_phone(id_token)
+        if not phone:
+            return Response({'error': err or 'FIREBASE_VERIFICATION_FAILED'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+        if not user:
+            return Response({'error': 'المستخدم غير موجود'}, status=status.HTTP_404_NOT_FOUND)
+        user.set_password(new_password)
+        if not getattr(user, 'is_customer', False):
+            user.is_customer = True
+            user.save(update_fields=['password', 'is_customer', 'role'])
+        else:
+            user.save(update_fields=['password', 'role'])
+        return Response({'ok': True}, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['post'], permission_classes=[])
     def login(self, request):
@@ -276,6 +491,7 @@ class AuthViewSet(viewsets.ViewSet):
             return Response({'ok': True, 'message': 'إذا كانت البيانات صحيحة سيتم إرسال رمز الاسترجاع'})
         code = self._create_code()
         cache.set(f"verify:reset:{user.phone}", code, timeout=10 * 60)
+        sms_sent = self._send_sms_code(user.phone, code, purpose='reset')
         email_sent = False
         if user.email:
             email_sent = self._send_email_code(
@@ -283,12 +499,14 @@ class AuthViewSet(viewsets.ViewSet):
                 'رمز استعادة كلمة المرور',
                 f'رمز استعادة كلمة المرور هو: {code}\nصالح لمدة 10 دقائق.',
             )
-        payload = {'ok': True, 'email_sent': bool(email_sent), 'phone': user.phone}
+        payload = {'ok': True, 'email_sent': bool(email_sent), 'sms_sent': bool(sms_sent), 'phone': user.phone}
         payload['reset_ticket'] = self._make_reset_ticket(user.id, code)
-        if email_sent:
+        if sms_sent:
+            payload['message'] = 'تم إرسال رمز الاسترجاع عبر رسالة نصية'
+        elif email_sent:
             payload['message'] = 'تم إرسال رمز الاسترجاع إلى البريد الإلكتروني'
         else:
-            payload['message'] = 'تعذر إرسال البريد، تم توفير رمز الاسترجاع مباشرة'
+            payload['message'] = 'تعذر إرسال SMS والبريد، تم توفير رمز الاسترجاع مباشرة'
             payload['reset_code'] = code
         if settings.DEBUG:
             payload['debug_code'] = code

@@ -9,8 +9,8 @@ from .models import User, Store, Product, ProductImage, ProductVariant, Address,
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone', 'role', 'city', 'first_name', 'last_name']
-        read_only_fields = ['id', 'role']
+        fields = ['id', 'username', 'email', 'phone', 'role', 'is_customer', 'is_store_admin', 'city', 'first_name', 'last_name']
+        read_only_fields = ['id', 'role', 'is_customer', 'is_store_admin']
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -70,6 +70,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             existing_user.city = validated_data['city']
             existing_user.first_name = first_name
             existing_user.last_name = last_name
+            existing_user.is_customer = True
             existing_user.set_password(validated_data['password'])
             existing_user.save()
             return existing_user
@@ -90,6 +91,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             first_name=first_name,
             last_name=last_name,
             role='customer',
+            is_customer=True,
+            is_store_admin=False,
             is_active=False,
         )
         return user

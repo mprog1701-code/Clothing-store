@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../theme';
 import { addCartItemVariant, listAds, listBanners, listProducts } from '../api';
+import { API_BASE_URL } from '../api/config';
 import ProductCard from '../components/ProductCard';
 import AdSlider from '../components/AdSlider';
 import PromoBannerGrid from '../components/PromoBannerGrid';
@@ -20,6 +21,17 @@ const CATEGORY_MAP = {
   كوزمتك: 'cosmetics',
   عطور: 'perfumes',
 };
+
+const FALLBACK_API_BASE = 'https://clothing-store-production-4387.up.railway.app';
+
+function resolveApiBase() {
+  const raw = String(API_BASE_URL || '')
+    .replace(/\u200E|\u200F|\u202A|\u202B|\u202C|\u202D|\u202E/g, '')
+    .replace(/\s+/g, '')
+    .replace(/^['"`\s]+|['"`\s]+$/g, '');
+  const match = raw.match(/https?:\/\/[^\s'"`]+/i);
+  return (match ? match[0] : raw || FALLBACK_API_BASE).replace(/\/+$/g, '');
+}
 
 const HomeScreen = ({ navigation }) => {
   const { accessToken } = useAuth();
@@ -109,6 +121,24 @@ const HomeScreen = ({ navigation }) => {
         if (!mounted) return;
         setHomeProducts(normalized);
       } catch (e) {
+        try {
+          const base = resolveApiBase();
+          const url = `${base}/api/products/?ordering=-created_at&page_size=8`;
+          const resp = await fetch(url, { method: 'GET' });
+          if (resp.ok) {
+            const data = await resp.json();
+            const source = Array.isArray(data) ? data : (data?.results || data?.products || data?.items || []);
+            const normalized = (source || []).map((item, index) => ({
+              ...item,
+              id: item?.id ?? item?.product_id ?? item?.productId ?? `h-${index}`,
+              name: item?.name || item?.title || item?.product_name || 'منتج',
+              price: item?.price ?? item?.base_price ?? item?.final_price ?? 0,
+            }));
+            if (!mounted) return;
+            setHomeProducts(normalized);
+            return;
+          }
+        } catch {}
         if (__DEV__) {
           console.error('[HomeScreen] products fetch failed', {
             message: e?.message,

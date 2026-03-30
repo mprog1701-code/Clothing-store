@@ -6701,26 +6701,37 @@ def _normalize_wa(phone):
     return ''
 
 
+def _build_wa_url(phone, message):
+    wa = _normalize_wa(phone)
+    if not wa:
+        return ''
+    msg = urllib.parse.quote(str(message or ''))
+    return f"https://api.whatsapp.com/send?phone={wa}&text={msg}"
+
+
 def share_delivery(request, token):
     oid, vtype = _share_unsign(token, max_age=7*24*3600)
     if not oid or vtype != 'delivery':
         return render(request, 'share/delivery.html', { 'order': None })
     order = get_object_or_404(Order, id=oid)
     page_url = request.build_absolute_uri(request.get_full_path())
-    cust_wa = _normalize_wa(order.user.phone)
-    store_phone = order.store.owner_phone or order.store_phone or (order.store.owner.phone if order.store.owner else '')
-    store_wa = _normalize_wa(store_phone)
+    customer_phone_display = (order.user.phone or '').strip()
+    store_phone_display = (
+        (order.store.owner_phone or '').strip()
+        or ((order.store.owner_user.phone or '').strip() if getattr(order.store, 'owner_user', None) else '')
+        or (order.store_phone or '').strip()
+        or ((order.store.owner.phone or '').strip() if order.store.owner else '')
+    )
     try:
         settings = SiteSettings.objects.get(id=1)
-        company_wa = _normalize_wa(settings.delivery_company_phone or '')
+        company_phone_display = (settings.delivery_company_phone or '').strip()
     except SiteSettings.DoesNotExist:
-        company_wa = ''
+        company_phone_display = ''
     total_iqd = f"{int(order.total_amount):,} د.ع"
     msg = f"طلب #{order.id} — الإجمالي: {total_iqd}\n{page_url}"
-    wa_msg = urllib.parse.quote(msg)
-    cust_wa_url = f"https://wa.me/{cust_wa}?text={wa_msg}" if cust_wa else ''
-    store_wa_url = f"https://wa.me/{store_wa}?text={wa_msg}" if store_wa else ''
-    company_wa_url = f"https://wa.me/{company_wa}?text={wa_msg}" if company_wa else ''
+    cust_wa_url = _build_wa_url(customer_phone_display, msg)
+    store_wa_url = _build_wa_url(store_phone_display, msg)
+    company_wa_url = _build_wa_url(company_phone_display, msg)
     maps_cust = ''
     try:
         if order.address and order.address.latitude and order.address.longitude:
@@ -6744,6 +6755,8 @@ def share_delivery(request, token):
     return render(request, 'share/delivery.html', {
         'order': order,
         'page_url': page_url,
+        'customer_phone_display': customer_phone_display,
+        'store_phone_display': store_phone_display,
         'cust_wa_url': cust_wa_url,
         'store_wa_url': store_wa_url,
         'company_wa_url': company_wa_url,
