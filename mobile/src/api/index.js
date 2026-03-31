@@ -1,6 +1,6 @@
 import client from './client';
 import { API_BASE_URL } from './config';
-import { saveTokens } from '../auth/tokenStorage';
+import { saveTokens, getAccessToken } from '../auth/tokenStorage';
 import { normalizeIraqiPhone } from '../utils/phone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -116,6 +116,16 @@ function shouldUseFetchFallback(error) {
   return msg.includes('network error') || msg.includes('network request failed');
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function fetchJsonFallback(path, params = {}) {
   const base = normalizeBaseForFetch(API_BASE_URL) || 'https://clothing-store-production-4387.up.railway.app';
   const qs = new URLSearchParams();
@@ -124,7 +134,7 @@ async function fetchJsonFallback(path, params = {}) {
     qs.append(k, String(v));
   });
   const full = `${base}${path}${qs.toString() ? `?${qs.toString()}` : ''}`;
-  const resp = await fetch(full, { method: 'GET' });
+  const resp = await fetchWithTimeout(full, { method: 'GET' }, 12000);
   const ct = String(resp.headers?.get?.('content-type') || '');
   if (!resp.ok) {
     throw new Error(`HTTP_${resp.status}`);
@@ -179,15 +189,6 @@ export async function logout() {
 
 export async function register(payload) {
   const body = { ...payload };
-  if (body.id_token || body.firebase_id_token) {
-    const r = await client.post('/api/auth/firebase_login/', body);
-    const data = r.data || {};
-    const { access, refresh, user } = data;
-    if (access && refresh) {
-      await saveTokens({ access, refresh });
-    }
-    return user || data;
-  }
   let r;
   const extractMsg = (data, status) => {
     if (!data) return '';
@@ -290,9 +291,81 @@ export async function firebaseResetPassword(payload = {}) {
   return r.data;
 }
 
+export async function sendPhoneOtp(payload = {}) {
+  const body = { ...payload };
+  const normalizedPhone = normalizeIraqiPhone(String(body.phone || body.identifier || '').trim());
+  const purpose = String(body.purpose || 'signup').trim().toLowerCase();
+  if (!normalizedPhone) {
+    const err = new Error('PHONE_INVALID');
+    err.code = 'PHONE_INVALID';
+    throw err;
+  }
+  try {
+    const r = await client.post('/api/auth/send_phone_otp/', { phone: normalizedPhone, purpose });
+    return r.data || {};
+  } catch (e) {
+    if (Number(e?.response?.status || 0) === 404) {
+      if (purpose === 'signup') {
+        const legacy = await client.post('/api/auth/register/', { phone: normalizedPhone });
+        return { ...(legacy.data || {}), legacy: true };
+      }
+      if (purpose === 'reset') {
+        const legacy = await client.post('/api/auth/forgot_password_request/', { phone: normalizedPhone, identifier: normalizedPhone });
+        return { ...(legacy.data || {}), legacy: true };
+      }
+    }
+    const data = e?.response?.data || {};
+    const msg = String(data?.message || data?.error || 'تعذر إرسال رمز التحقق');
+    const err = new Error(msg);
+    err.code = String(data?.provider_error || data?.error || '');
+    err.payload = data;
+    throw err;
+  }
+}
+
+export async function verifyPhoneOtp(payload = {}) {
+  const normalizedPhone = normalizeIraqiPhone(String(payload.phone || '').trim());
+  const purpose = String(payload.purpose || 'signup').trim().toLowerCase();
+  const code = String(payload.otp_code || payload.code || '').trim();
+  if (!normalizedPhone || !code) {
+    const err = new Error('MISSING_REQUIRED_FIELDS');
+    err.code = 'MISSING_REQUIRED_FIELDS';
+    throw err;
+  }
+  try {
+    const r = await client.post('/api/auth/verify_phone_otp/', { phone: normalizedPhone, purpose, otp_code: code });
+    return r.data || {};
+  } catch (e) {
+    if (Number(e?.response?.status || 0) === 404) {
+      return { legacy: true, phone: normalizedPhone, purpose, otp_code: code };
+    }
+    throw e;
+  }
+}
+
 export async function me() {
-  const r = await client.get('/api/auth/me/');
-  return r.data;
+  const token = await getAccessToken();
+  if (!token) {
+    const err = new Error('UNAUTHORIZED');
+    err.response = { status: 401, data: { detail: 'لم يتم تزويد بيانات الدخول.' } };
+    throw err;
+  }
+  const base = normalizeBaseForFetch(API_BASE_URL) || 'https://clothing-store-production-4387.up.railway.app';
+  const resp = await fetchWithTimeout(`${base}/api/auth/me/`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    },
+  }, 12000);
+  const ct = String(resp.headers?.get?.('content-type') || '');
+  const data = ct.includes('application/json') ? await resp.json() : await resp.text();
+  if (!resp.ok) {
+    const err = new Error(String(data?.detail || data?.error || `HTTP_${resp.status}`));
+    err.response = { status: resp.status, data };
+    throw err;
+  }
+  return data;
 }
 
 export async function updateMe(payload = {}) {
@@ -316,14 +389,14 @@ export async function listStoreProducts(id, params = {}) {
 }
 
 export async function listTopStores(params = {}) {
-  try {
-    const r = await client.get('/api/stores/top/', { params });
-    return r.data;
-  } catch {
-    const all = await listStores(params);
-    const arr = Array.isArray(all) ? all : (all.results || []);
-    return arr.slice(0, 10);
-  }
+  const p = { ...(params || {}) };
+  const limit = Number(p.limit || p.page_size || 10);
+  delete p.limit;
+  if (!p.page_size) p.page_size = limit;
+  if (!p.ordering) p.ordering = '-store_rating';
+  const all = await listStores(p);
+  const arr = Array.isArray(all) ? all : (all.results || []);
+  return arr.slice(0, limit > 0 ? limit : 10);
 }
 
 export async function productVariantPrice(id, color, size) {

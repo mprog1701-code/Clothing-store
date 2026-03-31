@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, I18nManager, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Modal } from 'react-native';
 import theme from '../theme';
 import { useAuth } from '../auth/AuthContext';
@@ -6,9 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { normalizeIraqiPhone, isValidIraqiPhone } from '../utils/phone';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { signInWithPhoneNumber } from 'firebase/auth';
-import { firebaseAuth, firebaseConfig, ensureFirebasePhoneAuthReady } from '../firebase';
+import { sendPhoneOtp, verifyPhoneOtp } from '../api';
 
 const IRAQI_CITIES = [
   'بغداد',
@@ -38,8 +36,30 @@ export default function RegisterScreen({ navigation }) {
   const [errors, setErrors] = useState({});
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const recaptchaVerifier = useRef(null);
+  const [otpTicket, setOtpTicket] = useState('');
+  const [legacyOtpMode, setLegacyOtpMode] = useState(false);
+
+  const withTimeout = (promise, timeoutMs = 20000) => new Promise((resolve, reject) => {
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error('REQUEST_TIMEOUT'));
+    }, timeoutMs);
+    Promise.resolve(promise)
+      .then((value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
 
   const validators = {
     fullName: (value) => {
@@ -105,32 +125,54 @@ export default function RegisterScreen({ navigation }) {
   }, [city, email, fullName, loading, otpCode, otpStep, password, passwordConfirm, phone]);
 
   const onSubmit = async () => {
+    if (loading) return;
     if (!validateAll()) return;
     setLoading(true);
     try {
-      await ensureFirebasePhoneAuthReady();
       const normalizedPhone = normalizeIraqiPhone(phone);
-      const e164 = `+964${String(normalizedPhone || '').replace(/^0/, '')}`;
       if (!otpStep) {
-        const confirmation = await signInWithPhoneNumber(firebaseAuth(), e164, recaptchaVerifier.current);
-        setConfirmationResult(confirmation);
+        await withTimeout(
+          sendPhoneOtp({ phone: normalizedPhone, purpose: 'signup' }),
+          20000
+        ).then((res) => {
+          setOtpTicket(String(res?.otp_ticket || ''));
+          setLegacyOtpMode(Boolean(res?.legacy));
+        });
         setOtpStep(true);
-        setErrors((prev) => ({ ...prev, form: 'تم إرسال رمز التحقق من Firebase إلى رقم الهاتف' }));
+        setErrors((prev) => ({ ...prev, form: 'تم إرسال رمز التحقق إلى رقم الهاتف' }));
       } else {
-        if (!confirmationResult) {
-          throw new Error('OTP_SESSION_MISSING');
+        if (legacyOtpMode) {
+          await withTimeout(registerUser({
+            phone: normalizedPhone,
+            email: email.trim().toLowerCase(),
+            city,
+            full_name: fullName.trim(),
+            password,
+            password_confirm: passwordConfirm,
+            otp_code: otpCode.trim(),
+            otp_ticket: otpTicket || undefined,
+          }), 25000);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Root' }],
+          });
+          return;
         }
-        const cred = await confirmationResult.confirm(otpCode.trim());
-        const idToken = await cred.user.getIdToken(true);
-        await registerUser({
-          id_token: idToken,
+        const verifyResult = await withTimeout(
+          verifyPhoneOtp({ phone: normalizedPhone, purpose: 'signup', otp_code: otpCode.trim() }),
+          15000
+        );
+        const token = String(verifyResult?.verification_token || '');
+        if (!token) throw new Error('OTP_SESSION_MISSING');
+        await withTimeout(registerUser({
+          verification_token: token,
           phone: normalizedPhone,
           email: email.trim().toLowerCase(),
           city,
           full_name: fullName.trim(),
           password,
           password_confirm: passwordConfirm,
-        });
+        }), 25000);
         navigation.reset({
           index: 0,
           routes: [{ name: 'Root' }],
@@ -150,12 +192,24 @@ export default function RegisterScreen({ navigation }) {
               ? 'بيئة التطبيق لا تدعم متطلبات Firebase web storage. استخدم نسخة Dev Client محدثة.'
         : normalizedRawError === 'FIREBASE_CONFIG_INVALID'
           ? 'إعدادات Firebase غير مكتملة على التطبيق'
-          : normalizedRawError === 'FIREBASE_WEB_APP_ID_MISSING'
-            ? 'Firebase Web App ID مفقود. أضف EXPO_PUBLIC_FIREBASE_WEB_APP_ID من إعدادات Web App في Firebase.'
-            : normalizedRawError === 'FIREBASE_WEB_APP_NOT_CONFIGURED'
-              ? 'مشروع Firebase لا يحتوي Web App فعّال على authDomain الحالي. أنشئ Web App واستخدم إعداداته.'
-              : normalizedRawError === 'FIREBASE_AUTH_DOMAIN_UNREACHABLE'
-                ? 'تعذر الوصول إلى Firebase authDomain. تحقق من الإنترنت وقيمة authDomain.'
+          : normalizedRawError === 'OTP_INVALID_OR_EXPIRED'
+            ? 'رمز التحقق غير صحيح أو منتهي'
+            : normalizedRawError === 'OTP_TOO_MANY_ATTEMPTS'
+              ? 'تم تجاوز عدد المحاولات المسموح. اطلب رمزًا جديدًا'
+              : normalizedRawError === 'INFOBIP_INSUFFICIENT_BALANCE'
+                ? 'رصيد الرسائل غير كافٍ في مزود الرسائل'
+                : normalizedRawError === 'INFOBIP_INVALID_NUMBER'
+                  ? 'رقم الهاتف غير صالح للإرسال'
+                  : normalizedRawError === 'INFOBIP_CONFIG_MISSING'
+                    ? 'إعدادات Infobip غير مكتملة على الخادم'
+                    : normalizedRawError === 'INFOBIP_TEMPLATE_MISSING'
+                      ? 'قالب واتساب غير مُعد بشكل صحيح في Infobip'
+                      : normalizedRawError === 'INFOBIP_UNREACHABLE'
+                        ? 'تعذر الاتصال بمزود الرسائل. حاول لاحقًا'
+                        : normalizedRawError === 'INFOBIP_HTTP_ERROR'
+                          ? 'مزود الرسائل رفض الطلب. تحقق من الإعدادات'
+                  : normalizedRawError === 'REQUEST_TIMEOUT'
+                    ? 'انتهت مهلة الاتصال. تحقق من الإنترنت وحاول مرة أخرى.'
                 : normalizedRawError;
       setErrors((prev) => ({ ...prev, form: msg }));
     } finally {
@@ -165,7 +219,6 @@ export default function RegisterScreen({ navigation }) {
   return (
     <LinearGradient colors={['#0c1b33', '#081226']} style={styles.gradient}>
       <SafeAreaView style={styles.safe}>
-        <FirebaseRecaptchaVerifierModal ref={recaptchaVerifier} firebaseConfig={firebaseConfig} attemptInvisibleVerification={Platform.OS !== 'ios'} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24} style={styles.safe}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             <TouchableOpacity
@@ -312,7 +365,7 @@ export default function RegisterScreen({ navigation }) {
             ) : null}
 
             <TouchableOpacity disabled={disabled} onPress={onSubmit} style={[styles.registerBtn, disabled && styles.registerBtnDisabled]}>
-              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.registerBtnText}>{otpStep ? 'تأكيد Firebase وإكمال التسجيل' : 'إرسال رمز Firebase'}</Text>}
+              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.registerBtnText}>{otpStep ? 'تأكيد الرمز وإكمال التسجيل' : 'إرسال رمز التحقق'}</Text>}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.loginLinkWrap}>

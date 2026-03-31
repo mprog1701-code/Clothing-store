@@ -12,7 +12,9 @@ from django.conf import settings
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.db import connection
 from django.utils import timezone
-from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize, FeatureFlag
+from datetime import timedelta
+from hashlib import sha256
+from .models import User, Store, Product, Address, Order, ProductVariant, ProductColor, ProductImage, AttributeColor, AttributeSize, FeatureFlag, PhoneOTP
 import logging
 import json
 import os
@@ -86,6 +88,16 @@ class AuthViewSet(viewsets.ViewSet):
         phone, code = str(raw).split(':', 1)
         return str(phone), str(code)
 
+    def _make_verified_ticket(self, phone, purpose):
+        signer = TimestampSigner(salt='verified-phone-otp')
+        return signer.sign(f"{str(phone)}:{str(purpose)}")
+
+    def _read_verified_ticket(self, ticket, max_age=10 * 60):
+        signer = TimestampSigner(salt='verified-phone-otp')
+        raw = signer.unsign(ticket, max_age=max_age)
+        phone, purpose = str(raw).split(':', 1)
+        return str(phone), str(purpose)
+
     def _to_e164_iq(self, phone):
         p = str(phone or '').strip().replace(' ', '')
         digits = ''.join(ch for ch in p if ch.isdigit())
@@ -113,6 +125,153 @@ class AuthViewSet(viewsets.ViewSet):
         if digits.startswith('07') and len(digits) == 11:
             return digits
         return p
+
+    def _otp_key(self, phone, purpose, code):
+        secret = (os.environ.get('OTP_HASH_SECRET') or settings.SECRET_KEY or '').strip()
+        source = f"{str(phone)}|{str(purpose)}|{str(code)}|{secret}"
+        return sha256(source.encode('utf-8')).hexdigest()
+
+    def _sanitize_infobip_value(self, value):
+        raw = str(value or '').strip().replace('ا', '')
+        raw = raw.replace('`', '').replace('"', '').replace("'", '')
+        raw = raw.replace('[', '').replace(']', '')
+        return raw.strip()
+
+    def _post_infobip(self, url, api_key, payload):
+        headers = {
+            'Authorization': f"App {api_key}",
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        }
+        req = Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')
+        try:
+            with urlopen(req, timeout=12) as resp:
+                status_code = int(getattr(resp, 'status', 200) or 200)
+                body = {}
+                try:
+                    body = json.loads((resp.read() or b'{}').decode('utf-8'))
+                except Exception:
+                    body = {}
+                if 200 <= status_code < 300:
+                    return True, {'status': status_code, 'data': body}
+                return False, {'error': 'INFOBIP_SEND_FAILED', 'message': 'فشل إرسال الرمز', 'status': status_code, 'data': body}
+        except HTTPError as e:
+            status_code = int(getattr(e, 'code', 0) or 0)
+            body = {}
+            try:
+                body = json.loads((e.read() or b'{}').decode('utf-8'))
+            except Exception:
+                body = {}
+            error_text = json.dumps(body, ensure_ascii=False).lower()
+            if 'insufficient' in error_text or 'balance' in error_text or 'credit' in error_text:
+                return False, {'error': 'INFOBIP_INSUFFICIENT_BALANCE', 'message': 'رصيد الرسائل غير كافٍ في Infobip', 'status': status_code, 'data': body}
+            if 'invalid' in error_text and ('destination' in error_text or 'to' in error_text or 'number' in error_text):
+                return False, {'error': 'INFOBIP_INVALID_NUMBER', 'message': 'رقم الهاتف غير صالح للإرسال', 'status': status_code, 'data': body}
+            return False, {'error': 'INFOBIP_HTTP_ERROR', 'message': 'فشل مزود الرسائل', 'status': status_code, 'data': body}
+        except URLError:
+            return False, {'error': 'INFOBIP_UNREACHABLE', 'message': 'تعذر الاتصال بـ Infobip'}
+        except Exception:
+            return False, {'error': 'INFOBIP_UNKNOWN_ERROR', 'message': 'تعذر إرسال الرمز حالياً'}
+
+    def _build_infobip_sms_payload(self, to, message):
+        sender = self._sanitize_infobip_value(os.environ.get('INFOBIP_SENDER') or 'DAAR')
+        return {
+            'messages': [
+                {
+                    'from': sender,
+                    'destinations': [{'to': to}],
+                    'text': message,
+                }
+            ]
+        }
+
+    def _build_infobip_whatsapp_payload(self, to, message):
+        sender = self._sanitize_infobip_value(os.environ.get('INFOBIP_WHATSAPP_FROM') or os.environ.get('INFOBIP_SENDER') or '')
+        return {
+            'from': sender,
+            'to': to,
+            'content': {
+                'text': message
+            }
+        }
+
+    def _build_infobip_whatsapp_template_payload(self, to, name, code):
+        sender = self._sanitize_infobip_value(os.environ.get('INFOBIP_WHATSAPP_FROM') or os.environ.get('INFOBIP_SENDER') or '')
+        template_name = self._sanitize_infobip_value(os.environ.get('INFOBIP_WHATSAPP_TEMPLATE'))
+        language = self._sanitize_infobip_value(os.environ.get('INFOBIP_WHATSAPP_TEMPLATE_LANG') or 'en')
+        placeholders_pattern = self._sanitize_infobip_value(os.environ.get('INFOBIP_WHATSAPP_TEMPLATE_PLACEHOLDERS') or 'code')
+        if not template_name or not sender:
+            return {}
+        placeholders = []
+        for token in [t.strip().lower() for t in placeholders_pattern.split(',') if t.strip()]:
+            if token == 'name':
+                placeholders.append(str(name or 'User'))
+            elif token == 'phone':
+                placeholders.append(str(to))
+            else:
+                placeholders.append(str(code))
+        return {
+            'messages': [
+                {
+                    'from': sender,
+                    'to': to,
+                    'messageId': f"otp-{self._create_code()}-{random.randint(1000, 9999)}",
+                    'content': {
+                        'templateName': template_name,
+                        'templateData': {
+                            'body': {
+                                'placeholders': placeholders,
+                            }
+                        },
+                        'language': language,
+                    }
+                }
+            ]
+        }
+
+    def _send_infobip_otp(self, phone, code, purpose='signup'):
+        base_url = self._sanitize_infobip_value(os.environ.get('INFOBIP_BASE_URL'))
+        api_key = self._sanitize_infobip_value(os.environ.get('INFOBIP_API_KEY'))
+        channel_raw = self._sanitize_infobip_value(os.environ.get('INFOBIP_CHANNEL') or 'sms')
+        channels = [c.strip().lower() for c in channel_raw.split(',') if c.strip()]
+        if not channels:
+            channels = ['sms']
+        recipient_name = (os.environ.get('INFOBIP_TEMPLATE_NAME_PLACEHOLDER') or 'User').strip()
+        to = self._to_e164_iq(phone)
+        to_no_plus = str(to or '').replace('+', '')
+        if not base_url or not api_key:
+            return False, {'error': 'INFOBIP_CONFIG_MISSING', 'message': 'إعدادات Infobip غير مكتملة'}
+        text = f"رمز التحقق الخاص بك هو: {code}" if purpose == 'signup' else f"رمز استعادة كلمة المرور هو: {code}"
+        last_error = {'error': 'INFOBIP_UNKNOWN_ERROR', 'message': 'تعذر إرسال الرمز حالياً'}
+        for channel in channels:
+            if channel == 'whatsapp_template':
+                path = '/whatsapp/1/message/template'
+                for target in [to, to_no_plus]:
+                    payload = self._build_infobip_whatsapp_template_payload(target, recipient_name, code)
+                    if not payload:
+                        last_error = {'error': 'INFOBIP_TEMPLATE_MISSING', 'message': 'قالب واتساب غير مُعد في الإعدادات'}
+                        break
+                    ok, result = self._post_infobip(f"{base_url.rstrip('/')}{path}", api_key, payload)
+                    if ok:
+                        return True, result
+                    last_error = result
+                continue
+            if channel == 'whatsapp':
+                path = '/whatsapp/1/message/text'
+                for target in [to, to_no_plus]:
+                    payload = self._build_infobip_whatsapp_payload(target, text)
+                    ok, result = self._post_infobip(f"{base_url.rstrip('/')}{path}", api_key, payload)
+                    if ok:
+                        return True, result
+                    last_error = result
+                continue
+            path = '/sms/2/text/advanced'
+            payload = self._build_infobip_sms_payload(to, text)
+            ok, result = self._post_infobip(f"{base_url.rstrip('/')}{path}", api_key, payload)
+            if ok:
+                return True, result
+            last_error = result
+        return False, last_error
 
     def _init_firebase(self):
         if not firebase_admin or not firebase_auth or not firebase_credentials:
@@ -199,39 +358,72 @@ class AuthViewSet(viewsets.ViewSet):
         phone = (request.data.get('phone') or '').strip()
         otp_code = (request.data.get('otp_code') or '').strip()
         otp_ticket = (request.data.get('otp_ticket') or '').strip()
+        verification_token = (request.data.get('verification_token') or '').strip()
         existing_user = None
         if phone:
             existing_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
             if existing_user and bool(getattr(existing_user, 'is_customer', False)):
                 return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
-        if not otp_code:
+        otp_valid = False
+        if verification_token and phone:
+            try:
+                t_phone, t_purpose = self._read_verified_ticket(verification_token, max_age=10 * 60)
+                otp_valid = (str(t_phone) == str(phone) and str(t_purpose) == 'signup')
+            except (BadSignature, SignatureExpired, ValueError):
+                otp_valid = False
+        if not otp_valid and not otp_code:
             if not phone:
                 return Response({'error': 'PHONE_REQUIRED'}, status=status.HTTP_400_BAD_REQUEST)
             code = self._create_code()
             cache.set(f"verify:signup:{phone}", code, timeout=10 * 60)
-            sms_sent = self._send_sms_code(phone, code, purpose='signup')
+            expires_at = timezone.now() + timedelta(minutes=5)
+            PhoneOTP.objects.filter(phone=phone, purpose='signup', consumed_at__isnull=True).update(consumed_at=timezone.now())
+            PhoneOTP.objects.create(
+                phone=phone,
+                purpose='signup',
+                code_hash=self._otp_key(phone, 'signup', code),
+                expires_at=expires_at,
+            )
+            sent_ok, provider_result = self._send_infobip_otp(phone, code, purpose='signup')
             payload = {
-                'ok': True,
+                'ok': bool(sent_ok),
                 'requires_otp': True,
                 'phone': phone,
                 'otp_ticket': self._make_signup_ticket(phone, code),
-                'sms_sent': bool(sms_sent),
-                'message': 'تم إرسال رمز التحقق إلى رقم الهاتف' if sms_sent else 'تعذر إرسال SMS حالياً، استخدم الرمز المؤقت',
+                'sms_sent': bool(sent_ok),
+                'message': 'تم إرسال رمز التحقق إلى رقم الهاتف' if sent_ok else provider_result.get('message', 'تعذر إرسال رمز التحقق'),
+                'provider_error': provider_result.get('error') if not sent_ok else '',
             }
             if settings.DEBUG:
                 payload['debug_otp'] = code
+                payload['provider_debug'] = provider_result
+            if not sent_ok:
+                return Response(payload, status=status.HTTP_400_BAD_REQUEST)
             return Response(payload)
-        otp_valid = False
-        expected = cache.get(f"verify:signup:{phone}")
-        if expected and str(expected) == str(otp_code):
-            otp_valid = True
-        if otp_ticket:
-            try:
-                t_phone, t_code = self._read_signup_ticket(otp_ticket, max_age=10 * 60)
-                if str(t_phone) == str(phone) and str(t_code) == str(otp_code):
+        if not otp_valid:
+            expected = cache.get(f"verify:signup:{phone}")
+            if expected and str(expected) == str(otp_code):
+                otp_valid = True
+            otp_row = PhoneOTP.objects.filter(
+                phone=phone,
+                purpose='signup',
+                consumed_at__isnull=True,
+                expires_at__gt=timezone.now(),
+            ).order_by('-created_at').first()
+            if otp_row and otp_code:
+                otp_row.attempts = int(otp_row.attempts or 0) + 1
+                provided_hash = self._otp_key(phone, 'signup', otp_code)
+                if str(otp_row.code_hash) == str(provided_hash):
                     otp_valid = True
-            except (BadSignature, SignatureExpired, ValueError):
-                pass
+                    otp_row.consumed_at = timezone.now()
+                otp_row.save(update_fields=['attempts', 'consumed_at'] if otp_valid else ['attempts'])
+            if otp_ticket:
+                try:
+                    t_phone, t_code = self._read_signup_ticket(otp_ticket, max_age=10 * 60)
+                    if str(t_phone) == str(phone) and str(t_code) == str(otp_code):
+                        otp_valid = True
+                except (BadSignature, SignatureExpired, ValueError):
+                    pass
         if not otp_valid:
             return Response({'error': 'OTP_INVALID_OR_EXPIRED', 'message': 'رمز التحقق غير صحيح أو منتهي'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = UserRegistrationSerializer(data=request.data, context={'existing_user': existing_user} if existing_user else {})
@@ -266,6 +458,7 @@ class AuthViewSet(viewsets.ViewSet):
             except Exception:
                 pass
             cache.delete(f"verify:signup:{phone}")
+            PhoneOTP.objects.filter(phone=phone, purpose='signup', consumed_at__isnull=True).update(consumed_at=timezone.now())
             refresh = RefreshToken.for_user(user)
             return Response({
                 'user': UserSerializer(user).data,
@@ -352,14 +545,27 @@ class AuthViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], permission_classes=[])
     def firebase_reset_password(self, request):
         id_token = (request.data.get('id_token') or request.data.get('firebase_id_token') or '').strip()
+        verification_token = (request.data.get('verification_token') or '').strip()
         new_password = (request.data.get('new_password') or '').strip()
-        if not id_token or not new_password:
+        phone = (request.data.get('phone') or '').strip()
+        if not new_password:
             return Response({'error': 'MISSING_REQUIRED_FIELDS'}, status=status.HTTP_400_BAD_REQUEST)
         if len(new_password) < 6:
             return Response({'error': 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'}, status=status.HTTP_400_BAD_REQUEST)
-        phone, err = self._verify_firebase_phone(id_token)
-        if not phone:
-            return Response({'error': err or 'FIREBASE_VERIFICATION_FAILED'}, status=status.HTTP_400_BAD_REQUEST)
+        if verification_token:
+            try:
+                t_phone, t_purpose = self._read_verified_ticket(verification_token, max_age=10 * 60)
+                if t_purpose != 'reset':
+                    return Response({'error': 'OTP_INVALID_OR_EXPIRED'}, status=status.HTTP_400_BAD_REQUEST)
+                phone = t_phone
+            except (BadSignature, SignatureExpired, ValueError):
+                return Response({'error': 'OTP_INVALID_OR_EXPIRED'}, status=status.HTTP_400_BAD_REQUEST)
+        elif id_token:
+            phone, err = self._verify_firebase_phone(id_token)
+            if not phone:
+                return Response({'error': err or 'FIREBASE_VERIFICATION_FAILED'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': 'MISSING_REQUIRED_FIELDS'}, status=status.HTTP_400_BAD_REQUEST)
         user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
         if not user:
             return Response({'error': 'المستخدم غير موجود'}, status=status.HTTP_404_NOT_FOUND)
@@ -370,6 +576,83 @@ class AuthViewSet(viewsets.ViewSet):
         else:
             user.save(update_fields=['password', 'role'])
         return Response({'ok': True}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def send_phone_otp(self, request):
+        phone = (request.data.get('phone') or '').strip()
+        purpose = (request.data.get('purpose') or 'signup').strip().lower()
+        if purpose not in ('signup', 'reset'):
+            return Response({'error': 'INVALID_PURPOSE'}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone:
+            return Response({'error': 'PHONE_REQUIRED'}, status=status.HTTP_400_BAD_REQUEST)
+        if purpose == 'signup':
+            existing_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+            if existing_user and bool(getattr(existing_user, 'is_customer', False)):
+                return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
+        if purpose == 'reset':
+            target_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
+            if not target_user:
+                return Response({'ok': True, 'message': 'إذا كانت البيانات صحيحة سيتم إرسال رمز الاسترجاع'})
+        code = self._create_code()
+        expires_at = timezone.now() + timedelta(minutes=5)
+        PhoneOTP.objects.filter(phone=phone, purpose=purpose, consumed_at__isnull=True).update(consumed_at=timezone.now())
+        PhoneOTP.objects.create(
+            phone=phone,
+            purpose=purpose,
+            code_hash=self._otp_key(phone, purpose, code),
+            expires_at=expires_at,
+        )
+        sent_ok, provider_result = self._send_infobip_otp(phone, code, purpose=purpose)
+        payload = {
+            'ok': bool(sent_ok),
+            'requires_otp': True,
+            'phone': phone,
+            'purpose': purpose,
+            'message': 'تم إرسال رمز التحقق إلى رقم الهاتف' if sent_ok else provider_result.get('message', 'تعذر إرسال رمز التحقق'),
+            'provider_error': provider_result.get('error') if not sent_ok else '',
+        }
+        if settings.DEBUG:
+            payload['debug_otp'] = code
+            payload['provider_debug'] = provider_result
+        if not sent_ok:
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
+        return Response(payload)
+
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def verify_phone_otp(self, request):
+        phone = (request.data.get('phone') or '').strip()
+        purpose = (request.data.get('purpose') or 'signup').strip().lower()
+        otp_code = (request.data.get('otp_code') or request.data.get('code') or '').strip()
+        if purpose not in ('signup', 'reset'):
+            return Response({'error': 'INVALID_PURPOSE'}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone or not otp_code:
+            return Response({'error': 'MISSING_REQUIRED_FIELDS'}, status=status.HTTP_400_BAD_REQUEST)
+        otp_row = PhoneOTP.objects.filter(
+            phone=phone,
+            purpose=purpose,
+            consumed_at__isnull=True,
+            expires_at__gt=timezone.now(),
+        ).order_by('-created_at').first()
+        if not otp_row:
+            return Response({'error': 'OTP_INVALID_OR_EXPIRED'}, status=status.HTTP_400_BAD_REQUEST)
+        otp_row.attempts = int(otp_row.attempts or 0) + 1
+        if int(otp_row.attempts) > 6:
+            otp_row.consumed_at = timezone.now()
+            otp_row.save(update_fields=['attempts', 'consumed_at'])
+            return Response({'error': 'OTP_TOO_MANY_ATTEMPTS', 'message': 'تم تجاوز عدد المحاولات المسموح'}, status=status.HTTP_400_BAD_REQUEST)
+        provided_hash = self._otp_key(phone, purpose, otp_code)
+        if str(otp_row.code_hash) != str(provided_hash):
+            otp_row.save(update_fields=['attempts'])
+            return Response({'error': 'OTP_INVALID_OR_EXPIRED', 'message': 'رمز التحقق غير صحيح أو منتهي'}, status=status.HTTP_400_BAD_REQUEST)
+        otp_row.consumed_at = timezone.now()
+        otp_row.save(update_fields=['attempts', 'consumed_at'])
+        verification_token = self._make_verified_ticket(phone, purpose)
+        return Response({
+            'ok': True,
+            'phone': phone,
+            'purpose': purpose,
+            'verification_token': verification_token,
+        })
     
     @action(detail=False, methods=['post'], permission_classes=[])
     def login(self, request):

@@ -307,6 +307,25 @@ class PhoneReservation(models.Model):
     note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class PhoneOTP(models.Model):
+    PURPOSE_CHOICES = [
+        ('signup', 'signup'),
+        ('reset', 'reset'),
+    ]
+    phone = models.CharField(max_length=20, db_index=True)
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, db_index=True)
+    code_hash = models.CharField(max_length=128)
+    expires_at = models.DateTimeField(db_index=True)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['phone', 'purpose']),
+            models.Index(fields=['expires_at']),
+        ]
+
 class AppRating(models.Model):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     score = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])

@@ -73,7 +73,8 @@ export default function StoresScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    const isFabric = !!global?.nativeFabricUIManager;
+    if (Platform.OS === 'android' && !isFabric && UIManager.setLayoutAnimationEnabledExperimental) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
     }
   }, []);
@@ -83,7 +84,7 @@ export default function StoresScreen({ navigation }) {
     const isRefresh = !!opts.refresh;
     if (!isRefresh) setLoading(true);
     try {
-      const params = { search: q || undefined, page: nextPage || undefined, sort: active !== 'all' ? active : undefined };
+      const params = { search: q || undefined, page: nextPage > 1 ? nextPage : undefined, sort: active !== 'all' ? active : undefined };
       const data = await listStores(params);
       const arr = Array.isArray(data) ? data : (data.results || []);
       if (isRefresh || nextPage === 1) {
@@ -91,10 +92,17 @@ export default function StoresScreen({ navigation }) {
       } else {
         setStores(prev => [...prev, ...arr]);
       }
-      const total = Array.isArray(data) ? data.length : (data.count ?? arr.length);
-      setHasMore(arr.length > 0 && (total ? (stores.length + arr.length) < total : true));
+      const hasNext = !Array.isArray(data) && Object.prototype.hasOwnProperty.call(data || {}, 'next')
+        ? Boolean(data?.next)
+        : arr.length > 0;
+      setHasMore(hasNext);
       setPage(nextPage);
-    } catch {
+    } catch (e) {
+      const status = Number(e?.response?.status || 0);
+      if (status === 404 && nextPage > 1) {
+        setHasMore(false);
+        return;
+      }
       if (isRefresh) {
         setStores([]);
       }

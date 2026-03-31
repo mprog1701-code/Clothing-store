@@ -1,11 +1,26 @@
 import React from 'react';
-import { View, ActivityIndicator, I18nManager, Text, TextInput } from 'react-native';
+import { View, ActivityIndicator, I18nManager, Text, TextInput, LogBox } from 'react-native';
 import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider } from './auth/AuthContext';
 import { CartProvider } from './cart/CartContext';
 import { CheckoutProvider } from './checkout/CheckoutContext';
 import { useFonts, Cairo_400Regular, Cairo_700Bold } from '@expo-google-fonts/cairo';
 import theme from './theme';
+
+if (__DEV__) {
+  LogBox.ignoreLogs([
+    'SafeAreaView has been deprecated',
+  ]);
+  if (!global.__DAAR_RECAPTCHA_LOG_FILTER__) {
+    const originalLog = console.log;
+    console.log = (...args) => {
+      const first = String(args?.[0] || '');
+      if (first.includes('Failed to initialize reCAPTCHA Enterprise config')) return;
+      originalLog(...args);
+    };
+    global.__DAAR_RECAPTCHA_LOG_FILTER__ = true;
+  }
+}
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Cairo_400Regular, Cairo_700Bold });

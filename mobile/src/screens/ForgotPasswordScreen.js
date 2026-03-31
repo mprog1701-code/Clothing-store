@@ -1,14 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, I18nManager, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { firebaseResetPassword } from '../api';
+import { firebaseResetPassword, sendPhoneOtp, verifyPhoneOtp, confirmPasswordReset } from '../api';
 import theme from '../theme';
 import { normalizeIraqiPhone } from '../utils/phone';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { signInWithPhoneNumber } from 'firebase/auth';
-import { firebaseAuth, firebaseConfig, ensureFirebasePhoneAuthReady } from '../firebase';
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [identifier, setIdentifier] = useState('');
@@ -17,8 +14,8 @@ export default function ForgotPasswordScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requested, setRequested] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const recaptchaVerifier = useRef(null);
+  const [legacyOtpMode, setLegacyOtpMode] = useState(false);
+  const [resetTicket, setResetTicket] = useState('');
   const normalizeIdentifier = (value) => normalizeIraqiPhone(String(value || '').trim());
 
   const onRequest = async () => {
@@ -29,31 +26,30 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      await ensureFirebasePhoneAuthReady();
-      const e164 = `+964${String(normalizedIdentifier).replace(/^0/, '')}`;
-      const confirmation = await signInWithPhoneNumber(firebaseAuth(), e164, recaptchaVerifier.current);
-      setConfirmationResult(confirmation);
+      const res = await sendPhoneOtp({ phone: normalizedIdentifier, purpose: 'reset' });
+      setLegacyOtpMode(Boolean(res?.legacy));
+      setResetTicket(String(res?.reset_ticket || ''));
       setRequested(true);
-      Alert.alert('تم', 'تم إرسال رمز Firebase إلى رقم الهاتف');
+      Alert.alert('تم', 'تم إرسال رمز التحقق إلى رقم الهاتف');
     } catch (e) {
       const code = String(e?.code || e?.payload?.code || e?.response?.data?.code || '');
       const raw = String(e?.response?.data?.error || e?.message || 'تعذر إرسال رمز Firebase');
       const normalizedRaw = String(raw || '');
-      const message = raw === 'FIREBASE_CONFIG_INVALID'
-        ? 'إعدادات Firebase غير مكتملة على التطبيق'
-        : code === 'auth/invalid-app-credential'
-          ? 'فشل تهيئة Firebase Phone Auth. تأكد من إضافة SHA-1 وSHA-256 لتطبيق Android في Firebase.'
-          : code === 'auth/captcha-check-failed'
-            ? 'فشل تحقق reCAPTCHA. أعد المحاولة وتأكد من اتصال الإنترنت.'
-            : code === 'auth/web-storage-unsupported'
-              ? 'بيئة التطبيق لا تدعم متطلبات Firebase web storage. استخدم نسخة Dev Client محدثة.'
-        : normalizedRaw === 'FIREBASE_WEB_APP_ID_MISSING'
-          ? 'Firebase Web App ID مفقود. أضف EXPO_PUBLIC_FIREBASE_WEB_APP_ID من إعدادات Web App في Firebase.'
-          : normalizedRaw === 'FIREBASE_WEB_APP_NOT_CONFIGURED'
-            ? 'مشروع Firebase لا يحتوي Web App فعّال على authDomain الحالي. أنشئ Web App واستخدم إعداداته.'
-            : normalizedRaw === 'FIREBASE_AUTH_DOMAIN_UNREACHABLE'
-              ? 'تعذر الوصول إلى Firebase authDomain. تحقق من الإنترنت وقيمة authDomain.'
-              : normalizedRaw;
+      const message = normalizedRaw === 'INFOBIP_INSUFFICIENT_BALANCE'
+        ? 'رصيد الرسائل غير كافٍ في مزود الرسائل'
+        : normalizedRaw === 'INFOBIP_INVALID_NUMBER'
+          ? 'رقم الهاتف غير صالح للإرسال'
+          : normalizedRaw === 'INFOBIP_CONFIG_MISSING'
+            ? 'إعدادات Infobip غير مكتملة على الخادم'
+            : normalizedRaw === 'INFOBIP_TEMPLATE_MISSING'
+              ? 'قالب واتساب غير مُعد بشكل صحيح في Infobip'
+              : normalizedRaw === 'INFOBIP_UNREACHABLE'
+                ? 'تعذر الاتصال بمزود الرسائل. حاول لاحقًا'
+                : normalizedRaw === 'INFOBIP_HTTP_ERROR'
+                  ? 'مزود الرسائل رفض الطلب. تحقق من الإعدادات'
+          : code === 'PHONE_INVALID'
+            ? 'يرجى إدخال رقم هاتف صحيح'
+            : normalizedRaw;
       Alert.alert('خطأ', message);
     } finally {
       setLoading(false);
@@ -72,14 +68,26 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
     setLoading(true);
     try {
-      if (!confirmationResult) {
-        Alert.alert('تنبيه', 'يرجى طلب رمز Firebase أولاً');
+      if (legacyOtpMode) {
+        await confirmPasswordReset({
+          identifier: normalizedIdentifier,
+          phone: normalizedIdentifier,
+          code: code.trim(),
+          new_password: newPassword.trim(),
+          reset_ticket: resetTicket || undefined,
+        });
+        Alert.alert('تم', 'تم تغيير كلمة المرور بنجاح');
+        navigation.goBack();
+        return;
+      }
+      const verifyResult = await verifyPhoneOtp({ phone: normalizedIdentifier, purpose: 'reset', otp_code: code.trim() });
+      const token = String(verifyResult?.verification_token || '');
+      if (!token) {
+        Alert.alert('خطأ', 'تعذر التحقق من الرمز');
         setLoading(false);
         return;
       }
-      const cred = await confirmationResult.confirm(code.trim());
-      const idToken = await cred.user.getIdToken(true);
-      await firebaseResetPassword({ id_token: idToken, new_password: newPassword.trim(), phone: normalizedIdentifier });
+      await firebaseResetPassword({ verification_token: token, new_password: newPassword.trim(), phone: normalizedIdentifier });
       Alert.alert('تم', 'تم تغيير كلمة المرور بنجاح');
       navigation.goBack();
     } catch (e) {
@@ -92,11 +100,10 @@ export default function ForgotPasswordScreen({ navigation }) {
   return (
     <LinearGradient colors={['#0c1b33', '#081226']} style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
-        <FirebaseRecaptchaVerifierModal ref={recaptchaVerifier} firebaseConfig={firebaseConfig} attemptInvisibleVerification={Platform.OS !== 'ios'} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: theme.spacing.xl * 4 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             <Text style={styles.title}>استعادة كلمة المرور</Text>
-            <Text style={styles.subtitle}>تحقق عبر Firebase ثم أدخل كلمة المرور الجديدة</Text>
+            <Text style={styles.subtitle}>أدخل رقم الهاتف ثم رمز التحقق لإعادة تعيين كلمة المرور</Text>
             <TextInput
               value={identifier}
               onChangeText={setIdentifier}
@@ -107,7 +114,7 @@ export default function ForgotPasswordScreen({ navigation }) {
               maxLength={11}
             />
             <TouchableOpacity onPress={onRequest} disabled={loading} style={styles.button}>
-              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.buttonText}>إرسال رمز Firebase</Text>}
+              {loading ? <ActivityIndicator color="#000" /> : <Text style={styles.buttonText}>إرسال رمز التحقق</Text>}
             </TouchableOpacity>
             {requested ? (
               <View style={{ marginTop: theme.spacing.lg }}>
