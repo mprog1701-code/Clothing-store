@@ -131,6 +131,19 @@ class AuthViewSet(viewsets.ViewSet):
         source = f"{str(phone)}|{str(purpose)}|{str(code)}|{secret}"
         return sha256(source.encode('utf-8')).hexdigest()
 
+    def _get_existing_user_for_phone(self, phone):
+        return User.objects.filter(phone=phone).order_by('-is_store_admin', '-is_staff', '-is_superuser', '-date_joined').first()
+
+    def _is_phone_blocked_for_customer_signup(self, phone):
+        qs = User.objects.filter(phone=phone)
+        if not qs.exists():
+            return False
+        has_store_admin = qs.filter(is_store_admin=True).exists()
+        if has_store_admin:
+            return False
+        has_customer_only = qs.filter(is_customer=True, is_store_admin=False).exists()
+        return bool(has_customer_only)
+
     def _sanitize_infobip_value(self, value):
         raw = str(value or '').strip().replace('ا', '')
         raw = raw.replace('`', '').replace('"', '').replace("'", '')
@@ -361,8 +374,8 @@ class AuthViewSet(viewsets.ViewSet):
         verification_token = (request.data.get('verification_token') or '').strip()
         existing_user = None
         if phone:
-            existing_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
-            if existing_user and bool(getattr(existing_user, 'is_customer', False)):
+            existing_user = self._get_existing_user_for_phone(phone)
+            if self._is_phone_blocked_for_customer_signup(phone):
                 return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
         otp_valid = False
         if verification_token and phone:
@@ -398,6 +411,12 @@ class AuthViewSet(viewsets.ViewSet):
                 payload['debug_otp'] = code
                 payload['provider_debug'] = provider_result
             if not sent_ok:
+                allow_fallback = bool(settings.DEBUG) or str(os.environ.get('OTP_ALLOW_PROVIDER_FAILURE_FALLBACK') or '').strip().lower() in ('1', 'true', 'yes', 'on')
+                if allow_fallback:
+                    payload['ok'] = True
+                    payload['provider_fallback'] = True
+                    payload['message'] = 'تعذر الإرسال عبر مزود الرسائل. تم تفعيل رمز التحقق البديل.'
+                    return Response(payload, status=status.HTTP_200_OK)
                 return Response(payload, status=status.HTTP_400_BAD_REQUEST)
             return Response(payload)
         if not otp_valid:
@@ -586,8 +605,7 @@ class AuthViewSet(viewsets.ViewSet):
         if not phone:
             return Response({'error': 'PHONE_REQUIRED'}, status=status.HTTP_400_BAD_REQUEST)
         if purpose == 'signup':
-            existing_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
-            if existing_user and bool(getattr(existing_user, 'is_customer', False)):
+            if self._is_phone_blocked_for_customer_signup(phone):
                 return Response({'code': 'PHONE_ALREADY_HAS_ACCOUNT'}, status=status.HTTP_409_CONFLICT)
         if purpose == 'reset':
             target_user = User.objects.filter(phone=phone).order_by('-is_superuser', '-is_staff', '-date_joined').first()
@@ -615,6 +633,12 @@ class AuthViewSet(viewsets.ViewSet):
             payload['debug_otp'] = code
             payload['provider_debug'] = provider_result
         if not sent_ok:
+            allow_fallback = bool(settings.DEBUG) or str(os.environ.get('OTP_ALLOW_PROVIDER_FAILURE_FALLBACK') or '').strip().lower() in ('1', 'true', 'yes', 'on')
+            if allow_fallback:
+                payload['ok'] = True
+                payload['provider_fallback'] = True
+                payload['message'] = 'تعذر الإرسال عبر مزود الرسائل. تم تفعيل رمز التحقق البديل.'
+                return Response(payload, status=status.HTTP_200_OK)
             return Response(payload, status=status.HTTP_400_BAD_REQUEST)
         return Response(payload)
 
